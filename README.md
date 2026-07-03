@@ -3,7 +3,7 @@ ENG
 
 TODO LIST
 
-1) Energy normalization (add energy shift and scale)
+[ ] Energy normalization (add energy shift and scale)
 
 SchNetPack addresses the issue of energy magnitudes with two built-in mechanisms that correspond to our "Scale and Shift":
 
@@ -11,16 +11,16 @@ schnetpack.atomistic.Atomref: This module appends the reference energy of the in
 
 schnetpack.transform.Standardize: During preprocessing, SchNetPack statistically computes the mean and standard deviation of the remaining energies or forces and standardizes the output. This ensures that the neural network always works with numbers close to zero, letting the framework re-multiply and re-add the real values only at the moment of the final output.
 
-2) Implement cosine cutoff
+[ ] Implement cosine cutoff
 
 If you look in the schnetpack/nn/cutoff.py folder, you will find an entire class called CosineCutoff.
 When you declare the PaiNN or SchNet model in SchNetPack, the cutoff_network parameter is initialized by default with this exact class. They use exactly the scaled cosine function that I suggested to ensure that the spatial derivatives smoothly drop to zero at the edge of the Neighbor List, preventing discontinuous jumps in the forces.
 
-3) In version 2.0, SchNetPack delegated the entire training loop to PyTorch Lightning.
+[X] In version 2.0, SchNetPack delegated the entire training loop to PyTorch Lightning.
 
 If you check their training configuration files (managed via the Hydra system in the configs/trainer folder), you will find the gradient_clip_val parameter. It is common practice in their tutorials to set this parameter right around 0.5 or 1.0. As we discussed, since the forces are the derivative of the energy, without this "leash" on the gradient, a single unlucky short-range repulsion in the batch would permanently ruin the weights of the AdamW optimizer.
 
-4) Mixed precision
+[ ] Mixed precision
 
 GROMACS TO BIN
 

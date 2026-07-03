@@ -263,6 +263,10 @@ int main() {
             torch::Tensor total_loss = loss_energy + force_weight * loss_forces;
 
             total_loss.backward();
+            // --- AGGIUNTA: Gradient Clipping ---
+            // Limita la norma massima globale dei gradienti a 1.0
+            torch::nn::utils::clip_grad_norm_(model->parameters(), 1.0);
+
             optimizer.step();
 
             train_mse_energy += loss_energy.item<float>();
