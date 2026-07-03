@@ -5,6 +5,9 @@
 #include <fstream>
 #include <unordered_map>
 #include <limits>
+#include <random>    // Aggiungi questo in cima al file per std::shuffle
+#include <algorithm> // Aggiungi questo in cima per std::shuffle
+
 
 // Assicurati di avere questo file nella stessa cartella
 #include "PaiNN_Architecture.hpp"
@@ -124,7 +127,59 @@ CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::D
     
     return batch;
 }
+std::vector<CGFrame> read_cg_dataset(const std::string& filepath) {
+    std::vector<CGFrame> dataset;
+    std::ifstream file(filepath, std::ios::binary);
+    
+    if (!file.is_open()) {
+        std::cerr << "Errore: Impossibile aprire il file " << filepath << "\n";
+        return dataset;
+    }
 
+    int num_frames;
+    file.read(reinterpret_cast<char*>(&num_frames), sizeof(int));
+    dataset.reserve(num_frames);
+
+    for (int f = 0; f < num_frames; ++f) {
+        CGFrame frame;
+        int num_molecules, num_total_sites;
+        
+        file.read(reinterpret_cast<char*>(&num_molecules), sizeof(int));
+        file.read(reinterpret_cast<char*>(&num_total_sites), sizeof(int));
+        
+        frame.molecules.reserve(num_molecules);
+
+        for (int m = 0; m < num_molecules; ++m) {
+            CGMolecule mol;
+            int num_sites;
+            
+            file.read(reinterpret_cast<char*>(&mol.molecule_id), sizeof(int));
+            file.read(reinterpret_cast<char*>(&num_sites), sizeof(int));
+            
+            file.read(reinterpret_cast<char*>(mol.center_of_geometry), 3 * sizeof(float));
+            file.read(reinterpret_cast<char*>(mol.target_force), 3 * sizeof(float));
+            file.read(reinterpret_cast<char*>(mol.target_torque), 3 * sizeof(float));
+            
+            mol.sites.reserve(num_sites);
+            for (int s = 0; s < num_sites; ++s) {
+                CGSite site;
+                site.molecule_id = mol.molecule_id;
+                file.read(reinterpret_cast<char*>(&site.site_type), sizeof(int));
+                file.read(reinterpret_cast<char*>(&site.x), sizeof(float));
+                file.read(reinterpret_cast<char*>(&site.y), sizeof(float));
+                file.read(reinterpret_cast<char*>(&site.z), sizeof(float));
+                
+                mol.sites.push_back(site);
+            }
+            frame.molecules.push_back(mol);
+        }
+        dataset.push_back(frame);
+    }
+    
+    file.close();
+    std::cout << "[INFO] Letti " << dataset.size() << " frame dal dataset.\n";
+    return dataset;
+}
 // =====================================================================
 // 3. LOGICA DI TRAINING (Metrice ed Early Stopping)
 // =====================================================================
@@ -200,10 +255,36 @@ int main() {
         csv_file << "Epoch,Train_Loss,Val_Loss,Val_MAE_Forces,Val_MAE_Torques\n";
     }
 
-    // [QUI DOVRESTI LEGGERE IL TUO DATASET REALE]
-    std::vector<CGFrame> train_dataset; 
-    std::vector<CGFrame> val_dataset;
-    // train_dataset.push_back(read_cg_frame_from_file("...")); 
+    // =====================================================================
+    // LETTURA E PREPARAZIONE DEL DATASET
+    // =====================================================================
+    std::cout << "\n[INFO] Caricamento dataset binario in corso...\n";
+    std::string dataset_path = "cg_dataset.bin"; // Il file generato da Python
+    
+    std::vector<CGFrame> full_dataset = read_cg_dataset(dataset_path);
+    
+    if (full_dataset.empty()) {
+        std::cerr << "Errore critico: dataset vuoto o file non trovato. Interruzione.\n";
+        return 1;
+    }
+
+    // Mescoliamo i frame per evitare bias sequenziali (Fondamentale nel ML!)
+    // GROMACS genera traiettorie correlate nel tempo, mescolarle rompe questa correlazione.
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(full_dataset.begin(), full_dataset.end(), g);
+
+    // Divisione 80% Train, 20% Validation
+    size_t total_frames = full_dataset.size();
+    size_t val_size = total_frames * 0.2;
+    size_t train_size = total_frames - val_size;
+
+    std::vector<CGFrame> train_dataset(full_dataset.begin(), full_dataset.begin() + train_size);
+    std::vector<CGFrame> val_dataset(full_dataset.begin() + train_size, full_dataset.end());
+
+    std::cout << "[INFO] Split completato:\n"
+              << "       - Train: " << train_dataset.size() << " frames\n"
+              << "       - Val:   " << val_dataset.size() << " frames\n\n";
 
     int max_epochs = 500;
     

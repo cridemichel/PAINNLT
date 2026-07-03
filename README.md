@@ -47,3 +47,27 @@ take the trajectories and forces from your original All-Atom simulation (GROMACS
 Coarse-Graining logic (aggregating masses, defining virtual sites, and projecting total forces and
 torques), and save each resulting frame into a new dataset_cg.db file using the ASE library.  Once
 that .db file is created, the training script I showed you earlier will automatically "digest" it.
+
+
+1. La Struttura Logica del Dataset
+Per ogni frame temporale della tua traiettoria GROMACS, il file binario dovrà contenere:
+
+num_molecules (int): Quante molecole CG ci sono.
+
+num_total_sites (int): Quanti siti totali ci sono nel frame.
+
+Per ogni molecola, un blocco contenente:
+
+mol_id, num_sites (int)
+
+cx, cy, cz (float): Coordinate del centro di riferimento.
+
+fx, fy, fz (float): Forza totale target.
+
+tx, ty, tz (float): Momento torcente target.
+
+Per ogni sito di questa molecola:
+
+site_type (int): Il tipo di sito (0, 1, 2...).
+
+x, y, z (float): Le coordinate del sito.
