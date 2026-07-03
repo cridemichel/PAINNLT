@@ -5,3 +5,6 @@ espresso/
 build/
 Session.vim
 plots
+*.db
+*.xyz
+*.npz
