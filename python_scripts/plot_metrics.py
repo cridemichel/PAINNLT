@@ -57,7 +57,7 @@ def plot_training_metrics(csv_path="training_metrics.csv", output_dir="plots"):
     plt.plot(epochs, mae_f, label='MAE Forze (kcal/mol/Å)', color='red', linewidth=2)
     plt.xlabel('Epoca', fontsize=12)
     plt.ylabel('Mean Absolute Error (MAE)', fontsize=12)
-    plt.title('Accuratezza SchNet (Validation Set)', fontsize=14)
+    plt.title('Accuratezza PaiNN (Validation Set)', fontsize=14)
     plt.grid(True, ls="--", alpha=0.5)
     plt.legend(fontsize=12)
     
