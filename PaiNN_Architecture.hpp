@@ -8,9 +8,10 @@
 // ============================================================================
 struct PaiNNMessageImpl : torch::nn::Module {
     torch::nn::Linear scalar_mlp{nullptr}, filter_mlp{nullptr};
-    PaiNNMessageImpl(int dim) {
+    PaiNNMessageImpl(int dim, int num_rbf) { 
         scalar_mlp = register_module("scalar_mlp", torch::nn::Linear(dim, dim * 3));
-        filter_mlp = register_module("filter_mlp", torch::nn::Linear(20, dim * 3)); 
+        // AGGIUNTA: Sostituito 20 con num_rbf
+        filter_mlp = register_module("filter_mlp", torch::nn::Linear(num_rbf, dim * 3)); 
     }
     std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, torch::Tensor rbf, torch::Tensor r_ij_norm) {
         auto row = edge_index[0], col = edge_index[1]; 
@@ -61,12 +62,13 @@ struct PaiNNModelImpl : torch::nn::Module {
     torch::nn::Sequential readout{nullptr};
     int num_layers;
     double cutoff_radius; 
+    int num_radial_basis; 
     PaiNNModelImpl(int num_embeddings, int dim, int layers, int num_rbf = 20, double cutoff = 5.0) 
-        : num_layers(layers), cutoff_radius(cutoff) {
+        : num_layers(layers), cutoff_radius(cutoff), num_radial_basis(num_rbf) {
         
         embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
         for (int i = 0; i < layers; ++i) {
-            messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim)));
+            messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim, num_rbf)));
             updates.push_back(register_module("update_" + std::to_string(i), PaiNNUpdate(dim)));
         }
         readout = register_module("readout", torch::nn::Sequential(
@@ -80,7 +82,7 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto cos_cutoff = 0.5 * (torch::cos(M_PI * d_ij / r_c) + 1.0);
         cos_cutoff = torch::where(d_ij > r_c, torch::zeros_like(cos_cutoff), cos_cutoff);
 
-        auto centers = torch::linspace(0.0, r_c, 20, d_ij.options());
+        auto centers = torch::linspace(0.0, r_c, num_radial_basis, d_ij.options());
         auto rbf = torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, 0.5), 2));
         return rbf * cos_cutoff.unsqueeze(1);
     }

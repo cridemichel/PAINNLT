@@ -226,7 +226,7 @@ int main() {
     // cutoff radius)
     // TO FIX: num_rbf è il numero di gaussiane da usare per approssimare il potenziale. Se si deve aumentare
     // il cutoff questo numero andrebbe aumentato ma attualmente facendolo si rompre il modell
-    PaiNNModel model(100, 128, 3, 20, cutoff); 
+    PaiNNModel model(100, 128, 3, 30, cutoff); 
     model->to(device);
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(1e-5));
 
