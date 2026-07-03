@@ -13,9 +13,11 @@ find_package(Torch REQUIRED)
 
 # Definisci l'eseguibile a partire dal file unico
 add_executable(painn_app painn.cpp)
+add_executable(cg_painn_train cg_painn_train.cpp)
 
 # Collega le librerie di PyTorch
 target_link_libraries(painn_app "${TORCH_LIBRARIES}")
+target_link_libraries(cg_painn_train "${TORCH_LIBRARIES}")
 
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(painn_framework CXX)
