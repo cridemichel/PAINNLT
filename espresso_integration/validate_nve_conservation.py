@@ -56,7 +56,7 @@ espressomd.painn.activate_painn_potential(
     num_atoms=100, 
     hidden_channels=128, 
     n_layers=3, 
-    num_rbf=20, 
+    num_rbf=30, 
     cutoff=5.0, 
     device="cpu"
 )
