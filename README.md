@@ -11,7 +11,7 @@ schnetpack.atomistic.Atomref: This module appends the reference energy of the in
 
 schnetpack.transform.Standardize: During preprocessing, SchNetPack statistically computes the mean and standard deviation of the remaining energies or forces and standardizes the output. This ensures that the neural network always works with numbers close to zero, letting the framework re-multiply and re-add the real values only at the moment of the final output.
 
-[ ] Implement cosine cutoff
+[X] Implement cosine cutoff
 
 If you look in the schnetpack/nn/cutoff.py folder, you will find an entire class called CosineCutoff.
 When you declare the PaiNN or SchNet model in SchNetPack, the cutoff_network parameter is initialized by default with this exact class. They use exactly the scaled cosine function that I suggested to ensure that the spatial derivatives smoothly drop to zero at the edge of the Neighbor List, preventing discontinuous jumps in the forces.

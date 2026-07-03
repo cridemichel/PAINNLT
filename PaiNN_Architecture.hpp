@@ -10,7 +10,7 @@ struct PaiNNMessageImpl : torch::nn::Module {
     torch::nn::Linear scalar_mlp{nullptr}, filter_mlp{nullptr};
     PaiNNMessageImpl(int dim) {
         scalar_mlp = register_module("scalar_mlp", torch::nn::Linear(dim, dim * 3));
-        filter_mlp = register_module("filter_mlp", torch::nn::Linear(20, dim * 3)); // 20 num_rbf hardcoded in painn.cpp
+        filter_mlp = register_module("filter_mlp", torch::nn::Linear(20, dim * 3)); 
     }
     std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, torch::Tensor rbf, torch::Tensor r_ij_norm) {
         auto row = edge_index[0], col = edge_index[1]; 
@@ -74,14 +74,18 @@ struct PaiNNModelImpl : torch::nn::Module {
         ));
     }
 
-    // Identica espansione RBF del file painn.cpp
+    // Espansione RBF con Cosine Cutoff integrato per stabilità dinamica
     torch::Tensor expansion_rbf(torch::Tensor d_ij) {
-        auto centers = torch::linspace(0.0, 5.0, 20, d_ij.options());
-        return torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, 0.5), 2));
+        double r_c = 5.0; 
+        auto cos_cutoff = 0.5 * (torch::cos(M_PI * d_ij / r_c) + 1.0);
+        cos_cutoff = torch::where(d_ij > r_c, torch::zeros_like(cos_cutoff), cos_cutoff);
+
+        auto centers = torch::linspace(0.0, r_c, 20, d_ij.options());
+        auto rbf = torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, 0.5), 2));
+        return rbf * cos_cutoff.unsqueeze(1);
     }
     
-    // --- METODO INCLUSO PER COMPATIBILITÀ CON PAINN.CPP (TRAINING) ---
-    // Non altera l'integrazione con Quantum ESPRESSO poiché aggiunge solo un overload
+    // --- FORWARD COMPATIBILE CON PAINN.CPP (TRAINING) ---
     template <typename BatchType>
     torch::Tensor forward(BatchType& batch) {
         auto row = batch.edge_index[0], col = batch.edge_index[1]; 
@@ -94,9 +98,12 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
 
+        // Corretto bug di parsing del template sostituendo lo structured binding
         for (int i = 0; i < num_layers; ++i) {
-            auto [ds, dv] = messages[i]->forward(s, v, batch.edge_index, rbf, r_ij_norm);
-            s = s + ds; v = v + dv;
+            auto msg_out = messages[i]->forward(s, v, batch.edge_index, rbf, r_ij_norm);
+            s = s + msg_out.first; 
+            v = v + msg_out.second;
+            
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
@@ -105,35 +112,31 @@ struct PaiNNModelImpl : torch::nn::Module {
         pred_energy.index_add_(0, batch.batch_indices, atom_energies);
         return pred_energy;
     }
+
     // --- FORWARD CON R_IJ ESPLICITO (PER ESPRESSO PBC) ---
     torch::Tensor forward_with_rij(torch::Tensor atomic_numbers, 
                                    torch::Tensor r_ij,
                                    torch::Tensor edge_index, 
                                    torch::Tensor batch_indices) {
         
-        auto d_ij = torch::norm(r_ij, 2, 1) + 1e-8; // 1e-8 evita divisioni per zero
+        auto d_ij = torch::norm(r_ij, 2, 1) + 1e-8; 
         
-        // Inizializzazione Scalari e Vettori
         torch::Tensor s = embedding->forward(atomic_numbers);
         torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
 
-        // Geometria
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
 
-        // Ciclo dei layer
         for (int i = 0; i < num_layers; ++i) {
-            auto [ds, dv] = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm);
-            s = s + ds; 
-            v = v + dv;
+            auto msg_out = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm);
+            s = s + msg_out.first; 
+            v = v + msg_out.second;
             
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
-        // Predizione dell'energia atomica
         torch::Tensor atom_energies = readout->forward(s); 
         
-        // Somma delle energie per molecola usando batch_indices
         int64_t num_molecules = batch_indices.max().item<int64_t>() + 1;
         torch::Tensor pred_energy = torch::zeros({num_molecules, 1}, s.options());
         pred_energy.index_add_(0, batch_indices, atom_energies);
