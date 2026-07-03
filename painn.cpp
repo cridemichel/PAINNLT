@@ -201,155 +201,159 @@ ValidationMetrics validate_model(
 // =====================================================================
 // 3. MAIN LOOP
 // =====================================================================
-int main() {
-    torch::Device device(torch::kCPU);
+int main() 
+{
+  // Fissa il generatore di numeri casuali per PyTorch C++
+  torch::manual_seed(42);
+  torch::Device device(torch::kCPU);
 
-    if (torch::mps::is_available()) {
-        device = torch::Device(torch::kMPS);
-        std::cout << "\n[INFO] GPU Apple Silicon (Metal/MPS) rilevata ed attivata con successo!\n";
+  if (torch::mps::is_available()) {
+    device = torch::Device(torch::kMPS);
+    std::cout << "\n[INFO] GPU Apple Silicon (Metal/MPS) rilevata ed attivata con successo!\n";
+  } else {
+    std::cout << "\n[INFO] Backend MPS non disponibile. Esecuzione su CPU.\n";
+  }
+
+  std::vector<MoleculeFrame> train_dataset, val_dataset;
+  try {
+    train_dataset = load_md17_binary("ethanol_train.bin");
+    val_dataset   = load_md17_binary("ethanol_val.bin");
+  } catch (const std::exception& e) {
+    std::cerr << "Errore caricamento file binari: " << e.what() << "\n";
+    return -1;
+  }
+
+  int batch_size = 32, max_epochs = 100;
+  float cutoff = 5.0f, initial_lr = 5e-4;
+  float force_weight = 30.0f;
+  int num_rbf = 40; // number of gaussian in the RBF layer
+                    // same number must be set in python script to launch espresso simulazione
+                    // --- Estraiamo tutti i parametri in variabili ---
+  int num_atoms = 100; // number of possibile types of atoms
+  int dim = 128; // channels, i.e. wide will be the model
+  int layers = 3; // number of convolutional layer (3 should be enough
+                  // for coarse-graining classical all-atom simulations
+  std::string model_path = "best_painn_etanolo.pt";
+
+  // 2. SALVIAMO IL JSON UNA SOLA VOLTA QUI
+  std::string json_path = model_path.substr(0, model_path.find_last_of('.')) + "_config.json";
+  std::ofstream json_file(json_path);
+  if (json_file.is_open()) {
+    json_file << "{\n"
+      << "  \"num_atoms\": " << num_atoms << ",\n"
+      << "  \"hidden_channels\": " << dim << ",\n"
+      << "  \"n_layers\": " << layers << ",\n"
+      << "  \"num_rbf\": " << num_rbf << ",\n"
+      << "  \"cutoff\": " << cutoff << "\n"
+      << "}\n";
+    json_file.close();
+    std::cout << "[INFO] File di configurazione " << json_path << " generato con successo.\n";
+  }
+  // Nota: Passiamo anche i parametri opzionali che l'header accetta (num_embeddings, dim, layers, num_rbf e 
+  // cutoff radius)
+  // TO FIX: num_rbf è il numero di gaussiane da usare per approssimare il potenziale. Se si deve aumentare
+  // il cutoff questo numero andrebbe aumentato ma attualmente facendolo si rompre il modell
+  PaiNNModel model(num_atoms, dim, layers, num_rbf, cutoff); 
+  model->to(device);
+  torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(1e-5));
+
+  EarlyStopping early_stopping(10, model_path);
+
+  std::mt19937 g(42); 
+
+  float current_lr = initial_lr;
+  int lr_patience = 4, lr_counter = 0;
+  float best_val_loss = std::numeric_limits<float>::infinity();
+
+  std::ofstream csv_file("training_metrics.csv");
+  if (csv_file.is_open()) {
+    csv_file << "Epoch,TrainLoss,ValLoss,MaeE,MaeF\n";
+  }
+
+  for (int epoch = 1; epoch <= max_epochs; ++epoch) {
+    model->train();
+    std::shuffle(train_dataset.begin(), train_dataset.end(), g);
+    double train_mse_energy = 0.0, train_mse_forces = 0.0;
+    double train_mae_energy = 0.0, train_mae_forces = 0.0;
+    int train_batches = 0;
+
+    for (size_t i = 0; i < train_dataset.size(); i += batch_size) {
+      size_t end_idx = std::min(i + batch_size, train_dataset.size());
+      std::vector<MoleculeFrame> batch_frames(train_dataset.begin() + i, train_dataset.begin() + end_idx);
+      PaiNNBatch batch = collate_batch(batch_frames, cutoff, device);
+
+      optimizer.zero_grad();
+      batch.coordinates.set_requires_grad(true);
+
+      torch::Tensor E_pred = model->forward(batch);
+      auto grads = torch::autograd::grad({E_pred}, {batch.coordinates}, {torch::ones_like(E_pred)}, true, true);
+      torch::Tensor F_pred = -grads[0];
+
+      torch::Tensor loss_energy = torch::mse_loss(E_pred, batch.energy_true);
+      torch::Tensor loss_forces = torch::mse_loss(F_pred, batch.forces_true);
+      torch::Tensor total_loss = loss_energy + force_weight * loss_forces;
+
+      total_loss.backward();
+      // --- AGGIUNTA: Gradient Clipping ---
+      // Limita la norma massima globale dei gradienti a 1.0
+      torch::nn::utils::clip_grad_norm_(model->parameters(), 1.0);
+
+      optimizer.step();
+
+      train_mse_energy += loss_energy.item<float>();
+      train_mse_forces += loss_forces.item<float>();
+
+        {
+          torch::NoGradGuard no_grad;
+          train_mae_energy += torch::l1_loss(E_pred, batch.energy_true).item<float>();
+          train_mae_forces += torch::l1_loss(F_pred, batch.forces_true).item<float>();
+        }
+
+      train_batches++;
+    }
+
+    ValidationMetrics val_metrics = validate_model(model, val_dataset, batch_size, cutoff, device, force_weight);
+
+    float train_loss_tot = (train_mse_energy / train_batches) + force_weight * (train_mse_forces / train_batches);
+    float avg_train_mae_e = train_mae_energy / train_batches;
+    float avg_train_mae_f = train_mae_forces / train_batches;
+
+    std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "] - LR: " << current_lr << "\n"
+      << "  [TRN] Loss: " << train_loss_tot 
+      << " | MAE Energia: " << avg_train_mae_e 
+      << " | MAE Forze: " << avg_train_mae_f << "\n"
+      << "  [VAL] Loss: " << val_metrics.combined_loss 
+      << " | MAE Energia: " << val_metrics.mae_energy 
+      << " | MAE Forze: " << val_metrics.mae_forces << "\n";
+
+    if (val_metrics.combined_loss < best_val_loss) {
+      best_val_loss = val_metrics.combined_loss;
+      lr_counter = 0;
     } else {
-        std::cout << "\n[INFO] Backend MPS non disponibile. Esecuzione su CPU.\n";
+      lr_counter++;
+      if (lr_counter >= lr_patience) {
+        current_lr *= 0.5f;
+        for (auto& options : optimizer.param_groups()) {
+          static_cast<torch::optim::AdamWOptions&>(options.options()).lr(current_lr);
+        }
+        std::cout << "  [Scheduler] Learning Rate abbassato a: " << current_lr << "\n";
+        lr_counter = 0;
+      }
     }
 
-    std::vector<MoleculeFrame> train_dataset, val_dataset;
-    try {
-        train_dataset = load_md17_binary("ethanol_train.bin");
-        val_dataset   = load_md17_binary("ethanol_val.bin");
-    } catch (const std::exception& e) {
-        std::cerr << "Errore caricamento file binari: " << e.what() << "\n";
-        return -1;
-    }
-
-    int batch_size = 32, max_epochs = 100;
-    float cutoff = 5.0f, initial_lr = 5e-4;
-    float force_weight = 30.0f;
-    int num_rbf = 40; // number of gaussian in the RBF layer
-                      // same number must be set in python script to launch espresso simulazione
-    // --- Estraiamo tutti i parametri in variabili ---
-    int num_atoms = 100; // number of possibile types of atoms
-    int dim = 128; // channels, i.e. wide will be the model
-    int layers = 3; // number of convolutional layer (3 should be enough
-    // for coarse-graining classical all-atom simulations
-    std::string model_path = "best_painn_etanolo.pt";
-
-    // 2. SALVIAMO IL JSON UNA SOLA VOLTA QUI
-    std::string json_path = model_path.substr(0, model_path.find_last_of('.')) + "_config.json";
-    std::ofstream json_file(json_path);
-    if (json_file.is_open()) {
-        json_file << "{\n"
-                  << "  \"num_atoms\": " << num_atoms << ",\n"
-                  << "  \"hidden_channels\": " << dim << ",\n"
-                  << "  \"n_layers\": " << layers << ",\n"
-                  << "  \"num_rbf\": " << num_rbf << ",\n"
-                  << "  \"cutoff\": " << cutoff << "\n"
-                  << "}\n";
-        json_file.close();
-        std::cout << "[INFO] File di configurazione " << json_path << " generato con successo.\n";
-    }
-    // Nota: Passiamo anche i parametri opzionali che l'header accetta (num_embeddings, dim, layers, num_rbf e 
-    // cutoff radius)
-    // TO FIX: num_rbf è il numero di gaussiane da usare per approssimare il potenziale. Se si deve aumentare
-    // il cutoff questo numero andrebbe aumentato ma attualmente facendolo si rompre il modell
-    PaiNNModel model(num_atoms, dim, layers, num_rbf, cutoff); 
-    model->to(device);
-    torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(1e-5));
-
-    EarlyStopping early_stopping(10, model_path);
-    
-    std::mt19937 g(42); 
-    float current_lr = initial_lr;
-    int lr_patience = 4, lr_counter = 0;
-    float best_val_loss = std::numeric_limits<float>::infinity();
-    
-    std::ofstream csv_file("training_metrics.csv");
     if (csv_file.is_open()) {
-        csv_file << "Epoch,TrainLoss,ValLoss,MaeE,MaeF\n";
-    }
-    
-    for (int epoch = 1; epoch <= max_epochs; ++epoch) {
-        model->train();
-        std::shuffle(train_dataset.begin(), train_dataset.end(), g);
-        double train_mse_energy = 0.0, train_mse_forces = 0.0;
-        double train_mae_energy = 0.0, train_mae_forces = 0.0;
-        int train_batches = 0;
-
-        for (size_t i = 0; i < train_dataset.size(); i += batch_size) {
-            size_t end_idx = std::min(i + batch_size, train_dataset.size());
-            std::vector<MoleculeFrame> batch_frames(train_dataset.begin() + i, train_dataset.begin() + end_idx);
-            PaiNNBatch batch = collate_batch(batch_frames, cutoff, device);
-
-            optimizer.zero_grad();
-            batch.coordinates.set_requires_grad(true);
-
-            torch::Tensor E_pred = model->forward(batch);
-            auto grads = torch::autograd::grad({E_pred}, {batch.coordinates}, {torch::ones_like(E_pred)}, true, true);
-            torch::Tensor F_pred = -grads[0];
-            
-            torch::Tensor loss_energy = torch::mse_loss(E_pred, batch.energy_true);
-            torch::Tensor loss_forces = torch::mse_loss(F_pred, batch.forces_true);
-            torch::Tensor total_loss = loss_energy + force_weight * loss_forces;
-
-            total_loss.backward();
-            // --- AGGIUNTA: Gradient Clipping ---
-            // Limita la norma massima globale dei gradienti a 1.0
-            torch::nn::utils::clip_grad_norm_(model->parameters(), 1.0);
-
-            optimizer.step();
-
-            train_mse_energy += loss_energy.item<float>();
-            train_mse_forces += loss_forces.item<float>();
-            
-            {
-                torch::NoGradGuard no_grad;
-                train_mae_energy += torch::l1_loss(E_pred, batch.energy_true).item<float>();
-                train_mae_forces += torch::l1_loss(F_pred, batch.forces_true).item<float>();
-            }
-            
-            train_batches++;
-        }
-
-        ValidationMetrics val_metrics = validate_model(model, val_dataset, batch_size, cutoff, device, force_weight);
-        
-        float train_loss_tot = (train_mse_energy / train_batches) + force_weight * (train_mse_forces / train_batches);
-        float avg_train_mae_e = train_mae_energy / train_batches;
-        float avg_train_mae_f = train_mae_forces / train_batches;
-
-        std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "] - LR: " << current_lr << "\n"
-                  << "  [TRN] Loss: " << train_loss_tot 
-                  << " | MAE Energia: " << avg_train_mae_e 
-                  << " | MAE Forze: " << avg_train_mae_f << "\n"
-                  << "  [VAL] Loss: " << val_metrics.combined_loss 
-                  << " | MAE Energia: " << val_metrics.mae_energy 
-                  << " | MAE Forze: " << val_metrics.mae_forces << "\n";
-
-        if (val_metrics.combined_loss < best_val_loss) {
-            best_val_loss = val_metrics.combined_loss;
-            lr_counter = 0;
-        } else {
-            lr_counter++;
-            if (lr_counter >= lr_patience) {
-                current_lr *= 0.5f;
-                for (auto& options : optimizer.param_groups()) {
-                    static_cast<torch::optim::AdamWOptions&>(options.options()).lr(current_lr);
-                }
-                std::cout << "  [Scheduler] Learning Rate abbassato a: " << current_lr << "\n";
-                lr_counter = 0;
-            }
-        }
-        
-        if (csv_file.is_open()) {
-            csv_file << epoch << "," << train_loss_tot << "," << val_metrics.combined_loss << "," << val_metrics.mae_energy << "," << val_metrics.mae_forces << "\n";
-            csv_file.flush(); 
-        }
-        
-        // Corretto bug di chiamata: l'early stopping in painn.cpp prendeva prima (val_loss, model) ma la definizione vuole (model, val_loss)
-        early_stopping.check(model, val_metrics.combined_loss);
-        if (early_stopping.early_stop) {
-            std::cout << "Stallo prolungato. Addestramento interrotto.\n";
-            break;
-        }
+      csv_file << epoch << "," << train_loss_tot << "," << val_metrics.combined_loss << "," << val_metrics.mae_energy << "," << val_metrics.mae_forces << "\n";
+      csv_file.flush(); 
     }
 
-    std::cout << "\nProcesso terminato con successo!\n";
-    return 0; 
+    // Corretto bug di chiamata: l'early stopping in painn.cpp prendeva prima (val_loss, model) ma la definizione vuole (model, val_loss)
+    early_stopping.check(model, val_metrics.combined_loss);
+    if (early_stopping.early_stop) {
+      std::cout << "Stallo prolungato. Addestramento interrotto.\n";
+      break;
+    }
+  }
+
+  std::cout << "\nProcesso terminato con successo!\n";
+  return 0; 
 }

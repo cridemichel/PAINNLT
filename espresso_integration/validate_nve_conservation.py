@@ -3,6 +3,7 @@ import espressomd.painn
 import numpy as np
 import struct
 import time
+import json
 
 def read_first_frame_md17_bin(filepath):
     """Legge il primo frame dal dataset MD17 binario."""
@@ -45,19 +46,44 @@ velocities = np.random.randn(num_atoms, 3) * 0.01  # Velocità iniziali piccole
 for i in range(num_atoms):
     system.part.add(pos=coords_shifted[i], type=int(atomic_numbers[i]), v=velocities[i])
 
+
+config_path = "best_painn_etanolo_config.json"
+
+try:
+    with open(config_path, "r") as f:
+        nn_config = json.load(f)
+    
+    # Stampa verbosa per il controllo scientifico dei parametri
+    print("\n" + "="*60)
+    print("   PARAMETRI ARCHITETTURA PAINN CARICATI DAL JSON")
+    print("="*60)
+    print(f" * Numero Atomi (num_atoms):       {nn_config['num_atoms']}")
+    print(f" * Canali Nascosti (dim):          {nn_config['hidden_channels']}")
+    print(f" * Numero Layer (n_layers):        {nn_config['n_layers']}")
+    print(f" * Basi Gaussiane (num_rbf):       {nn_config['num_rbf']}")
+    print(f" * Raggio di Cutoff (cutoff):      {nn_config['cutoff']} Å")
+    print("="*60 + "\n")
+
+except FileNotFoundError:
+    print(f"\nERRORE CRITICO: Il file di configurazione '{config_path}' non esiste.")
+    print("Assicurati di aver avviato il training C++ almeno una volta per generarlo.")
+    exit(1)
+
+# Estraiamo il cutoff convertendolo in float per sicurezza
+model_cutoff = float(nn_config["cutoff"])
 # 3. Verlet Lists Hack
 for i in range(10):
     for j in range(i, 10):
-        system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, cutoff=5.0, shift=0.0)
+        system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, cutoff=model_cutoff, shift=0.0)
 
 # 4. Attivazione Modello PaiNN
 espressomd.painn.activate_painn_potential(
     model_path="best_painn_etanolo.pt", 
-    num_atoms=100, 
-    hidden_channels=128, 
-    n_layers=3, 
-    num_rbf=30, 
-    cutoff=5.0, 
+    num_atoms=int(nn_config["num_atoms"]), 
+    hidden_channels=int(nn_config["hidden_channels"]), 
+    n_layers=int(nn_config["n_layers"]), 
+    num_rbf=int(nn_config["num_rbf"]), 
+    cutoff=model_cutoff, 
     device="cpu"
 )
 
