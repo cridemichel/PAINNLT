@@ -1,0 +1,7 @@
+{
+  "num_atoms": 100,
+  "hidden_channels": 128,
+  "n_layers": 3,
+  "num_rbf": 40,
+  "cutoff": 5
+}

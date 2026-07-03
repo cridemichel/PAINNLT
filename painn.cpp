@@ -115,7 +115,8 @@ struct EarlyStopping {
     float best_loss;
     bool early_stop;
     std::string save_path;
-
+    float cutoff;
+    
     EarlyStopping(int p, std::string path) : 
         patience(p), counter(0), best_loss(std::numeric_limits<float>::infinity()), 
         early_stop(false), save_path(path) {}
@@ -125,6 +126,7 @@ struct EarlyStopping {
             best_loss = val_loss;
             counter = 0;
             torch::save(model, save_path);
+          
             std::cout << "   ---> [Early Stopping] Miglioramento! Modello salvato.\n";
         } else {
             counter++;
@@ -221,16 +223,38 @@ int main() {
     int batch_size = 32, max_epochs = 100;
     float cutoff = 5.0f, initial_lr = 5e-4;
     float force_weight = 30.0f;
+    int num_rbf = 40; // number of gaussian in the RBF layer
+                      // same number must be set in python script to launch espresso simulazione
+    // --- Estraiamo tutti i parametri in variabili ---
+    int num_atoms = 100; // number of possibile types of atoms
+    int dim = 128; // channels, i.e. wide will be the model
+    int layers = 3; // number of convolutional layer (3 should be enough
+    // for coarse-graining classical all-atom simulations
+    std::string model_path = "best_painn_etanolo.pt";
 
+    // 2. SALVIAMO IL JSON UNA SOLA VOLTA QUI
+    std::string json_path = model_path.substr(0, model_path.find_last_of('.')) + "_config.json";
+    std::ofstream json_file(json_path);
+    if (json_file.is_open()) {
+        json_file << "{\n"
+                  << "  \"num_atoms\": " << num_atoms << ",\n"
+                  << "  \"hidden_channels\": " << dim << ",\n"
+                  << "  \"n_layers\": " << layers << ",\n"
+                  << "  \"num_rbf\": " << num_rbf << ",\n"
+                  << "  \"cutoff\": " << cutoff << "\n"
+                  << "}\n";
+        json_file.close();
+        std::cout << "[INFO] File di configurazione " << json_path << " generato con successo.\n";
+    }
     // Nota: Passiamo anche i parametri opzionali che l'header accetta (num_embeddings, dim, layers, num_rbf e 
     // cutoff radius)
     // TO FIX: num_rbf è il numero di gaussiane da usare per approssimare il potenziale. Se si deve aumentare
     // il cutoff questo numero andrebbe aumentato ma attualmente facendolo si rompre il modell
-    PaiNNModel model(100, 128, 3, 30, cutoff); 
+    PaiNNModel model(num_atoms, dim, layers, num_rbf, cutoff); 
     model->to(device);
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(1e-5));
 
-    EarlyStopping early_stopping(10, "best_painn_etanolo.pt");
+    EarlyStopping early_stopping(10, model_path);
     
     std::mt19937 g(42); 
     float current_lr = initial_lr;
