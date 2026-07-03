@@ -60,9 +60,9 @@ struct PaiNNModelImpl : torch::nn::Module {
     std::vector<PaiNNUpdate> updates;
     torch::nn::Sequential readout{nullptr};
     int num_layers;
-
+    double cutoff_radius; 
     PaiNNModelImpl(int num_embeddings, int dim, int layers, int num_rbf = 20, double cutoff = 5.0) 
-        : num_layers(layers) {
+        : num_layers(layers), cutoff_radius(cutoff) {
         
         embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
         for (int i = 0; i < layers; ++i) {
@@ -76,7 +76,7 @@ struct PaiNNModelImpl : torch::nn::Module {
 
     // Espansione RBF con Cosine Cutoff integrato per stabilità dinamica
     torch::Tensor expansion_rbf(torch::Tensor d_ij) {
-        double r_c = 5.0; 
+        double r_c = cutoff_radius; 
         auto cos_cutoff = 0.5 * (torch::cos(M_PI * d_ij / r_c) + 1.0);
         cos_cutoff = torch::where(d_ij > r_c, torch::zeros_like(cos_cutoff), cos_cutoff);
 
