@@ -1,0 +1,7 @@
+espresso/
+*.pt
+*.bin
+*.log
+build/
+Session.vim
+plots
