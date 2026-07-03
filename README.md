@@ -36,6 +36,11 @@ If there are no virtual sites, the single real particle will still have its own 
 The forces in the loss will be those predicted by the network + those derived from the priors.
 Everything will be implemented as follows: in ESPResSo, the various virtual sites will still have a WCA interaction, and some pairs of atoms will have a harmonic or FENE interaction. In the calculation of the loss during training, we should include these interactions as explained earlier.
 
+5) Best strategy is to calculate the total force and
+torque acting a GROMACS CG group, and consider
+total force and torque acting on real particle and its N virtual sites,
+in suche a way that loss function minimize botth total force and torque
+(autograd of pytorch can do this)
 
 ITA
 ====
