@@ -8,11 +8,11 @@
 
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
-PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_atoms, int hidden_channels, int n_layers, int num_rbf, double cutoff, const std::string& device_str) 
+PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, const std::string& device_str) 
     : m_cutoff(cutoff) {
     
     // Inizializza il modello C++ con i parametri di architettura
-    model = PaiNNModel(num_atoms, hidden_channels, n_layers, num_rbf, cutoff);
+    model = PaiNNModel(num_species, hidden_channels, n_layers, num_rbf, cutoff);
     
     // Carica i pesi dal file .pt salvato durante il training
     try {

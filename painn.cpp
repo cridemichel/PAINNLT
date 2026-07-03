@@ -229,7 +229,7 @@ int main()
   int num_rbf = 40; // number of gaussian in the RBF layer
                     // same number must be set in python script to launch espresso simulazione
                     // --- Estraiamo tutti i parametri in variabili ---
-  int num_atoms = 100; // number of possibile types of atoms
+  int num_species = 100; // number of species (beads or virtual sites)
   int dim = 128; // channels, i.e. wide will be the model
   int layers = 3; // number of convolutional layer (3 should be enough
                   // for coarse-graining classical all-atom simulations
@@ -240,7 +240,7 @@ int main()
   std::ofstream json_file(json_path);
   if (json_file.is_open()) {
     json_file << "{\n"
-      << "  \"num_atoms\": " << num_atoms << ",\n"
+      << "  \"num_species\": " << num_species << ",\n"
       << "  \"hidden_channels\": " << dim << ",\n"
       << "  \"n_layers\": " << layers << ",\n"
       << "  \"num_rbf\": " << num_rbf << ",\n"
@@ -253,7 +253,7 @@ int main()
   // cutoff radius)
   // TO FIX: num_rbf è il numero di gaussiane da usare per approssimare il potenziale. Se si deve aumentare
   // il cutoff questo numero andrebbe aumentato ma attualmente facendolo si rompre il modell
-  PaiNNModel model(num_atoms, dim, layers, num_rbf, cutoff); 
+  PaiNNModel model(num_species, dim, layers, num_rbf, cutoff); 
   model->to(device);
   torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(1e-5));
 

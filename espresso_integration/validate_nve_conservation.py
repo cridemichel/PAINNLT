@@ -47,6 +47,7 @@ for i in range(num_atoms):
     system.part.add(pos=coords_shifted[i], type=int(atomic_numbers[i]), v=velocities[i])
 
 
+# read json file with model parameters
 config_path = "best_painn_etanolo_config.json"
 
 try:
@@ -57,17 +58,18 @@ try:
     print("\n" + "="*60)
     print("   PARAMETRI ARCHITETTURA PAINN CARICATI DAL JSON")
     print("="*60)
-    print(f" * Numero Atomi (num_atoms):       {nn_config['num_atoms']}")
-    print(f" * Canali Nascosti (dim):          {nn_config['hidden_channels']}")
-    print(f" * Numero Layer (n_layers):        {nn_config['n_layers']}")
-    print(f" * Basi Gaussiane (num_rbf):       {nn_config['num_rbf']}")
-    print(f" * Raggio di Cutoff (cutoff):      {nn_config['cutoff']} Å")
+    print(f" * Number of species (num_species):       {nn_config['num_species']}")
+    print(f" * Hidden Channels (dim):          {nn_config['hidden_channels']}")
+    print(f" * Number of Layers (n_layers):        {nn_config['n_layers']}")
+    print(f" * Gaussian, bases (num_rbf):       {nn_config['num_rbf']}")
+    print(f" * Cutoff Radfius (cutoff):      {nn_config['cutoff']} Å")
     print("="*60 + "\n")
 
 except FileNotFoundError:
-    print(f"\nERRORE CRITICO: Il file di configurazione '{config_path}' non esiste.")
-    print("Assicurati di aver avviato il training C++ almeno una volta per generarlo.")
+    print(f"\nCRITICAL ERROR: Configuration file '{config_path}' does not exist.")
+    print("Make sure you have run the C++ training at least once to generate it.")
     exit(1)
+
 
 # Estraiamo il cutoff convertendolo in float per sicurezza
 model_cutoff = float(nn_config["cutoff"])
@@ -79,7 +81,7 @@ for i in range(10):
 # 4. Attivazione Modello PaiNN
 espressomd.painn.activate_painn_potential(
     model_path="best_painn_etanolo.pt", 
-    num_atoms=int(nn_config["num_atoms"]), 
+    num_species=int(nn_config["num_species"]), 
     hidden_channels=int(nn_config["hidden_channels"]), 
     n_layers=int(nn_config["n_layers"]), 
     num_rbf=int(nn_config["num_rbf"]), 

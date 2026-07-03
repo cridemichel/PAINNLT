@@ -2,6 +2,7 @@ import espressomd
 import espressomd.painn
 import numpy as np
 import struct
+import json
 
 def read_first_frame_md17_bin(filepath):
     with open(filepath, "rb") as f:
@@ -36,13 +37,40 @@ prev_std = None
 system = espressomd.System(box_l=[box_size, box_size, box_size])
 system.cell_system.skin = 0.4
 
+# read json file with model parameters
+config_path = "best_painn_etanolo_config.json"
+
+try:
+    with open(config_path, "r") as f:
+        nn_config = json.load(f)
+    
+    # Stampa verbosa per il controllo scientifico dei parametri
+    print("\n" + "="*60)
+    print("   PARAMETRI ARCHITETTURA PAINN CARICATI DAL JSON")
+    print("="*60)
+    print(f" * Number of species (num_species):       {nn_config['num_species']}")
+    print(f" * Hidden Channels (dim):          {nn_config['hidden_channels']}")
+    print(f" * Number of Layers (n_layers):        {nn_config['n_layers']}")
+    print(f" * Gaussian, bases (num_rbf):       {nn_config['num_rbf']}")
+    print(f" * Cutoff Radfius (cutoff):      {nn_config['cutoff']} Å")
+    print("="*60 + "\n")
+
+except FileNotFoundError:
+    print(f"\nCRITICAL ERROR: Configuration file '{config_path}' does not exist.")
+    print("Make sure you have run the C++ training at least once to generate it.")
+    exit(1)
+
+
 for i in range(10):
     for j in range(i, 10):
-        system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, cutoff=5.0, shift=0.0)
+        system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, 
+                                                               cutoff=float(nn_config['cutoff']), shift=0.0)
         
 espressomd.painn.activate_painn_potential(
     model_path="best_painn_etanolo.pt", 
-    num_atoms=100, hidden_channels=128, n_layers=3, num_rbf=20, cutoff=5.0, device="cpu"
+    num_species=int(nn_config['num_species']), hidden_channels=int(nn_config['hidden_channels']), 
+    n_layers=int(nn_config['n_layers']), num_rbf=int(nn_config['num_rbf']), cutoff=float(nn_config['cutoff']), 
+    device="cpu"
 )
 
 for dt in dt_values:
