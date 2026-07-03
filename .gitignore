@@ -8,3 +8,6 @@ plots
 *.db
 *.xyz
 *.npz
+*.swp
+.viminfo
+*.csv
