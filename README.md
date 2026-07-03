@@ -1,41 +1,30 @@
-TODO LIST 
+Ecco la traduzione del testo in un inglese tecnico, fluido e appropriato per l'ambito del Machine Learning applicato alla dinamica molecolare.
 
-1) normalizzazione dell'energia (aggiungere shift and scale energia) 
+TODO LIST
+Energy normalization (add energy shift and scale)
+SchNetPack addresses the issue of energy magnitudes using two built-in mechanisms that correspond to our "Scale and Shift" approach:
 
-SchNetPack affronta il problema delle grandezze dell'energia con due meccanismi integrati che corrispondono al nostro "Scale and Shift":
+schnetpack.atomistic.Atomref: This module appends the reference energy of the individual isolated atoms (the baseline shift) to the network's final output.
 
-schnetpack.atomistic.Atomref: Questo modulo aggiunge al termine della rete l'energia di riferimento dei singoli atomi isolati (lo shift di base).
+schnetpack.transform.Standardize: During preprocessing, SchNetPack statistically computes the mean and standard deviation of the residual energies or forces and standardizes the output. This ensures that the neural network always operates on values close to zero, leaving the framework to re-multiply and re-add the real values only at the final output stage.
 
-schnetpack.transform.Standardize: Durante il preprocessing, SchNetPack calcola statisticamente la media e la deviazione standard delle energie o delle forze rimaste e standardizza l'output. Questo garantisce che la rete neurale lavori sempre con numeri prossimi allo zero, lasciando che il framework ri-moltiplichi e ri-sommi i valori reali solo al momento dell'output finale.
+Implement cosine cutoff
+If you look inside the schnetpack/nn/cutoff.py directory, you will find an entire class named CosineCutoff. When you declare a PaiNN or SchNet model in SchNetPack, the cutoff_network parameter is initialized with this exact class by default. They use the precise scaled cosine function I suggested to ensure that spatial derivatives smoothly vanish at the boundary of the Neighbor List, thereby preventing discontinuous jumps in the forces.
 
-2) implementare cosine cutoff
+In version 2.0, SchNetPack delegated the entire training loop to PyTorch Lightning. If you check their training configuration files (managed via the Hydra system in the configs/trainer directory), you will find the gradient_clip_val parameter. It is common practice in their tutorials to set this parameter around 0.5 or 1.0. As we discussed, since forces are the derivative of the energy, without this "leash" on the gradient, a single unfortunate short-range repulsion within the batch would permanently ruin the weights of the AdamW optimizer.
 
-Se guardi nella cartella schnetpack/nn/cutoff.py, troverai un'intera classe chiamata CosineCutoff.
-Quando in SchNetPack dichiari il modello PaiNN o SchNet, il parametro cutoff_network viene inizializzato di default proprio con questa classe. Usano esattamente la funzione coseno scalata che ti ho suggerito per garantire che le derivate spaziali scendano a zero in modo continuo sul bordo della Neighbor List, prevenendo salti discontinui delle forze.
-
-3) Nella versione 2.0, SchNetPack ha delegato l'intero loop di addestramento a PyTorch Lightning.
-Se controlli i loro file di configurazione per il training (gestiti tramite il sistema Hydra nella cartella configs/trainer), troverai il parametro gradient_clip_val. È prassi comune nei loro tutorial impostare questo parametro proprio intorno a 0.5 o 1.0. Come abbiamo discusso, poiché le forze sono la derivata dell'energia, senza questo "guinzaglio" al gradiente, una singola repulsione a corto raggio sfortunata nel batch rovinerebbe per sempre i pesi dell'ottimizzatore AdamW.
-
-4) mixed precision
-
+Mixed precision
 
 GROMACS TO BIN
 
-1) dato un gruppo di atomi va preparato uno script che rimpiazzi questo gruppo di atomi
-con un gruppo di siti virtuali e una particella reale o con una singola particella reale.  
-Ad ogni sito virtuale va associato
-un tipo (possiamo usare il numero atomico Z) e un mol_id (molecola a cui appartiene)
-(di questo devo parlare con Laura)
-Se non si hanno siti virtuali la singola particella reale avrà comunque un suo mol_id
+Given a group of atoms, a script must be prepared to replace this group of atoms with a cluster of virtual sites and one real particle, or with a single real particle.
 
-2) nella costruzione delle interazioni in PaiNN atomi con stesso mol_id non dovranno interagire
+Each virtual site must be associated with a type (we can use the atomic number Z) and a mol_id (the molecule it belongs to). (I need to discuss this with Laura).
+If there are no virtual sites, the single real particle will still have its own mol_id.
+When constructing interactions in PaiNN, atoms with the same mol_id must not interact.
+In ESPResSo, virtual sites do not interact with one another, so no action is required there; we just need to import the model and use it as I currently do.
+Most likely, priors will need to be included in the loss function to prevent overlaps (using WCA) or harmonic (or FENE) potentials for bonded atoms.
+The forces in the loss function will be the sum of those predicted by the network and those originating from the priors.
+The overall implementation will be as follows: in ESPResSo, the various virtual sites will still feature a WCA interaction, and certain atom pairs will have a harmonic or FENE interaction. During training, we will need to include these interactions in the loss calculation as explained above.
 
-3) In espresso i siti virtuali tra loro non interagiscono, quindi non si dovrà fare nulla,
-solo importare il modello ed usarlo come già faccio ora.
 
-4) molto probabilmente nella loss andranno inclusi anche i prior per evitare overlaps (usando WCA)
- o potenziali armonici (o FENE) per gli atomi legati.
- Le forze nella loss saranno quelle predette dalla rete + quelle che derivano dai prior.
- Il tutto andrà implementato così: in espresso i vari siti virtuali avranno comunque un'interazione
- WCA e alcune coppie di atomi un'interazione armonica o fene. Nel calcolo della loss nel training
- dovremmo includere queste interazioni come spiegato prima.
