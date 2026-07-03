@@ -1,169 +1,120 @@
 #pragma once
 #include <torch/torch.h>
 #include <cmath>
+#include <vector>
 
 // ============================================================================
-// 1. ESPANSIONE DELLE DISTANZE (Radial Basis Function - RBF)
-// ============================================================================
-struct GaussianRBFImpl : torch::nn::Module {
-    torch::Tensor centers;
-    double gamma;
-
-    GaussianRBFImpl(int num_rbf = 20, double cutoff = 5.0) {
-        // Centri equispaziati tra 0 e cutoff
-        auto c = torch::linspace(0.0, cutoff, num_rbf);
-        centers = register_buffer("centers", c);
-        // Parametro di larghezza della Gaussiana
-        gamma = 1.0 / std::pow((cutoff / num_rbf), 2); 
-    }
-
-    torch::Tensor forward(torch::Tensor distances) {
-        return torch::exp(-gamma * torch::pow(distances.unsqueeze(-1) - centers, 2));
-    }
-};
-TORCH_MODULE(GaussianRBF);
-
-// ============================================================================
-// 2. BLOCCO MESSAGGI (Message Passing)
+// 1. BLOCCO MESSAGGI (Message Passing)
 // ============================================================================
 struct PaiNNMessageImpl : torch::nn::Module {
-    torch::nn::Linear scalar_proj{nullptr};
-    torch::nn::Linear filter_net{nullptr};
-    int hidden_channels;
-
-    PaiNNMessageImpl(int hidden, int num_rbf) : hidden_channels(hidden) {
-        // Proiezione degli scalari (espande a 3 * hidden_channels)
-        scalar_proj = register_module("scalar_proj", torch::nn::Linear(hidden, 3 * hidden));
-        // Rete filtro per le RBF
-        filter_net = register_module("filter_net", torch::nn::Linear(num_rbf, 3 * hidden));
+    torch::nn::Linear scalar_mlp{nullptr}, filter_mlp{nullptr};
+    PaiNNMessageImpl(int dim) {
+        scalar_mlp = register_module("scalar_mlp", torch::nn::Linear(dim, dim * 3));
+        filter_mlp = register_module("filter_mlp", torch::nn::Linear(20, dim * 3)); // 20 num_rbf hardcoded in painn.cpp
     }
-
-    std::tuple<torch::Tensor, torch::Tensor> forward(
-        torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, 
-        torch::Tensor rbf, torch::Tensor r_ij_norm) {
-        
-        auto row = edge_index[0]; // Nodi sorgente
-        auto col = edge_index[1]; // Nodi destinazione
-
-        // Calcola il filtro geometrico dalle distanze
-        auto filter = filter_net(rbf);
-        
-        // Proietta le feature scalari dei vicini
-        auto s_j = scalar_proj(s.index({col}));
-        
-        // Moltiplica le feature scalari per il filtro (Gating)
-        auto gated_s = s_j * filter;
-
-        // Separa il tensore in 3 parti (ognuna di dimensione 'hidden_channels')
-        auto chunks = gated_s.chunk(3, -1);
-        auto s_val = chunks[0];
-        auto v_val1 = chunks[1];
-        auto v_val2 = chunks[2];
-
-        // Aggiornamento dei Vettori (tiene conto della direzionalità r_ij_norm)
-        auto v_j = v.index({col});
-        auto dv_message = v_val1.unsqueeze(1) * v_j + v_val2.unsqueeze(1) * r_ij_norm.unsqueeze(-1);
-        
-        // Aggiornamento degli Scalari
-        auto ds_message = s_val;
-
-        // Aggrega i messaggi sui nodi destinazione (Somma)
-        auto ds = torch::zeros_like(s);
-        auto dv = torch::zeros_like(v);
-        ds.index_add_(0, row, ds_message);
-        dv.index_add_(0, row, dv_message);
-
-        return {ds, dv};
+    std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, torch::Tensor rbf, torch::Tensor r_ij_norm) {
+        auto row = edge_index[0], col = edge_index[1]; 
+        auto w = filter_mlp->forward(rbf); 
+        auto interaction = scalar_mlp->forward(s.index({row})) * w;      
+        auto chunks = interaction.chunk(3, 1);
+        auto delta_v_edges = v.index({row}) * chunks[1].unsqueeze(1) + chunks[2].unsqueeze(1) * r_ij_norm.unsqueeze(2);
+        auto delta_s = torch::zeros_like(s);
+        auto delta_v = torch::zeros_like(v);
+        delta_s.index_add_(0, col, chunks[0]);
+        delta_v.index_add_(0, col, delta_v_edges);
+        return {delta_s, delta_v};
     }
 };
 TORCH_MODULE(PaiNNMessage);
 
 // ============================================================================
-// 3. BLOCCO AGGIORNAMENTO (Update Block)
+// 2. BLOCCO AGGIORNAMENTO (Update Block)
 // ============================================================================
 struct PaiNNUpdateImpl : torch::nn::Module {
-    torch::nn::Linear U{nullptr}, V{nullptr}, mlp_proj1{nullptr}, mlp_proj2{nullptr};
-
-    PaiNNUpdateImpl(int hidden) {
-        U = register_module("U", torch::nn::Linear(hidden, hidden));
-        V = register_module("V", torch::nn::Linear(hidden, hidden));
-        mlp_proj1 = register_module("mlp_proj1", torch::nn::Linear(hidden * 2, hidden));
-        mlp_proj2 = register_module("mlp_proj2", torch::nn::Linear(hidden, hidden));
+    torch::nn::Linear linear_v{nullptr}, linear_u{nullptr};
+    torch::nn::Sequential scalar_mlp{nullptr};
+    PaiNNUpdateImpl(int dim) {
+        linear_v = register_module("linear_v", torch::nn::Linear(dim, dim));
+        linear_u = register_module("linear_u", torch::nn::Linear(dim, dim));
+        scalar_mlp = register_module("scalar_mlp", torch::nn::Sequential(
+            torch::nn::Linear(dim * 2, dim), torch::nn::SiLU(), torch::nn::Linear(dim, dim * 3)
+        ));
     }
-
-    std::tuple<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v) {
-        // Combinazione lineare dei vettori sui canali (l'ultima dimensione è già 128)
-        auto u_v = U(v);
-        auto v_v = V(v);
-       
-        // Norma dei vettori per iniettare l'informazione geometrica negli scalari
-        auto v_norm = torch::norm(v_v, 2, 1);
-        
-        // MLP per aggiornare le feature scalari
-        auto s_in = torch::cat({s, v_norm}, -1);
-        auto ds = mlp_proj2(torch::silu(mlp_proj1(s_in)));
-        
-        // Aggiornamento vettori
-        auto dv = u_v * ds.unsqueeze(1);
-
-        return {ds, dv};
+    std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v) {
+        auto v_v = linear_v->forward(v); 
+        auto v_u = linear_u->forward(v); 
+        auto s_out = scalar_mlp->forward(torch::cat({s, (v_v * v_v).sum(1)}, 1)); 
+        auto chunks = s_out.chunk(3, 1);
+        auto delta_s = chunks[0] + (v_v * v_u).sum(1) * chunks[1]; 
+        return {s + delta_s, v + v_u * chunks[2].unsqueeze(1)};
     }
 };
 TORCH_MODULE(PaiNNUpdate);
 
 // ============================================================================
-// 4. MODELLO COMPLETO (PaiNN)
+// 3. MODELLO COMPLETO (PaiNN)
 // ============================================================================
 struct PaiNNModelImpl : torch::nn::Module {
     torch::nn::Embedding embedding{nullptr};
-    GaussianRBF expansion_rbf{nullptr};
-    torch::nn::ModuleList messages{nullptr};
-    torch::nn::ModuleList updates{nullptr};
+    std::vector<PaiNNMessage> messages;
+    std::vector<PaiNNUpdate> updates;
     torch::nn::Sequential readout{nullptr};
-    
     int num_layers;
 
-    PaiNNModelImpl(int num_atoms, int hidden_channels, int n_layers, int num_rbf = 20, double cutoff = 5.0) 
-        : num_layers(n_layers) {
+    PaiNNModelImpl(int num_embeddings, int dim, int layers, int num_rbf = 20, double cutoff = 5.0) 
+        : num_layers(layers) {
         
-        // 1. Embedding atomico
-        embedding = register_module("embedding", torch::nn::Embedding(num_atoms, hidden_channels));
-        
-        // 2. RBF
-        expansion_rbf = register_module("expansion_rbf", GaussianRBF(num_rbf, cutoff));
-        
-        // 3. Moduli di Message Passing e Update
-        messages = register_module("messages", torch::nn::ModuleList());
-        updates = register_module("updates", torch::nn::ModuleList());
-        
-        for (int i = 0; i < num_layers; ++i) {
-            messages->push_back(PaiNNMessage(hidden_channels, num_rbf));
-            updates->push_back(PaiNNUpdate(hidden_channels));
+        embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
+        for (int i = 0; i < layers; ++i) {
+            messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim)));
+            updates.push_back(register_module("update_" + std::to_string(i), PaiNNUpdate(dim)));
         }
-
-        // 4. Readout finale (da scalari a Energia)
         readout = register_module("readout", torch::nn::Sequential(
-            torch::nn::Linear(hidden_channels, hidden_channels / 2),
-            torch::nn::SiLU(),
-            torch::nn::Linear(hidden_channels / 2, 1)
+            torch::nn::Linear(dim, dim / 2), torch::nn::SiLU(), torch::nn::Linear(dim / 2, 1)
         ));
     }
 
-    // --- FORWARD SLEGATO DA STRUTTURE CUSTOM (PERFETTO PER ESPRESSO) ---
-    torch::Tensor forward(torch::Tensor atomic_numbers, 
-                          torch::Tensor coordinates, 
-                          torch::Tensor edge_index, 
-                          torch::Tensor batch_indices) {
+    // Identica espansione RBF del file painn.cpp
+    torch::Tensor expansion_rbf(torch::Tensor d_ij) {
+        auto centers = torch::linspace(0.0, 5.0, 20, d_ij.options());
+        return torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, 0.5), 2));
+    }
+    
+    // --- METODO INCLUSO PER COMPATIBILITÀ CON PAINN.CPP (TRAINING) ---
+    // Non altera l'integrazione con Quantum ESPRESSO poiché aggiunge solo un overload
+    template <typename BatchType>
+    torch::Tensor forward(BatchType& batch) {
+        auto row = batch.edge_index[0], col = batch.edge_index[1]; 
+        auto r_ij = batch.coordinates.index({col}) - batch.coordinates.index({row});
+        auto d_ij = torch::norm(r_ij, 2, 1) + 1e-8; 
+
+        torch::Tensor s = embedding->forward(batch.atomic_numbers);
+        torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
+
+        auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
+        auto rbf = expansion_rbf(d_ij);
+
+        for (int i = 0; i < num_layers; ++i) {
+            auto [ds, dv] = messages[i]->forward(s, v, batch.edge_index, rbf, r_ij_norm);
+            s = s + ds; v = v + dv;
+            std::tie(s, v) = updates[i]->forward(s, v);
+        }
+
+        torch::Tensor atom_energies = readout->forward(s); 
+        torch::Tensor pred_energy = torch::zeros({batch.energy_true.size(0), 1}, s.options());
+        pred_energy.index_add_(0, batch.batch_indices, atom_energies);
+        return pred_energy;
+    }
+    // --- FORWARD CON R_IJ ESPLICITO (PER ESPRESSO PBC) ---
+    torch::Tensor forward_with_rij(torch::Tensor atomic_numbers, 
+                                   torch::Tensor r_ij,
+                                   torch::Tensor edge_index, 
+                                   torch::Tensor batch_indices) {
         
-        auto row = edge_index[0];
-        auto col = edge_index[1]; 
-        
-        // Vettori distanza (r_ij) e loro norma (d_ij)
-        auto r_ij = coordinates.index({col}) - coordinates.index({row});
         auto d_ij = torch::norm(r_ij, 2, 1) + 1e-8; // 1e-8 evita divisioni per zero
         
         // Inizializzazione Scalari e Vettori
-        torch::Tensor s = embedding(atomic_numbers);
+        torch::Tensor s = embedding->forward(atomic_numbers);
         torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
 
         // Geometria
@@ -172,13 +123,11 @@ struct PaiNNModelImpl : torch::nn::Module {
 
         // Ciclo dei layer
         for (int i = 0; i < num_layers; ++i) {
-            auto msg_out = messages[i]->as<PaiNNMessage>()->forward(s, v, edge_index, rbf, r_ij_norm);
-            s = s + std::get<0>(msg_out);
-            v = v + std::get<1>(msg_out);
+            auto [ds, dv] = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm);
+            s = s + ds; 
+            v = v + dv;
             
-            auto upd_out = updates[i]->as<PaiNNUpdate>()->forward(s, v);
-            s = s + std::get<0>(upd_out);
-            v = v + std::get<1>(upd_out);
+            std::tie(s, v) = updates[i]->forward(s, v);
         }
 
         // Predizione dell'energia atomica
