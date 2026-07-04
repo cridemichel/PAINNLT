@@ -8,6 +8,7 @@
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
 
+// REMARK: a molecule (molecule_id) here is a real particle complemented with its virtual sites
 
 // Assicurati di avere questo file nella stessa cartella
 #include "PaiNN_Architecture.hpp"
