@@ -59,7 +59,10 @@ CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::D
     std::vector<int64_t> site_types_vec, batch_indices_vec, mol_indices_vec;
     std::vector<float> coords_vec, centers_vec, forces_vec, torques_vec;
     std::vector<int64_t> edge_rows, edge_cols;
-    
+    // Esempio per evitare riallocazioni
+    size_t estimated_sites = frames.size() * frames[0].molecules.size();
+    site_types_vec.reserve(estimated_sites);
+    coords_vec.reserve(estimated_sites * 3);
     int site_offset = 0;
     int global_mol_idx = 0;
     float cutoff_sq = cutoff * cutoff;
@@ -419,7 +422,7 @@ int main() {
                 torch::Tensor loss = loss_f + torque_weight * loss_t;
                 loss.backward();
 
-                torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 50.0);
+                torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 1.0);
 #if 0
                 float total_grad_norm = 0.0f;
                 for (const auto& p : model->parameters()) {
