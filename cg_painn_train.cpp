@@ -250,9 +250,9 @@ int main() {
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(1e-5));
     EarlyStopping early_stopping(15, model_path);
 
-    std::ofstream csv_file("training_log.csv");
+    std::ofstream csv_file("cg_training_log.csv");
     if (csv_file.is_open()) {
-        csv_file << "Epoch,Train_Loss,Val_Loss,Val_MAE_Forces,Val_MAE_Torques\n";
+        csv_file << "Epoch,Train_Loss,Val_Loss,Train_MAE_F,Train_MAE_T,Val_MAE_F,Val_MAE_T\n";
     }
 
     // =====================================================================
@@ -294,6 +294,8 @@ int main() {
     for (int epoch = 1; epoch <= max_epochs; ++epoch) {
         model->train();
         float train_loss_tot = 0.0f;
+        float train_mae_forces_tot = 0.0f;  
+        float train_mae_torques_tot = 0.0f; 
 
         // Esempio logica batch (Assumiamo 1 frame per iterazione per semplicità nel template)
         for (const auto& frame : train_dataset) {
@@ -337,6 +339,8 @@ int main() {
             loss.backward();
             optimizer.step();
             train_loss_tot += loss.item<float>();
+            train_mae_forces_tot += torch::l1_loss(pred_mol_forces, batch.target_mol_forces).item<float>();
+            train_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>();
         }
 
         // ---------------------------------------------------------
@@ -395,25 +399,28 @@ int main() {
         // 1. Calcolo delle medie per l'epoca
         // Dividiamo la somma totale per il numero effettivo di frame in ciascun dataset
         float train_loss_avg = train_loss_tot / train_dataset.size(); 
-        
+        float train_mae_forces_avg = train_mae_forces_tot / train_dataset.size();
+        float train_mae_torques_avg = train_mae_torques_tot / train_dataset.size(); 
+   
         float val_loss_avg = val_loss_tot / val_dataset.size(); 
         float val_mae_forces_avg = val_mae_forces_tot / val_dataset.size();
         float val_mae_torques_avg = val_mae_torques_tot / val_dataset.size();
 
-        // 2. LOGGING SU SCHERMO (Usando solo le medie!)
+        // LOGGING SU SCHERMO 
         std::cout << "Epoca [" << epoch << "/" << max_epochs << "]\n"
-                  << "  [TRAIN] Loss Media: " << train_loss_avg << "\n"
-                  << "  [VAL]   Loss Media: " << val_loss_avg 
-                  << " | MAE Forze (Mol): " << val_mae_forces_avg 
+                  << "  [TRAIN] Loss: " << train_loss_avg 
+                  << " | MAE Forze: " << train_mae_forces_avg 
+                  << " | MAE Torques: " << train_mae_torques_avg << "\n"
+                  << "  [VAL]   Loss: " << val_loss_avg 
+                  << " | MAE Forze: " << val_mae_forces_avg 
                   << " | MAE Torques: " << val_mae_torques_avg << "\n";
 
-        // 3. SALVATAGGIO NEL CSV (Usando solo le medie!)
+        // SALVATAGGIO NEL CSV
         if (csv_file.is_open()) {
             csv_file << epoch << "," 
-                     << train_loss_avg << "," 
-                     << val_loss_avg << "," 
-                     << val_mae_forces_avg << "," 
-                     << val_mae_torques_avg << "\n";
+                     << train_loss_avg << "," << val_loss_avg << "," 
+                     << train_mae_forces_avg << "," << train_mae_torques_avg << "," 
+                     << val_mae_forces_avg << "," << val_mae_torques_avg << "\n";
             csv_file.flush();
         }
         early_stopping.check(model, val_loss_avg);
