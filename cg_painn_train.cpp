@@ -339,25 +339,84 @@ int main() {
             train_loss_tot += loss.item<float>();
         }
 
-        // [QUI ANDREBBE IL CICLO DI VALIDAZIONE, simile al train ma con torch::NoGradGuard tranne che per coordinates]
-        // ... (Simuliamo i risultati per l'output)
-        float val_loss = 0.0f; // Calcolata sul val_dataset
-        float val_mae_forces = 0.0f;
-        float val_mae_torques = 0.0f;
+        // ---------------------------------------------------------
+        // CICLO DI VALIDAZIONE
+        // ---------------------------------------------------------
+        model->eval(); // Disabilita Dropout/BatchNorm (se presenti)
+        
+        float val_loss_tot = 0.0f;
+        float val_mae_forces_tot = 0.0f;
+        float val_mae_torques_tot = 0.0f;
 
-        // LOGGING IDENTICO A painn.cpp
-        std::cout << "Epoca [" << epoch << "/" << max_epochs << "]\n"
-                  << "  [TRAIN] Loss Totale: " << train_loss_tot << "\n"
-                  << "  [VAL] Loss: " << val_loss 
-                  << " | MAE Forze (Mol): " << val_mae_forces 
-                  << " | MAE Torques: " << val_mae_torques << "\n";
+        // Iteriamo sul dataset di validazione
+        for (const auto& frame : val_dataset) {
+            std::vector<CGFrame> batch_frames = {frame};
+            CGBatch batch = collate_batch(batch_frames, cutoff, device);
+            
+            // FONDAMENTALE: Richiediamo il gradiente sulle coordinate anche in validazione
+            // altrimenti torch::autograd::grad fallirà!
+            batch.coordinates.set_requires_grad(true);
 
-        if (csv_file.is_open()) {
-            csv_file << epoch << "," << train_loss_tot << "," << val_loss << "," << val_mae_forces << "," << val_mae_torques << "\n";
-            csv_file.flush();
+            auto row = batch.edge_index[0];
+            auto col = batch.edge_index[1];
+            auto r_ij = batch.coordinates.index({row}) - batch.coordinates.index({col});
+
+            torch::Tensor pred_pmf = model->forward_with_rij(batch.site_types, r_ij, batch.edge_index, batch.batch_indices);
+            
+            // 1. Calcolo Forze
+            auto grad_outputs = torch::ones_like(pred_pmf);
+            auto gradients = torch::autograd::grad({pred_pmf}, {batch.coordinates}, {grad_outputs}, true, true);
+            torch::Tensor site_forces = -gradients[0];
+
+            // 2. Aggregazione Forze Molecolari
+            torch::Tensor pred_mol_forces = torch::zeros({batch.num_molecules_in_batch, 3}, site_forces.options());
+            pred_mol_forces.index_add_(0, batch.mol_indices, site_forces);
+
+            // 3. Calcolo e Aggregazione Momenti Torcenti
+            torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
+            torch::Tensor r_vec = batch.coordinates - site_centers; 
+            torch::Tensor site_torques = torch::linalg_cross(r_vec, site_forces);
+            
+            torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
+            pred_mol_torques.index_add_(0, batch.mol_indices, site_torques);
+
+            // 4. Calcolo delle Metriche (Senza backward!)
+            torch::Tensor loss_f = torch::mse_loss(pred_mol_forces, batch.target_mol_forces);
+            torch::Tensor loss_t = torch::mse_loss(pred_mol_torques, batch.target_mol_torques);
+            torch::Tensor loss = loss_f + torque_weight * loss_t;
+
+            val_loss_tot += loss.item<float>();
+            
+            // Calcolo del Mean Absolute Error (MAE) per i log
+            val_mae_forces_tot += torch::l1_loss(pred_mol_forces, batch.target_mol_forces).item<float>();
+            val_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>();
         }
 
-        early_stopping.check(model, val_loss);
+        // 1. Calcolo delle medie per l'epoca
+        // Dividiamo la somma totale per il numero effettivo di frame in ciascun dataset
+        float train_loss_avg = train_loss_tot / train_dataset.size(); 
+        
+        float val_loss_avg = val_loss_tot / val_dataset.size(); 
+        float val_mae_forces_avg = val_mae_forces_tot / val_dataset.size();
+        float val_mae_torques_avg = val_mae_torques_tot / val_dataset.size();
+
+        // 2. LOGGING SU SCHERMO (Usando solo le medie!)
+        std::cout << "Epoca [" << epoch << "/" << max_epochs << "]\n"
+                  << "  [TRAIN] Loss Media: " << train_loss_avg << "\n"
+                  << "  [VAL]   Loss Media: " << val_loss_avg 
+                  << " | MAE Forze (Mol): " << val_mae_forces_avg 
+                  << " | MAE Torques: " << val_mae_torques_avg << "\n";
+
+        // 3. SALVATAGGIO NEL CSV (Usando solo le medie!)
+        if (csv_file.is_open()) {
+            csv_file << epoch << "," 
+                     << train_loss_avg << "," 
+                     << val_loss_avg << "," 
+                     << val_mae_forces_avg << "," 
+                     << val_mae_torques_avg << "\n";
+            csv_file.flush();
+        }
+        early_stopping.check(model, val_loss_avg);
         if (early_stopping.early_stop) {
             std::cout << "[INFO] Addestramento interrotto (Early Stopping).\n";
             break;
