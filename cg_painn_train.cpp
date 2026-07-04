@@ -219,8 +219,21 @@ struct EarlyStopping {
 // =====================================================================
 int main() {
     torch::manual_seed(42);
-    torch::Device device(torch::cuda::is_available() ? torch::kCUDA : torch::kCPU);
-    std::cout << "Utilizzando il device: " << (device.is_cuda() ? "CUDA" : "CPU") << "\n";
+    torch::DeviceType device;
+    std::string device_name;
+
+    if (torch::cuda::is_available()) {
+      device = torch::kCUDA;
+      device_name = "CUDA";
+    } else if (torch::mps::is_available()) {
+      device = torch::kMPS;
+    device_name = "MPS (GPU Mac)"; // <--- Ecco la magia per il tuo Mac!
+    } else {
+      device = torch::kCPU;
+      device_name = "CPU";
+    }
+
+    std::cout << "[INFO] Utilizzando il device: " << device_name << "\n";
 
     // 1. Parametri Rete
     int num_species = 100; // Capienza dizionario siti
