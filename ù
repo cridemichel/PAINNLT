@@ -72,33 +72,9 @@ site_type (int): Il tipo di sito (0, 1, 2...).
 
 x, y, z (float): Le coordinate del sito.
 
-NOTE SU SCRIPT DI CONVERSIONE DA GROMACS
-========================================
+NOTE SU SCRIPT DI CONVERSIONE
+=============================
 Due dettagli a cui prestare attenzione:
 Unità di Misura: GROMACS di default lavora in nanometri (nm). Se nel tuo modello ESPResSo vuoi usare gli Angstrom (Å) o unità ridotte (Lennard-Jones), ricordati di moltiplicare la variabile com nel primo script per il fattore di conversione corretto (es. com * 10 per passare da nm ad Å).
 
 PBC (Periodic Boundary Conditions): Se la tua molecola all-atom nel file .gro è "spezzata" a causa dei bordi periodici della scatola, il calcolo del Centro di Massa darà un risultato sballato. Assicurati di passare il .gro in gmx trjconv -pbc whole prima di darlo in pasto a questo script Python.
-
-STRATEGIE DI MAPPING (convert_gro2bin.py)
-==========================================
-1 (COM). Centro di Massa (Center of Mass - COM)È la strategia di default che ho inserito nello script.
-   Calcola la posizione del sito pesando le coordinate degli atomi in base alla loro massa (es. un
-   atomo di Carbonio "attirerà" il sito verso di sé molto più di un Idrogeno).Quando usarla: È
-   generalmente la scelta migliore per i modelli force-matching come il tuo, perché conserva
-   perfettamente la distribuzione delle masse e la dinamica dei momenti.In MDAnalysis: site_pos =
-   site_atoms.center_of_mass()
-
-2 (COG). Centro di Geometria (Center of Geometry - COG) Calcola la posizione
-   del sito come una semplice media aritmetica delle coordinate (X, Y, Z) degli atomi del gruppo,
-   ignorando le loro masse reali.Quando usarla: Spesso usata in modelli geometrici o se vuoi che il
-   sito si trovi esattamente al centro dello "spazio" occupato dal gruppo di atomi, a prescindere da
-   quali siano gli atomi pesanti.In MDAnalysis: site_pos = site_atoms.center_of_geometry()
-
-3. (ATOM) Atomo
-   di Riferimento (Atom-centered Mapping)Invece di fare medie, si sceglie un atomo "guida"
-   (solitamente quello centrale o più pesante del gruppo) e si assegna al sito CG l'esatta posizione
-   di quell'atomo. Gli altri atomi del gruppo vengono considerati "assorbiti" da esso.Quando usarla:
-   È diffusissima per le proteine (dove si usa spessissimo il Carbonio Alfa, $C_\alpha$, come unico
-   sito per l'intero amminoacido) o per i solventi.In MDAnalysis: Se, ad esempio, metti l'atomo
-   guida sempre per primo nella lista del tuo dizionario mapping_scheme:site_pos =
-   site_atoms[0].position

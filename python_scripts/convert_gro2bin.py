@@ -1,142 +1,121 @@
-import numpy as np
 import MDAnalysis as mda
+import numpy as np
 import struct
-import os
 
-def calcola_proprieta_gruppo(positions, forces, masses):
-    """
-    Calcola il Centro di Massa, gli Assi Principali e proietta le forze
-    per un singolo gruppo di atomi preservando Forze Nette e Momenti Torcenti (Torque).
-    """
-    total_mass = np.sum(masses)
-    # 1. Centro di Massa (Sito 1)
-    com = np.sum(positions * masses[:, np.newaxis], axis=0) / total_mass
-    
-    # Forza netta sul Centro di Massa
-    net_force = np.sum(forces, axis=0)
-    
-    # 2. Calcolo degli Assi Principali tramite Tensore d'Inerzia
-    pos_rel = positions - com
-    inertia_tensor = np.zeros((3, 3))
-    for m, r in zip(masses, pos_rel):
-        inertia_tensor += m * (np.dot(r, r) * np.eye(3) - np.outer(r, r))
-    
-    # Autovettori (gli assi principali sono le colonne di v)
-    _, v = np.linalg.eigh(inertia_tensor)
-    asse_x = v[:, 0] # Primo asse principale
-    asse_y = v[:, 1] # Secondo asse principale
-    
-    # 3. Posizionamento dei Siti Virtuali (Distanza fissa di 1.0 Angstrom dal COM)
-    d = 1.0 
-    sito2_pos = com + d * asse_x
-    sito3_pos = com + d * asse_y
-    
-    # 4. Proiezione del Torque sulle forze dei siti virtuali
-    # Calcoliamo il Torque totale generato dalle forze atomiche rispetto al COM
-    torque_totale = np.sum(np.cross(pos_rel, forces), axis=0)
-    
-    # Ripartiamo il torque applicando forze opposte sui siti virtuali (coppia di forze)
-    # Per semplicità geometrica e stabilità del Force Matching:
-    f_sito2 = np.cross(torque_totale, asse_x) / (2.0 * d)
-    f_sito3 = np.cross(torque_totale, asse_y) / (2.0 * d)
-    
-    # La forza sul sito 1 (COM) assorbe il resto per garantire la risultante traslazionale
-    f_sito1 = net_force - (f_sito2 + f_sito3)
-    
-    coords = np.vstack([com, sito2_pos, sito3_pos])
-    sito_forces = np.vstack([f_sito1, f_sito2, f_sito3])
-    
-    return coords, sito_forces
+# =====================================================================
+# 1. IMPOSTAZIONI E MAPPING
+# =====================================================================
+topology_file = "topologia.tpr"
+trajectory_file = "traiettoria.trr" 
+u = mda.Universe(topology_file, trajectory_file)
 
-def converti_gromacs_a_cg_bin(tpr_path, trr_path, out_bin_path, index_gruppi):
-    """
-    Legge una traiettoria GROMACS e genera il file binario per PaiNN C++.
-    index_gruppi: lista di liste contenente gli indici (0-indexed) degli atomi 
-                  che compongono ciascun macro-gruppo Coarse-Grained.
-    """
-    print(f"Caricamento topologia {tpr_path} e traiettoria {trr_path}...")
-    u = mda.Universe(tpr_path, trr_path)
+# --- SCELTA DELLA STRATEGIA DI MAPPING ---
+# Scegli tra:
+# "COM"  -> Centro di Massa (consigliato per force-matching)
+# "COG"  -> Centro di Geometria (media aritmetica delle posizioni)
+# "ATOM" -> Atomo di riferimento (usa l'esatta posizione del PRIMO atomo elencato nella lista)
+MAPPING_METHOD = "COM" 
+
+mapping_by_resname = {
+    "GUA": {  
+        # Se usi il metodo "ATOM", l'atomo di riferimento sarà il primo della lista (es. "N9" per CG_G1)
+        "CG_G1": ["N9", "C8"], # questo vuol dire che gli atomi N9 e C8 vengono "raggruppati" in CG_G1
+        "CG_G2": ["N7", "C5"],
+        "CG_G3": ["C4", "N3"],
+        "CG_G4": ["C2", "N1"],
+        "CG_G5": ["C6", "O6"],
+        "CG_G6": ["C1*", "C2*", "C3*"] 
+    },
+    "ETH": {
+        "CG_CH3": ["C1", "H1", "H2", "H3"],
+        "CG_CH2": ["C2", "H4", "H5"],
+        "CG_OH":  ["O1", "H6"]
+    }
+}
+
+site_types = {
+    "CG_G1": 0, "CG_G2": 1, "CG_G3": 2, "CG_G4": 3, "CG_G5": 4, "CG_G6": 5,
+    "CG_CH3": 6, "CG_CH2": 7, "CG_OH": 8
+}
+
+# =====================================================================
+# 2. ELABORAZIONE E SCRITTURA DEL FILE BINARIO
+# =====================================================================
+output_bin = "cg_dataset.bin"
+
+with open(output_bin, "wb") as f:
     
     num_frames = len(u.trajectory)
-    num_groups = len(index_gruppi)
-    num_sites_tot = num_groups * 3 # Ogni gruppo produce 3 siti nel file binario
+    f.write(struct.pack("i", num_frames))
     
-    # Definiamo gli ID dei tipi per PaiNN (es. Tipo 1 per il COM, Tipo 2 e 3 per i siti virtuali dell'asse X e Y)
-    # Questo array si ripete identico per ogni frame
-    atomic_numbers = []
-    for g_idx in range(num_groups):
-        atomic_numbers.extend([1, 2, 3]) # ID arbitrari per la GNN
-    atomic_numbers = np.array(atomic_numbers, dtype=np.int32)
+    print(f"[INFO] Inizio elaborazione di {num_frames} frame con metodo di mapping: {MAPPING_METHOD}...")
     
-    print(f"Traiettoria rilevata: {num_frames} frame.")
-    print(f"Struttura CG: {num_groups} gruppi -> {num_sites_tot} siti totali nel grafo PaiNN.")
-    
-    # Apertura del file binario in scrittura
-    with open(out_bin_path, "wb") as f:
-        # 1. HEADER: Numero di frame e Numero totale di SITI (nodi del grafo)
-        f.write(struct.pack('ii', num_frames, num_sites_tot))
+    for ts in u.trajectory:
+        valid_residues = [res for res in u.residues if res.resname in mapping_by_resname]
+        num_molecules = len(valid_residues)
+        num_total_sites = sum(len(mapping_by_resname[res.resname]) for res in valid_residues)
         
-        # 2. LOOP SUI FRAME
-        for frame_idx, ts in enumerate(u.trajectory):
-            # Nota: GROMACS salva le forze nel file .trr. MDAnalysis le espone in u.atoms.forces
-            if not hasattr(u.atoms, 'forces'):
-                raise RuntimeError("Il file di traiettoria non contiene le forze! Assicurati di usare un file .trr compilato con nstfout > 0.")
+        f.write(struct.pack("i", num_molecules))
+        f.write(struct.pack("i", num_total_sites))
+        
+        for mol_id, residue in enumerate(valid_residues):
+            resname = residue.resname
+            current_mapping = mapping_by_resname[resname]
+            num_sites = len(current_mapping)
             
-            frame_coords = []
-            frame_forces = []
+            # --- CALCOLO GRANDEZZE FISICHE MOLECOLARI ---
+            atoms = residue.atoms
+            positions_aa = atoms.positions
+            forces_aa = atoms.forces
             
-            # Per questa simulazione CG l'energia potenziale totale del frame all-atom (se disponibile) 
-            # può essere estratta, altrimenti usiamo 0.0 (ci concentreremo sul Force Matching tramite i gradienti)
-            energia_potenziale = 0.0 
+            center = atoms.center_of_mass()
+            total_force = np.sum(forces_aa, axis=0)
             
-            for gruppo in index_gruppi:
-                # Estraiamo posizioni, forze e masse degli atomi appartenenti a questo blocco CG
-                ag = u.atoms[gruppo]
-                pos = ag.positions      # In Angstrom
-                forces = ag.forces      # In kJ/(mol * A) - Unità standard di MDAnalysis per GROMACS
-                masses = ag.masses      # In unità di massa atomica
+            r_vec = positions_aa - center
+            torques_aa = np.cross(r_vec, forces_aa)
+            total_torque = np.sum(torques_aa, axis=0)
+            
+            f.write(struct.pack("i", mol_id))
+            f.write(struct.pack("i", num_sites))
+            f.write(struct.pack("3f", *center))
+            f.write(struct.pack("3f", *total_force))
+            f.write(struct.pack("3f", *total_torque))
+            
+            # --- CALCOLO POSIZIONI DEI SITI CG ---
+            for site_name, atom_names in current_mapping.items():
                 
-                # Elaborazione geometrica e Force Matching
-                coords_cg, forze_cg = calcola_proprieta_gruppo(pos, forces, masses)
+                selection_string = "name " + " ".join(atom_names)
+                site_atoms = atoms.select_atoms(selection_string)
                 
-                frame_coords.append(coords_cg)
-                frame_forces.append(forze_cg)
-            
-            # Compattiamo i dati del frame corrente
-            frame_coords = np.vstack(frame_coords).astype(np.float64) # (NumSiti, 3)
-            frame_forces = np.vstack(frame_forces).astype(np.float64) # (NumSiti, 3)
-            
-            # Scrittura binaria continua (coerente con il lettore C++)
-            # Energia (1 double)
-            f.write(struct.pack('d', energia_potenziale))
-            # Numeri atomici (N int)
-            f.write(atomic_numbers.tobytes())
-            # Coordinate (N*3 double)
-            f.write(frame_coords.tobytes())
-            # Forze (N*3 double)
-            f.write(frame_forces.tobytes())
-            
-            if (frame_idx + 1) % 100 == 0 or (frame_idx + 1) == num_frames:
-                print(f" -> Elaborati {frame_idx + 1}/{num_frames} frame...")
+                if len(site_atoms) == 0:
+                    print(f"[WARNING] Nessun atomo trovato per il sito {site_name} nella molecola {resname} (ID {mol_id})")
+                    continue
+                
+                # --- LOGICA DI MAPPING CONFIGURABILE ---
+                if MAPPING_METHOD == "COM":
+                    site_pos = site_atoms.center_of_mass()
+                
+                elif MAPPING_METHOD == "COG":
+                    site_pos = site_atoms.center_of_geometry()
+                
+                elif MAPPING_METHOD == "ATOM":
+                    # MDAnalysis potrebbe non mantenere l'ordine della stringa di selezione.
+                    # Per essere sicuri, selezioniamo esplicitamente il PRIMO atomo della lista
+                    ref_atom_name = atom_names[0]
+                    ref_atom = atoms.select_atoms(f"name {ref_atom_name}")
+                    
+                    if len(ref_atom) == 0:
+                        print(f"[ERRORE] Atomo di riferimento {ref_atom_name} non trovato!")
+                        site_pos = np.zeros(3) # Fallback di sicurezza
+                    else:
+                        site_pos = ref_atom.positions[0]
+                
+                else:
+                    raise ValueError(f"Metodo di mapping '{MAPPING_METHOD}' non supportato!")
+                
+                site_type = site_types[site_name]
+                
+                f.write(struct.pack("i", site_type))
+                f.write(struct.pack("3f", *site_pos))
 
-    print(f"Conversione completata! File salvato in: {out_bin_path}")
-
-# =====================================================================
-# ESEMPIO DI UTILIZZO
-# =====================================================================
-if __name__ == "__main__":
-    # Supponiamo di avere una molecola mappata in 2 macro-gruppi.
-    # Gruppo 0 contiene gli atomi con indice 0, 1, 2, 3, 4
-    # Gruppo 1 contiene gli atomi con indice 5, 6, 7, 8
-    mappatura_beads = [
-        [0, 1, 2, 3, 4],
-        [5, 6, 7, 8]
-    ]
-    
-    # Sostituisci con i percorsi reali dei tuoi file GROMACS (.tpr e .trr con FORZE)
-    converti_gromacs_a_cg_bin(
-        tpr_path="simulazione_aa.tpr",
-        trr_path="simulazione_aa.trr", 
-        out_bin_path="coarse_grained_train.bin",
-        index_gruppi=mappatura_beads
-    )
+print(f"[INFO] Dataset generato con successo in {output_bin}!")
