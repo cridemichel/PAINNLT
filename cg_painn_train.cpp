@@ -274,10 +274,10 @@ int main() {
 
     // 1. Parametri Rete
     int num_species = 100; 
-    int dim = 64;
-    int layers = 2;
-    int num_rbf = 20; 
-    float cutoff = 0.5f;
+    int dim = 120;
+    int layers = 3;
+    int num_rbf = 50; 
+    float cutoff = 0.6f;
     std::string model_path = "best_cg_model.pt";
 
     // Salvataggio JSON
