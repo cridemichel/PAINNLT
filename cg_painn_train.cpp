@@ -295,7 +295,7 @@ int main() {
     PaiNNModel model(num_species, dim, layers, num_rbf, cutoff);
     model->to(device);
 
-    // Iperparametri Training
+    // Iperparametri Training (Riportato a 1e-3 perché la L1 Loss è stabile!)
     float initial_lr = 1e-3;
     float current_lr = initial_lr; 
     float torque_weight = 0.0f; 
@@ -354,9 +354,8 @@ int main() {
             train_batch_frames.push_back(train_dataset[i]);
             if (train_batch_frames.size() == batch_size || i == train_dataset.size() - 1) {
                 optimizer.zero_grad();
-                //std::cout << "[DEBUG] Avvio collate_batch (Costruzione Grafo)..." << std::endl; 
+                
                 CGBatch batch = collate_batch(train_batch_frames, cutoff, device, bx, by, bz);
-                //std::cout << "[DEBUG] collate_batch terminato. Numero archi nel grafo: " << batch.edge_index.size(1) << std::endl;
                 batch.coordinates.set_requires_grad(true);
 
                 auto row = batch.edge_index[0];
@@ -366,29 +365,28 @@ int main() {
                 torch::Tensor pos_col = batch.coordinates.index_select(0, col);
                 auto r_ij = pos_row - pos_col;
                 
-                // 🌟 FIX 1: Applicazione delle PBC al vettore r_ij (Minimum Image Convention)
+                // Applicazione delle PBC al vettore r_ij
                 auto box_tensor = torch::tensor({bx, by, bz}, r_ij.options());
                 r_ij = r_ij - box_tensor * torch::round(r_ij / box_tensor);
-                //std::cout << "[DEBUG] Avvio Forward del Modello PaiNN su GPU..." << std::endl;
-                // Forward della rete con r_ij corretto per le PBC
+                
                 torch::Tensor pred_pmf = model->forward_with_rij(batch.site_types, r_ij, batch.edge_index, batch.batch_indices);
                 
                 // 1. Calcolo Forze sui singoli SITI
-                //std::cout << "[DEBUG] Forward terminato. Calcolo delle forze tramite autograd.grad..." << std::endl;
                 auto grad_outputs = torch::ones_like(pred_pmf);
                 auto gradients = torch::autograd::grad({pred_pmf}, {batch.coordinates}, {grad_outputs}, true, true);
                 torch::Tensor site_forces = -gradients[0]; 
-                //std::cout << "[DEBUG] Forze calcolate con successo!" << std::endl;
+                
                 // 2. Aggregazione Forze Molecolari
                 torch::Tensor pred_mol_forces = torch::zeros({batch.num_molecules_in_batch, 3}, site_forces.options());
                 pred_mol_forces.index_add_(0, batch.mol_indices, site_forces);
 
                 // 3. Calcolo e Aggregazione Momenti Torcenti
                 torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
-                
-                // 🌟 NOTA PBC per r_vec: Se i siti virtuali sono generati già all'interno dello stesso box 
-                // rispetto al centro geometrico della molecola, non serve la correzione qui. 
                 torch::Tensor r_vec = batch.coordinates - site_centers; 
+                
+                // Applicazione PBC a r_vec per coerenza con la Validation
+                r_vec = r_vec - box_tensor * torch::round(r_vec / box_tensor);
+                
                 torch::Tensor site_torques = torch::linalg_cross(r_vec, site_forces);
                 
                 torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
@@ -399,20 +397,12 @@ int main() {
                 torch::Tensor torque_mask = (sites_per_mol > 1).to(torch::kFloat32); 
                 float num_valid_mols = torque_mask.sum().item<float>();
 
-                // 🌟 FIX 2: Scalatura bilanciata sia per le Forze che per i Torques
-                float force_scale = 100.0f;
-                float torque_scale = 100.0f; // Aggiunto per evitare che i torques dominino la loss di 625 volte!
-                
-                torch::Tensor scaled_pred_f = pred_mol_forces / force_scale;
-                torch::Tensor scaled_target_f = batch.target_mol_forces / force_scale;
-                torch::Tensor loss_f = torch::mse_loss(scaled_pred_f, scaled_target_f);
+                // 🌟 FIX PRINCIPALE: Rimossa la scalatura e introdotta la L1 Loss!
+                torch::Tensor loss_f = torch::l1_loss(pred_mol_forces, batch.target_mol_forces);
 
                 torch::Tensor loss_t;
                 if (num_valid_mols > 0) {
-                    torch::Tensor scaled_pred_t = pred_mol_torques / torque_scale;
-                    torch::Tensor scaled_target_t = batch.target_mol_torques / torque_scale;
-                    
-                    torch::Tensor loss_t_raw = torch::mse_loss(scaled_pred_t, scaled_target_t, torch::Reduction::None);
+                    torch::Tensor loss_t_raw = torch::l1_loss(pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
                     torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
                     loss_t = loss_t_masked.sum() / (num_valid_mols * 3.0f);
                 } else {
@@ -423,25 +413,14 @@ int main() {
                 loss.backward();
 
                 torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 1.0);
-#if 0
-                float total_grad_norm = 0.0f;
-                for (const auto& p : model->parameters()) {
-                  if (p.grad().defined()) {
-                    total_grad_norm += p.grad().norm().item<float>();
-                  }
-                }
-                std::cout << "[DEBUG] Epoca " << epoch << " | Norma Gradiente: " << total_grad_norm << "\n";
-#endif
                 optimizer.step();
 
                 float current_batch_weight = static_cast<float>(train_batch_frames.size());
                 train_loss_tot += loss.item<float>() * current_batch_weight;
-                train_mae_forces_tot += torch::l1_loss(pred_mol_forces, batch.target_mol_forces).item<float>() * current_batch_weight;
+                train_mae_forces_tot += loss_f.item<float>() * current_batch_weight; 
                 
                 if (num_valid_mols > 0) {
-                    torch::Tensor mae_t_raw = torch::abs(pred_mol_torques - batch.target_mol_torques);
-                    torch::Tensor mae_t_masked = mae_t_raw * torque_mask.unsqueeze(-1);
-                    train_mae_torques_tot += (mae_t_masked.sum().item<float>() / (num_valid_mols * 3.0f)) * current_batch_weight;
+                    train_mae_torques_tot += loss_t.item<float>() * current_batch_weight;
                     train_torque_frames += train_batch_frames.size();
                 }
 
@@ -477,7 +456,6 @@ int main() {
                 torch::Tensor pos_col = batch.coordinates.index_select(0, col);
                 auto r_ij = pos_row - pos_col; 
                 
-                // 🌟 FIX 1: Applicazione delle PBC al vettore r_ij (Anche in Validazione)
                 auto box_tensor = torch::tensor({bx, by, bz}, r_ij.options());
                 r_ij = r_ij - box_tensor * torch::round(r_ij / box_tensor);
 
@@ -495,8 +473,7 @@ int main() {
                 // 3. Calcolo e Aggregazione Momenti Torcenti
                 torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
                 torch::Tensor r_vec = batch.coordinates - site_centers; 
-                // Applicazione PBC a r_vec
-                box_tensor = torch::tensor({bx, by, bz}, r_vec.options());
+                
                 r_vec = r_vec - box_tensor * torch::round(r_vec / box_tensor);
                 torch::Tensor site_torques = torch::linalg_cross(r_vec, site_forces);
                 
@@ -508,20 +485,12 @@ int main() {
                 torch::Tensor torque_mask = (sites_per_mol > 1).to(torch::kFloat32);
                 float num_valid_mols = torque_mask.sum().item<float>();
 
-                // 🌟 FIX 2: Scalatura bilanciata in Validazione
-                float force_scale = 25.0f;
-                float torque_scale = 25.0f;
-
-                torch::Tensor scaled_pred_f = pred_mol_forces / force_scale;
-                torch::Tensor scaled_target_f = batch.target_mol_forces / force_scale;
-                torch::Tensor loss_f = torch::mse_loss(scaled_pred_f, scaled_target_f);
+                // 🌟 FIX PRINCIPALE: Loss e Modelli IDENTICI al ciclo di Train
+                torch::Tensor loss_f = torch::l1_loss(pred_mol_forces, batch.target_mol_forces);
                 torch::Tensor loss_t;
 
                 if (num_valid_mols > 0) {
-                    torch::Tensor scaled_pred_t = pred_mol_torques / torque_scale;
-                    torch::Tensor scaled_target_t = batch.target_mol_torques / torque_scale;
-
-                    torch::Tensor loss_t_raw = torch::mse_loss(scaled_pred_t, scaled_target_t, torch::Reduction::None);
+                    torch::Tensor loss_t_raw = torch::l1_loss(pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
                     torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
                     loss_t = loss_t_masked.sum() / (num_valid_mols * 3.0f);
                 } else {
@@ -532,12 +501,10 @@ int main() {
                 
                 float current_batch_weight = static_cast<float>(val_batch_frames.size());
                 val_loss_tot += loss.item<float>() * current_batch_weight;
-                val_mae_forces_tot += torch::l1_loss(pred_mol_forces, batch.target_mol_forces).item<float>() * current_batch_weight;
+                val_mae_forces_tot += loss_f.item<float>() * current_batch_weight;
                 
                 if (num_valid_mols > 0) {
-                    torch::Tensor mae_t_raw = torch::abs(pred_mol_torques - batch.target_mol_torques);
-                    torch::Tensor mae_t_masked = mae_t_raw * torque_mask.unsqueeze(-1);
-                    val_mae_torques_tot += (mae_t_masked.sum().item<float>() / (num_valid_mols * 3.0f)) * current_batch_weight;
+                    val_mae_torques_tot += loss_t.item<float>() * current_batch_weight;
                     val_torque_frames += val_batch_frames.size();
                 }
 
@@ -571,7 +538,6 @@ int main() {
             csv_file.flush();
         }
 
-        // 🌟 FIX 3: Logica corretta dello Scheduler del Learning Rate
         if (val_loss_avg < best_val_loss) {
             best_val_loss = val_loss_avg;
             lr_counter = 0; 
@@ -583,7 +549,6 @@ int main() {
                     current_lr = 1e-6f;
                 }
                 
-                // Ora l'ottimizzatore viene aggiornato sempre correttamente
                 for (auto& param_group : optimizer.param_groups()) {
                     static_cast<torch::optim::AdamWOptions&>(param_group.options()).lr(current_lr);
                 }
@@ -601,4 +566,3 @@ int main() {
 
     return 0;
 }
-
