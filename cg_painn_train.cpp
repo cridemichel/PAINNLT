@@ -529,8 +529,8 @@ int main() {
                 progress_bar(static_cast<double>(i + 1) / val_dataset.size());
                 val_batch_frames.clear();
             }
-                std::cout << "\n";
         }
+        std::cout << "\n";
 
         float train_loss_avg = train_loss_tot / train_dataset.size(); 
         float train_mae_forces_avg = train_mae_forces_tot / train_dataset.size();
