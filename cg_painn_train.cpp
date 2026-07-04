@@ -259,10 +259,14 @@ int main() {
 
     // Iperparametri Training
     float initial_lr = 1e-3;
+    float current_lr = initial_lr; 
     float torque_weight = 1.0f; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.0));
     EarlyStopping early_stopping(15, model_path);
-
+    // 🌟 VARIABILI PER LO SCHEDULER
+    int lr_patience = 5; 
+    int lr_counter = 0;
+    float best_val_loss = std::numeric_limits<float>::max();
     std::ofstream csv_file("cg_training_log.csv");
     if (csv_file.is_open()) {
         csv_file << "Epoch,Train_Loss,Val_Loss,Train_MAE_F,Train_MAE_T,Val_MAE_F,Val_MAE_T\n";
@@ -508,11 +512,32 @@ int main() {
                      << val_mae_forces_avg << "," << val_mae_torques_avg << "\n";
             csv_file.flush();
         }
-        
+        // 🌟 LOGICA DELLO SCHEDULER (ReduceLROnPlateau manuale)
+        if (val_loss_avg < best_val_loss) {
+          best_val_loss = val_loss_avg;
+          lr_counter = 0; // Reset del contatore se c'è un miglioramento
+        } else {
+          lr_counter++;
+          if (lr_counter >= lr_patience) {
+            current_lr *= 0.5f; // Dimezza il Learning Rate
+
+            // Evitiamo che il LR diventi microscopicamente inutile
+            if (current_lr < 1e-6f) {
+              current_lr = 1e-6f;
+            } else {
+              // Aggiorna fisicamente il LR nell'ottimizzatore
+              for (auto& param_group : optimizer.param_groups()) {
+                static_cast<torch::optim::AdamWOptions&>(param_group.options()).lr(current_lr);
+              }
+              std::cout << "  ---> [Scheduler] Plateau raggiunto. Learning Rate abbassato a: " << current_lr << "\n";
+            }
+            lr_counter = 0; // Reset per attendere il prossimo plateau
+          }
+        }
         early_stopping.check(model, val_loss_avg);
         if (early_stopping.early_stop) {
-            std::cout << "[INFO] Addestramento interrotto (Early Stopping).\n";
-            break;
+          std::cout << "[INFO] Addestramento interrotto (Early Stopping).\n";
+          break;
         }
     }
 
