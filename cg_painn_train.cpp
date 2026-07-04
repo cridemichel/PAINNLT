@@ -236,8 +236,8 @@ int main() {
 
     // 1. Parametri Rete
     int num_species = 100; 
-    int dim = 128;
-    int layers = 3;
+    int dim = 64;
+    int layers = 2;
     int num_rbf = 20; 
     float cutoff = 5.0f;
     std::string model_path = "best_cg_model.pt";
@@ -261,7 +261,7 @@ int main() {
     float initial_lr = 1e-3;
     float current_lr = initial_lr; 
     float torque_weight = 1.0f; 
-    torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.0));
+    torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.001));
     EarlyStopping early_stopping(15, model_path);
     // 🌟 VARIABILI PER LO SCHEDULER
     int lr_patience = 5; 
@@ -302,7 +302,7 @@ int main() {
               << "       - Val:   " << val_dataset.size() << " frames\n\n";
 
     int max_epochs = 500;
-    int batch_size = 4; // 🌟 Dimensione del Mini-Batch configurata
+    int batch_size = 16; // 🌟 Dimensione del Mini-Batch configurata
     
     // ---------------------------------------------------------
     // CICLO DI ADDESTRAMENTO
@@ -360,7 +360,14 @@ int main() {
                 float num_valid_mols = torque_mask.sum().item<float>();
 
                 // 4. LOSS (Moltiplicata per il numero di frame effettivi nel batch per scalare correttamente le medie finali)
-                torch::Tensor loss_f = torch::mse_loss(pred_mol_forces, batch.target_mol_forces);
+                // 4. Calcolo delle Metriche di Validazione
+                // ✅ DOPO (Dividiamo per un fattore di scala pari al MAE medio iniziale, es. 25.0):
+                float force_scale = 25.0f;
+                torch::Tensor scaled_pred = pred_mol_forces / force_scale;
+                torch::Tensor scaled_target = batch.target_mol_forces / force_scale;
+
+                torch::Tensor loss_f = torch::mse_loss(scaled_pred, scaled_target);
+
                 torch::Tensor loss_t;
 
                 if (num_valid_mols > 0) {
@@ -458,7 +465,12 @@ int main() {
                 float num_valid_mols = torque_mask.sum().item<float>();
 
                 // 4. Calcolo delle Metriche di Validazione
-                torch::Tensor loss_f = torch::mse_loss(pred_mol_forces, batch.target_mol_forces);
+                // ✅ DOPO (Dividiamo per un fattore di scala pari al MAE medio iniziale, es. 25.0):
+                float force_scale = 25.0f;
+                torch::Tensor scaled_pred = pred_mol_forces / force_scale;
+                torch::Tensor scaled_target = batch.target_mol_forces / force_scale;
+
+                torch::Tensor loss_f = torch::mse_loss(scaled_pred, scaled_target);
                 torch::Tensor loss_t;
 
                 if (num_valid_mols > 0) {
