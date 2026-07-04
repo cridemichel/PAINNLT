@@ -17,16 +17,16 @@ u = mda.Universe(topology_file, trajectory_file)
 MAPPING_METHOD = "COM" 
 
 mapping_by_resname = {
-    "GUA": {  
+    "GUA": {  # questo sarà il corpo rigido in espresso composto da 6 siti (CG_G1, CG_G2, ecc.)
         # Se usi il metodo "ATOM", l'atomo di riferimento sarà il primo della lista (es. "N9" per CG_G1)
         "CG_G1": ["N9", "C8"], # questo vuol dire che gli atomi N9 e C8 vengono "raggruppati" in CG_G1
-        "CG_G2": ["N7", "C5"],
-        "CG_G3": ["C4", "N3"],
+        "CG_G2": ["N7", "C5"], # N9, C8, ecc. devono essere i nomi assegnati da GROMACS ai vari atomi
+        "CG_G3": ["C4", "N3"], # mentre CG_XX sono nomi arbitrari che servono solo per il mapping 
         "CG_G4": ["C2", "N1"],
         "CG_G5": ["C6", "O6"],
         "CG_G6": ["C1*", "C2*", "C3*"] 
     },
-    "ETH": {
+    "ETH": { # questo sarà il corpo rigido in espresso composto da 6 siti (CG_G1, CG_G2, ecc.)
         "CG_CH3": ["C1", "H1", "H2", "H3"],
         "CG_CH2": ["C2", "H4", "H5"],
         "CG_OH":  ["O1", "H6"]
