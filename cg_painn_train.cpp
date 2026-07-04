@@ -239,7 +239,7 @@ int main() {
     int dim = 128;
     int layers = 3;
     int num_rbf = 20; 
-    float cutoff = 1.5f;
+    float cutoff = 5.0f;
     std::string model_path = "best_cg_model.pt";
 
     // Salvataggio JSON
@@ -324,8 +324,11 @@ int main() {
 
                 auto row = batch.edge_index[0];
                 auto col = batch.edge_index[1];
-                auto r_ij = batch.coordinates.index({row}) - batch.coordinates.index({col});
 
+                // index_select mantiene traccia delle derivate!
+                torch::Tensor pos_row = batch.coordinates.index_select(0, row);
+                torch::Tensor pos_col = batch.coordinates.index_select(0, col);
+                auto r_ij = pos_row - pos_col;
                 // Forward della rete
                 torch::Tensor pred_pmf = model->forward_with_rij(batch.site_types, r_ij, batch.edge_index, batch.batch_indices);
                 
@@ -379,7 +382,7 @@ int main() {
                 }
                 std::cout << "[DEBUG] Epoca " << epoch << " | Norma Gradiente Reale: " << total_grad_norm << "\n";
 #endif
-                torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 5.0);
+                torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 50.0);
                 optimizer.step();
 
                 // Accumulo metriche pesate sulla dimensione del batch corrente
@@ -417,10 +420,14 @@ int main() {
                 CGBatch batch = collate_batch(val_batch_frames, cutoff, device);
                 batch.coordinates.set_requires_grad(true);
 
+                // ✅ LA SOLUZIONE CORRETTA (Sia in Train che in Val)
                 auto row = batch.edge_index[0];
                 auto col = batch.edge_index[1];
-                auto r_ij = batch.coordinates.index({row}) - batch.coordinates.index({col});
 
+                // index_select mantiene traccia delle derivate!
+                torch::Tensor pos_row = batch.coordinates.index_select(0, row);
+                torch::Tensor pos_col = batch.coordinates.index_select(0, col);
+                auto r_ij = pos_row - pos_col; 
                 torch::Tensor pred_pmf = model->forward_with_rij(batch.site_types, r_ij, batch.edge_index, batch.batch_indices);
                 
                 // 1. Calcolo Forze
