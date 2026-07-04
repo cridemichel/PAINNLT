@@ -277,7 +277,7 @@ int main() {
     int dim = 64;
     int layers = 2;
     int num_rbf = 20; 
-    float cutoff = 0.8f;
+    float cutoff = 0.5f;
     std::string model_path = "best_cg_model.pt";
 
     // Salvataggio JSON
@@ -296,7 +296,7 @@ int main() {
     model->to(device);
 
     // Iperparametri Training
-    float initial_lr = 1e-4;
+    float initial_lr = 1e-3;
     float current_lr = initial_lr; 
     float torque_weight = 0.0f; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.001));
@@ -400,8 +400,8 @@ int main() {
                 float num_valid_mols = torque_mask.sum().item<float>();
 
                 // 🌟 FIX 2: Scalatura bilanciata sia per le Forze che per i Torques
-                float force_scale = 25.0f;
-                float torque_scale = 25.0f; // Aggiunto per evitare che i torques dominino la loss di 625 volte!
+                float force_scale = 100.0f;
+                float torque_scale = 100.0f; // Aggiunto per evitare che i torques dominino la loss di 625 volte!
                 
                 torch::Tensor scaled_pred_f = pred_mol_forces / force_scale;
                 torch::Tensor scaled_target_f = batch.target_mol_forces / force_scale;

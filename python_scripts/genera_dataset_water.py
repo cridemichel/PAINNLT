@@ -58,18 +58,18 @@ with open(output_bin, "wb") as f:
 
             # --- CALCOLO GRANDEZZE FISICHE MOLECOLARI (ALL-ATOM) ---
             atoms = residue.atoms
-            positions_aa = atoms.positions
-            forces_aa = atoms.forces
+            positions_nm = atoms.positions / 10.0
+            forces_nm = atoms.forces * 10.0
             
             # Centro di massa molecolare all-atom
-            center = atoms.center_of_mass()
+            center = atoms.center_of_mass() / 10.0
             # Forza risultante sulla molecola (somma vettoriale delle forze atomiche)
-            total_force = np.sum(forces_aa, axis=0)
+            total_force = np.sum(forces_nm, axis=0)
             
             # Calcolo del momento torcente reale all-atom rispetto al centro di massa
-            r_vec = positions_aa - center
-            torques_aa = np.cross(r_vec, forces_aa)
-            total_torque = np.sum(torques_aa, axis=0)
+            r_vec = positions_nm - center
+            torques_nm = np.cross(r_vec, forces_nm)
+            total_torque = np.sum(torques_nm, axis=0)
             
             # Scrittura dati molecolari (Formato: int, int, 3f, 3f, 3f)
             f.write(struct.pack("i", mol_id))
@@ -86,15 +86,15 @@ with open(output_bin, "wb") as f:
                 
                 if len(site_atoms) == 0:
                     continue
-                
+               # MDanalysis use Angstrom for positions and forces in kJ/(mol*A) hence we convert back to GROMACS units
                 if MAPPING_METHOD == "COM":
-                    site_pos = site_atoms.center_of_mass()
+                    site_pos = site_atoms.center_of_mass() / 10.0
                 elif MAPPING_METHOD == "COG":
-                    site_pos = site_atoms.center_of_geometry()
+                    site_pos = site_atoms.center_of_geometry() / 10.0
                 elif MAPPING_METHOD == "ATOM":
                     ref_atom_name = atom_names[0]
                     ref_atom = atoms.select_atoms(f"name {ref_atom_name}")
-                    site_pos = ref_atom.positions[0] if len(ref_atom) > 0 else np.zeros(3)
+                    site_pos = ref_atom.positions[0]/10.0 if len(ref_atom) > 0 else np.zeros(3)
                 
                 site_type = site_types[site_name]
                 
