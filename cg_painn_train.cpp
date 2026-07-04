@@ -295,7 +295,7 @@ int main() {
     // Iperparametri Training
     float initial_lr = 1e-4;
     float current_lr = initial_lr; 
-    float torque_weight = 1.0f; 
+    float torque_weight = 0.0f; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.001));
     EarlyStopping early_stopping(15, model_path);
     
@@ -420,6 +420,15 @@ int main() {
                 loss.backward();
 
                 torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 50.0);
+#if 0
+                float total_grad_norm = 0.0f;
+                for (const auto& p : model->parameters()) {
+                  if (p.grad().defined()) {
+                    total_grad_norm += p.grad().norm().item<float>();
+                  }
+                }
+                std::cout << "[DEBUG] Epoca " << epoch << " | Norma Gradiente: " << total_grad_norm << "\n";
+#endif
                 optimizer.step();
 
                 float current_batch_weight = static_cast<float>(train_batch_frames.size());
@@ -483,6 +492,9 @@ int main() {
                 // 3. Calcolo e Aggregazione Momenti Torcenti
                 torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
                 torch::Tensor r_vec = batch.coordinates - site_centers; 
+                // Applicazione PBC a r_vec
+                box_tensor = torch::tensor({bx, by, bz}, r_vec.options());
+                r_vec = r_vec - box_tensor * torch::round(r_vec / box_tensor);
                 torch::Tensor site_torques = torch::linalg_cross(r_vec, site_forces);
                 
                 torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
