@@ -220,6 +220,32 @@ struct EarlyStopping {
         }
     }
 };
+
+void progress_bar(double progresso) 
+{
+    int len_barra = 50; // Lunghezza totale della barra in caratteri
+    std::cout << "[";
+
+    int pos = len_barra * progresso;
+    std::cout << "\033[32m"; // colore verde
+    for (int i = 0; i < len_barra; ++i) 
+    {
+        if (i < pos) 
+            std::cout << "=";
+        else if (i == pos) 
+            std::cout << ">";
+        else 
+            std::cout << " ";
+    }
+    std::cout << "\033[0m"; // reset colore 
+
+    // Mostra la percentuale e usa \r per tornare all'inizio della riga
+    std::cout << "] " << int(progresso * 100.0) << " %\r";
+    std::cout.flush(); // Forza l'output immediato sul terminale
+    if (pos == len_barra)
+        std::cout << "\n";
+}
+ 
 int main() {
     torch::manual_seed(42);
     
@@ -248,7 +274,7 @@ int main() {
     int dim = 64;
     int layers = 2;
     int num_rbf = 20; 
-    float cutoff = 5.0f;
+    float cutoff = 0.8f;
     std::string model_path = "best_cg_model.pt";
 
     // Salvataggio JSON
@@ -267,7 +293,7 @@ int main() {
     model->to(device);
 
     // Iperparametri Training
-    float initial_lr = 1e-3;
+    float initial_lr = 1e-4;
     float current_lr = initial_lr; 
     float torque_weight = 1.0f; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.001));
@@ -320,13 +346,14 @@ int main() {
 
         std::vector<CGFrame> train_batch_frames;
 
+        printf("Training:\n");
         for (size_t i = 0; i < train_dataset.size(); ++i) {
             train_batch_frames.push_back(train_dataset[i]);
-
             if (train_batch_frames.size() == batch_size || i == train_dataset.size() - 1) {
                 optimizer.zero_grad();
-                
+                //std::cout << "[DEBUG] Avvio collate_batch (Costruzione Grafo)..." << std::endl; 
                 CGBatch batch = collate_batch(train_batch_frames, cutoff, device, bx, by, bz);
+                //std::cout << "[DEBUG] collate_batch terminato. Numero archi nel grafo: " << batch.edge_index.size(1) << std::endl;
                 batch.coordinates.set_requires_grad(true);
 
                 auto row = batch.edge_index[0];
@@ -339,15 +366,16 @@ int main() {
                 // 🌟 FIX 1: Applicazione delle PBC al vettore r_ij (Minimum Image Convention)
                 auto box_tensor = torch::tensor({bx, by, bz}, r_ij.options());
                 r_ij = r_ij - box_tensor * torch::round(r_ij / box_tensor);
-
+                //std::cout << "[DEBUG] Avvio Forward del Modello PaiNN su GPU..." << std::endl;
                 // Forward della rete con r_ij corretto per le PBC
                 torch::Tensor pred_pmf = model->forward_with_rij(batch.site_types, r_ij, batch.edge_index, batch.batch_indices);
                 
                 // 1. Calcolo Forze sui singoli SITI
+                //std::cout << "[DEBUG] Forward terminato. Calcolo delle forze tramite autograd.grad..." << std::endl;
                 auto grad_outputs = torch::ones_like(pred_pmf);
                 auto gradients = torch::autograd::grad({pred_pmf}, {batch.coordinates}, {grad_outputs}, true, true);
                 torch::Tensor site_forces = -gradients[0]; 
-
+                //std::cout << "[DEBUG] Forze calcolate con successo!" << std::endl;
                 // 2. Aggregazione Forze Molecolari
                 torch::Tensor pred_mol_forces = torch::zeros({batch.num_molecules_in_batch, 3}, site_forces.options());
                 pred_mol_forces.index_add_(0, batch.mol_indices, site_forces);
@@ -405,6 +433,7 @@ int main() {
                     train_torque_frames += train_batch_frames.size();
                 }
 
+                progress_bar(static_cast<double>(i + 1) / train_dataset.size());
                 train_batch_frames.clear(); 
             }
         }
@@ -421,6 +450,7 @@ int main() {
 
         std::vector<CGFrame> val_batch_frames;
 
+        printf("Validation:\n");
         for (size_t i = 0; i < val_dataset.size(); ++i) {
             val_batch_frames.push_back(val_dataset[i]);
 
@@ -496,8 +526,10 @@ int main() {
                     val_torque_frames += val_batch_frames.size();
                 }
 
+                progress_bar(static_cast<double>(i + 1) / val_dataset.size());
                 val_batch_frames.clear();
             }
+                std::cout << "\n";
         }
 
         float train_loss_avg = train_loss_tot / train_dataset.size(); 
