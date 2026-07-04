@@ -11,11 +11,8 @@ trajectory_file = "traiettoria.trr"
 print("[INFO] Caricamento universo MDAnalysis...")
 u = mda.Universe(topology_file, trajectory_file)
 
-# Metodo di mapping: per l'acqua mappata su un singolo sito, 
-# il Centro di Massa (COM) è la scelta ideale.
 MAPPING_METHOD = "COM" 
 
-# Mappiamo l'intera molecola d'acqua su un singolo sito CG
 mapping_by_resname = {
     "SOL": {  
         "CG_WATER": ["OW", "HW1", "HW2"] 
@@ -27,7 +24,7 @@ site_types = {
 }
 
 # =====================================================================
-# 2. ELABORAZIONE E SCRITTURA DEL FILE BINARIO
+# 2. ELABORAZIONE E SCRITTURA DEL FILE BINARIO (SENZA TORQUES)
 # =====================================================================
 output_bin = "cg_dataset.bin"
 
@@ -38,9 +35,9 @@ with open(output_bin, "wb") as f:
     
     print(f"[INFO] Inizio elaborazione di {num_frames} frame...")
     print(f"[INFO] Metodo di mapping scelto: {MAPPING_METHOD}")
+    print(f"[INFO] I momenti torcenti (torques) sono stati disabilitati.")
     
     for ts in u.trajectory:
-        # Troviamo tutte le molecole d'acqua
         valid_residues = [res for res in u.residues if res.resname in mapping_by_resname]
         num_molecules = len(valid_residues)
         num_total_sites = sum(len(mapping_by_resname[res.resname]) for res in valid_residues)
@@ -48,11 +45,12 @@ with open(output_bin, "wb") as f:
         f.write(struct.pack("i", num_molecules))
         f.write(struct.pack("i", num_total_sites))
         
+
         for mol_id, residue in enumerate(valid_residues):
             resname = residue.resname
             current_mapping = mapping_by_resname[resname]
             num_sites = len(current_mapping)
-            
+
             # --- CALCOLO GRANDEZZE FISICHE MOLECOLARI (ALL-ATOM) ---
             atoms = residue.atoms
             positions_aa = atoms.positions
@@ -61,17 +59,17 @@ with open(output_bin, "wb") as f:
             center = atoms.center_of_mass()
             total_force = np.sum(forces_aa, axis=0)
             
-            # Momento torcente
+            # Calcolo del momento torcente (Torque)
             r_vec = positions_aa - center
             torques_aa = np.cross(r_vec, forces_aa)
             total_torque = np.sum(torques_aa, axis=0)
             
-            # Scrittura dati molecolari
+            # Scrittura dati molecolari (Torque RIPRISTINATO per compatibilità universale)
             f.write(struct.pack("i", mol_id))
             f.write(struct.pack("i", num_sites))
             f.write(struct.pack("3f", *center))
             f.write(struct.pack("3f", *total_force))
-            f.write(struct.pack("3f", *total_torque))
+            f.write(struct.pack("3f", *total_torque)) # <-- Ritorna lui!
             
             # --- CALCOLO POSIZIONI DEI SITI CG ---
             for site_name, atom_names in current_mapping.items():
@@ -80,10 +78,8 @@ with open(output_bin, "wb") as f:
                 site_atoms = atoms.select_atoms(selection_string)
                 
                 if len(site_atoms) == 0:
-                    print(f"[WARNING] Nessun atomo trovato per {site_name} (ID {mol_id})")
                     continue
                 
-                # --- LOGICA DI MAPPING ---
                 if MAPPING_METHOD == "COM":
                     site_pos = site_atoms.center_of_mass()
                 elif MAPPING_METHOD == "COG":
@@ -99,4 +95,4 @@ with open(output_bin, "wb") as f:
                 f.write(struct.pack("i", site_type))
                 f.write(struct.pack("3f", *site_pos))
 
-print(f"[INFO] SUCCESSO! Dataset binario generato correttamente in: {output_bin}")
+print(f"[INFO] SUCCESSO! Dataset binario aggiornato generato in: {output_bin}")
