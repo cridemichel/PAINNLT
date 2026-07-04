@@ -223,7 +223,7 @@ int main() {
     std::cout << "Utilizzando il device: " << (device.is_cuda() ? "CUDA" : "CPU") << "\n";
 
     // 1. Parametri Rete
-    int num_atom_types = 100; // Capienza dizionario siti
+    int num_species = 100; // Capienza dizionario siti
     int dim = 128;
     int layers = 3;
     int num_rbf = 40; 
@@ -234,7 +234,7 @@ int main() {
     std::string json_path = model_path.substr(0, model_path.find_last_of('.')) + "_config.json";
     std::ofstream json_file(json_path);
     if (json_file.is_open()) {
-        json_file << "{\n  \"num_atoms\": " << num_atom_types << ",\n  \"hidden_channels\": " << dim 
+        json_file << "{\n  \"num_species\": " << num_species << ",\n  \"hidden_channels\": " << dim 
                   << ",\n  \"n_layers\": " << layers << ",\n  \"num_rbf\": " << num_rbf 
                   << ",\n  \"cutoff\": " << cutoff << "\n}\n";
         json_file.close();
@@ -242,7 +242,7 @@ int main() {
     }
 
     // Inizializza il Modello
-    PaiNNModel model(num_atom_types, dim, layers, num_rbf, cutoff);
+    PaiNNModel model(num_species, dim, layers, num_rbf, cutoff);
     model->to(device);
 
     // Iperparametri Training
