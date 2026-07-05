@@ -50,7 +50,7 @@ A complete containerized environment is provided to run everything seamlessly on
 1. **Virtual Sites:** Given a group of atoms, they are replaced by a cluster of virtual sites and a real particle, or a single real particle. Each virtual site has a type (e.g., atomic number Z) and a `mol_id`.
 2. **Graph Construction:** In PaiNN, atoms with the same `mol_id` do NOT interact. This mirrors ESPResSo where virtual sites belonging to the same rigid body do not interact.
 3. **Loss Function:** The strategy is to calculate the total force and torque acting on a GROMACS CG group, and minimize both using PyTorch's `autograd`.
-4. **Priors:** It might be necessary to include priors in the loss function to prevent overlaps (WCA) or harmonic potentials for bonded atoms.
+4. **Priors (WCA, Harmonic, FENE):** Physical priors are implemented via a "Delta-Learning" strategy directly in the dataset generation step. By passing an optional `--priors priors.json` file to `convert_gro2bin.py`, the script analytically computes classical forces (repulsion, bonds) and subtracts them from the GROMACS target forces. The neural network trains on the residual forces. The identical `priors.json` configuration can then be instantiated in ESPResSo.
 5. **Periodic Boundary Conditions (PBC):** The `convert_gro2bin.py` script applies the Minimum Image Convention to unwrap broken molecules across box boundaries before computing Centers of Mass.
 
 ### Mapping Methods (`convert_gro2bin.py`)
