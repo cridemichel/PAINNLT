@@ -148,5 +148,51 @@ Also remember that the minimal box length must satisfy the condition `box_l / 2 
 
 ---
 
+## 6. Simulating Coarse-Grained Rigid Bodies
+
+When performing Coarse-Graining on complex macromolecules (such as TEL22 or G-quadruplexes), residues are often mapped to multiple CG sites that must move together as a single rigid body. 
+The script `convert_gro2bin.py` automatically generates a `rigid_bodies_info.json` file containing the total mass, the principal moments of inertia, and the relative coordinates of each CG site for every residue.
+
+To simulate these rigid bodies in ESPResSo with the PaiNN potential, you must use **Virtual Sites**:
+
+1. **Load the configuration**: Read the properties from `rigid_bodies_info.json`.
+2. **Create a Central Real Particle**: For each rigid molecule, instantiate a single "real" central particle at its Center of Mass. Assign it the `mass` and the `rinertia` tensor from the JSON. Enable 3D rotation (`rotation=[1,1,1]`). Assign a dummy type (e.g., 100) so PaiNN ignores it.
+3. **Create the CG Sites (Virtual)**: Iterate over the sites defined in the JSON. Create each site as a virtual particle (`virtual=True`), assigning the atomic type required by PaiNN and placing it at the correct relative distance from the COM.
+4. **Bind them together**: Use the `vs_auto_relate_to()` command to permanently attach each virtual particle to the central real particle.
+5. **Run the simulation**: The PaiNN potential will evaluate the forces on the virtual particles. ESPResSo will automatically transfer these forces and torques to the real central particle, integrating its rotational and translational motion correctly.
+
+An example snippet:
+
+```python
+import json
+
+with open("rigid_bodies_info.json", "r") as f:
+    rb_info = json.load(f)
+
+for resname, data in rb_info.items():
+    # 1. Real Central Particle
+    center_part = system.part.add(
+        pos=[box_l/2, box_l/2, box_l/2], 
+        type=100,
+        mass=data["mass_amu"],
+        rinertia=data["inertia_amu_nm2"],
+        rotation=[1, 1, 1]
+    )
+    
+    # 2. Virtual Sites (if any)
+    for site_name, site_data in data.get("sites", {}).items():
+        rel_pos = np.array(site_data["relative_pos_nm"])
+        v_part = system.part.add(
+            pos=center_part.pos + rel_pos,
+            type=site_data["type"],
+            virtual=True
+        )
+        v_part.vs_auto_relate_to(center_part.id)
+```
+
+If a residue is mapped to a single CG particle (e.g., Adenine or Thymine), the JSON will show 1 site. In this case, simply spawn a normal real particle with its type and mass, bypassing the virtual sites completely. A complete example is available in `simulate_tel22.py`.
+
+---
+
 That’s it! Follow the steps above to integrate your PaiNN model into ESPResSo, compile, and run the provided test scripts to verify everything works correctly. If you encounter any issues or need further customization, just let me know.
 

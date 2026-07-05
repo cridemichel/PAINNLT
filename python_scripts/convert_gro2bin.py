@@ -3,40 +3,31 @@ import numpy as np
 import struct
 import json
 
+import argparse
+
 # =====================================================================
-# 1. IMPOSTAZIONI E MAPPING
+# 1. PARSING ARGOMENTI E CARICAMENTO MAPPING
 # =====================================================================
-topology_file = "topologia.tpr"
-trajectory_file = "traiettoria.trr" 
-u = mda.Universe(topology_file, trajectory_file)
+parser = argparse.ArgumentParser(description="Converte traiettorie GROMACS in dataset binario per PaiNN-CG")
+parser.add_argument("-c", "--topology", type=str, default="topologia.tpr", help="File di topologia (es. .tpr o .gro)")
+parser.add_argument("-f", "--trajectory", type=str, default="traiettoria.trr", help="File di traiettoria (es. .trr o .xtc)")
+parser.add_argument("-m", "--mapping", type=str, default="cg_mapping.json", help="File JSON di mapping CG")
+parser.add_argument("-o", "--output", type=str, default="cg_dataset.bin", help="Nome del file binario di output")
+args = parser.parse_args()
 
-MAPPING_METHOD = "COM" 
+try:
+    with open(args.mapping, "r") as mf:
+        mapping_data = json.load(mf)
+except FileNotFoundError:
+    print(f"[ERRORE] File di mapping '{args.mapping}' non trovato!")
+    exit(1)
 
-mapping_by_resname = {
-    "GUA": {  
-        "CG_G1": ["N9", "C8"],
-        "CG_G2": ["N7", "C5"],
-        "CG_G3": ["C4", "N3"], 
-        "CG_G4": ["C2", "N1"],
-        "CG_G5": ["C6", "O6"],
-        "CG_G6": ["C1*", "C2*", "C3*"] 
-    },
-    "ADE": { "CG_ADE": ["*"] },
-    "DA":  { "CG_ADE": ["*"] }, # Alias GROMACS
-    "THY": { "CG_THY": ["*"] },
-    "DT":  { "CG_THY": ["*"] }, # Alias GROMACS
-    "ETH": { 
-        "CG_CH3": ["C1", "H1", "H2", "H3"],
-        "CG_CH2": ["C2", "H4", "H5"],
-        "CG_OH":  ["O1", "H6"]
-    }
-}
+MAPPING_METHOD = mapping_data.get("mapping_method", "COM")
+mapping_by_resname = mapping_data.get("residues", {})
+site_types = mapping_data.get("site_types", {})
 
-site_types = {
-    "CG_G1": 0, "CG_G2": 1, "CG_G3": 2, "CG_G4": 3, "CG_G5": 4, "CG_G6": 5,
-    "CG_ADE": 6, "CG_THY": 7,
-    "CG_CH3": 8, "CG_CH2": 9, "CG_OH": 10
-}
+print(f"[INFO] Caricamento MDAnalysis: {args.topology}, {args.trajectory}...")
+u = mda.Universe(args.topology, args.trajectory)
 
 ATOMIC_MASSES = {
     'H': 1.008, 'C': 12.011, 'N': 14.007, 'O': 15.999, 'P': 30.974, 'S': 32.065
@@ -74,7 +65,7 @@ def compute_inertia_tensor(positions, masses, com):
 # =====================================================================
 # 2. ELABORAZIONE E SCRITTURA DEL FILE BINARIO
 # =====================================================================
-output_bin = "cg_dataset.bin"
+output_bin = args.output
 rigid_bodies_info = {}
 
 with open(output_bin, "wb") as f:
