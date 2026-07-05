@@ -105,11 +105,12 @@ with open(output_bin, "wb") as f:
             num_sites = len(current_mapping)
             
             # --- CALCOLO GRANDEZZE FISICHE MOLECOLARI ---
+            # MDAnalysis legge nativamente in Angstrom e kJ/(mol*A). Convertiamo in nm e kJ/(mol*nm)
             atoms = residue.atoms
-            positions_aa = atoms.positions
-            forces_aa = atoms.forces
+            positions_nm = atoms.positions / 10.0
+            forces_nm = atoms.forces * 10.0
             
-            unwrapped_pos = get_unwrapped_positions(positions_aa, box_dim)
+            unwrapped_pos = get_unwrapped_positions(positions_nm, box_dim / 10.0)
             
             try:
                 masses = atoms.masses
@@ -117,19 +118,19 @@ with open(output_bin, "wb") as f:
                 masses = np.array([get_mass(name) for name in atoms.names])
             
             center = compute_com(unwrapped_pos, masses)
-            total_force = np.sum(forces_aa, axis=0)
+            total_force = np.sum(forces_nm, axis=0)
             
             r_vec = unwrapped_pos - center
-            torques_aa = np.cross(r_vec, forces_aa)
-            total_torque = np.sum(torques_aa, axis=0)
+            torques_nm = np.cross(r_vec, forces_nm)
+            total_torque = np.sum(torques_nm, axis=0)
             
             # Registra inerzia solo al primo incontro della molecola
             if resname not in rigid_bodies_info:
                 total_mass = float(np.sum(masses))
                 I_tensor = compute_inertia_tensor(unwrapped_pos, masses, center)
                 eigvals = np.linalg.eigvalsh(I_tensor)
-                # Converte Angstrom^2 in nm^2
-                I_principal_nm2 = eigvals / 100.0
+                # Le coordinate sono gia' in nm, l'inerzia e' nativamente in amu*nm^2
+                I_principal_nm2 = eigvals
                 rigid_bodies_info[resname] = {
                     "mass_amu": round(total_mass, 4),
                     "inertia_amu_nm2": [round(v, 4) for v in I_principal_nm2],
@@ -182,7 +183,7 @@ with open(output_bin, "wb") as f:
                 site_type = site_types[site_name]
                 
                 if resname in rigid_bodies_info and site_name not in rigid_bodies_info[resname].get("sites", {}):
-                    relative_pos_nm = (site_pos - center) / 10.0
+                    relative_pos_nm = site_pos - center
                     rigid_bodies_info[resname]["sites"][site_name] = {
                         "type": site_type,
                         "relative_pos_nm": [round(v, 4) for v in relative_pos_nm]

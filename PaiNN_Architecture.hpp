@@ -140,7 +140,7 @@ struct PaiNNModelImpl : torch::nn::Module {
 
         torch::Tensor atom_energies = readout->forward(s); 
         
-        int64_t num_molecules = batch_indices.max().item<int64_t>() + 1;
+        int64_t num_molecules = batch_indices.max().cpu().item<int64_t>() + 1;
         torch::Tensor pred_energy = torch::zeros({num_molecules, 1}, s.options());
         pred_energy.index_add_(0, batch_indices, atom_energies);
         

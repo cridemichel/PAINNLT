@@ -3,7 +3,7 @@ ENG
 
 TODO LIST
 
-[ ] Energy normalization (add energy shift and scale)
+[ ](better to not implement this to coarse-grain systems) Energy normalization (add energy shift and scale)
 
 SchNetPack addresses the issue of energy magnitudes with two built-in mechanisms that correspond to our "Scale and Shift":
 
@@ -20,7 +20,8 @@ When you declare the PaiNN or SchNet model in SchNetPack, the cutoff_network par
 
 If you check their training configuration files (managed via the Hydra system in the configs/trainer folder), you will find the gradient_clip_val parameter. It is common practice in their tutorials to set this parameter right around 0.5 or 1.0. As we discussed, since the forces are the derivative of the energy, without this "leash" on the gradient, a single unlucky short-range repulsion in the batch would permanently ruin the weights of the AdamW optimizer.
 
-[ ] Mixed precision
+[ ] (if I will have convergence issue, implement this) Mixed precision: GPU float and the
+rest->double
 
 GROMACS TO BIN
 
