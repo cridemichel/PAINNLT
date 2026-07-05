@@ -2,7 +2,7 @@ espresso/
 *.pt
 *.bin
 *.log
-build/
+build*
 Session.vim
 plots
 *.db
