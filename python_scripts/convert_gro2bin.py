@@ -225,6 +225,15 @@ with open(output_bin, "wb") as f:
                         else:
                             f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
                     
+                    elif b_type == "morse":
+                        D = b["D"]
+                        a = b["a"]
+                        r0 = b["r0"]
+                        diff = r - r0
+                        # F_r = - 2 * a * D * (1 - e^(-a(r-r0))) * e^(-a(r-r0))
+                        exp_term = np.exp(-a * diff)
+                        f_scalar = - 2.0 * a * D * (1.0 - exp_term) * exp_term
+                    
                     f_vec = - f_scalar * r_hat
                     frame_forces[i] -= f_vec
                     frame_forces[j] += f_vec
