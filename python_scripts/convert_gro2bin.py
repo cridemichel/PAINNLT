@@ -98,6 +98,8 @@ with open(output_bin, "wb") as f:
         f.write(struct.pack("i", num_total_sites))
         
         box_dim = ts.dimensions[:3]
+        f.write(struct.pack("3f", *(box_dim / 10.0)))
+
         
         for mol_id, residue in enumerate(valid_residues):
             resname = residue.resname

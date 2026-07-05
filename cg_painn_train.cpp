@@ -33,6 +33,7 @@ struct CGMolecule {
 
 struct CGFrame {
     std::vector<CGMolecule> molecules;
+    float box[3];
 };
 
 // Batch di tensori pronti per la GPU
@@ -48,17 +49,23 @@ struct CGBatch {
     torch::Tensor target_mol_forces;  // [N_mols, 3]
     torch::Tensor target_mol_torques; // [N_mols, 3]
     
+    torch::Tensor frame_boxes;        // [N_frames, 3]
+    
     int num_molecules_in_batch;
 };
 
 // =====================================================================
 // 2. FUNZIONI DI SUPPORTO E BATCHING
 // =====================================================================
-CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::Device device, float box_x, float box_y, float box_z) {
+CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::Device device) {
     CGBatch batch;
     std::vector<int64_t> site_types_vec, batch_indices_vec, mol_indices_vec;
     std::vector<float> coords_vec, centers_vec, forces_vec, torques_vec;
     std::vector<int64_t> edge_rows, edge_cols;
+    
+    std::vector<float> frame_boxes_vec;
+    frame_boxes_vec.reserve(frames.size() * 3);
+    
     // Esempio per evitare riallocazioni
     size_t estimated_sites = frames.size() * frames[0].molecules.size();
     site_types_vec.reserve(estimated_sites);
@@ -69,6 +76,13 @@ CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::D
 
     for (size_t b_idx = 0; b_idx < frames.size(); ++b_idx) {
         const auto& frame = frames[b_idx];
+        frame_boxes_vec.push_back(frame.box[0]);
+        frame_boxes_vec.push_back(frame.box[1]);
+        frame_boxes_vec.push_back(frame.box[2]);
+        float box_x = frame.box[0];
+        float box_y = frame.box[1];
+        float box_z = frame.box[2];
+        
         int frame_site_start = site_offset;
         
         std::vector<CGSite> frame_sites; // Flatten dei siti per calcolare le distanze
@@ -116,6 +130,7 @@ CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::D
     }
     
     // Creazione Tensori PyTorch
+    batch.frame_boxes = torch::tensor(frame_boxes_vec, torch::kFloat32).reshape({-1, 3}).to(device);
     batch.site_types = torch::tensor(site_types_vec, torch::kInt64).to(device);
     batch.coordinates = torch::tensor(coords_vec, torch::kFloat32).reshape({-1, 3}).to(device);
     batch.batch_indices = torch::tensor(batch_indices_vec, torch::kInt64).to(device);
@@ -157,6 +172,7 @@ std::vector<CGFrame> read_cg_dataset(const std::string& filepath) {
         
         file.read(reinterpret_cast<char*>(&num_molecules), sizeof(int));
         file.read(reinterpret_cast<char*>(&num_total_sites), sizeof(int));
+        file.read(reinterpret_cast<char*>(frame.box), 3 * sizeof(float));
         
         frame.molecules.reserve(num_molecules);
 
@@ -267,11 +283,6 @@ int main() {
 
     std::cout << "[INFO] Utilizzando il device: " << device_name << "\n";
     
-    // Dimensioni del Box di simulazione (in nanometri)
-    float bx = 2.0f;
-    float by = 2.0f;
-    float bz = 2.0f;
-
     // 1. Parametri Rete
     int num_species = 100; 
     int dim = 120;
@@ -300,9 +311,9 @@ int main() {
     float current_lr = initial_lr; 
     float torque_weight = 0.0f; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.001));
-    EarlyStopping early_stopping(15, model_path);
+    EarlyStopping early_stopping(30, model_path);
     
-    int lr_patience = 5; 
+    int lr_patience = 15; 
     int lr_counter = 0;
     float best_val_loss = std::numeric_limits<float>::max();
     
@@ -370,17 +381,20 @@ int main() {
             if (train_batch_frames.size() == batch_size || i == train_dataset.size() - 1) {
                 optimizer.zero_grad();
                 
-                CGBatch batch = collate_batch(train_batch_frames, cutoff, device, bx, by, bz);
+                CGBatch batch = collate_batch(train_batch_frames, cutoff, device);
 
                 auto row = batch.edge_index[0];
                 auto col = batch.edge_index[1];
 
                 torch::Tensor pos_row = batch.coordinates.index_select(0, row);
                 torch::Tensor pos_col = batch.coordinates.index_select(0, col);
-                auto box_tensor = torch::tensor({bx, by, bz}, batch.coordinates.options());
+                
+                auto edge_batch_indices = batch.batch_indices.index({row});
+                auto edge_boxes = batch.frame_boxes.index({edge_batch_indices});
+                
                 // Correzione PBC numerica (detach per non portare round nel grafo)
                 auto r_ij_val = pos_row - pos_col;
-                r_ij_val = r_ij_val - box_tensor * torch::round(r_ij_val / box_tensor).detach();
+                r_ij_val = r_ij_val - edge_boxes * torch::round(r_ij_val / edge_boxes).detach();
 
                 // --- PASSO 1: calcolo forze (r_ij come foglia foglia, create_graph=false) ---
                 torch::Tensor r_ij_for_forces = r_ij_val.detach().requires_grad_(true);
@@ -409,8 +423,9 @@ int main() {
                 torch::Tensor site_f_per_site = torch::zeros({(long)batch.coordinates.size(0), 3}, f_r_ij.options());
                 site_f_per_site.index_add_(0, row,  f_r_ij);
                 site_f_per_site.index_add_(0, col, -f_r_ij);
+                auto site_boxes = batch.frame_boxes.index({batch.batch_indices});
                 torch::Tensor r_vec = (batch.coordinates - site_centers).detach();
-                r_vec = r_vec - box_tensor * torch::round(r_vec / box_tensor).detach();
+                r_vec = r_vec - site_boxes * torch::round(r_vec / site_boxes).detach();
                 torch::Tensor site_torques = torch::linalg_cross(r_vec, site_f_per_site);
                 torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
                 pred_mol_torques.index_add_(0, batch.mol_indices, site_torques);
@@ -493,16 +508,19 @@ int main() {
             val_batch_frames.push_back(val_dataset[i]);
 
             if (val_batch_frames.size() == batch_size || i == val_dataset.size() - 1) {
-                CGBatch batch = collate_batch(val_batch_frames, cutoff, device, bx, by, bz);
+                CGBatch batch = collate_batch(val_batch_frames, cutoff, device);
 
                 auto row = batch.edge_index[0];
                 auto col = batch.edge_index[1];
 
                 torch::Tensor pos_row = batch.coordinates.index_select(0, row);
                 torch::Tensor pos_col = batch.coordinates.index_select(0, col);
-                auto box_tensor = torch::tensor({bx, by, bz}, batch.coordinates.options());
+                
+                auto edge_batch_indices = batch.batch_indices.index({row});
+                auto edge_boxes = batch.frame_boxes.index({edge_batch_indices});
+                
                 auto r_ij_raw = pos_row - pos_col;
-                auto r_ij = (r_ij_raw - box_tensor * torch::round(r_ij_raw / box_tensor).detach()).requires_grad_(true);
+                auto r_ij = (r_ij_raw - edge_boxes * torch::round(r_ij_raw / edge_boxes).detach()).requires_grad_(true);
 
                 torch::Tensor pred_pmf = model->forward_with_rij(batch.site_types, r_ij, batch.edge_index, batch.batch_indices);
                 
@@ -520,8 +538,9 @@ int main() {
                 torch::Tensor site_forces_per_site = torch::zeros_like(batch.coordinates);
                 site_forces_per_site.index_add_(0, row,  f_r_ij);
                 site_forces_per_site.index_add_(0, col, -f_r_ij);
+                auto site_boxes = batch.frame_boxes.index({batch.batch_indices});
                 torch::Tensor r_vec = batch.coordinates - site_centers;
-                r_vec = r_vec - box_tensor * torch::round(r_vec / box_tensor).detach();
+                r_vec = r_vec - site_boxes * torch::round(r_vec / site_boxes).detach();
                 torch::Tensor site_torques = torch::linalg_cross(r_vec, site_forces_per_site);
                 torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
                 pred_mol_torques.index_add_(0, batch.mol_indices, site_torques);
