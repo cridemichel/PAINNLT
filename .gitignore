@@ -14,3 +14,4 @@ plots
 **/tags
 GROMACS
 **/*.png
+**/*schnetpack*
