@@ -307,13 +307,13 @@ int main() {
     model->to(device);
 
     // Iperparametri Training (Riportato a 1e-3 perché la L1 Loss è stabile!)
-    float initial_lr = 1e-3;
+    float initial_lr = 5e-4;
     float current_lr = initial_lr; 
     float torque_weight = 0.0f; 
-    torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.001));
+    torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.0));
     EarlyStopping early_stopping(30, model_path);
     
-    int lr_patience = 15; 
+    int lr_patience = 10; 
     int lr_counter = 0;
     float best_val_loss = std::numeric_limits<float>::max();
     
