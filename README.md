@@ -24,7 +24,7 @@ You can project All-Atom GROMACS trajectories into Coarse-Grained rigid bodies, 
 * **Training:**
   Run the new `build/cg_painn_train` C++ executable. It automatically excludes intra-molecular interactions from the message-passing graph (as virtual sites belonging to the same rigid body do not interact in ESPResSo) and trains the network to predict the total force and torque on each rigid body.
 * **Simulation in ESPResSo:**
-  Define the Rigid Bodies in ESPResSo using the real particles and virtual sites. Pass the trained `.pt` CG model to the Python interface. The C++ integration automatically handles the evaluation.
+  Use the Python script `espresso_integration/simulate_tel22.py` as a reference example. It demonstrates how to define the Rigid Bodies in ESPResSo using real particles and virtual sites, and how to pass the trained `.pt` CG model to the Python interface for automatic evaluation.
 
 ### 3. Deployment on Supercomputers (e.g., CINECA Leonardo)
 A complete containerized environment is provided to run everything seamlessly on HPC clusters.
