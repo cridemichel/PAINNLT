@@ -1,105 +1,59 @@
-ENG
-===
+# PaiNN-ESPResSo Integration Framework
 
-TODO LIST
+This framework provides a complete pipeline to train and deploy the **PaiNN (Polarizable Atom Interaction Neural Network)** model natively in **ESPResSo**, supporting both **All-Atom** and **Coarse-Grained (CG)** Molecular Dynamics simulations.
 
-[ ](better to not implement this to coarse-grain systems) Energy normalization (add energy shift and scale)
+---
 
-SchNetPack addresses the issue of energy magnitudes with two built-in mechanisms that correspond to our "Scale and Shift":
+## 🚀 Current Capabilities & How-To
 
-schnetpack.atomistic.Atomref: This module appends the reference energy of the individual isolated atoms (the baseline shift) to the end of the network.
+### 1. All-Atom Simulations (e.g., Ethanol MD17)
+You can train and simulate standard all-atom systems where every atom is a separate entity interacting through the PaiNN force field.
+* **Training:** Run the legacy `painn.cpp` training script to train the model on all-atom datasets.
+* **Simulation in ESPResSo:** 
+  Use the Python script `espresso_integration/test_espresso_painn.py`. 
+  - Ensure you map the ESPResSo particle `type` to the actual atomic numbers (e.g., `1` for H, `6` for C).
+  - Call `espressomd.painn.activate_painn_potential(model_path="best_painn_etanolo.pt", ...)` with the correct `num_species` from the configuration JSON.
+  - The C++ plugin will seamlessly collect all particles, compute interactions within the cutoff, and evaluate forces natively.
 
-schnetpack.transform.Standardize: During preprocessing, SchNetPack statistically computes the mean and standard deviation of the remaining energies or forces and standardizes the output. This ensures that the neural network always works with numbers close to zero, letting the framework re-multiply and re-add the real values only at the moment of the final output.
+### 2. Coarse-Grained (CG) Simulations with Virtual Sites & Rigid Bodies
+You can project All-Atom GROMACS trajectories into Coarse-Grained rigid bodies, train PaiNN to predict the effective CG forces and torques, and run the simulation using ESPResSo Virtual Sites.
+* **Dataset Generation (GROMACS -> Binary):**
+  Use `python_scripts/convert_gro2bin.py` alongside the `cg_mapping.json` file. This script groups atoms into virtual sites, correctly handles Periodic Boundary Conditions (MIC unwrapping), and outputs a `.bin` dataset containing centers of geometry, target forces, and target torques.
+* **Dataset Inspection:**
+  Use `python_scripts/inspect_bin.py` to inspect the generated dataset, verify box dimensions, molecule compositions, and site coordinates.
+* **Training:**
+  Run the new `build/cg_painn_train` C++ executable. It automatically excludes intra-molecular interactions from the message-passing graph (as virtual sites belonging to the same rigid body do not interact in ESPResSo) and trains the network to predict the total force and torque on each rigid body.
+* **Simulation in ESPResSo:**
+  Define the Rigid Bodies in ESPResSo using the real particles and virtual sites. Pass the trained `.pt` CG model to the Python interface. The C++ integration automatically handles the evaluation.
 
-[X] Implement cosine cutoff
+### 3. Deployment on Supercomputers (e.g., CINECA Leonardo)
+A complete containerized environment is provided to run everything seamlessly on HPC clusters.
+* **Docker/Apptainer:** 
+  A `Dockerfile` is included to build an isolated PyTorch + CUDA 11.8 environment containing all ESPResSo dependencies (MPI, FFTW, Boost).
+* **SLURM Submission:** 
+  The `leonardo_submit.slurm` template shows how to deploy the container via Apptainer and bind the working directories to ensure data persistence on the cluster. Check `HOWTO_LEONARDO.md` for step-by-step deployment instructions.
 
-If you look in the schnetpack/nn/cutoff.py folder, you will find an entire class called CosineCutoff.
-When you declare the PaiNN or SchNet model in SchNetPack, the cutoff_network parameter is initialized by default with this exact class. They use exactly the scaled cosine function that I suggested to ensure that the spatial derivatives smoothly drop to zero at the edge of the Neighbor List, preventing discontinuous jumps in the forces.
+---
 
-[X] In version 2.0, SchNetPack delegated the entire training loop to PyTorch Lightning.
+## 🛠️ Developer Notes & TODOs
 
-If you check their training configuration files (managed via the Hydra system in the configs/trainer folder), you will find the gradient_clip_val parameter. It is common practice in their tutorials to set this parameter right around 0.5 or 1.0. As we discussed, since the forces are the derivative of the energy, without this "leash" on the gradient, a single unlucky short-range repulsion in the batch would permanently ruin the weights of the AdamW optimizer.
+### TODO LIST
+- `[ ]` Energy normalization (add energy shift and scale). *Note: Better not to implement this for coarse-grained systems.*
+  - SchNetPack addresses the issue of energy magnitudes with two built-in mechanisms: `schnetpack.atomistic.Atomref` (baseline shift) and `schnetpack.transform.Standardize` (mean/std scaling).
+- `[X]` Implement cosine cutoff.
+  - Done as in SchNetPack `CosineCutoff` to ensure spatial derivatives smoothly drop to zero at the edge of the Neighbor List.
+- `[X]` Gradient Clipping.
+  - Implemented gradient clipping to prevent a single unlucky short-range repulsion in the batch from permanently ruining the weights of the AdamW optimizer.
+- `[ ]` Mixed precision (GPU float, rest double) if convergence issues arise.
 
-[ ] (if I will have convergence issue, implement this) Mixed precision: GPU float and the
-rest->double
+### Coarse-Graining Strategy & Notes
+1. **Virtual Sites:** Given a group of atoms, they are replaced by a cluster of virtual sites and a real particle, or a single real particle. Each virtual site has a type (e.g., atomic number Z) and a `mol_id`.
+2. **Graph Construction:** In PaiNN, atoms with the same `mol_id` do NOT interact. This mirrors ESPResSo where virtual sites belonging to the same rigid body do not interact.
+3. **Loss Function:** The strategy is to calculate the total force and torque acting on a GROMACS CG group, and minimize both using PyTorch's `autograd`.
+4. **Priors:** It might be necessary to include priors in the loss function to prevent overlaps (WCA) or harmonic potentials for bonded atoms.
+5. **Periodic Boundary Conditions (PBC):** The `convert_gro2bin.py` script applies the Minimum Image Convention to unwrap broken molecules across box boundaries before computing Centers of Mass.
 
-GROMACS TO BIN
-
-1) Given a group of atoms, a script must be prepared that replaces this group of atoms with a cluster of virtual sites and a real particle, or with a single real particle.
-Each virtual site must be associated with a type (we can use the atomic number Z) and a mol_id (the molecule it belongs to) (I need to discuss this with Laura).
-If there are no virtual sites, the single real particle will still have its own mol_id.
-
-2) In the construction of the interactions in PaiNN, atoms with the same mol_id must not interact.
-
-3) In ESPResSo, virtual sites do not interact with each other, so nothing will need to be done; just import the model and use it as I already do now.
-
-4) Most likely, priors will also need to be included in the loss function to prevent overlaps (using WCA) or harmonic (or FENE) potentials for bonded atoms.
-The forces in the loss will be those predicted by the network + those derived from the priors.
-Everything will be implemented as follows: in ESPResSo, the various virtual sites will still have a WCA interaction, and some pairs of atoms will have a harmonic or FENE interaction. In the calculation of the loss during training, we should include these interactions as explained earlier.
-
-5) Best strategy is to calculate the total force and
-torque acting a GROMACS CG group, and consider
-total force and torque acting on real particle and its N virtual sites,
-in suche a way that loss function minimize botth total force and torque
-(autograd of pytorch can do this)
-
-6) our first real implementation step in Python will be a Data Parsing operation. You will need to
-take the trajectories and forces from your original All-Atom simulation (GROMACS/BIN), apply your
-Coarse-Graining logic (aggregating masses, defining virtual sites, and projecting total forces and
-torques), and save each resulting frame into a new dataset_cg.db file using the ASE library.  Once
-that .db file is created, the training script I showed you earlier will automatically "digest" it.
-
-
-1. La Struttura Logica del Dataset
-Per ogni frame temporale della tua traiettoria GROMACS, il file binario dovrà contenere:
-
-num_molecules (int): Quante molecole CG ci sono.
-
-num_total_sites (int): Quanti siti totali ci sono nel frame.
-
-Per ogni molecola, un blocco contenente:
-
-mol_id, num_sites (int)
-
-cx, cy, cz (float): Coordinate del centro di riferimento.
-
-fx, fy, fz (float): Forza totale target.
-
-tx, ty, tz (float): Momento torcente target.
-
-Per ogni sito di questa molecola:
-
-site_type (int): Il tipo di sito (0, 1, 2...).
-
-x, y, z (float): Le coordinate del sito.
-
-NOTE SU SCRIPT DI CONVERSIONE DA GROMACS
-========================================
-Due dettagli a cui prestare attenzione:
-Unità di Misura: GROMACS di default lavora in nanometri (nm). Se nel tuo modello ESPResSo vuoi usare gli Angstrom (Å) o unità ridotte (Lennard-Jones), ricordati di moltiplicare la variabile com nel primo script per il fattore di conversione corretto (es. com * 10 per passare da nm ad Å).
-
-PBC (Periodic Boundary Conditions): Se la tua molecola all-atom nel file .gro è "spezzata" a causa dei bordi periodici della scatola, il calcolo del Centro di Massa darà un risultato sballato. Assicurati di passare il .gro in gmx trjconv -pbc whole prima di darlo in pasto a questo script Python.
-
-STRATEGIE DI MAPPING (convert_gro2bin.py)
-==========================================
-1 (COM). Centro di Massa (Center of Mass - COM)È la strategia di default che ho inserito nello script.
-   Calcola la posizione del sito pesando le coordinate degli atomi in base alla loro massa (es. un
-   atomo di Carbonio "attirerà" il sito verso di sé molto più di un Idrogeno).Quando usarla: È
-   generalmente la scelta migliore per i modelli force-matching come il tuo, perché conserva
-   perfettamente la distribuzione delle masse e la dinamica dei momenti.In MDAnalysis: site_pos =
-   site_atoms.center_of_mass()
-
-2 (COG). Centro di Geometria (Center of Geometry - COG) Calcola la posizione
-   del sito come una semplice media aritmetica delle coordinate (X, Y, Z) degli atomi del gruppo,
-   ignorando le loro masse reali.Quando usarla: Spesso usata in modelli geometrici o se vuoi che il
-   sito si trovi esattamente al centro dello "spazio" occupato dal gruppo di atomi, a prescindere da
-   quali siano gli atomi pesanti.In MDAnalysis: site_pos = site_atoms.center_of_geometry()
-
-3. (ATOM) Atomo
-   di Riferimento (Atom-centered Mapping)Invece di fare medie, si sceglie un atomo "guida"
-   (solitamente quello centrale o più pesante del gruppo) e si assegna al sito CG l'esatta posizione
-   di quell'atomo. Gli altri atomi del gruppo vengono considerati "assorbiti" da esso.Quando usarla:
-   È diffusissima per le proteine (dove si usa spessissimo il Carbonio Alfa, $C_\alpha$, come unico
-   sito per l'intero amminoacido) o per i solventi.In MDAnalysis: Se, ad esempio, metti l'atomo
-   guida sempre per primo nella lista del tuo dizionario mapping_scheme:site_pos =
-   site_atoms[0].position
+### Mapping Methods (`convert_gro2bin.py`)
+1. **COM (Center of Mass):** Weighs coordinates by mass. Best for force-matching models.
+2. **COG (Center of Geometry):** Arithmetic mean of coordinates.
+3. **ATOM (Atom-centered):** Selects a specific reference atom (e.g., C_alpha for proteins).
