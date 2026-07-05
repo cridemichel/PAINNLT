@@ -23,6 +23,20 @@ site_types = {
     "CG_WATER": 0
 }
 
+def get_unwrapped_positions(atoms, box_dim):
+    # Clona le posizioni per non modificare la traiettoria originale
+    pos = atoms.positions.copy()
+    ref = pos[0]
+    for i in range(1, len(pos)):
+        dvec = pos[i] - ref
+        dvec -= box_dim * np.round(dvec / box_dim)
+        pos[i] = ref + dvec
+    return pos
+
+def compute_com(pos, masses):
+    return np.sum(pos * masses[:, None], axis=0) / np.sum(masses)
+
+
 # =====================================================================
 # 2. ELABORAZIONE E SCRITTURA DEL FILE BINARIO (OTTIMIZZATO)
 # =====================================================================
@@ -58,20 +72,23 @@ with open(output_bin, "wb") as f:
 
             # --- CALCOLO GRANDEZZE FISICHE MOLECOLARI (ALL-ATOM) ---
             atoms = residue.atoms
-            positions_nm = atoms.positions / 10.0
+            box_dim = ts.dimensions[:3]
+            unwrapped_pos = get_unwrapped_positions(atoms, box_dim)
+            positions_nm = unwrapped_pos / 10.0
             forces_nm = atoms.forces * 10.0
             
-            # Centro di massa molecolare all-atom
-            center = atoms.center_of_mass() / 10.0
-            # Forza risultante sulla molecola (somma vettoriale delle forze atomiche)
+            # Centro di massa molecolare all-atom con PBC corrette
+            center = compute_com(positions_nm, atoms.masses)
+            
+            # Forza risultante sulla molecola
             total_force = np.sum(forces_nm, axis=0)
             
-            # Calcolo del momento torcente reale all-atom rispetto al centro di massa
+            # Calcolo del momento torcente rispetto al COM corretto
             r_vec = positions_nm - center
             torques_nm = np.cross(r_vec, forces_nm)
             total_torque = np.sum(torques_nm, axis=0)
             
-            # Scrittura dati molecolari (Formato: int, int, 3f, 3f, 3f)
+            # Scrittura dati molecolari
             f.write(struct.pack("i", mol_id))
             f.write(struct.pack("i", num_sites))
             f.write(struct.pack("3f", *center))
@@ -86,19 +103,21 @@ with open(output_bin, "wb") as f:
                 
                 if len(site_atoms) == 0:
                     continue
-               # MDanalysis use Angstrom for positions and forces in kJ/(mol*A) hence we convert back to GROMACS units
+                # Calcolo posizione del sito CG usando posizioni unwrapped
+                indices = [list(atoms.names).index(name) for name in atom_names]
+                site_pos_unwrapped = positions_nm[indices]
+                site_masses = atoms.masses[indices]
+                
                 if MAPPING_METHOD == "COM":
-                    site_pos = site_atoms.center_of_mass() / 10.0
+                    site_pos = compute_com(site_pos_unwrapped, site_masses)
                 elif MAPPING_METHOD == "COG":
-                    site_pos = site_atoms.center_of_geometry() / 10.0
+                    site_pos = np.mean(site_pos_unwrapped, axis=0)
                 elif MAPPING_METHOD == "ATOM":
-                    ref_atom_name = atom_names[0]
-                    ref_atom = atoms.select_atoms(f"name {ref_atom_name}")
-                    site_pos = ref_atom.positions[0]/10.0 if len(ref_atom) > 0 else np.zeros(3)
+                    site_pos = site_pos_unwrapped[0]
                 
                 site_type = site_types[site_name]
                 
-                # Scrittura dati del sito (Formato: int, 3f)
+                # Scrittura dati del sito
                 f.write(struct.pack("i", site_type))
                 f.write(struct.pack("3f", *site_pos))
 

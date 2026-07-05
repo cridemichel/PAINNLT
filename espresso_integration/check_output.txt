@@ -1,0 +1,2 @@
+[PaiNN] Esecuzione su CPU forzata.
+[PaiNN] Modello C++ inizializzato e pesi caricati da: ../GROMACS/best_cg_model.pt

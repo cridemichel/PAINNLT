@@ -83,7 +83,8 @@ struct PaiNNModelImpl : torch::nn::Module {
         cos_cutoff = torch::where(d_ij > r_c, torch::zeros_like(cos_cutoff), cos_cutoff);
 
         auto centers = torch::linspace(0.0, r_c, num_radial_basis, d_ij.options());
-        auto rbf = torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, 0.5), 2));
+        double sigma = r_c / num_radial_basis; // Larghezza dipendente dinamicamente dalla scala
+        auto rbf = torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, sigma), 2));
         return rbf * cos_cutoff.unsqueeze(1);
     }
     
