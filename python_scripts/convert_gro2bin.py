@@ -30,13 +30,27 @@ print(f"[INFO] Caricamento MDAnalysis: {args.topology}, {args.trajectory}...")
 u = mda.Universe(args.topology, args.trajectory)
 
 ATOMIC_MASSES = {
-    'H': 1.008, 'C': 12.011, 'N': 14.007, 'O': 15.999, 'P': 30.974, 'S': 32.065
+    'H': 1.008, 'C': 12.011, 'N': 14.007, 'O': 15.999, 'P': 30.974, 'S': 32.065, 'K': 39.098
+}
+
+IONS_MASSES = {
+    'NA': 22.990, 'MG': 24.305, 'CL': 35.450, 'FE': 55.845, 
+    'ZN': 65.380, 'CU': 63.546, 'BR': 79.904, 'I': 126.904
+    # Il Calcio ('CA') e' volutamente omesso per non andare in conflitto con i Carboni Alpha (CA).
+    # Per i sistemi con Calcio e' necessario passare il file .tpr a MDAnalysis.
 }
 
 def get_mass(atom_name):
     # Fallback element guess da nome atomo
-    elem = ''.join([c for c in atom_name if c.isalpha()])[0]
-    return ATOMIC_MASSES.get(elem.upper(), 12.0)
+    alpha_chars = ''.join([c for c in atom_name if c.isalpha()]).upper()
+    
+    if not alpha_chars:
+        return 12.0
+        
+    if alpha_chars in IONS_MASSES:
+        return IONS_MASSES[alpha_chars]
+        
+    return ATOMIC_MASSES.get(alpha_chars[0], 12.0)
 
 def get_unwrapped_positions(positions, box_dim):
     unwrapped = np.copy(positions)
