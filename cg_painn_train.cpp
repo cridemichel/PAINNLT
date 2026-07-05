@@ -570,7 +570,8 @@ int main() {
         float val_mae_forces_avg = val_mae_forces_tot / val_dataset.size();
         float val_mae_torques_avg = (val_torque_frames > 0) ? (val_mae_torques_tot / val_torque_frames) : 0.0f;
 
-        std::cout << "Epoca [" << epoch << "/" << max_epochs << "]\n"
+        std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "]\n"
+                  << "  [LR]    " << current_lr << "\n"
                   << "  [TRAIN] Loss: " << train_loss_avg 
                   << " | MAE Forze: " << train_mae_forces_avg 
                   << " | MAE Torques: " << train_mae_torques_avg << "\n"
