@@ -13,3 +13,4 @@ plots
 *.csv
 **/tags
 GROMACS
+**/*.png
