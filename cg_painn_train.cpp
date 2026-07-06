@@ -276,10 +276,14 @@ int main(int argc, char* argv[]) {
         device = torch::Device(torch::kCUDA);
         device_name = "CUDA";
     }
+    /* 
+    // Disabilitiamo MPS (GPU Mac) perché in C++ puro senza NSAutoreleasePool
+    // i buffer Metal non vengono mai deallocati dal driver, causando un leak di 45GB!
     else if (torch::mps::is_available()) {
         device = torch::Device(torch::kMPS);
         device_name = "MPS (GPU Mac)";
     }
+    */
 
     std::cout << "[INFO] Utilizzando il device: " << device_name << "\n";
     
