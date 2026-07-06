@@ -1,0 +1,49 @@
+# Configurazione Training per TorchMD-Net
+# Lanciare con: python -m torchmdnet.scripts.train --conf train.yaml
+
+# ---- Dataset ----
+dataset: Custom
+coord_files: "dataset.npz"
+embed_files: "dataset.npz"
+force_files: "dataset.npz"
+
+# ---- Architettura del Modello ----
+# Usiamo Equivariant Transformer (o tensornet)
+model: equivariant-transformer
+num_layers: 3
+hidden_channels: 128
+num_rbf: 50
+rbf_type: "expnorm"
+trainable_rbf: true
+activation: "silu"
+cutoff_lower: 0.0
+cutoff_upper: 0.9 # (in nm)
+max_num_neighbors: 100
+
+# ---- Prior (Opzionale, delta-learning nativo) ----
+# In questo caso i prior li abbiamo già sottratti fisicamente nel dataset (Delta forces),
+# quindi non attiviamo prior models dinamici qui.
+prior_model: null
+
+# ---- Loss & Pesi ----
+# Poiché addestriamo su coarse-graining, abbiamo solo le Forze.
+derivative: true
+energy_weight: 0.0
+force_weight: 1.0
+
+# ---- Ottimizzazione ----
+batch_size: 16
+lr: 5e-4
+lr_patience: 10
+lr_factor: 0.5
+lr_min: 1e-6
+weight_decay: 0.0
+
+# ---- Esecuzione ----
+num_epochs: 500
+save_dir: "checkpoints"
+log_dir: "logs"
+val_ratio: 0.2
+test_ratio: 0.0
+seed: 42
+metrics: ["mae", "mse"]

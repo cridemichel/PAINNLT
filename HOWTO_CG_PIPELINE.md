@@ -135,6 +135,12 @@ import numpy as np
 
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = 0.001
+system.cell_system.skin = 0.1
+
+# NOTA BENE per sistemi molto piccoli:
+# Se la dimensione della box è troppo piccola e la condizione `(cutoff + skin) < box/2` non è rispettata,
+# ESPResSo crasherà usando il Link-Cells di default. In tal caso, abilita l'algoritmo N-Square:
+# system.cell_system.set_n_square()
 
 # 1. Caricamento della topologia generata nello Step 3
 with open("rigid_bodies_info.json") as f:

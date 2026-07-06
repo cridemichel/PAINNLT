@@ -112,7 +112,8 @@ def run_espresso_rdf(model_path, config_path, rb_info_path, priors_path, bin_fil
     
     system = espressomd.System(box_l=box)
     system.time_step = 0.002
-    system.cell_system.skin = 0.4
+    system.cell_system.skin = 0.05
+    system.cell_system.set_n_square() # Evita crash se cutoff + skin > box/2 in piccoli sistemi
     
     # Setup particelle e PaiNN
     with open(rb_info_path, "r") as f:
