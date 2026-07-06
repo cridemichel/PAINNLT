@@ -265,7 +265,7 @@ void progress_bar(double progresso)
         std::cout << "\n";
 }
  
-int main() {
+int main(int argc, char* argv[]) {
     torch::manual_seed(42);
     
     // FIX: Utilizziamo torch::Device in modo pulito ed esplicito
@@ -289,7 +289,15 @@ int main() {
     int layers = 3;
     int num_rbf = 50; 
     float cutoff = 0.6f;
+    std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
+    
+    if (argc >= 2) {
+        dataset_path = argv[1];
+    }
+    if (argc >= 3) {
+        model_path = argv[2];
+    }
 
     // Salvataggio JSON
     std::string json_path = model_path.substr(0, model_path.find_last_of('.')) + "_config.json";
@@ -311,9 +319,9 @@ int main() {
     float current_lr = initial_lr; 
     float torque_weight = 0.0f; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.0));
-    EarlyStopping early_stopping(30, model_path);
+    EarlyStopping early_stopping(10, model_path);
     
-    int lr_patience = 10; 
+    int lr_patience = 5; 
     int lr_counter = 0;
     float best_val_loss = std::numeric_limits<float>::max();
     
@@ -322,8 +330,7 @@ int main() {
         csv_file << "Epoch,Train_Loss,Val_Loss,Train_MAE_F,Train_MAE_T,Val_MAE_F,Val_MAE_T\n";
     }
 
-    std::cout << "\n[INFO] Caricamento dataset binario in corso...\n";
-    std::string dataset_path = "cg_dataset.bin"; 
+    std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
     
     std::vector<CGFrame> full_dataset = read_cg_dataset(dataset_path);
     

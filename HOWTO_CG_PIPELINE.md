@@ -88,14 +88,10 @@ python python_scripts/convert_gro2bin.py \
 L'addestramento è delegato a un'applicazione C++ ottimizzata (PyTorch C++ API / LibTorch).
 
 ```bash
-./build/cg_painn_train \
-    --dataset cg_dataset.bin \
-    --batch-size 8 \
-    --epochs 500 \
-    --lr 0.001
+./build/cg_painn_train cg_dataset.bin best_cg_model.pt
 ```
-*La rete ignorerà automaticamente le interazioni interne ai corpi rigidi e addestrerà il modello a prevedere Forza Totale e Torques (Momenti Torcenti) sui Centri di Massa.*
-Verrà salvato il file `best_cg_model.pt` e il suo config `best_cg_model_config.json`.
+*La rete ignorerà automaticamente le interazioni interne ai corpi rigidi e addestrerà il modello a prevedere Forza Totale e Torques (Momenti Torcenti) sui Centri di Massa (o forze residue se hai sottratto i priors).*
+Verrà salvato il file `best_cg_model.pt` (o il nome specificato) e il suo config `best_cg_model_config.json`.
 
 ---
 
@@ -120,9 +116,13 @@ with open("rigid_bodies_info.json") as f:
 # (Esempio) Creazione dei corpi rigidi (Particella Centrale + Virtual Sites)
 center_parts = []
 for idx, (resname, data) in enumerate(rb_info.items()):
+    # Estrarre il tipo di particella atteso dalla Rete Neurale
+    site_name = list(data["sites"].keys())[0]
+    site_type = data["sites"][site_name]["type"]
+
     # Creiamo il Centro di Massa (Corpo Rigido reale che risponde a Newton/Euler)
     center = system.part.add(
-        pos=[2.0 * idx, 5.0, 5.0], type=100,
+        pos=[2.0 * idx, 5.0, 5.0], type=site_type,
         mass=data["mass_amu"], rinertia=data["inertia_amu_nm2"], rotation=[True, True, True]
     )
     center_parts.append(center)
@@ -137,10 +137,12 @@ with open("priors.json") as f:
     priors = json.load(f)
 
 if "wca" in priors:
-    # Aggiungiamo WCA tra tutte le particelle
+    # Aggiungiamo WCA tra tutte le particelle dello stesso tipo
     eps = priors["wca"]["epsilon"]
     sig = priors["wca"]["sigma"]
-    # Imposta la LJ-WCA interaction table di ESPResSo
+    system.non_bonded_inter[site_type, site_type].lennard_jones.set_params(
+        epsilon=eps, sigma=sig, cutoff=sig*(2**(1/6)), shift=0.0
+    )
 
 if "bonds" in priors:
     for b in priors["bonds"]:
@@ -159,13 +161,16 @@ if "bonds" in priors:
 with open("best_cg_model_config.json") as f:
     config = json.load(f)
 
+# Forziamo il neighbor list ad arrivare al cutoff della rete neurale
+system.min_global_cut = float(config['cutoff'])
+
 espressomd.painn.activate_painn_potential(
     model_path="best_cg_model.pt",
-    num_species=config['num_species'],
-    hidden_channels=config['hidden_channels'],
-    n_layers=config['n_layers'],
-    num_rbf=config['num_rbf'],
-    cutoff=config['cutoff'],
+    num_species=int(config['num_species']),
+    hidden_channels=int(config['hidden_channels']),
+    n_layers=int(config['n_layers']),
+    num_rbf=int(config['num_rbf']),
+    cutoff=float(config['cutoff']),
     device="cuda" # o cpu
 )
 
