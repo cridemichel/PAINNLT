@@ -24,12 +24,12 @@ embedding_dimension: 128
 energy_files: null
 equivariance_invariance_group: O(3)
 force_files: dataset_dy.npy
-gradient_clipping: 0.0
+gradient_clipping: 1.0
 inference_batch_size: 16
 load_model: null
 load_weights: null
 log_dir: logs
-lr: 0.0005
+lr: 0.0001
 lr_factor: 0.5
 lr_metric: val
 lr_min: 1.0e-06
@@ -39,7 +39,7 @@ max_num_neighbors: 100
 max_z: 100
 model: equivariant-transformer
 neg_dy_weight: 1.0
-neighbor_embedding: false
+neighbor_embedding: true
 ngpus: -1
 num_epochs: 500
 num_heads: 8

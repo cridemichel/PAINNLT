@@ -8,7 +8,6 @@ embed_files: "dataset_z.npy"
 force_files: "dataset_dy.npy"
 
 # ---- Architettura del Modello ----
-# Usiamo Equivariant Transformer (o tensornet)
 model: equivariant-transformer
 num_layers: 3
 embedding_dimension: 128
@@ -16,9 +15,15 @@ num_rbf: 50
 rbf_type: "expnorm"
 trainable_rbf: true
 activation: "silu"
+attn_activation: "silu"
+num_heads: 8
+distance_influence: "both"
+neighbor_embedding: true
 cutoff_lower: 0.0
-cutoff_upper: 0.9 # (in nm)
+cutoff_upper: 0.9
+max_z: 100
 max_num_neighbors: 100
+aggr: "add"
 
 # ---- Prior (Opzionale, delta-learning nativo) ----
 # In questo caso i prior li abbiamo già sottratti fisicamente nel dataset (Delta forces),
@@ -32,8 +37,10 @@ y_weight: 0.0
 neg_dy_weight: 1.0
 
 # ---- Ottimizzazione ----
+standardize: false
+gradient_clipping: 1.0
 batch_size: 16
-lr: 0.0005
+lr: 0.0001
 lr_patience: 10
 lr_factor: 0.5
 lr_min: 0.000001

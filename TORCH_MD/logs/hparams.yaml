@@ -3,7 +3,7 @@ conf: null
 num_epochs: 500
 batch_size: 16
 inference_batch_size: 16
-lr: 0.0005
+lr: 0.0001
 lr_patience: 10
 lr_metric: val
 lr_min: 1.0e-06
@@ -28,7 +28,7 @@ save_interval: 10
 seed: 42
 num_workers: 4
 redirect: false
-gradient_clipping: 0.0
+gradient_clipping: 1.0
 remove_ref_energy: false
 checkpoint_monitor: val_total_mse_loss
 load_weights: null
@@ -56,7 +56,7 @@ num_rbf: 50
 activation: silu
 rbf_type: expnorm
 trainable_rbf: true
-neighbor_embedding: false
+neighbor_embedding: true
 aggr: add
 distance_influence: both
 attn_activation: silu

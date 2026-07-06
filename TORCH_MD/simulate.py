@@ -64,6 +64,9 @@ class NeuralNetworkPrior(torch.nn.Module):
         # TorchMD-Net si aspetta (N, 3) posizioni e (N,) tipi atomici
         # Restituisce (Energy, Forces)
         energy, forces = self.model(atomic_numbers, positions, box=box)
+        
+        # Riporta le forze alla scala originale (abbiamo scalato di 0.001 nel training)
+        forces = forces * 1000.0
         return energy.squeeze()
 
 def main():
