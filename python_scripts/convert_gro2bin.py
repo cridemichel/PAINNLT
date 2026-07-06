@@ -89,7 +89,11 @@ with open(output_bin, "wb") as f:
     f.write(struct.pack("i", num_frames))
     print(f"[INFO] Inizio elaborazione di {num_frames} frame con metodo di mapping: {MAPPING_METHOD}...")
     
-    for ts in u.trajectory:
+    for ts_idx, ts in enumerate(u.trajectory):
+        if ts_idx % 10 == 0 or ts_idx == num_frames - 1:
+            perc = (ts_idx + 1) / num_frames * 100.0
+            print(f"\r[INFO] Elaborazione frame {ts_idx + 1}/{num_frames} ({perc:.1f}%)", end="", flush=True)
+            
         valid_residues = [res for res in u.residues if res.resname in mapping_by_resname]
         num_molecules = len(valid_residues)
         num_total_sites = sum(len(mapping_by_resname[res.resname]) for res in valid_residues)
@@ -183,17 +187,31 @@ with open(output_bin, "wb") as f:
                 sigma = priors_data["wca"].get("sigma", 0.0)
                 if eps > 0 and sigma > 0:
                     r_cut_sq = (sigma * (2.0**(1.0/6.0)))**2
-                    for i in range(num_molecules):
-                        for j in range(i + 1, num_molecules):
-                            r_vec = mic_vector(frame_centers[i], frame_centers[j], box_dim)
-                            r_sq = np.sum(r_vec**2)
-                            if 1e-6 < r_sq < r_cut_sq:
-                                r = np.sqrt(r_sq)
-                                r_hat = r_vec / r
-                                f_scalar = 24.0 * eps * (2.0 * (sigma/r)**12 - (sigma/r)**6) / r
-                                f_vec = - f_scalar * r_hat # F su i da j (repulsiva verso -r_hat)
-                                frame_forces[i] -= f_vec
-                                frame_forces[j] += f_vec
+                    
+                    centers_np = np.array(frame_centers)
+                    # Vettorizzazione: calcoliamo tutte le distanze in un colpo solo
+                    diff = centers_np[:, np.newaxis, :] - centers_np[np.newaxis, :, :]
+                    diff -= box_dim * np.round(diff / box_dim)
+                    dist_sq = np.sum(diff**2, axis=-1)
+                    
+                    # Troviamo le coppie che interagiscono (i < j per evitare doppi conteggi e r_sq < r_cut_sq)
+                    # e escludiamo r_sq < 1e-6 (self-interaction)
+                    idx_i, idx_j = np.where((dist_sq > 1e-6) & (dist_sq < r_cut_sq))
+                    
+                    # Poiché where restituisce sia (i,j) che (j,i), filtriamo solo i < j
+                    valid = idx_i < idx_j
+                    idx_i = idx_i[valid]
+                    idx_j = idx_j[valid]
+                    
+                    for i, j in zip(idx_i, idx_j):
+                        r_sq = dist_sq[i, j]
+                        r_vec = diff[i, j]
+                        r = np.sqrt(r_sq)
+                        r_hat = r_vec / r
+                        f_scalar = 24.0 * eps * (2.0 * (sigma/r)**12 - (sigma/r)**6) / r
+                        f_vec = - f_scalar * r_hat # F su i da j (repulsiva verso -r_hat)
+                        frame_forces[i] -= f_vec
+                        frame_forces[j] += f_vec
             
             # BONDS: Armonico e FENE
             if "bonds" in priors_data:
@@ -250,7 +268,11 @@ with open(output_bin, "wb") as f:
                 f.write(struct.pack("i", site_type))
                 f.write(struct.pack("3f", *site_pos))
 
-print(f"[INFO] Dataset generato con successo in {output_bin}!")
+print("\n[INFO] Conversione completata e file binario salvato con successo!")
+
+# =====================================================================
+# 3. SALVATAGGIO INFORMAZIONI SUI CORPI RIGIDI (JSON)
+# =====================================================================
 
 with open("rigid_bodies_info.json", "w") as jf:
     json.dump(rigid_bodies_info, jf, indent=4)

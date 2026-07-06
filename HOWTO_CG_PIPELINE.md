@@ -72,7 +72,7 @@ Usa lo script Python per processare la traiettoria e calcolare le forze residue 
 
 ```bash
 python python_scripts/convert_gro2bin.py \
-    -c GROMACS/topologia.tpr \
+    -c GROMACS/confout.gro \
     -f GROMACS/traiettoria.trr \
     -m python_scripts/cg_mapping.json \
     -p GROMACS/priors.json \
