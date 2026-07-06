@@ -37,6 +37,25 @@ Definisce come raggruppare gli atomi in "Siti Virtuali" e Corpi Rigidi.
 ```
 *Note: `mapping_method` può essere `COM` (Centro di Massa), `COG` (Centro Geometrico) o `ATOM` (Atomo specifico).*
 
+**Esempio 2: Mapping per nucleotidi AAT (G4 DNA Linkers)**
+Se vuoi mappare interi nucleotidi Adenina e Timina in singole particelle CG, puoi usare un file come `cg_mapping_aat.json`:
+```json
+{
+    "mapping_method": "COM",
+    "site_types": {
+        "A_COM": 10,
+        "T_COM": 11
+    },
+    "residues": {
+        "DA": { "A_COM": ["*"] },
+        "DT": { "T_COM": ["*"] },
+        "A":  { "A_COM": ["*"] },
+        "T":  { "T_COM": ["*"] }
+    }
+}
+```
+In questo modo ogni residuo `DA` (Deossiadenosina) o `DT` verrà convertito in un'unica particella CG al suo Centro di Massa, e la rete neurale riceverà i `site_type` 10 e 11 per riconoscerli.
+
 ### 2b. Il file `priors.json` (Il "Delta-Learning")
 Per impedire collisioni (WCA) e mantenere intatti i legami covalenti flessibili, calcoliamo analiticamente queste forze e le *sottraiamo* dal dataset. La rete neurale dovrà così imparare solo le interazioni complesse residue.
 ```json
@@ -68,19 +87,27 @@ Per impedire collisioni (WCA) e mantenere intatti i legami covalenti flessibili,
 ---
 
 ## 💾 Fase 3: Generazione del Dataset
-Usa lo script Python per processare la traiettoria e calcolare le forze residue (Target - Priors).
+Usa lo script Python `convert_gro2bin.py` per leggere la topologia e la traiettoria, calcolare le posizioni CG (risolvendo le condizioni periodiche tramite Minimum Image Convention), sottrarre le forze Priors classiche (Delta-Learning) e scrivere il tutto in un dataset binario altamente compresso.
 
 ```bash
 python python_scripts/convert_gro2bin.py \
-    -c GROMACS/confout.gro \
+    -c GROMACS/conf.gro \
     -f GROMACS/traiettoria.trr \
     -m python_scripts/cg_mapping.json \
     -p GROMACS/priors.json \
     -o cg_dataset.bin
 ```
+
+**Parametri dello script:**
+*   `-c / --topology`: Il file di topologia (`.tpr` o `.gro`). Si consiglia caldamente di usare un `.gro` (es. `conf.gro`) perché l'attuale parser di `MDAnalysis` potrebbe fallire nel leggere versioni troppo recenti di GROMACS TPR (es. versione 138).
+*   `-f / --trajectory`: La traiettoria contenente posizioni e **forze** (`.trr`).
+*   `-m / --mapping`: Il file JSON di mapping (es. `cg_mapping.json` o `cg_mapping_aat.json` discusso sopra). Lo script è completamente generale e si adatterà automaticamente al tuo JSON.
+*   `-p / --priors`: (Opzionale) Il file JSON con i priors da sottrarre.
+*   `-o / --output`: Il file binario di output per PyTorch.
+
 **Output:**
-1.  `cg_dataset.bin`: Il dataset binario compresso e ultra-veloce per l'addestramento.
-2.  `rigid_bodies_info.json`: Generato automaticamente, contiene le masse, le inerzie (calcolate da MDAnalysis) e le coordinate relative dei virtual sites (utilissimo dopo per ESPResSo!).
+1.  `cg_dataset.bin`: Il dataset binario per l'addestramento (leggerissimo da caricare in C++).
+2.  `rigid_bodies_info.json`: Un file fondamentale generato in automatico che contiene per ogni molecola la `mass_amu` e il tensore d'inerzia `inertia_amu_nm2` (necessari poi per ESPResSo).
 
 ---
 

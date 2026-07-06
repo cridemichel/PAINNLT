@@ -209,7 +209,8 @@ with open(output_bin, "wb") as f:
                         r = np.sqrt(r_sq)
                         r_hat = r_vec / r
                         f_scalar = 24.0 * eps * (2.0 * (sigma/r)**12 - (sigma/r)**6) / r
-                        f_vec = - f_scalar * r_hat # F su i da j (repulsiva verso -r_hat)
+                        f_vec = f_scalar * r_hat # Repulsive force ON i FROM j points in direction of r_hat (from j to i)
+                        # We want to SUBTRACT this prior force from the target dataset
                         frame_forces[i] -= f_vec
                         frame_forces[j] += f_vec
             

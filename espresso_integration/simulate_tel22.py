@@ -116,6 +116,9 @@ if os.path.exists(config_path) and os.path.exists(model_path):
             system.non_bonded_inter[i, j].lennard_jones.set_params(
                 epsilon=0.0, sigma=1.0, cutoff=cutoff, shift=0.0
             )
+            
+    # Forziamo l'aggiornamento della neighbor list alla distanza di cutoff corretta
+    system.min_global_cut = cutoff
 
     print("[INFO] Attivazione potenziale PaiNN...")
     espressomd.painn.activate_painn_potential(

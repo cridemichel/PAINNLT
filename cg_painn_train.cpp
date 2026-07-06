@@ -8,6 +8,10 @@
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
 
+#ifdef __APPLE__
+#include <ATen/mps/MPSAllocatorInterface.h>
+#endif
+
 // REMARK: a molecule (molecule_id) here is a real particle complemented with its virtual sites
 
 // Assicurati di avere questo file nella stessa cartella
@@ -265,6 +269,13 @@ void progress_bar(double progresso)
         std::cout << "\n";
 }
  
+#ifdef __APPLE__
+extern "C" {
+    void* objc_autoreleasePoolPush(void);
+    void objc_autoreleasePoolPop(void* pool);
+}
+#endif
+
 int main(int argc, char* argv[]) {
     torch::manual_seed(42);
     
@@ -276,14 +287,10 @@ int main(int argc, char* argv[]) {
         device = torch::Device(torch::kCUDA);
         device_name = "CUDA";
     }
-    /* 
-    // Disabilitiamo MPS (GPU Mac) perché in C++ puro senza NSAutoreleasePool
-    // i buffer Metal non vengono mai deallocati dal driver, causando un leak di 45GB!
     else if (torch::mps::is_available()) {
         device = torch::Device(torch::kMPS);
         device_name = "MPS (GPU Mac)";
     }
-    */
 
     std::cout << "[INFO] Utilizzando il device: " << device_name << "\n";
     
@@ -292,7 +299,7 @@ int main(int argc, char* argv[]) {
     int dim = 120;
     int layers = 3;
     int num_rbf = 50; 
-    float cutoff = 0.6f;
+    float cutoff = 0.9f;
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
     
@@ -390,112 +397,103 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < train_dataset.size(); ++i) {
             train_batch_frames.push_back(train_dataset[i]);
             if (train_batch_frames.size() == batch_size || i == train_dataset.size() - 1) {
-                optimizer.zero_grad();
                 
-                CGBatch batch = collate_batch(train_batch_frames, cutoff, device);
+#ifdef __APPLE__
+                void* pool = objc_autoreleasePoolPush();
+#endif
 
-                auto row = batch.edge_index[0];
-                auto col = batch.edge_index[1];
+                { // --- INIZIO SCOPE TENSORI ---
+                    // Tutti i tensori locali verranno distrutti alla fine di questo blocco
+                    // PRIMA di chiamare objc_autoreleasePoolPop()!
 
-                torch::Tensor pos_row = batch.coordinates.index_select(0, row);
-                torch::Tensor pos_col = batch.coordinates.index_select(0, col);
+                    optimizer.zero_grad();
                 
-                auto edge_batch_indices = batch.batch_indices.index({row});
-                auto edge_boxes = batch.frame_boxes.index({edge_batch_indices});
-                
-                // Correzione PBC numerica (detach per non portare round nel grafo)
-                auto r_ij_val = pos_row - pos_col;
-                r_ij_val = r_ij_val - edge_boxes * torch::round(r_ij_val / edge_boxes).detach();
+                    CGBatch batch = collate_batch(train_batch_frames, cutoff, device);
 
-                // --- PASSO 1: calcolo forze (r_ij come foglia foglia, create_graph=false) ---
-                torch::Tensor r_ij_for_forces = r_ij_val.detach().requires_grad_(true);
-                {
-                    torch::NoGradGuard no_grad_scope; // nessun grafo per i pesi qui
-                    // non possiamo usare NoGradGuard perché vogliamo grad su r_ij
-                }
-                torch::Tensor pmf_for_forces = model->forward_with_rij(batch.site_types, r_ij_for_forces, batch.edge_index, batch.batch_indices);
-                auto g_forces = torch::autograd::grad({pmf_for_forces}, {r_ij_for_forces},
-                    {torch::ones_like(pmf_for_forces)}, false, false);
-                torch::Tensor f_r_ij = -g_forces[0].detach();  // [N_edges, 3] - senza grafo
+                    auto row = batch.edge_index[0];
+                    auto col = batch.edge_index[1];
 
-                // --- PASSO 2: calcolo loss per aggiornare i pesi del modello ---
-                // Qui r_ij è costante (detached) - il grad fluisce solo attraverso i pesi
-                torch::Tensor pred_pmf = model->forward_with_rij(batch.site_types, r_ij_val.detach(), batch.edge_index, batch.batch_indices);
+                    torch::Tensor pos_row = batch.coordinates.index_select(0, row);
+                    torch::Tensor pos_col = batch.coordinates.index_select(0, col);
+                    
+                    auto edge_batch_indices = batch.batch_indices.index({row});
+                    auto edge_boxes = batch.frame_boxes.index({edge_batch_indices});
+                    
+                    // Correzione PBC numerica (detach per non portare round nel grafo)
+                    auto r_ij_val = pos_row - pos_col;
+                    r_ij_val = r_ij_val - edge_boxes * torch::round(r_ij_val / edge_boxes).detach();
 
-                // Aggregazione forze molecolari
-                torch::Tensor pred_mol_forces = torch::zeros({batch.num_molecules_in_batch, 3}, f_r_ij.options());
-                auto mol_of_row = batch.mol_indices.index_select(0, row);
-                auto mol_of_col = batch.mol_indices.index_select(0, col);
-                pred_mol_forces.index_add_(0, mol_of_row,  f_r_ij);
-                pred_mol_forces.index_add_(0, mol_of_col, -f_r_ij);
+                    // --- PASSO UNICO: calcolo forze (con grafo autograd per i pesi) ---
+                    torch::Tensor r_ij_leaf = r_ij_val.requires_grad_(true);
+                    torch::Tensor pmf_diff = model->forward_with_rij(batch.site_types, r_ij_leaf, batch.edge_index, batch.batch_indices);
+                    
+                    auto g_diff = torch::autograd::grad({pmf_diff}, {r_ij_leaf},
+                        {torch::ones_like(pmf_diff)}, /*create_graph=*/true, /*retain_graph=*/true);
+                    torch::Tensor f_diff = -g_diff[0];  // [N_edges, 3] - con grafo
 
-                // Momenti torcenti
-                torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
-                torch::Tensor site_f_per_site = torch::zeros({(long)batch.coordinates.size(0), 3}, f_r_ij.options());
-                site_f_per_site.index_add_(0, row,  f_r_ij);
-                site_f_per_site.index_add_(0, col, -f_r_ij);
-                auto site_boxes = batch.frame_boxes.index({batch.batch_indices});
-                torch::Tensor r_vec = (batch.coordinates - site_centers).detach();
-                r_vec = r_vec - site_boxes * torch::round(r_vec / site_boxes).detach();
-                torch::Tensor site_torques = torch::linalg_cross(r_vec, site_f_per_site);
-                torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
-                pred_mol_torques.index_add_(0, batch.mol_indices, site_torques);
+                    // Aggregazione forze molecolari
+                    auto mol_of_row = batch.mol_indices.index_select(0, row);
+                    auto mol_of_col = batch.mol_indices.index_select(0, col);
+                    
+                    torch::Tensor pred_mol_forces_diff = torch::zeros({batch.num_molecules_in_batch, 3}, f_diff.options());
+                    pred_mol_forces_diff.index_add_(0, mol_of_row,  f_diff);
+                    pred_mol_forces_diff.index_add_(0, mol_of_col, -f_diff);
 
-                auto mol_indices_long = batch.mol_indices.to(torch::kLong);
-                torch::Tensor sites_per_mol = torch::bincount(mol_indices_long, torch::Tensor(), batch.num_molecules_in_batch);
-                torch::Tensor torque_mask = (sites_per_mol > 1).to(torch::kFloat32); 
-                float num_valid_mols = torque_mask.sum().item<float>();
+                    torch::Tensor loss_f_diff = torch::mse_loss(
+                        pred_mol_forces_diff,
+                        batch.target_mol_forces
+                    );
 
-                // Loss con MSE per l'addestramento (gradienti proporzionali all'errore)
-                // Questo è essenziale quando i target sono nell'ordine di ~500. 
-                // Usare L1Loss ha un gradiente costante (1/N) che rende l'apprendimento lentissimo.
-                torch::Tensor loss_f = torch::mse_loss(
-                    pred_mol_forces,
-                    batch.target_mol_forces
-                );
+                    // Momenti torcenti (Ripristinati senza forward pass addizionali)
+                    torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
+                    torch::Tensor site_f_per_site = torch::zeros({(long)batch.coordinates.size(0), 3}, f_diff.options());
+                    site_f_per_site.index_add_(0, row,  f_diff);
+                    site_f_per_site.index_add_(0, col, -f_diff);
+                    auto site_boxes = batch.frame_boxes.index({batch.batch_indices});
+                    torch::Tensor r_vec = (batch.coordinates - site_centers).detach();
+                    r_vec = r_vec - site_boxes * torch::round(r_vec / site_boxes).detach();
+                    torch::Tensor site_torques = torch::linalg_cross(r_vec, site_f_per_site);
+                    torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
+                    pred_mol_torques.index_add_(0, batch.mol_indices, site_torques);
 
-                torch::Tensor loss_t;
-                if (num_valid_mols > 0) {
-                    torch::Tensor loss_t_raw = torch::mse_loss(pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
-                    torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
-                    loss_t = loss_t_masked.sum() / (num_valid_mols * 3.0f);
-                } else {
-                    loss_t = torch::zeros({}, loss_f.options());
-                }
+                    auto mol_indices_long = batch.mol_indices.to(torch::kLong);
+                    torch::Tensor sites_per_mol = torch::bincount(mol_indices_long, torch::Tensor(), batch.num_molecules_in_batch);
+                    torch::Tensor torque_mask = (sites_per_mol > 1).to(torch::kFloat32); 
+                    float num_valid_mols = torque_mask.sum().item<float>();
 
-                // NOTA: loss_f non ha grad_fn perché le forze sono detached.
-                // Dobbiamo usare una loss differenziabile rispetto ai pesi.
-                // Strategia corretta: ri-calcola le forze DENTRO il grafo.
-                // Usiamo r_ij come foglia che influenza sia il PMF che le forze.
-                torch::Tensor r_ij_leaf = r_ij_val.requires_grad_(true);
-                torch::Tensor pmf_diff = model->forward_with_rij(batch.site_types, r_ij_leaf, batch.edge_index, batch.batch_indices);
-                auto g_diff = torch::autograd::grad({pmf_diff}, {r_ij_leaf},
-                    {torch::ones_like(pmf_diff)}, true, true);
-                torch::Tensor f_diff = -g_diff[0];  // [N_edges, 3] - con grafo
+                    torch::Tensor loss_final = loss_f_diff;
+                    if (num_valid_mols > 0) {
+                        torch::Tensor loss_t_raw = torch::mse_loss(pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
+                        torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
+                        torch::Tensor loss_t = loss_t_masked.sum() / (num_valid_mols * 3.0f);
+                        loss_final = loss_final + torque_weight * loss_t;
+                    }
+                    loss_final.backward();
 
-                torch::Tensor pred_mol_forces_diff = torch::zeros({batch.num_molecules_in_batch, 3}, f_diff.options());
-                pred_mol_forces_diff.index_add_(0, mol_of_row,  f_diff);
-                pred_mol_forces_diff.index_add_(0, mol_of_col, -f_diff);
+                    torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 1.0);
+                    optimizer.step();
 
-                torch::Tensor loss_f_diff = torch::mse_loss(
-                    pred_mol_forces_diff,
-                    batch.target_mol_forces
-                );
-                torch::Tensor loss_final = loss_f_diff + torque_weight * loss_t;
-                loss_final.backward();
+                    float current_batch_weight = static_cast<float>(train_batch_frames.size());
+                    float mae_f_phys = torch::l1_loss(pred_mol_forces_diff, batch.target_mol_forces).item<float>();
+                    train_loss_tot        += loss_f_diff.item<float>() * current_batch_weight;
+                    train_mae_forces_tot  += mae_f_phys                * current_batch_weight; 
+                    
+                    if (num_valid_mols > 0) {
+                        train_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>() * current_batch_weight;
+                        train_torque_frames   += train_batch_frames.size();
+                    }
 
-                torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 1.0);
-                optimizer.step();
+#ifdef __APPLE__
+                    if (torch::mps::is_available()) {
+                        torch::mps::synchronize();
+                        at::mps::getIMPSAllocator()->emptyCache();
+                    }
+#endif
+                } // --- FINE SCOPE TENSORI ---
 
-                float current_batch_weight = static_cast<float>(train_batch_frames.size());
-                float mae_f_phys = torch::l1_loss(pred_mol_forces, batch.target_mol_forces).item<float>();
-                train_loss_tot        += loss_f_diff.item<float>() * current_batch_weight; // Salva la MSE come loss
-                train_mae_forces_tot  += mae_f_phys                * current_batch_weight; 
-                
-                if (num_valid_mols > 0) {
-                    train_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>() * current_batch_weight;
-                    train_torque_frames   += train_batch_frames.size();
-                }
+#ifdef __APPLE__
+                objc_autoreleasePoolPop(pool);
+#endif
 
                 progress_bar(static_cast<double>(i + 1) / train_dataset.size());
                 train_batch_frames.clear(); 

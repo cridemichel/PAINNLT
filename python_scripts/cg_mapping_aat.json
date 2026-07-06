@@ -1,0 +1,21 @@
+{
+    "mapping_method": "COM",
+    "site_types": {
+        "A_COM": 10,
+        "T_COM": 11
+    },
+    "residues": {
+        "DA": {
+            "A_COM": ["*"]
+        },
+        "DT": {
+            "T_COM": ["*"]
+        },
+        "A": {
+            "A_COM": ["*"]
+        },
+        "T": {
+            "T_COM": ["*"]
+        }
+    }
+}

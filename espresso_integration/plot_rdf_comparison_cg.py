@@ -167,7 +167,11 @@ def run_espresso_rdf(model_path, config_path, rb_info_path, priors_path, bin_fil
     system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
     
     print("[INFO] Equilibrazione termica dal primo frame...")
-    system.integrator.run(500)
+    for i in range(50):
+        system.integrator.run(10)
+        e_pot = espressomd.painn.get_painn_energy()
+        max_f = max([np.max(np.abs(p.f)) for p in parts])
+        print(f"Equilibration step {i*10:3d} | E_pot: {e_pot:.2f} | Max Force: {max_f:.2f} | Pos 0: {parts[0].pos}")
     
     # Assicuriamoci che r_max non superi metà della scatola più piccola
     actual_rmax = min(r_max, min(box) / 2.0)
@@ -186,6 +190,8 @@ def run_espresso_rdf(model_path, config_path, rb_info_path, priors_path, bin_fil
         system.integrator.run(10)
         g_r_sum += np.array(rdf_obs.calculate())
         samples += 1
+        if i % 10 == 0:
+            print(f" -> Campionato frame RDF {i*10}/{steps}...")
         
     g_r_avg = g_r_sum / samples
     r_centers = rdf_obs.bin_centers()
