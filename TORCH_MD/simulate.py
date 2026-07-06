@@ -67,7 +67,13 @@ def main():
     parser.add_argument("--steps", type=int, default=1000, help="Numero di step MD")
     args = parser.parse_args()
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
+    device="cpu"
     print(f"[INFO] Dispositivo: {device}")
 
     # 1. Carica le posizioni iniziali e i tipi

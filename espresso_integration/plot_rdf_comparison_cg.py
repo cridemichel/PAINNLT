@@ -170,7 +170,7 @@ def run_espresso_rdf(model_path, config_path, rb_info_path, priors_path, bin_fil
         n_layers=int(nn_config['n_layers']), 
         num_rbf=int(nn_config['num_rbf']), 
         cutoff=cutoff, 
-        device="cpu"
+        device="mps"
     )
     
     system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
@@ -246,3 +246,5 @@ if __name__ == "__main__":
     out_img = "rdf_comparison.png"
     plt.savefig(out_img, dpi=300)
     print(f"\n[INFO] Grafico salvato in {out_img}")
+
+import os; os._exit(0)
