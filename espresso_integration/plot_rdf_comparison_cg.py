@@ -151,8 +151,16 @@ def run_espresso_rdf(model_path, config_path, rb_info_path, priors_path, bin_fil
         
     cutoff = float(nn_config['cutoff'])
     # Forziamo il neighbor list di ESPResSo ad arrivare al cutoff della rete neurale
-    # senza usare un finto Lennard-Jones (che sovrascriverebbe i parametri WCA!)
     system.min_global_cut = cutoff
+    
+    # IMPORTANTE: ESPResSo costruisce il neighbor list per una coppia SOLO se il cutoff 
+    # della loro interazione è grande abbastanza! WCA ha un cutoff minuscolo (0.33 nm).
+    # Per costringere ESPResSo a passarci tutte le distanze fino a `cutoff` (es. 0.9 nm), 
+    # aggiungiamo una interazione fantasma a energia zero (soft_sphere con a=0.0):
+    system.non_bonded_inter[site_type, site_type].soft_sphere.set_params(
+        a=0.0, n=1, cutoff=cutoff, offset=0.0
+    )
+
     
     espressomd.painn.activate_painn_potential(
         model_path=model_path, 

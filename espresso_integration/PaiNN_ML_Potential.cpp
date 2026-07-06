@@ -90,20 +90,24 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         int idx1 = pid_to_idx[p1.id()];
         int idx2 = pid_to_idx[p2.id()];
         
-        // In ESPResSo, d.vec21 = pos1 - pos2
-        // Aggiungiamo l'arco p2 -> p1 (col=1, row=2)
+        // In ESPResSo, d.vec21 è il vettore da p2 a p1 (pos1 - pos2).
+        // Nel training, r_ij = pos_row - pos_col.
+        // Se row = p2 (idx2) e col = p1 (idx1), allora r_ij = pos2 - pos1 = -d.vec21.
+        
+        // Arco p1 -> p2 (col=p1, row=p2)
         edge_rows.push_back(idx2);
         edge_cols.push_back(idx1);
-        r_ij_data.push_back(static_cast<float>(d.vec21[0]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[1]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[2]));
-        
-        // Aggiungiamo l'arco inverso p1 -> p2 (col=2, row=1)
-        edge_rows.push_back(idx1);
-        edge_cols.push_back(idx2);
         r_ij_data.push_back(static_cast<float>(-d.vec21[0]));
         r_ij_data.push_back(static_cast<float>(-d.vec21[1]));
         r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
+        
+        // Arco p2 -> p1 (col=p2, row=p1)
+        // r_ij = pos1 - pos2 = +d.vec21
+        edge_rows.push_back(idx1);
+        edge_cols.push_back(idx2);
+        r_ij_data.push_back(static_cast<float>(d.vec21[0]));
+        r_ij_data.push_back(static_cast<float>(d.vec21[1]));
+        r_ij_data.push_back(static_cast<float>(d.vec21[2]));
     };
 
     // Esegue il loop di ESPResSo su tutte le coppie di vicini
@@ -148,12 +152,15 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         float fz = f_r_ij_acc[e][2];
         
         // Assegniamo le forze (ESPResSo gestirà la comunicazione delle forze dei ghost)
-        idx_to_particle[r]->force()[0] += fx;
-        idx_to_particle[r]->force()[1] += fy;
-        idx_to_particle[r]->force()[2] += fz;
+        // La forza è la derivata negativa dell'energia rispetto alla posizione.
+        // F_row = - dE / d(pos_row) = - dE / dr_ij = -f_r_ij
+        // F_col = - dE / d(pos_col) = + dE / dr_ij = +f_r_ij
+        idx_to_particle[r]->force()[0] -= fx;
+        idx_to_particle[r]->force()[1] -= fy;
+        idx_to_particle[r]->force()[2] -= fz;
         
-        idx_to_particle[c]->force()[0] -= fx;
-        idx_to_particle[c]->force()[1] -= fy;
-        idx_to_particle[c]->force()[2] -= fz;
+        idx_to_particle[c]->force()[0] += fx;
+        idx_to_particle[c]->force()[1] += fy;
+        idx_to_particle[c]->force()[2] += fz;
     }
 }

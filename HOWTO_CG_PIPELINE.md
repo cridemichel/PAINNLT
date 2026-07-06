@@ -179,7 +179,6 @@ if "bonds" in priors:
             system.part.by_id(center_parts[b["mol_i"]].id).add_bond((hb, center_parts[b["mol_j"]].id))
             
         elif b["type"] == "morse":
-            # Attenzione alla conversione unità di misura se necessario
             mb = espressomd.interactions.MorseBond(eps=b["D"], alpha=b["a"], rmin=b["r0"])
             system.bonded_inter.add(mb)
             system.part.by_id(center_parts[b["mol_i"]].id).add_bond((mb, center_parts[b["mol_j"]].id))
@@ -189,7 +188,16 @@ with open("best_cg_model_config.json") as f:
     config = json.load(f)
 
 # Forziamo il neighbor list ad arrivare al cutoff della rete neurale
-system.min_global_cut = float(config['cutoff'])
+cutoff = float(config['cutoff'])
+system.min_global_cut = cutoff
+
+# IMPORTANTE: ESPResSo passa le coppie di vicini a PaiNN SOLO se il loro cutoff
+# di interazione è sufficientemente grande! Siccome WCA ha un cutoff minuscolo (0.33 nm),
+# dobbiamo aggiungere un'interazione "fantasma" a energia zero (es. soft_sphere) 
+# per costringere il motore C++ a tracciare le particelle fino al cutoff di PaiNN (es. 0.9 nm).
+system.non_bonded_inter[site_type, site_type].soft_sphere.set_params(
+    a=0.0, n=1, cutoff=cutoff, offset=0.0
+)
 
 espressomd.painn.activate_painn_potential(
     model_path="best_cg_model.pt",
