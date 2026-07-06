@@ -123,7 +123,7 @@ for idx, (resname, data) in enumerate(rb_info.items()):
     # Creiamo il Centro di Massa (Corpo Rigido reale che risponde a Newton/Euler)
     center = system.part.add(
         pos=[2.0 * idx, 5.0, 5.0], type=100,
-        mass=data["mass_amu"], rinertia=data["inertia_amu_nm2"], rotation=[1, 1, 1]
+        mass=data["mass_amu"], rinertia=data["inertia_amu_nm2"], rotation=[True, True, True]
     )
     center_parts.append(center)
     

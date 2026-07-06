@@ -78,7 +78,7 @@ for resname, data in rb_info.items():
             type=100,
             mass=mass,
             rinertia=rinertia,
-            rotation=[1, 1, 1]
+            rotation=[True, True, True]
         )
         center_parts.append(center_part)
         
