@@ -15,3 +15,6 @@ plots
 GROMACS
 **/*.png
 **/*schnetpack*
+**/logs*
+**/*npy
+**/*ckpt

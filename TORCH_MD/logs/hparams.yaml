@@ -44,7 +44,7 @@ y_weight: 0.0
 neg_dy_weight: 1.0
 train_loss: mse_loss
 train_loss_arg: null
-model: equivariant-transformer
+model: graph-network
 output_model: Scalar
 output_mlp_num_layers: 0
 prior_model: null
@@ -56,7 +56,7 @@ num_rbf: 50
 activation: silu
 rbf_type: expnorm
 trainable_rbf: true
-neighbor_embedding: true
+neighbor_embedding: false
 aggr: add
 distance_influence: both
 attn_activation: silu

@@ -8,17 +8,13 @@ embed_files: "dataset_z.npy"
 force_files: "dataset_dy.npy"
 
 # ---- Architettura del Modello ----
-model: equivariant-transformer
+model: graph-network
 num_layers: 3
 embedding_dimension: 128
 num_rbf: 50
 rbf_type: "expnorm"
 trainable_rbf: true
 activation: "silu"
-attn_activation: "silu"
-num_heads: 8
-distance_influence: "both"
-neighbor_embedding: true
 cutoff_lower: 0.0
 cutoff_upper: 0.9
 max_z: 100

@@ -4,10 +4,6 @@ import argparse
 
 # ATTENZIONE: Questo script richiede l'installazione di torchmd e torchmd-net
 try:
-    from torchmd.system import System
-    from torchmd.dynamics import Langevin
-    from torchmd.forces import Forces
-    from torchmd.parameters import Parameters
     from torchmdnet.models.model import load_model
 except ImportError:
     print("[ERRORE] Assicurati di aver installato torchmd e torchmd-net!")
@@ -24,23 +20,18 @@ class WCAPrior(torch.nn.Module):
         self.cutoff = sigma * (2.0 ** (1.0 / 6.0))
 
     def forward(self, positions, box):
-        # Calcolo dell'energia repulsiva WCA (Pairwise) su GPU
-        # In una vera implementazione TorchMD, si userebbero le neighbor lists
-        # o il calcolo vettoriale denso per piccoli sistemi.
+        # positions: (N, 3)
         N = positions.shape[0]
         energy = torch.tensor(0.0, device=positions.device)
         
-        # Calcolo all-pairs per semplicità didattica (O(N^2))
-        diff = positions.unsqueeze(1) - positions.unsqueeze(0)
-        # Minimum image convention
+        diff = positions.unsqueeze(1) - positions.unsqueeze(0) # (N, N, 3)
         if box is not None:
+            # box: (3,)
             diff = diff - box * torch.round(diff / box)
             
-        r_sq = torch.sum(diff**2, dim=-1)
-        # Ignora l'auto-interazione (diagonale)
+        r_sq = torch.sum(diff**2, dim=-1) # (N, N)
         r_sq.fill_diagonal_(float('inf'))
         
-        # Maschera cutoff
         mask = r_sq < (self.cutoff**2)
         r_sq_masked = r_sq[mask]
         
@@ -49,7 +40,7 @@ class WCAPrior(torch.nn.Module):
             sr6 = sr2**3
             sr12 = sr6**2
             e_wca = 4.0 * self.epsilon * (sr12 - sr6) + self.epsilon
-            energy = energy + 0.5 * torch.sum(e_wca) # 0.5 per evitare double-counting
+            energy = energy + 0.5 * torch.sum(e_wca)
 
         return energy
 
@@ -63,11 +54,11 @@ class NeuralNetworkPrior(torch.nn.Module):
     def forward(self, positions, atomic_numbers, box):
         # TorchMD-Net si aspetta (N, 3) posizioni e (N,) tipi atomici
         # Restituisce (Energy, Forces)
-        energy, forces = self.model(atomic_numbers, positions, box=box)
+        energy, forces = self.model(atomic_numbers, positions, box=None)
         
         # Riporta le forze alla scala originale (abbiamo scalato di 0.001 nel training)
         forces = forces * 1000.0
-        return energy.squeeze()
+        return energy.squeeze(), forces
 
 def main():
     parser = argparse.ArgumentParser()
@@ -85,10 +76,12 @@ def main():
     z_types = torch.tensor(data['z'], dtype=torch.long, device=device)
     box = torch.tensor([2.0, 2.0, 2.0], dtype=torch.float32, device=device) # Esempio: box da 2 nm
 
-    # 2. Inizializza il Sistema TorchMD
-    system = System(pos_init, box, device=device)
-    # Imposta le masse (approssimazione)
-    system.masses = torch.ones(len(z_types), device=device) * 18.0 
+    # 2. Inizializza le variabili MD
+    natoms = len(z_types)
+    pos = pos_init.clone()  # (N, 3)
+    vel = torch.zeros_like(pos)
+    masses = torch.ones(natoms, 1, device=device) * 18.0 
+    box = torch.tensor([2.0, 2.0, 2.0], dtype=torch.float32, device=device)
 
     # 3. Definisci i Termini di Forza
     # - Potenziale Classico (WCA)
@@ -99,14 +92,14 @@ def main():
     # In TorchMD, Forces calcola ad ogni step l'energia e fa l'autograd
     def force_calculator(positions, box):
         positions.requires_grad_(True)
-        # Energia Totale = E_WCA + E_ML
         e_wca = wca_prior(positions, box)
-        e_ml = ml_prior(positions, z_types, box)
-        e_tot = e_wca + e_ml
+        wca_forces = -torch.autograd.grad(e_wca, positions)[0]
         
-        # Calcolo forze esatte tramite Autograd
-        forces = -torch.autograd.grad(e_tot, positions)[0]
-        return e_tot.detach(), forces.detach()
+        e_ml, ml_forces = ml_prior(positions, z_types, box)
+        e_tot = e_wca.detach() + e_ml.detach()
+        forces = wca_forces + ml_forces
+        
+        return e_tot, forces
 
     # 4. Inizializza Integratore
     # Langevin(system, forces_calculator, kT, gamma, dt)
@@ -114,24 +107,25 @@ def main():
     # l'injection del calcolo per far capire il concetto "End-to-End".
     print("[INFO] Inizio Dinamica Molecolare su GPU...")
     
-    # Loop MD base (Velocity Verlet / Euler)
+    # Loop MD base (Velocity Verlet)
     dt = 0.002
+    trajectory = []
     for step in range(args.steps):
         # 1. Calcolo Forze
-        energy, forces = force_calculator(system.pos, system.box)
+        energy, forces = force_calculator(pos, box)
         
-        # 2. Update velocità e posizioni (Verlet Semplice)
-        acc = forces / system.masses.unsqueeze(1)
-        system.vel = system.vel + 0.5 * acc * dt
-        system.pos = system.pos + system.vel * dt
+        # 2. Update velocità e posizioni (Euler)
+        acc = forces / masses # (N, 3) / (N, 1)
+        vel = vel + 0.5 * acc * dt
+        pos = pos + vel * dt
         
-        # (Qui si chiamerebbe il calcolo forze di nuovo per il Verlet completo,
-        # e si applicherebbe il termostato di Langevin)
-        
-        if step % 100 == 0:
+        if step % 10 == 0:
             print(f"Step {step:4d} | Energia: {energy.item():.4f}")
+            trajectory.append(pos.detach().cpu().numpy())
 
     print("[INFO] Simulazione terminata!")
+    np.save("trajectory.npy", np.array(trajectory))
+    print("[INFO] Traiettoria salvata in trajectory.npy")
 
 if __name__ == "__main__":
     main()

@@ -37,9 +37,9 @@ lr_patience: 10
 lr_warmup_steps: 0
 max_num_neighbors: 100
 max_z: 100
-model: equivariant-transformer
+model: graph-network
 neg_dy_weight: 1.0
-neighbor_embedding: true
+neighbor_embedding: false
 ngpus: -1
 num_epochs: 500
 num_heads: 8
