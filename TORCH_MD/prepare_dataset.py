@@ -97,16 +97,20 @@ def main():
         if "wca" in priors:
             eps = priors["wca"]["epsilon"]
             sig = priors["wca"]["sigma"]
+            cutoff = sig * (2.0 ** (1.0 / 6.0))
             num_sites = len(frame_pos)
             for i in range(num_sites):
                 for j in range(i+1, num_sites):
                     dvec = frame_pos[i] - frame_pos[j]
                     dvec -= box * np.round(dvec / box)
                     dist = np.linalg.norm(dvec)
-                    f_wca_ij = calculate_wca_force(dvec, dist, eps, sig)
-                    
-                    frame_dy[i] -= f_wca_ij
-                    frame_dy[j] += f_wca_ij
+                    if dist < cutoff:
+                        sr = sig / dist
+                        sr6 = sr**6
+                        f_mag = 4.0 * eps * (12.0 * (sr6**2) - 6.0 * sr6) / dist
+                        f_wca_ij = f_mag * (dvec / dist)
+                        frame_dy[i] -= f_wca_ij
+                        frame_dy[j] += f_wca_ij
         
         all_pos.append(frame_pos)
         all_dy.append(frame_dy)
@@ -115,8 +119,12 @@ def main():
     pos_array = np.array(all_pos, dtype=np.float32)
     dy_array = np.array(all_dy, dtype=np.float32)
 
-    print(f"\n[INFO] Salvataggio in {args.output}...")
-    np.savez(args.output, z=z, pos=pos_array, dy=dy_array)
+    print(f"\n[INFO] Salvataggio in {args.output} come file .npy separati...")
+    # Rimuoviamo l'estensione npz se presente per usare il path come base
+    base = args.output.replace(".npz", "")
+    np.save(f"{base}_z.npy", z)
+    np.save(f"{base}_pos.npy", pos_array)
+    np.save(f"{base}_dy.npy", dy_array)
 
 if __name__ == "__main__":
     main()
