@@ -88,8 +88,11 @@ def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt):
     # Passaggio a NVE (stacchiamo il termostato)
     system.thermostat.turn_off()
     
-    # Produzione NVE ridotta per test CPU
-    steps_nve = 50
+    # Produzione NVE con tempo fisso
+    t_total = 0.1 # ps
+    steps_nve = max(10, int(round(t_total / dt)))
+    print(f"       -> Esecuzione per {steps_nve} steps (t_tot = {t_total} ps)...")
+    
     times = []
     e_tots = []
     e_kins = []
@@ -134,7 +137,8 @@ if __name__ == "__main__":
         import os; os._exit(0)
     
     import subprocess
-    dt_list = [0.001, 0.002, 0.003, 0.004] # in ps (1 fs, 2 fs, 3 fs, 4 fs)
+    # dt_list = [0.0001, 0.001, 0.002, 0.004, 0.006] # in ps (0.1, 1, 2, 4, 6 fs)
+    dt_list = [0.0001, 0.001, 0.002, 0.004, 0.006]
     delta_e_list = []
     
     plt.figure(figsize=(14, 5))
