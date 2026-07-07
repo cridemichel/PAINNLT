@@ -3,6 +3,7 @@ import espressomd.painn
 import numpy as np
 import struct
 import json
+import matplotlib.pyplot as plt
 
 def read_first_frame_md17_bin(filepath):
     with open(filepath, "rb") as f:
@@ -73,6 +74,9 @@ espressomd.painn.activate_painn_potential(
     device="cpu"
 )
 
+plot_dts = []
+plot_stds = []
+
 for dt in dt_values:
     system.time_step = dt
     
@@ -108,3 +112,27 @@ for dt in dt_values:
         
     print(f"{dt:10.6f} | {steps:6d} | {std_e:12.6f} | {delta_e:22.6f} | {ratio:>22}")
     prev_std = std_e
+    plot_dts.append(dt * 1000) # fs
+    plot_stds.append(std_e)
+
+print("=" * 80)
+
+# Generazione Plot log-log
+plt.figure(figsize=(8, 6))
+plt.loglog(plot_dts, plot_stds, 'o-', markersize=8, label="Misurazioni")
+
+# Fit lineare per calcolare pendenza
+coeffs = np.polyfit(np.log(plot_dts), np.log(plot_stds), 1)
+slope = coeffs[0]
+
+# Retta O(dt^2) passante per il primo punto
+ref_stds = plot_stds[-1] * (np.array(plot_dts) / plot_dts[-1])**2
+plt.loglog(plot_dts, ref_stds, '--', color='red', label="Scaling Teorico (dt$^2$)")
+
+plt.xlabel("Timestep dt (fs)")
+plt.ylabel(r"Varianza E Totale, $\sigma(E)$ (kJ/mol)")
+plt.title(f"Scaling dell'errore (Pendenza log-log: {slope:.2f})")
+plt.legend()
+plt.grid(True, which="both", ls="--", alpha=0.5)
+plt.savefig("scaling_plot.png", dpi=300, bbox_inches='tight')
+print("Plot salvato in scaling_plot.png")
