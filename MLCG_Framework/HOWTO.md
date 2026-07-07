@@ -117,3 +117,11 @@ Lo script si occuperà di:
 3. Caricare il WCA in ESPResSo.
 4. Inizializzare la rete neurale `best_cg_model.pt` in ESPResSo tramite il plugin C++ ML Potential.
 5. Lanciare la Dinamica Molecolare NVE o NVT (Langevin) combinando le forze analitiche con le predizioni neurali!
+
+### 3.3 Validazione dell'Energia (Scaling Quadratico)
+Per assicurarti che l'integrazione di PyTorch e dei Prior all'interno di ESPResSo conservi l'energia (simulazione NVE simplettica), puoi usare lo script di test dedicato:
+```bash
+cd simulation
+/path/to/espresso/build/pypresso verify_energy_scaling.py
+```
+Lo script ridurrà iterativamente il time-step `dt` e calcolerà la deviazione standard dell'energia totale ($E_{kin} + E_{bonded} + E_{ML}$). Dato che l'algoritmo di integrazione è *Velocity Verlet*, l'errore deve scalare con $O(dt^2)$, il che significa che dimezzando il time-step la fluttuazione si ridurrà esattamente di un fattore $\sim 0.25$!
