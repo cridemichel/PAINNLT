@@ -76,7 +76,7 @@ model_cutoff = float(nn_config["cutoff"])
 # 3. Verlet Lists Hack
 for i in range(10):
     for j in range(i, 10):
-        system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, cutoff=model_cutoff, shift=0.0)
+        system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, cutoff=model_cutoff, shift="auto")
 
 # 4. Attivazione Modello PaiNN
 espressomd.painn.activate_painn_potential(

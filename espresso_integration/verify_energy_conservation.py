@@ -16,18 +16,14 @@ except ImportError:
 def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt):
     print(f"\n[INFO] Avvio test NVE con dt = {dt:.4f} ps ({dt*1000:.2f} fs)")
     
-    with open(bin_file, "rb") as f:
-        f.read(4)
-        num_molecules, num_total_sites = struct.unpack("ii", f.read(8))
-        box = np.array(struct.unpack("3f", f.read(12)))
-        initial_centers = []
-        for mol_idx in range(num_molecules):
-            mol_id, num_sites = struct.unpack("ii", f.read(8))
-            cx, cy, cz, fx, fy, fz, tx, ty, tz = struct.unpack("9f", f.read(36))
-            initial_centers.append([cx, cy, cz])
-            for s in range(num_sites):
-                f.read(16)
-                
+    # Generiamo esattamente 9 atomi su una griglia 3x3x1 in un box molto compatto
+    box_size = 0.9  # Box size ridotto (0.9 nm) per alta densità
+    initial_centers = []
+    spacing = box_size / 3.0 # Spacing di 0.3 nm (esattamente uguale alla sigma WCA, urti fortissimi!)
+    for x in range(3):
+        for y in range(3):
+            initial_centers.append([x*spacing + 0.1, y*spacing + 0.1, 0.45])
+    box = np.array([box_size, box_size, box_size])
     system = espressomd.System(box_l=box)
     system.time_step = dt
     system.cell_system.skin = 0.05
@@ -44,10 +40,13 @@ def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt):
     site_name = list(data["sites"].keys())[0]
     site_type = data["sites"][site_name]["type"]
     
+    np.random.seed(42)
+    initial_velocities = np.random.randn(len(initial_centers), 3) * 0.01 # vel bassa come in check_dt_scaling_cg
+
     parts = []
-    for pos in initial_centers:
+    for idx, pos in enumerate(initial_centers):
         pos_wrapped = np.array(pos) % box
-        p = system.part.add(pos=pos_wrapped, type=site_type, mass=mass, rinertia=rinertia, rotation=[True,True,True])
+        p = system.part.add(pos=pos_wrapped, type=site_type, mass=mass, rinertia=rinertia, rotation=[True,True,True], v=initial_velocities[idx])
         parts.append(p)
 
     if priors_path and os.path.exists(priors_path):
@@ -58,7 +57,7 @@ def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt):
                 sig = priors["wca"].get("sigma", 0)
                 if eps > 0 and sig > 0:
                     system.non_bonded_inter[site_type, site_type].lennard_jones.set_params(
-                        epsilon=eps, sigma=sig, cutoff=sig*(2**(1/6)), shift=0.0
+                        epsilon=eps, sigma=sig, cutoff=sig*(2**(1/6)), shift="auto"
                     )
     
     with open(config_path, "r") as f:
@@ -81,15 +80,13 @@ def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt):
         device="cpu"
     )
     
-    # Termalizzazione NVT ridotta per test CPU
-    system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
-    system.integrator.run(20)
-    
-    # Passaggio a NVE (stacchiamo il termostato)
+    # NESSUNA TERMALIZZAZIONE! Per testare l'errore di integrazione O(dt^2) 
+    # dobbiamo partire ESATTAMENTE dallo stesso microstato (stesse posizioni, stesse velocità).
+    # Qualsiasi termostato (Langevin) dipendente dal dt altererebbe il microstato iniziale.
     system.thermostat.turn_off()
     
     # Produzione NVE con tempo fisso
-    t_total = 0.1 # ps
+    t_total = 0.2 # ps (velocizzato per il test dello scaling)
     steps_nve = max(10, int(round(t_total / dt)))
     print(f"       -> Esecuzione per {steps_nve} steps (t_tot = {t_total} ps)...")
     
@@ -138,7 +135,7 @@ if __name__ == "__main__":
     
     import subprocess
     # dt_list = [0.0001, 0.001, 0.002, 0.004, 0.006] # in ps (0.1, 1, 2, 4, 6 fs)
-    dt_list = [0.0001, 0.001, 0.002, 0.004, 0.006]
+    dt_list = [0.001, 0.002, 0.004, 0.006, 0.008, 0.010]
     delta_e_list = []
     
     plt.figure(figsize=(14, 5))

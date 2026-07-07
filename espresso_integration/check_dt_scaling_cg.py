@@ -60,7 +60,7 @@ except FileNotFoundError:
 for i in range(10):
     for j in range(i, 10):
         system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, 
-                                                               cutoff=float(nn_config['cutoff']), shift=0.0)
+                                                               cutoff=float(nn_config['cutoff']), shift="auto")
         
 espressomd.painn.activate_painn_potential(
     model_path="../GROMACS/best_cg_model.pt", 

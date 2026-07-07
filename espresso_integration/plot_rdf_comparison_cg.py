@@ -144,7 +144,7 @@ def run_espresso_rdf(model_path, config_path, rb_info_path, priors_path, bin_fil
                 sig = priors["wca"].get("sigma", 0)
                 if eps > 0 and sig > 0:
                     system.non_bonded_inter[site_type, site_type].lennard_jones.set_params(
-                        epsilon=eps, sigma=sig, cutoff=sig*(2**(1/6)), shift=0.0
+                        epsilon=eps, sigma=sig, cutoff=sig*(2**(1/6)), shift="auto"
                     )
     
     with open(config_path, "r") as f:

@@ -114,7 +114,7 @@ if os.path.exists(config_path) and os.path.exists(model_path):
     for i in range(num_species):
         for j in range(i, num_species):
             system.non_bonded_inter[i, j].lennard_jones.set_params(
-                epsilon=0.0, sigma=1.0, cutoff=cutoff, shift=0.0
+                epsilon=0.0, sigma=1.0, cutoff=cutoff, shift="auto"
             )
             
     # Forziamo l'aggiornamento della neighbor list alla distanza di cutoff corretta
