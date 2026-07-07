@@ -1,0 +1,14 @@
+{
+    "temperature": 300.0,
+    "wca_sigma": 0.3,
+    "wca_epsilon": 1.0,
+    "mapping": {
+        "site_0": [0, 1, 2],
+        "site_1": [3, 4, 5],
+        "site_2": [6, 7, 8]
+    },
+    "bonds": [
+        [0, 1],
+        [1, 2]
+    ]
+}
