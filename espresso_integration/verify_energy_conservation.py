@@ -13,8 +13,8 @@ except ImportError:
     print("[ERRORE] ESPResSo non trovato.")
     sys.exit(1)
 
-def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt):
-    print(f"\n[INFO] Avvio test NVE con dt = {dt:.4f} ps ({dt*1000:.2f} fs)")
+def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt, device="cpu"):
+    print(f"\n[INFO] Avvio test NVE con dt = {dt:.4f} ps ({dt*1000:.2f} fs) su {device}")
     
     # Generiamo esattamente 9 atomi su una griglia 3x3x1 in un box molto compatto
     box_size = 0.9  # Box size ridotto (0.9 nm) per alta densità
@@ -77,7 +77,7 @@ def run_nve(model_path, config_path, rb_info_path, priors_path, bin_file, dt):
         n_layers=int(nn_config['n_layers']), 
         num_rbf=int(nn_config['num_rbf']), 
         cutoff=cutoff, 
-        device="cpu"
+        device=device
     )
     
     # NESSUNA TERMALIZZAZIONE! Per testare l'errore di integrazione O(dt^2) 
@@ -124,11 +124,12 @@ if __name__ == "__main__":
     parser.add_argument("--rb", type=str, required=True)
     parser.add_argument("--priors", type=str, default=None)
     parser.add_argument("--dt", type=float, default=None)
+    parser.add_argument("--device", type=str, default="cpu")
     
     args = parser.parse_args()
     
     if args.dt is not None:
-        times, e_tots, e_kins, e_pots, dE = run_nve(args.model, args.config, args.rb, args.priors, args.bin, args.dt)
+        times, e_tots, e_kins, e_pots, dE = run_nve(args.model, args.config, args.rb, args.priors, args.bin, args.dt, args.device)
         np.savez(f"nve_dt_{args.dt:.4f}.npz", times=times, e_tots=e_tots, e_kins=e_kins, e_pots=e_pots, dE=dE)
         sys.stdout.flush()
         import os; os._exit(0)
@@ -147,7 +148,8 @@ if __name__ == "__main__":
             "--bin", args.bin, "--model", args.model,
             "--config", args.config, "--rb", args.rb,
             "--priors", args.priors if args.priors else "",
-            "--dt", str(dt)
+            "--dt", str(dt),
+            "--device", args.device
         ]
         if not args.priors:
             cmd.remove("--priors")
