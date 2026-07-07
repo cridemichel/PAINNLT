@@ -71,15 +71,18 @@ make -j4
 ```
 
 ### 2.2 Configurare i Parametri della Rete
-Nella cartella `training/` troverai il file `cg_model_config.json`. Questo file contiene gli iperparametri della rete PaiNN (es. numero di layer, cutoff radiale, features, numero di epoche). Assicurati di modificarlo secondo le necessità del tuo sistema.
+Nella cartella `training/` troverai il file `cg_model_config.json`. Questo file è la **centralina di controllo** della rete: prima di lanciare l'addestramento, puoi modificare qui dentro parametri come `hidden_channels`, `n_layers`, `cutoff`, `learning_rate` e le `epochs`. Il codice C++ leggerà questo file in tempo reale senza bisogno di ricompilare!
 
 ### 2.3 Esecuzione del Training
-Lancia l'addestramento. Il programma cercherà automaticamente il file `cg_dataset.bin`.
+Lancia l'addestramento. Di default, il programma cercherà i file `cg_dataset.bin`, `best_cg_model.pt` (per il salvataggio) e `cg_model_config.json` (per la configurazione).
 ```bash
 cd training
 ./train_painn
 ```
-Il training salverà il modello PyTorch JIT compilato come `best_cg_model.pt`.
+*Nota: Puoi passare percorsi personalizzati da riga di comando:*
+`./train_painn <dataset.bin> <output_model.pt> <config.json>`
+
+Il training salverà il modello PyTorch JIT compilato e ottimizzato per ESPResSo.
 
 ---
 

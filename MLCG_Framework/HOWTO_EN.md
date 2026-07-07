@@ -71,15 +71,18 @@ make -j4
 ```
 
 ### 2.2 Configure Network Parameters
-In the `training/` folder you will find the `cg_model_config.json` file. This file contains the PaiNN network hyperparameters (e.g., number of layers, radial cutoff, features, number of epochs). Be sure to modify it according to the needs of your system.
+In the `training/` folder you will find the `cg_model_config.json` file. This file acts as the **control hub** for the network: before starting the training, you can modify parameters such as `hidden_channels`, `n_layers`, `cutoff`, `learning_rate`, and `epochs` here. The C++ code will read this file at runtime without any need to recompile!
 
 ### 2.3 Running the Training
-Start the training. The program will automatically look for the `cg_dataset.bin` file.
+Start the training. By default, the program will look for `cg_dataset.bin`, `best_cg_model.pt` (for saving), and `cg_model_config.json` (for configuration).
 ```bash
 cd training
 ./train_painn
 ```
-The training will save the compiled PyTorch JIT model as `best_cg_model.pt`.
+*Note: You can pass custom paths via command-line arguments:*
+`./train_painn <dataset.bin> <output_model.pt> <config.json>`
+
+The training will save the compiled PyTorch JIT model optimized for ESPResSo.
 
 ---
 

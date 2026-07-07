@@ -1,0 +1,8 @@
+#include "oplsaa.ff/forcefield.itp"
+#include "oplsaa.ff/spc.itp"
+
+[ system ]
+Box di Acqua per Test ML
+
+[ molecules ]
+SOL 221

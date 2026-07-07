@@ -8,6 +8,9 @@
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
 
+#include "json.hpp"
+using json = nlohmann::json;
+
 #ifdef __APPLE__
 #include <ATen/mps/MPSAllocatorInterface.h>
 #endif
@@ -230,11 +233,13 @@ struct EarlyStopping {
         patience(p), counter(0), best_loss(std::numeric_limits<float>::infinity()), 
         early_stop(false), save_path(path) {}
 
-    void check(PaiNNModel& model, float val_loss) { 
+    void check(PaiNNModel& model, float val_loss, torch::Device device) { 
         if (val_loss < best_loss) {
             best_loss = val_loss;
             counter = 0;
+            model->to(torch::kCPU);
             torch::save(model, save_path);
+            model->to(device);
             std::cout << "   ---> [Early Stopping] Miglioramento! Modello salvato.\n";
         } else {
             counter++;
@@ -294,45 +299,57 @@ int main(int argc, char* argv[]) {
 
     std::cout << "[INFO] Utilizzando il device: " << device_name << "\n";
     
-    // 1. Parametri Rete
+    // 1. Parametri Rete (letti da JSON)
     int num_species = 100; 
-    int dim = 64;
-    int layers = 2;
-    int num_rbf = 20; 
-    float cutoff = 1.0f;
+    int dim = 128;
+    int layers = 3;
+    int num_rbf = 40; 
+    float cutoff = 5.0f;
+    int max_epochs = 500;
+    float initial_lr = 5e-4;
+    float weight_decay_val = 0.0f;
+    int es_patience = 10;
+    int reduce_lr_patience = 5;
+
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
+    std::string config_path = "cg_model_config.json";
     
-    if (argc >= 2) {
-        dataset_path = argv[1];
-    }
-    if (argc >= 3) {
-        model_path = argv[2];
-    }
+    if (argc >= 2) dataset_path = argv[1];
+    if (argc >= 3) model_path = argv[2];
+    if (argc >= 4) config_path = argv[3];
 
-    // Salvataggio JSON
-    std::string json_path = model_path.substr(0, model_path.find_last_of('.')) + "_config.json";
-    std::ofstream json_file(json_path);
-    if (json_file.is_open()) {
-        json_file << "{\n  \"num_species\": " << num_species << ",\n  \"hidden_channels\": " << dim 
-                  << ",\n  \"n_layers\": " << layers << ",\n  \"num_rbf\": " << num_rbf 
-                  << ",\n  \"cutoff\": " << cutoff << "\n}\n";
-        json_file.close();
-        std::cout << "[INFO] File configurazione JSON salvato.\n";
+    // Lettura JSON
+    std::ifstream config_file(config_path);
+    if (config_file.is_open()) {
+        json j;
+        config_file >> j;
+        if (j.contains("num_species")) num_species = j["num_species"];
+        if (j.contains("hidden_channels")) dim = j["hidden_channels"];
+        if (j.contains("n_layers")) layers = j["n_layers"];
+        if (j.contains("num_rbf")) num_rbf = j["num_rbf"];
+        if (j.contains("cutoff")) cutoff = j["cutoff"];
+        if (j.contains("epochs")) max_epochs = j["epochs"];
+        if (j.contains("learning_rate")) initial_lr = j["learning_rate"];
+        if (j.contains("weight_decay")) weight_decay_val = j["weight_decay"];
+        if (j.contains("early_stopping_patience")) es_patience = j["early_stopping_patience"];
+        if (j.contains("reduce_lr_patience")) reduce_lr_patience = j["reduce_lr_patience"];
+        std::cout << "[INFO] Caricati iperparametri da " << config_path << "\n";
+    } else {
+        std::cerr << "[WARNING] Impossibile leggere " << config_path << ". Uso default.\n";
     }
 
     // Inizializza il Modello
     PaiNNModel model(num_species, dim, layers, num_rbf, cutoff);
     model->to(device);
 
-    // Iperparametri Training (Riportato a 1e-3 perché la L1 Loss è stabile!)
-    float initial_lr = 5e-4;
+    // Iperparametri Training 
     float current_lr = initial_lr; 
     float torque_weight = 0.0f; 
-    torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(0.0));
-    EarlyStopping early_stopping(10, model_path);
+    torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(weight_decay_val));
+    EarlyStopping early_stopping(es_patience, model_path);
     
-    int lr_patience = 5; 
+    int lr_patience = reduce_lr_patience; 
     int lr_counter = 0;
     float best_val_loss = std::numeric_limits<float>::max();
     
@@ -381,7 +398,6 @@ int main(int argc, char* argv[]) {
     if (force_std < 1e-6f) force_std = 1.0f;
     std::cout << "[INFO] Force std (train): " << force_std << " kJ/(mol*nm)\n\n";
 
-    int max_epochs = 500;
     int batch_size = 16; 
     
     for (int epoch = 1; epoch <= max_epochs; ++epoch) {
@@ -634,7 +650,7 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        early_stopping.check(model, val_loss_avg);
+        early_stopping.check(model, val_loss_avg, device);
         if (early_stopping.early_stop) {
             std::cout << "[INFO] Addestramento interrotto (Early Stopping).\n";
             break;

@@ -1,0 +1,7 @@
+{
+  "num_species": 100,
+  "hidden_channels": 64,
+  "n_layers": 2,
+  "num_rbf": 20,
+  "cutoff": 1
+}

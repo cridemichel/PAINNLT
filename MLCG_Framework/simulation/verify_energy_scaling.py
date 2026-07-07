@@ -21,14 +21,14 @@ print("=" * 80)
 # 1. Configurazione del Sistema (Placeholder per TEL22 + Acqua)
 # Quando la configurazione GROMACS sarà pronta, caricare le posizioni qui.
 # Per ora generiamo un reticolo fittizio per il test.
-box_size = 10.0  # nm
+box_size = 11.0  # nm
 coords = []
-L = 5
+L = 3
 for x in range(L):
     for y in range(L):
         for z in range(L):
-            coords.append([x*2.0+1.0, y*2.0+1.0, z*2.0+1.0])
-coords = np.array(coords)
+            coords.append([x*0.5, y*0.5, z*0.5])
+coords = np.array(coords)[:9] # prendiamo esattamente 9 atomi come l'etanolo
 num_atoms = len(coords)
 atomic_numbers = np.zeros(num_atoms, dtype=np.int32)
 
@@ -112,12 +112,15 @@ for dt in dt_values:
     std_e = np.std(energies)
     delta_e = np.max(energies) - np.min(energies)
     
+    if dt == dt_values[0]:
+        print(f"DEBUG E_tot trace (dt={dt}): {energies[:5]}")
+    
     ratio = ""
     if prev_std is not None and prev_std > 0:
         val = std_e / prev_std
         ratio = f"{val:.4f} (atteso ~0.25)"
         
-    print(f"{dt*1000:10.4f} | {steps:6d} | {std_e:12.6f} | {delta_e:22.6f} | {ratio:>22}")
+    print(f"{dt*1000:9.4f} | {steps:6d} | {std_e:12.6f} | {delta_e:22.6f} | {ratio:>22}")
     prev_std = std_e
 
 print("=" * 80)
