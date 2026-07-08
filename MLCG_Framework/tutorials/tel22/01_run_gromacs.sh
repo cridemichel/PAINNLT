@@ -60,8 +60,12 @@ gmx grompp -f mdp/md.mdp -c npt.gro -t npt.cpt -p topol.top -o md.tpr -maxwarn 1
 # Lancia la produzione! Questo richiederà un po' di tempo a seconda dei core
 gmx mdrun -v -deffnm md
 
+echo "[10] Srotolamento della traiettoria (Rimozione PBC)..."
+# Usiamo il gruppo 0 (System) per ricompattare le molecole spezzate dai bordi periodici
+echo "0" | gmx trjconv -s md.tpr -f md.trr -pbc whole -o md_whole.trr
+
 echo "======================================================"
 echo " Simulazione GROMACS completata!"
-echo " I file utili per il CG sono: md.trr (posizioni, forze) e md.gro (struttura finale)"
+echo " I file utili per il CG sono: md_whole.trr (posizioni, forze) e md.gro"
 echo " Ora puoi procedere con 02_build_dataset.sh"
 echo "======================================================"

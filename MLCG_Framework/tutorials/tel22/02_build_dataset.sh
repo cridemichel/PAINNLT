@@ -11,7 +11,7 @@ if [ ! -f "md.trr" ] || [ ! -f "md.gro" ]; then
 fi
 
 python3 ../../preprocessing/build_cg_dataset.py \
-    --traj md.trr \
+    --traj md_whole.trr \
     --topol md.gro \
     --config tel22_topology.json \
     --output tel22_dataset.bin
