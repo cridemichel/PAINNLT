@@ -126,6 +126,13 @@ for idx, b in enumerate(priors.get("bonds", [])):
         bond = espressomd.interactions.TabulatedDistance(
             min=rmin_tab, max=rmax_tab, energy=energy, force=force
         )
+    elif b_type == "tabulated":
+        data = np.loadtxt(b["file"])
+        rmin_tab = float(b["min"])
+        rmax_tab = float(b["max"])
+        bond = espressomd.interactions.TabulatedDistance(
+            min=rmin_tab, max=rmax_tab, energy=data[:, 1], force=data[:, 2]
+        )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
         continue
@@ -141,11 +148,25 @@ for idx, b in enumerate(priors.get("bonds", [])):
     
     system.part.by_id(p1).add_bond((bond, p2))
 
-# Angles (Harmonic)
+# Angles
 for idx, a in enumerate(priors.get("angles", [])):
-    k_bend = a["k"]
-    phi0 = a["theta0"]
-    angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
+    a_type = a.get("type", "harmonic")
+    if a_type == "harmonic":
+        k_bend = a["k"]
+        phi0 = a["theta0"]
+        angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
+    elif a_type == "tabulated":
+        import numpy as np
+        data = np.loadtxt(a["file"])
+        min_tab = float(a["min"]) # Typically 0.0 radians
+        max_tab = float(a["max"]) # Typically pi radians
+        angle = espressomd.interactions.TabulatedAngle(
+            min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    else:
+        print(f"[WARNING] Unknown angle type: {a_type}")
+        continue
+        
     system.bonded_inter.add(angle)
     
     mol_i, mol_j, mol_k = a["mol_i"], a["mol_j"], a["mol_k"]
