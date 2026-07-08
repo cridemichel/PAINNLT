@@ -9,18 +9,21 @@ In questa cartella troverai i singoli script numerati da eseguire uno dopo l'alt
 ---
 
 ## 01_run_gromacs.sh
-Questo script si collega al PDB (RCSB), scarica la struttura **143D** e costruisce un ambiente acquoso completo con 10 molecole di TEL22.
-> [!IMPORTANT]
-> **Importanza degli Ioni**
-> I G-quadruplex necessitano di ioni **Potassio (K+)** all'interno del canale tetradico per non denaturarsi. Lo script usa `gmx genion` per inserire una quantità neutralizzante di K+ e Cl- (circa 0.15M) prima di avviare la dinamica.
+Questo script si collega al database PDB (RCSB), scarica in automatico tramite `curl` la struttura **143D** (il G-quadruplex determinato via NMR), la quale contiene nativamente **6 copie (catene)** della molecola TEL22 già ripiegate, perfette per una simulazione multi-molecolare.
 
-Lo script esegue:
-1. `pdb2gmx` (AMBER99SB-ILDN)
-2. Inserimento di 10 molecole in un box da 8 nm
-3. Solvatazione e Ionizzazione
-4. Minimizzazione
-5. Equilibrazione NVT e NPT
-6. **MD Production (1 ns)** salvando le **forze** ogni 1 ps.
+> [!IMPORTANT]
+> **Importanza degli Ioni per il DNA G-Quadruplex**
+> I G-quadruplex necessitano obbligatoriamente di ioni **Potassio (K+)** incastonati all'interno del canale tetradico per non denaturarsi durante la dinamica. Lo script usa il comando GROMACS `genion` per inserire in automatico una quantità neutralizzante di K+ e Cl- (circa 0.15M) prima di avviare la simulazione.
+
+Se apri lo script `01_run_gromacs.sh` vedrai esattamente tutti i comandi necessari per generare una simulazione All-Atom da zero. Lo script esegue:
+1. `curl`: Scarica il file PDB originale.
+2. `pdb2gmx`: Genera la topologia del DNA usando il Forcefield **AMBER99SB-ILDN** ignorando gli idrogeni NMR.
+3. `editconf`: Centra le 6 molecole all'interno di un box cubico lasciando 1.5 nm di margine.
+4. `solvate`: Riempie il box di molecole d'acqua (modello TIP3P).
+5. `genion`: Sostituisce parte dell'acqua con 154 ioni K+ e 28 ioni Cl-.
+6. **Minimizzazione dell'energia** (`mdrun` su `minim.mdp`).
+7. **Equilibrazione NVT e NPT** (`mdrun` su `nvt.mdp` e `npt.mdp`) per stabilizzare temperatura (300K) e densità.
+8. **MD Production (1 ns)**: Lancia la vera e propria simulazione molecolare salvando posizioni, velocità e, cosa fondamentale per il Machine Learning, le **forze** (`md.trr`) ogni singolo picosecondo.
 
 ---
 

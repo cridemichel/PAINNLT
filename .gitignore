@@ -18,3 +18,7 @@ GROMACS
 **/logs*
 **/*npy
 **/*ckpt
+**/*gro
+**/*itp
+**/*top
+**/*pdb

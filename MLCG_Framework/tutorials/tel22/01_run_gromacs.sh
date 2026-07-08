@@ -25,16 +25,12 @@ echo "[2] Generazione della Topologia (AMBER99SB-ILDN)..."
 # Usiamo -ignh per ignorare gli idrogeni NMR e farli calcolare a GROMACS
 gmx pdb2gmx -f tel22_clean.pdb -o tel22_processed.gro -water tip3p -ff amber99sb-ildn -ignh
 
-echo "[3] Moltiplicazione: Inserimento di 10 molecole in un box da 8 nm..."
-gmx insert-molecules -ci tel22_processed.gro -nmol 10 -box 8 8 8 -o box_10.gro
-
-# NOTA: insert-molecules non aggiorna automaticamente topol.top
-# Aggiungiamo le altre 9 molecole al topol.top (la prima è già lì)
-echo "Aggiornamento topol.top..."
-sed -i '' 's/DNA_chain_A     1/DNA_chain_A     10/g' topol.top
+echo "[3] Creazione del Box di simulazione..."
+# Mettiamo le 6 molecole al centro di un box cubico, con 1.5 nm di distanza dai bordi
+gmx editconf -f tel22_processed.gro -o box.gro -c -d 1.5 -bt cubic
 
 echo "[4] Solvatazione..."
-gmx solvate -cp box_10.gro -cs spc216.gro -o box_solvated.gro -p topol.top
+gmx solvate -cp box.gro -cs spc216.gro -o box_solvated.gro -p topol.top
 
 echo "[5] Aggiunta Ioni (K+ e Cl-)..."
 # Prepariamo un tpr provvisorio per genion
