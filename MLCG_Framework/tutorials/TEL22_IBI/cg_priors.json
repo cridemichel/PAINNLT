@@ -8,9 +8,9 @@
             "type": "tabulated",
             "k": 8648.73760773242,
             "r0": 0.587979068927413,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_0.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 1,
@@ -20,9 +20,9 @@
             "type": "tabulated",
             "k": 8969.32262406113,
             "r0": 0.6017769238109504,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_1.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 2,
@@ -32,9 +32,9 @@
             "type": "tabulated",
             "k": 1751.330985194919,
             "r0": 0.608450606578876,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_2.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 3,
@@ -44,9 +44,9 @@
             "type": "tabulated",
             "k": 1176.4387335981148,
             "r0": 0.6969167016034812,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_3.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 4,
@@ -56,9 +56,9 @@
             "type": "tabulated",
             "k": 1174.9102773305276,
             "r0": 0.5812528229028721,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_4.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 5,
@@ -68,9 +68,9 @@
             "type": "tabulated",
             "k": 3464.5959794100954,
             "r0": 0.6609898425334585,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_5.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 6,
@@ -80,9 +80,9 @@
             "type": "tabulated",
             "k": 5120.379500116962,
             "r0": 0.5725220071531991,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_6.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 7,
@@ -92,9 +92,9 @@
             "type": "tabulated",
             "k": 11074.767742331132,
             "r0": 0.6238352963404349,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_7.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 8,
@@ -104,9 +104,9 @@
             "type": "tabulated",
             "k": 3905.059103960046,
             "r0": 0.666751081283399,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_8.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 9,
@@ -116,9 +116,9 @@
             "type": "tabulated",
             "k": 2213.8239422640268,
             "r0": 0.6981403668459216,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_9.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 10,
@@ -128,9 +128,9 @@
             "type": "tabulated",
             "k": 1510.5702308404693,
             "r0": 0.5241530128885195,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_10.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 11,
@@ -140,9 +140,9 @@
             "type": "tabulated",
             "k": 480.19995710641916,
             "r0": 0.6527833612291648,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_11.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 12,
@@ -152,9 +152,9 @@
             "type": "tabulated",
             "k": 1310.353463477373,
             "r0": 0.6590830783402682,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_12.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 13,
@@ -164,9 +164,9 @@
             "type": "tabulated",
             "k": 7213.354313291198,
             "r0": 0.6199655887547154,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_13.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 14,
@@ -176,9 +176,9 @@
             "type": "tabulated",
             "k": 2275.0840270225895,
             "r0": 0.5568428360056003,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_14.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 15,
@@ -188,9 +188,9 @@
             "type": "tabulated",
             "k": 2831.290351403915,
             "r0": 0.6386465658222216,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_15.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 16,
@@ -200,9 +200,9 @@
             "type": "tabulated",
             "k": 4224.549603812293,
             "r0": 0.661696179504303,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_16.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 17,
@@ -212,9 +212,9 @@
             "type": "tabulated",
             "k": 13028.302120861374,
             "r0": 0.4509739946268346,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_17.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 18,
@@ -224,9 +224,9 @@
             "type": "tabulated",
             "k": 4816.687796989103,
             "r0": 0.7016130971333877,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_18.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 19,
@@ -236,9 +236,9 @@
             "type": "tabulated",
             "k": 1418.322550569588,
             "r0": 0.6358487118341696,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_19.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 20,
@@ -248,9 +248,9 @@
             "type": "tabulated",
             "k": 848.6338954400433,
             "r0": 0.621924808592508,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_20.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 22,
@@ -260,9 +260,9 @@
             "type": "tabulated",
             "k": 3856.361203246172,
             "r0": 0.6119746445615207,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_21.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 23,
@@ -272,9 +272,9 @@
             "type": "tabulated",
             "k": 8674.093894541815,
             "r0": 0.5864327446189419,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_22.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 24,
@@ -284,9 +284,9 @@
             "type": "tabulated",
             "k": 12786.617024418721,
             "r0": 0.6464255215744686,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_23.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 25,
@@ -296,9 +296,9 @@
             "type": "tabulated",
             "k": 549.0026906330584,
             "r0": 0.5888582882951132,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_24.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 26,
@@ -308,9 +308,9 @@
             "type": "tabulated",
             "k": 377.2687285189612,
             "r0": 0.5862549742727754,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_25.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 27,
@@ -320,9 +320,9 @@
             "type": "tabulated",
             "k": 5421.825306269178,
             "r0": 0.6883355195118529,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_26.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 28,
@@ -332,9 +332,9 @@
             "type": "tabulated",
             "k": 5176.721629167822,
             "r0": 0.5651170100323096,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_27.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 29,
@@ -344,9 +344,9 @@
             "type": "tabulated",
             "k": 14142.054512709637,
             "r0": 0.626759905010577,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_28.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 30,
@@ -356,9 +356,9 @@
             "type": "tabulated",
             "k": 3877.0011625862376,
             "r0": 0.6828798576539873,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_29.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 31,
@@ -368,9 +368,9 @@
             "type": "tabulated",
             "k": 974.9495795694509,
             "r0": 0.7108082361549948,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_30.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 32,
@@ -380,9 +380,9 @@
             "type": "tabulated",
             "k": 441.3439677058156,
             "r0": 0.5431867405113138,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_31.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 33,
@@ -392,9 +392,9 @@
             "type": "tabulated",
             "k": 2370.0314574378986,
             "r0": 0.6201655248238611,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_32.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 34,
@@ -404,9 +404,9 @@
             "type": "tabulated",
             "k": 4611.552476537993,
             "r0": 0.6253192770299848,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_33.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 35,
@@ -416,9 +416,9 @@
             "type": "tabulated",
             "k": 4661.930156526983,
             "r0": 0.6690899784929774,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_34.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 36,
@@ -428,9 +428,9 @@
             "type": "tabulated",
             "k": 5933.252695037013,
             "r0": 0.631535655795157,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_35.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 37,
@@ -440,9 +440,9 @@
             "type": "tabulated",
             "k": 623.380466058408,
             "r0": 0.7611283648945353,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_36.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 38,
@@ -452,9 +452,9 @@
             "type": "tabulated",
             "k": 520.6773635927173,
             "r0": 0.8283265477422249,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_37.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 39,
@@ -464,9 +464,9 @@
             "type": "tabulated",
             "k": 2872.197452145315,
             "r0": 0.4796756808995394,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_38.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 40,
@@ -476,9 +476,9 @@
             "type": "tabulated",
             "k": 835.3978695809229,
             "r0": 0.6812639140640598,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_39.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 41,
@@ -488,9 +488,9 @@
             "type": "tabulated",
             "k": 5146.919493227813,
             "r0": 0.644410360672521,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_40.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 42,
@@ -500,9 +500,9 @@
             "type": "tabulated",
             "k": 9886.017337106226,
             "r0": 0.6946585931904952,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_41.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 44,
@@ -512,9 +512,9 @@
             "type": "tabulated",
             "k": 6589.135379652261,
             "r0": 0.5878066645720542,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_42.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 45,
@@ -524,9 +524,9 @@
             "type": "tabulated",
             "k": 6173.508395933078,
             "r0": 0.5763567847559093,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_43.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 46,
@@ -536,9 +536,9 @@
             "type": "tabulated",
             "k": 8751.08483976055,
             "r0": 0.6454862115469423,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_44.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 47,
@@ -548,9 +548,9 @@
             "type": "tabulated",
             "k": 921.6467774178501,
             "r0": 0.6703108304687145,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_45.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 48,
@@ -560,9 +560,9 @@
             "type": "tabulated",
             "k": 852.5345602684672,
             "r0": 0.5817013529164005,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_46.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 49,
@@ -572,9 +572,9 @@
             "type": "tabulated",
             "k": 2841.4131779278655,
             "r0": 0.6783863024697234,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_47.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 50,
@@ -584,9 +584,9 @@
             "type": "tabulated",
             "k": 8888.016123894868,
             "r0": 0.5563962099704509,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_48.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 51,
@@ -596,9 +596,9 @@
             "type": "tabulated",
             "k": 10383.197034741606,
             "r0": 0.6370618667971206,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_49.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 52,
@@ -608,9 +608,9 @@
             "type": "tabulated",
             "k": 7509.483872223275,
             "r0": 0.6864333883928823,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_50.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 53,
@@ -620,9 +620,9 @@
             "type": "tabulated",
             "k": 1390.5573616793588,
             "r0": 0.7081565468040756,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_51.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 54,
@@ -632,9 +632,9 @@
             "type": "tabulated",
             "k": 406.6658043119229,
             "r0": 0.5275050558298651,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_52.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 55,
@@ -644,9 +644,9 @@
             "type": "tabulated",
             "k": 4278.978254038776,
             "r0": 0.6183557509099246,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_53.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 56,
@@ -656,9 +656,9 @@
             "type": "tabulated",
             "k": 3336.074756233475,
             "r0": 0.6582048442149755,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_54.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 57,
@@ -668,9 +668,9 @@
             "type": "tabulated",
             "k": 5830.184520236115,
             "r0": 0.6338954819303605,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_55.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 58,
@@ -680,9 +680,9 @@
             "type": "tabulated",
             "k": 4048.847902377058,
             "r0": 0.6231532492372988,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_56.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 59,
@@ -692,9 +692,9 @@
             "type": "tabulated",
             "k": 4233.957457702235,
             "r0": 0.6298597438636317,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_57.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 60,
@@ -704,9 +704,9 @@
             "type": "tabulated",
             "k": 3745.4245574277465,
             "r0": 0.6506719667199038,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_58.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 61,
@@ -716,9 +716,9 @@
             "type": "tabulated",
             "k": 11376.941560370642,
             "r0": 0.4505387021492776,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_59.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 62,
@@ -728,9 +728,9 @@
             "type": "tabulated",
             "k": 7877.710810580997,
             "r0": 0.6945049591668749,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_60.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 63,
@@ -740,9 +740,9 @@
             "type": "tabulated",
             "k": 10345.711675269084,
             "r0": 0.6541062302281446,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_61.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 64,
@@ -752,9 +752,9 @@
             "type": "tabulated",
             "k": 13150.76945322705,
             "r0": 0.6983329723742202,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_62.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 66,
@@ -764,9 +764,9 @@
             "type": "tabulated",
             "k": 5016.711610521138,
             "r0": 0.5910092449778727,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_63.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 67,
@@ -776,9 +776,9 @@
             "type": "tabulated",
             "k": 3153.48025784885,
             "r0": 0.599811205521686,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_64.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 68,
@@ -788,9 +788,9 @@
             "type": "tabulated",
             "k": 6433.724421375448,
             "r0": 0.5932975100612053,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_65.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 69,
@@ -800,9 +800,9 @@
             "type": "tabulated",
             "k": 460.21071917092894,
             "r0": 0.6067757798594284,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_66.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 70,
@@ -812,9 +812,9 @@
             "type": "tabulated",
             "k": 1403.2959957114022,
             "r0": 0.5016339845927874,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_67.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 71,
@@ -824,9 +824,9 @@
             "type": "tabulated",
             "k": 2265.820759496219,
             "r0": 0.7933434007861921,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_68.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 72,
@@ -836,9 +836,9 @@
             "type": "tabulated",
             "k": 4148.70502262879,
             "r0": 0.5561425003543405,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_69.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 73,
@@ -848,9 +848,9 @@
             "type": "tabulated",
             "k": 10136.971538786409,
             "r0": 0.632249993673113,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_70.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 74,
@@ -860,9 +860,9 @@
             "type": "tabulated",
             "k": 6004.047735676756,
             "r0": 0.6841369431515097,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_71.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 75,
@@ -872,9 +872,9 @@
             "type": "tabulated",
             "k": 915.5854495030161,
             "r0": 0.7609026594282854,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_72.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 76,
@@ -884,9 +884,9 @@
             "type": "tabulated",
             "k": 392.01540979772375,
             "r0": 0.6630502126822151,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_73.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 77,
@@ -896,9 +896,9 @@
             "type": "tabulated",
             "k": 2619.128930499131,
             "r0": 0.6193394434213073,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_74.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 78,
@@ -908,9 +908,9 @@
             "type": "tabulated",
             "k": 2313.3545713021786,
             "r0": 0.6449533775066925,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_75.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 79,
@@ -920,9 +920,9 @@
             "type": "tabulated",
             "k": 3381.739798679439,
             "r0": 0.6677350822398908,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_76.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 80,
@@ -932,9 +932,9 @@
             "type": "tabulated",
             "k": 4304.89736285446,
             "r0": 0.6204541341721588,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_77.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 81,
@@ -944,9 +944,9 @@
             "type": "tabulated",
             "k": 2714.5998314181675,
             "r0": 0.6305894206125991,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_78.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 82,
@@ -956,9 +956,9 @@
             "type": "tabulated",
             "k": 2345.2776588325155,
             "r0": 0.7216750177051086,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_79.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 83,
@@ -968,9 +968,9 @@
             "type": "tabulated",
             "k": 4838.357323753566,
             "r0": 0.4494002986929045,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_80.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 84,
@@ -980,9 +980,9 @@
             "type": "tabulated",
             "k": 1742.2564621642853,
             "r0": 0.6239543427053287,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_81.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 85,
@@ -992,9 +992,9 @@
             "type": "tabulated",
             "k": 2179.417347014338,
             "r0": 0.6215979007173408,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_82.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 86,
@@ -1004,9 +1004,9 @@
             "type": "tabulated",
             "k": 368.99032599921054,
             "r0": 0.6286243618781994,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_83.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 88,
@@ -1016,9 +1016,9 @@
             "type": "tabulated",
             "k": 5439.603097740285,
             "r0": 0.6039405267369378,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_84.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 89,
@@ -1028,9 +1028,9 @@
             "type": "tabulated",
             "k": 11682.482641532937,
             "r0": 0.598976331863459,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_85.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 90,
@@ -1040,9 +1040,9 @@
             "type": "tabulated",
             "k": 3662.315721624238,
             "r0": 0.6093378848230487,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_86.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 91,
@@ -1052,9 +1052,9 @@
             "type": "tabulated",
             "k": 345.23804715649516,
             "r0": 0.6789701091986333,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_87.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 92,
@@ -1064,9 +1064,9 @@
             "type": "tabulated",
             "k": 574.903385035371,
             "r0": 0.5841854604701537,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_88.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 93,
@@ -1076,9 +1076,9 @@
             "type": "tabulated",
             "k": 3839.227727212659,
             "r0": 0.6784748220725155,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_89.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 94,
@@ -1088,9 +1088,9 @@
             "type": "tabulated",
             "k": 5738.57859890565,
             "r0": 0.5628395567068645,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_90.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 95,
@@ -1100,9 +1100,9 @@
             "type": "tabulated",
             "k": 11215.499797327639,
             "r0": 0.6377880866844344,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_91.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 96,
@@ -1112,9 +1112,9 @@
             "type": "tabulated",
             "k": 6447.241566528442,
             "r0": 0.6846128110390999,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_92.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 97,
@@ -1124,9 +1124,9 @@
             "type": "tabulated",
             "k": 1136.6799123958567,
             "r0": 0.7169542850450569,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_93.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 98,
@@ -1136,9 +1136,9 @@
             "type": "tabulated",
             "k": 457.5041675849115,
             "r0": 0.5669046173062392,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_94.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 99,
@@ -1148,9 +1148,9 @@
             "type": "tabulated",
             "k": 3617.484289318252,
             "r0": 0.612924877498101,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_95.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 100,
@@ -1160,9 +1160,9 @@
             "type": "tabulated",
             "k": 4834.307831576159,
             "r0": 0.6498166894837019,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_96.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 101,
@@ -1172,9 +1172,9 @@
             "type": "tabulated",
             "k": 4699.615596577461,
             "r0": 0.6521955768350561,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_97.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 102,
@@ -1184,9 +1184,9 @@
             "type": "tabulated",
             "k": 8475.269544930572,
             "r0": 0.6397722265736839,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_98.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 103,
@@ -1196,9 +1196,9 @@
             "type": "tabulated",
             "k": 2559.7992651209934,
             "r0": 0.642898966732306,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_99.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 104,
@@ -1208,9 +1208,9 @@
             "type": "tabulated",
             "k": 2426.815007417309,
             "r0": 0.6783147775711822,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_100.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 105,
@@ -1220,9 +1220,9 @@
             "type": "tabulated",
             "k": 8669.55480567725,
             "r0": 0.4549948617384649,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_101.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 106,
@@ -1232,9 +1232,9 @@
             "type": "tabulated",
             "k": 9977.975871855528,
             "r0": 0.7050718610215435,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_102.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 107,
@@ -1244,9 +1244,9 @@
             "type": "tabulated",
             "k": 4965.243631412016,
             "r0": 0.6535234717395063,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_103.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 108,
@@ -1256,9 +1256,9 @@
             "type": "tabulated",
             "k": 10303.336303990585,
             "r0": 0.7019373531091859,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_104.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 110,
@@ -1268,9 +1268,9 @@
             "type": "tabulated",
             "k": 3177.105555070851,
             "r0": 0.5450190413907483,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_105.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 111,
@@ -1280,9 +1280,9 @@
             "type": "tabulated",
             "k": 5371.747523470841,
             "r0": 0.5952597044501122,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_106.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 112,
@@ -1292,9 +1292,9 @@
             "type": "tabulated",
             "k": 8941.64558745106,
             "r0": 0.6411152447108581,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_107.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 113,
@@ -1304,9 +1304,9 @@
             "type": "tabulated",
             "k": 807.5906198191734,
             "r0": 0.631777175278448,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_108.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 114,
@@ -1316,9 +1316,9 @@
             "type": "tabulated",
             "k": 420.07300038556116,
             "r0": 0.6425921026273501,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_109.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 115,
@@ -1328,9 +1328,9 @@
             "type": "tabulated",
             "k": 6430.2653910788395,
             "r0": 0.6924808895293231,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_110.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 116,
@@ -1340,9 +1340,9 @@
             "type": "tabulated",
             "k": 6186.931444163623,
             "r0": 0.5745320413614066,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_111.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 117,
@@ -1352,9 +1352,9 @@
             "type": "tabulated",
             "k": 11394.784018415417,
             "r0": 0.6305511817530883,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_112.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 118,
@@ -1364,9 +1364,9 @@
             "type": "tabulated",
             "k": 10535.727445956787,
             "r0": 0.6844080000004324,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_113.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 119,
@@ -1376,9 +1376,9 @@
             "type": "tabulated",
             "k": 1159.2947572862463,
             "r0": 0.7248879528778125,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_114.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 120,
@@ -1388,9 +1388,9 @@
             "type": "tabulated",
             "k": 769.5450464067146,
             "r0": 0.5309795256814268,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_115.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 121,
@@ -1400,9 +1400,9 @@
             "type": "tabulated",
             "k": 1741.5227950379183,
             "r0": 0.5519364267379523,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_116.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 122,
@@ -1412,9 +1412,9 @@
             "type": "tabulated",
             "k": 3840.289796890282,
             "r0": 0.6354233368336858,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_117.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 123,
@@ -1424,9 +1424,9 @@
             "type": "tabulated",
             "k": 3020.9648746272533,
             "r0": 0.6431857794121153,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_118.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 124,
@@ -1436,9 +1436,9 @@
             "type": "tabulated",
             "k": 7711.823320687403,
             "r0": 0.6267752927404339,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_119.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 125,
@@ -1448,9 +1448,9 @@
             "type": "tabulated",
             "k": 5716.475690227008,
             "r0": 0.6226624968972324,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_120.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 126,
@@ -1460,9 +1460,9 @@
             "type": "tabulated",
             "k": 3568.0543625313576,
             "r0": 0.6418680833620135,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_121.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 127,
@@ -1472,9 +1472,9 @@
             "type": "tabulated",
             "k": 7695.55754598156,
             "r0": 0.4544253153258264,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_122.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 128,
@@ -1484,9 +1484,9 @@
             "type": "tabulated",
             "k": 7450.739350657278,
             "r0": 0.6973467775211545,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_123.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 129,
@@ -1496,9 +1496,9 @@
             "type": "tabulated",
             "k": 5464.697017649953,
             "r0": 0.6524307207350784,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_124.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 130,
@@ -1508,9 +1508,9 @@
             "type": "tabulated",
             "k": 8629.262188234592,
             "r0": 0.6940546669985278,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_125.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 132,
@@ -1520,9 +1520,9 @@
             "type": "tabulated",
             "k": 4398.342219569956,
             "r0": 0.5931043837822406,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_126.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 133,
@@ -1532,9 +1532,9 @@
             "type": "tabulated",
             "k": 5420.335313716785,
             "r0": 0.5959989664800144,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_127.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 134,
@@ -1544,9 +1544,9 @@
             "type": "tabulated",
             "k": 14308.683248351503,
             "r0": 0.647655636533834,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_128.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 135,
@@ -1556,9 +1556,9 @@
             "type": "tabulated",
             "k": 526.9637638094792,
             "r0": 0.5822453431696358,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_129.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 136,
@@ -1568,9 +1568,9 @@
             "type": "tabulated",
             "k": 715.8361523365797,
             "r0": 0.6575555362402423,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_130.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 137,
@@ -1580,9 +1580,9 @@
             "type": "tabulated",
             "k": 4967.015917243906,
             "r0": 0.6994082248647924,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_131.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 138,
@@ -1592,9 +1592,9 @@
             "type": "tabulated",
             "k": 4952.514875074813,
             "r0": 0.5722188973661557,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_132.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 139,
@@ -1604,9 +1604,9 @@
             "type": "tabulated",
             "k": 8852.864331342505,
             "r0": 0.6162181701704987,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_133.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 140,
@@ -1616,9 +1616,9 @@
             "type": "tabulated",
             "k": 3339.5242354459883,
             "r0": 0.6364038975934132,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_134.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 141,
@@ -1628,9 +1628,9 @@
             "type": "tabulated",
             "k": 1116.7172879906723,
             "r0": 0.7300999379674877,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_135.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 142,
@@ -1640,9 +1640,9 @@
             "type": "tabulated",
             "k": 334.7499784719052,
             "r0": 0.5496968460613394,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_136.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 143,
@@ -1652,9 +1652,9 @@
             "type": "tabulated",
             "k": 1243.1218682072529,
             "r0": 0.5919207829203215,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_137.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 144,
@@ -1664,9 +1664,9 @@
             "type": "tabulated",
             "k": 3987.4700199196636,
             "r0": 0.6363755910816623,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_138.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 145,
@@ -1676,9 +1676,9 @@
             "type": "tabulated",
             "k": 8584.791181937819,
             "r0": 0.6816303946931282,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_139.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 146,
@@ -1688,9 +1688,9 @@
             "type": "tabulated",
             "k": 7587.812618297511,
             "r0": 0.5901996862570846,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_140.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 147,
@@ -1700,9 +1700,9 @@
             "type": "tabulated",
             "k": 2971.248266248809,
             "r0": 0.6500913084294586,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_141.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 148,
@@ -1712,9 +1712,9 @@
             "type": "tabulated",
             "k": 2176.8194111112525,
             "r0": 0.6900172540585722,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_142.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 149,
@@ -1724,9 +1724,9 @@
             "type": "tabulated",
             "k": 3387.251763760214,
             "r0": 0.46122422088711995,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_143.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 150,
@@ -1736,9 +1736,9 @@
             "type": "tabulated",
             "k": 1613.8601574498723,
             "r0": 0.6544366151991569,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_144.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 151,
@@ -1748,9 +1748,9 @@
             "type": "tabulated",
             "k": 6309.326898650653,
             "r0": 0.6395024191708247,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_145.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 152,
@@ -1760,9 +1760,9 @@
             "type": "tabulated",
             "k": 3727.9173410558055,
             "r0": 0.6711794574494016,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_146.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 154,
@@ -1772,9 +1772,9 @@
             "type": "tabulated",
             "k": 5581.143470561486,
             "r0": 0.596998645027493,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_147.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 155,
@@ -1784,9 +1784,9 @@
             "type": "tabulated",
             "k": 10130.988146204107,
             "r0": 0.6015999231180991,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_148.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 156,
@@ -1796,9 +1796,9 @@
             "type": "tabulated",
             "k": 4160.414271935825,
             "r0": 0.6065267980104636,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_149.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 157,
@@ -1808,9 +1808,9 @@
             "type": "tabulated",
             "k": 430.32197786732735,
             "r0": 0.6356411670810503,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_150.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 158,
@@ -1820,9 +1820,9 @@
             "type": "tabulated",
             "k": 441.83935217336517,
             "r0": 0.609515586230804,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_151.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 159,
@@ -1832,9 +1832,9 @@
             "type": "tabulated",
             "k": 4210.272251025536,
             "r0": 0.6749574430146169,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_152.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 160,
@@ -1844,9 +1844,9 @@
             "type": "tabulated",
             "k": 7001.466257392458,
             "r0": 0.5588413234247304,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_153.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 161,
@@ -1856,9 +1856,9 @@
             "type": "tabulated",
             "k": 9411.791171871846,
             "r0": 0.6341747251613288,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_154.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 162,
@@ -1868,9 +1868,9 @@
             "type": "tabulated",
             "k": 8751.630949649734,
             "r0": 0.6772741978243343,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_155.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 163,
@@ -1880,9 +1880,9 @@
             "type": "tabulated",
             "k": 1855.8979868769668,
             "r0": 0.7125667298811714,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_156.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 164,
@@ -1892,9 +1892,9 @@
             "type": "tabulated",
             "k": 305.0752926536503,
             "r0": 0.5437122799552279,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_157.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 165,
@@ -1904,9 +1904,9 @@
             "type": "tabulated",
             "k": 2230.652825585917,
             "r0": 0.5581360280797635,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_158.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 166,
@@ -1916,9 +1916,9 @@
             "type": "tabulated",
             "k": 5922.984942948211,
             "r0": 0.6226961526596665,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_159.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 167,
@@ -1928,9 +1928,9 @@
             "type": "tabulated",
             "k": 5325.024892039714,
             "r0": 0.6263868153666573,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_160.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 168,
@@ -1940,9 +1940,9 @@
             "type": "tabulated",
             "k": 7352.612790847182,
             "r0": 0.6141252130460938,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_161.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 169,
@@ -1952,9 +1952,9 @@
             "type": "tabulated",
             "k": 2311.5551652151794,
             "r0": 0.6265454280244559,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_162.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 170,
@@ -1964,9 +1964,9 @@
             "type": "tabulated",
             "k": 1747.4059831153695,
             "r0": 0.6483589740369691,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_163.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 171,
@@ -1976,9 +1976,9 @@
             "type": "tabulated",
             "k": 6369.252600214317,
             "r0": 0.4603244972636904,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_164.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 172,
@@ -1988,9 +1988,9 @@
             "type": "tabulated",
             "k": 9222.872676437333,
             "r0": 0.7094146533120627,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_165.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 173,
@@ -2000,9 +2000,9 @@
             "type": "tabulated",
             "k": 7760.223503928344,
             "r0": 0.6543667022847239,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_166.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 174,
@@ -2012,9 +2012,9 @@
             "type": "tabulated",
             "k": 13330.235772915697,
             "r0": 0.7043854325499294,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_167.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 176,
@@ -2024,9 +2024,9 @@
             "type": "tabulated",
             "k": 6288.545265420219,
             "r0": 0.6059150124002137,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_168.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 177,
@@ -2036,9 +2036,9 @@
             "type": "tabulated",
             "k": 14294.408104615712,
             "r0": 0.6021217053998266,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_169.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 178,
@@ -2048,9 +2048,9 @@
             "type": "tabulated",
             "k": 2882.4010670965376,
             "r0": 0.6081937618358267,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_170.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 179,
@@ -2060,9 +2060,9 @@
             "type": "tabulated",
             "k": 307.9873250422521,
             "r0": 0.677543805929913,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_171.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 180,
@@ -2072,9 +2072,9 @@
             "type": "tabulated",
             "k": 335.4024566275656,
             "r0": 0.6210684223060222,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_172.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 181,
@@ -2084,9 +2084,9 @@
             "type": "tabulated",
             "k": 4518.603901354528,
             "r0": 0.679434689789914,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_173.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 182,
@@ -2096,9 +2096,9 @@
             "type": "tabulated",
             "k": 5958.599166097114,
             "r0": 0.5536366106208422,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_174.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 183,
@@ -2108,9 +2108,9 @@
             "type": "tabulated",
             "k": 10462.95021855011,
             "r0": 0.6381951231230305,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_175.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 184,
@@ -2120,9 +2120,9 @@
             "type": "tabulated",
             "k": 7369.941369134813,
             "r0": 0.6869192206082232,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_176.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 185,
@@ -2132,9 +2132,9 @@
             "type": "tabulated",
             "k": 1663.627134413412,
             "r0": 0.7200499197482494,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_177.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 186,
@@ -2144,9 +2144,9 @@
             "type": "tabulated",
             "k": 545.0909240385331,
             "r0": 0.5103311219522729,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_178.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 187,
@@ -2156,9 +2156,9 @@
             "type": "tabulated",
             "k": 7487.991943190105,
             "r0": 0.6080585231086486,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_179.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 188,
@@ -2168,9 +2168,9 @@
             "type": "tabulated",
             "k": 4596.134026405421,
             "r0": 0.6432782684332992,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_180.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 189,
@@ -2180,9 +2180,9 @@
             "type": "tabulated",
             "k": 6301.251399840751,
             "r0": 0.6296475323295292,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_181.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 190,
@@ -2192,9 +2192,9 @@
             "type": "tabulated",
             "k": 3718.8643222839128,
             "r0": 0.6291335949041358,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_182.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 191,
@@ -2204,9 +2204,9 @@
             "type": "tabulated",
             "k": 613.0235006609081,
             "r0": 0.7231671354589733,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_183.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 192,
@@ -2216,9 +2216,9 @@
             "type": "tabulated",
             "k": 881.3549705446972,
             "r0": 0.7802489049314365,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_184.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 193,
@@ -2228,9 +2228,9 @@
             "type": "tabulated",
             "k": 3538.699429024948,
             "r0": 0.45724829334084127,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_185.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 194,
@@ -2240,9 +2240,9 @@
             "type": "tabulated",
             "k": 9395.249923465291,
             "r0": 0.7270945766340026,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_186.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 195,
@@ -2252,9 +2252,9 @@
             "type": "tabulated",
             "k": 7911.0234688468645,
             "r0": 0.6528058743079477,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_187.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 196,
@@ -2264,9 +2264,9 @@
             "type": "tabulated",
             "k": 11783.593757947883,
             "r0": 0.6984227310191848,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_188.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 198,
@@ -2276,9 +2276,9 @@
             "type": "tabulated",
             "k": 4285.013761102096,
             "r0": 0.5855146825790565,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_189.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 199,
@@ -2288,9 +2288,9 @@
             "type": "tabulated",
             "k": 7677.747028851297,
             "r0": 0.6077052300060463,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_190.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 200,
@@ -2300,9 +2300,9 @@
             "type": "tabulated",
             "k": 2445.6413495266065,
             "r0": 0.6377009765299946,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_191.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 201,
@@ -2312,9 +2312,9 @@
             "type": "tabulated",
             "k": 528.534111611387,
             "r0": 0.7572729701616292,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_192.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 202,
@@ -2324,9 +2324,9 @@
             "type": "tabulated",
             "k": 1384.3901789445174,
             "r0": 0.5833249220167175,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_193.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 203,
@@ -2336,9 +2336,9 @@
             "type": "tabulated",
             "k": 1152.0568416195215,
             "r0": 0.788816539962222,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_194.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 204,
@@ -2348,9 +2348,9 @@
             "type": "tabulated",
             "k": 5469.066663884841,
             "r0": 0.5672326639909723,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_195.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 205,
@@ -2360,9 +2360,9 @@
             "type": "tabulated",
             "k": 12143.259033536126,
             "r0": 0.6319655864590892,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_196.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 206,
@@ -2372,9 +2372,9 @@
             "type": "tabulated",
             "k": 8560.318374481029,
             "r0": 0.6758436223959902,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_197.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 207,
@@ -2384,9 +2384,9 @@
             "type": "tabulated",
             "k": 1065.6834370294926,
             "r0": 0.745764565145059,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_198.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 208,
@@ -2396,9 +2396,9 @@
             "type": "tabulated",
             "k": 583.1959383797162,
             "r0": 0.7312375529277252,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_199.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 209,
@@ -2408,9 +2408,9 @@
             "type": "tabulated",
             "k": 5849.0920040356805,
             "r0": 0.5965877647225903,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_200.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 210,
@@ -2420,9 +2420,9 @@
             "type": "tabulated",
             "k": 6745.37065177192,
             "r0": 0.6372206103934328,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_201.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 211,
@@ -2432,9 +2432,9 @@
             "type": "tabulated",
             "k": 5045.917220543795,
             "r0": 0.6352862828691022,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_202.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 212,
@@ -2444,9 +2444,9 @@
             "type": "tabulated",
             "k": 4772.932754097968,
             "r0": 0.6352711088410817,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_203.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 213,
@@ -2456,9 +2456,9 @@
             "type": "tabulated",
             "k": 1808.4317174804937,
             "r0": 0.6344964392900905,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_204.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 214,
@@ -2468,9 +2468,9 @@
             "type": "tabulated",
             "k": 3322.034407930035,
             "r0": 0.658594652789135,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_205.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 215,
@@ -2480,9 +2480,9 @@
             "type": "tabulated",
             "k": 9091.258411550176,
             "r0": 0.46371807970497175,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_206.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 216,
@@ -2492,9 +2492,9 @@
             "type": "tabulated",
             "k": 11308.2604947097,
             "r0": 0.6968278070283488,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_207.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 217,
@@ -2504,9 +2504,9 @@
             "type": "tabulated",
             "k": 9004.763200011537,
             "r0": 0.6431017994366214,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_208.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 218,
@@ -2516,9 +2516,9 @@
             "type": "tabulated",
             "k": 803.6220864909458,
             "r0": 0.6469455188201416,
-            "file": "ibi_priors/bond_ibi_final.dat",
-            "min": 0.3,
-            "max": 0.7
+            "file": "ibi_priors/bond_ibi_spline_209.dat",
+            "min": 0.01,
+            "max": 3.0
         },
         {
             "mol_i": 1,

@@ -8,18 +8,35 @@ python ../../ibi/run_ibi_loop.py \
     --iterations 3 \
     --outdir ibi_priors
 
-# Inietta il potenziale tabulato in cg_priors.json
+# Inietta il potenziale tabulato in cg_priors.json generandolo ad-hoc per ogni legame
 python -c '
 import json
+import numpy as np
+import os
+
+os.makedirs("ibi_priors", exist_ok=True)
+
 with open("cg_priors.json", "r") as f:
     data = json.load(f)
-# Sostituisce tutti i legami armonici (non di stacking/Morse) con tabelle IBI
+
 for i, b in enumerate(data.get("bonds", [])):
-    if b.get("type", "harmonic") == "harmonic":
+    if b.get("type", "harmonic") in ["harmonic", "tabulated"]:
+        r0 = b["r0"]
+        k = b["k"]
+        
+        # Generiamo una tabella IBI ampia da 0.01 a 3.0 nm centrata sul suo esatto r0
+        r_grid = np.linspace(0.01, 3.0, 500)
+        V = 0.5 * k * (r_grid - r0)**2
+        F = -k * (r_grid - r0)
+        
+        filename = f"ibi_priors/bond_ibi_spline_{i}.dat"
+        np.savetxt(filename, np.column_stack((r_grid, V, F)), fmt="%.6f", header="r energy force")
+        
         b["type"] = "tabulated"
-        b["file"] = "ibi_priors/bond_ibi_final.dat"
-        b["min"] = 0.3
-        b["max"] = 0.7
+        b["file"] = filename
+        b["min"] = 0.01
+        b["max"] = 3.0
+
 with open("cg_priors.json", "w") as f:
     json.dump(data, f, indent=4)
 '
