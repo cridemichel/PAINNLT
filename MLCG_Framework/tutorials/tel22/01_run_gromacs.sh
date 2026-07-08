@@ -32,7 +32,7 @@ gmx insert-molecules -ci tel22_processed.gro -nmol 10 -box 8 8 8 -o box_10.gro
 # NOTA: insert-molecules non aggiorna automaticamente topol.top
 # Aggiungiamo le altre 9 molecole al topol.top (la prima è già lì)
 echo "Aggiornamento topol.top..."
-sed -i '' 's/DNA_chain_A     1/DNA_chain_A     10/g' topol.top
+sed -E -i '' 's/DNA_chain_A[[:space:]]+1$/DNA_chain_A         10/g' topol.top
 
 echo "[4] Solvatazione..."
 gmx solvate -cp box_10.gro -cs spc216.gro -o box_solvated.gro -p topol.top
