@@ -62,3 +62,20 @@ Per visualizzare l'animazione, apri il terminale e digita:
 pymol load_tel22_pymol.pml
 ```
 PyMOL si aprirà automaticamente applicando lo stile da te scelto (tubi o sfere) e colorando ogni filamento in modo distinto. Premi "Play" in basso a destra nell'interfaccia di PyMOL per osservare la dinamica termica!
+
+---
+
+## 06. Analisi e Validazione del Modello
+Per valutare quantitativamente se il modello ML è stato in grado di mantenere il TEL22 ripiegato nel tempo, abbiamo incluso due script di analisi geometrica nella cartella:
+
+1. **`analyze_unfolding_exact.py`**:
+   Questo script calcola il **Raggio di Girazione ($R_g$)** e la **Distanza End-to-End (E2E)** misurando la differenza esatta tra il primo frame (di partenza) e l'ultimo frame della simulazione per ogni filamento. Si usa per certificare se qualche molecola si è "srotolata" (unfolded).
+   ```bash
+   uv run analyze_unfolding_exact.py
+   ```
+
+2. **`plot_rg_timeseries.py`**:
+   Questo script estrae i dati per **tutti i frame** della traiettoria e genera un elegante grafico a linee (`output/tel22_rg_timeseries.png`). Mostra l'andamento del Raggio di Girazione ($R_g$) di ciascuno dei 10 strand nel tempo e calcola una curva di stabilità media, permettendo di accertarsi visivamente che il G-Quadruplex non si stia gonfiando a causa del solvente.
+   ```bash
+   uv run plot_rg_timeseries.py
+   ```
