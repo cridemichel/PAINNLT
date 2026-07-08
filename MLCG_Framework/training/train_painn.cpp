@@ -307,6 +307,7 @@ int main(int argc, char* argv[]) {
     float cutoff = 5.0f;
     int max_epochs = 500;
     float initial_lr = 5e-4;
+    float lipschitz_lambda = 0.0f;
     float weight_decay_val = 0.0f;
     int es_patience = 10;
     int reduce_lr_patience = 5;
@@ -332,6 +333,7 @@ int main(int argc, char* argv[]) {
         if (j.contains("epochs")) max_epochs = j["epochs"];
         if (j.contains("learning_rate")) initial_lr = j["learning_rate"];
         if (j.contains("weight_decay")) weight_decay_val = j["weight_decay"];
+        if (j.contains("lipschitz_lambda")) lipschitz_lambda = j["lipschitz_lambda"];
         if (j.contains("early_stopping_patience")) es_patience = j["early_stopping_patience"];
         if (j.contains("reduce_lr_patience")) reduce_lr_patience = j["reduce_lr_patience"];
         std::cout << "[INFO] Caricati iperparametri da " << config_path << "\n";
@@ -484,6 +486,11 @@ int main(int argc, char* argv[]) {
                         torch::Tensor loss_t = loss_t_masked.sum() / (num_valid_mols * 3.0f);
                         loss_final = loss_final + torque_weight * loss_t;
                     }
+                    if (lipschitz_lambda > 0.0f) {
+                        torch::Tensor loss_lipschitz = site_f_per_site.norm(2, 1).pow(2).mean();
+                        loss_final = loss_final + lipschitz_lambda * loss_lipschitz;
+                    }
+
                     loss_final.backward();
 
                     torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 1.0);
@@ -589,6 +596,10 @@ int main(int argc, char* argv[]) {
                 }
 
                 torch::Tensor loss = loss_f + torque_weight * loss_t;
+                if (lipschitz_lambda > 0.0f) {
+                    torch::Tensor loss_lipschitz = site_forces_per_site.norm(2, 1).pow(2).mean();
+                    loss = loss + lipschitz_lambda * loss_lipschitz;
+                }
                 
                 float current_batch_weight = static_cast<float>(val_batch_frames.size());
                 float mae_f_phys = torch::l1_loss(pred_mol_forces, batch.target_mol_forces).item<float>();
