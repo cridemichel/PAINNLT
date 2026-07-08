@@ -1,0 +1,45 @@
+# MLCG Framework Gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+mlcg_venv/
+venv/
+ENV/
+.env
+
+# C++ Build
+training/build/
+simulation/espresso_plugin/build/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.o
+*.a
+*.so
+*.dylib
+
+# Generated Datasets and ML Models
+*.bin
+*.pt
+*.pth
+
+# Generated IBI Priors
+ibi_priors/
+
+# Output trajectories
+*.vtf
+*.xtc
+*.trr
+*.gro
+*.pdb
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

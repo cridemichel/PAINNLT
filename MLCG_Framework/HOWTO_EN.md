@@ -81,10 +81,34 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
 }
 ```
 
-#### Priors and Boltzmann Inversion
-If you include the `"bonds"` array as a list of indices (e.g., `[[0, 1]]`), the script will perform statistical **Boltzmann Inversion** on the trajectory distances to automatically derive the harmonic constant $k$ and the equilibrium distance $r_0$.
+#### Priors and Boltzmann Inversion (DBI vs IBI)
 
-Alternatively, you can completely disable the priors by leaving `"bonds": []`, or **explicitly** define the desired parameters by providing dictionaries. You can use **Harmonic**, **FENE** or **Morse** potentials, with native support for bonds between specific sites rather than just Centers of Mass (using the optional `site_i` and `site_j` keys).
+The framework supports two fundamental philosophies to extract prior energies from the All-Atom trajectory: **Direct Boltzmann Inversion (DBI)** and **Iterative Boltzmann Inversion (IBI)**.
+
+**1. Analytical Functions (DBI, FENE, Morse, Angles, Dihedrals)**
+If you include the `"bonds"` array as a list of indices (e.g., `[[0, 1]]`), the preprocessing script will perform a statistical inversion (classical DBI) to derive the harmonic constant $k$ and the equilibrium distance $r_0$.
+Alternatively, you can disable automatic inference and explicitly define much more complex analytical parameters for different degrees of freedom. You can use:
+- **Harmonic Bond** (`"type": "harmonic"`): the classic Hooke's spring.
+- **FENE Bond** (`"type": "fene"`): extremely useful for polymer chains where monomers must not exceed a certain $R_{max}$.
+- **Morse Bond** (`"type": "morse"`): essential for non-linear bonds that must be able to break (like tetrad stacking or hydrogen bonds).
+- **Harmonic Angles** (in the `"angles"` array): to stabilize the angle between three sites.
+- **Dihedrals** (in the `"dihedrals"` array): to stabilize the torsional conformation between four sites.
+This parametric approach is ultra-fast to evaluate, but assumes ideal closed-form equations.
+
+**2. Iterative Boltzmann Inversion (IBI) [Exact Tabulated Curves]**
+If your system is highly anharmonic or suffers from cross-interferences (e.g., steric repulsion modifies bond distances), the harmonic approximation of DBI is not sufficient. In this case, you can use the integrated IBI pipeline:
+- Use the scripts in the `ibi/` folder to mathematically extract the exact potentials. The `run_ibi_loop.py` script calculates the curves (splines) and, via MD loops in ESPResSo, iteratively corrects them until the simulated distribution mathematically matches the All-Atom target.
+- Next, use `generate_residual_dataset.py` to create a dataset where the neural network is trained only on the residual forces.
+- To simulate, in your `cg_priors.json` file, simply set `"type": "tabulated"` and provide the path to the IBI-generated file:
+```json
+{
+    "mol_i": 0, "mol_j": 1,
+    "type": "tabulated",
+    "file": "ibi_priors/bond_ibi_final.dat",
+    "min": 0.3, "max": 0.7
+}
+```
+ESPResSo will read the numerical table (for both `TabulatedDistance` bonds and `TabulatedAngle` angles) injecting the exact IBI potential. This choice guarantees native backward compatibility and allows you to freely mix DBI springs and IBI tables for different degrees of freedom!
 
 > [!TIP]
 > **Equilibrium Distance Auto-calculation (`r0`)**
