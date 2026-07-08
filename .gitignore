@@ -22,3 +22,8 @@ GROMACS
 **/*itp
 **/*top
 **/*pdb
+**/*tpr
+**/*edr
+**/*trr
+**/\#*\#
+**/*.mdp
