@@ -27,6 +27,7 @@ public:
 private:
     PaiNNModel model{nullptr};
     double m_cutoff;
+    int m_num_species;
     double m_last_energy = 0.0;
     torch::Device m_device{torch::kCPU};
 };

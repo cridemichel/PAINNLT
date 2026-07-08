@@ -9,7 +9,7 @@
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
 PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, const std::string& device_str) 
-    : m_cutoff(cutoff) {
+    : m_cutoff(cutoff), m_num_species(num_species) {
     
     // Inizializza il modello C++ con i parametri di architettura
     model = PaiNNModel(num_species, hidden_channels, n_layers, num_rbf, cutoff);
@@ -60,9 +60,10 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     
     int current_idx = 0;
     
-    // Raccogliamo tutte le particelle locali
+    // Raccogliamo tutte le particelle locali che appartengono al modello ML
     auto local_particles = cell_structure.local_particles();
     for (auto& p : local_particles) {
+        if (p.type() >= m_num_species) continue;
         pid_to_idx[p.id()] = current_idx++;
         idx_to_particle.push_back(&p);
         atomic_numbers.push_back(p.type()); // Assumiamo che il 'type' di ESPResSo sia l'atomic number
@@ -71,6 +72,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     // Raccogliamo anche le particelle ghost per le interazioni di bordo (PBC)
     auto ghost_particles = cell_structure.ghost_particles();
     for (auto& p : ghost_particles) {
+        if (p.type() >= m_num_species) continue;
         pid_to_idx[p.id()] = current_idx++;
         idx_to_particle.push_back(&p);
         atomic_numbers.push_back(p.type());
@@ -85,6 +87,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     std::vector<float> r_ij_data;
     
     auto painn_kernel = [&](Particle const &p1, Particle const &p2, Distance const &d) {
+        if (p1.type() >= m_num_species || p2.type() >= m_num_species) return; // Filtro particelle non ML
         if (d.dist2 > m_cutoff * m_cutoff) return; // Filtro cutoff
         
         int idx1 = pid_to_idx[p1.id()];
