@@ -1,0 +1,17 @@
+{
+    "temperature": 300.0,
+    "wca_sigma": 0.0,
+    "wca_epsilon": 0.0,
+    "bonds": [],
+    "mapping": {
+        "mapping_method": "COM",
+        "residues": {
+            "SOL": {
+                "CG_WAT": ["OW", "HW1", "HW2"]
+            }
+        },
+        "site_types": {
+            "CG_WAT": 0
+        }
+    }
+}
