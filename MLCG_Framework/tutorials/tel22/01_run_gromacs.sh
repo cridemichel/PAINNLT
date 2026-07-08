@@ -15,11 +15,12 @@ fi
 echo "[1] Scaricamento del PDB 143D (G-quadruplex NMR)..."
 if [ ! -f 143D.pdb ]; then
     curl -O https://files.rcsb.org/download/143D.pdb
-    # Estraiamo solo il primo modello NMR per evitare problemi con pdb2gmx
-    grep -v "^ENDMDL" 143D.pdb | sed '/^MODEL/d' > tel22_clean.pdb
 else
-    echo "PDB già presente."
+    echo "File 143D.pdb già presente."
 fi
+
+# Estraiamo le catene pulendo il file originale
+grep -v "^ENDMDL" 143D.pdb | sed '/^MODEL/d' > tel22_clean.pdb
 
 echo "[2] Generazione della Topologia (AMBER99SB-ILDN)..."
 # Usiamo -ignh per ignorare gli idrogeni NMR e farli calcolare a GROMACS
