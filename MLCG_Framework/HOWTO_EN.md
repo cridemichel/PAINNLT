@@ -161,6 +161,10 @@ make -j4
 ### 2.2 Configure Network Parameters
 In the `training/` folder you will find the `cg_model_config.json` file. This file acts as the **control hub** for the network: before starting the training, you can modify parameters such as `hidden_channels`, `n_layers`, `cutoff`, `learning_rate`, and `epochs` here. The C++ code will read this file at runtime without any need to recompile!
 
+> [!TIP]
+> **Lipschitz Regularization**
+> In the `.json` file you can add or modify the `"lipschitz_lambda": 0.001` parameter. This introduces an L2 penalty on the force magnitude during training (inspired by CGnet). By enabling it, the model learns to predict smoother energy surfaces, preventing massive gradients and explosions during ESPResSo simulations. If set to `0.0`, the additional overhead is completely bypassed ensuring absolute backward compatibility.
+
 ### 2.3 Running the Training
 Start the training. By default, the program will look for `cg_dataset.bin`, `best_cg_model.pt` (for saving), and `cg_model_config.json` (for configuration).
 ```bash

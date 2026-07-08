@@ -162,6 +162,10 @@ make -j4
 ### 2.2 Configurare i Parametri della Rete
 Nella cartella `training/` troverai il file `cg_model_config.json`. Questo file è la **centralina di controllo** della rete: prima di lanciare l'addestramento, puoi modificare qui dentro parametri come `hidden_channels`, `n_layers`, `cutoff`, `learning_rate` e le `epochs`. Il codice C++ leggerà questo file in tempo reale senza bisogno di ricompilare!
 
+> [!TIP]
+> **Regolarizzazione di Lipschitz**
+> Nel file `.json` puoi aggiungere o modificare il parametro `"lipschitz_lambda": 0.001`. Questo parametro introduce una penalità L2 sulla magnitudine delle forze durante l'addestramento (ispirata a CGnet). Attivandola, il modello imparerà a prevedere superfici di energia più dolci, prevenendo gradienti enormi ed esplosioni durante la simulazione in ESPResSo. Se lo imposti a `0.0`, l'overhead aggiuntivo viene completamente bypassato garantendo la totale retrocompatibilità.
+
 ### 2.3 Esecuzione del Training
 Lancia l'addestramento. Di default, il programma cercherà i file `cg_dataset.bin`, `best_cg_model.pt` (per il salvataggio) e `cg_model_config.json` (per la configurazione).
 ```bash
