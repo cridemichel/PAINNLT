@@ -28,3 +28,6 @@ GROMACS
 **/\#*\#
 **/*.mdp
 **/*.cpt
+**/*.vtf
+**/*.pml
+**/*.pse

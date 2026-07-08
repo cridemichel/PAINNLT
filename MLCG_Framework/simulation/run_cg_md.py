@@ -35,7 +35,8 @@ print("[INFO] Initializing ESPResSo system...")
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
-system.thermostat.set_langevin(kT=1.0, gamma=1.0, seed=42)
+# Set room temperature: 300 K * 0.008314 kJ/(mol*K) = 2.49 kJ/mol
+system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
@@ -107,9 +108,24 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "fene":
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
     elif b_type == "morse":
-        # Note: ESPResSo Morse bond might have different parameter names depending on version
-        # Usually: eps=D, alpha=a, rmin=r0
-        bond = espressomd.interactions.MorseBond(eps=b["D"], alpha=b["a"], rmin=b["r0"], cutoff=b["r0"] + 3.0/b["a"])
+        # ESPResSo does not have a native MorseBond, so we create a tabulated bond
+        import numpy as np
+        rmin_tab = 0.01
+        rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
+        r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
+        
+        diff = r_vals - b["r0"]
+        exp_term = np.exp(-b["a"] * diff)
+        
+        energy = b["D"] * (1.0 - exp_term)**2
+        force = -2.0 * b["a"] * b["D"] * (1.0 - exp_term) * exp_term
+        
+        # Cap forces to avoid integrator explosions near the steep repulsive wall
+        force = np.clip(force, -10000.0, 10000.0)
+        
+        bond = espressomd.interactions.TabulatedDistance(
+            min=rmin_tab, max=rmax_tab, energy=energy, force=force
+        )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
         continue
@@ -124,6 +140,43 @@ for idx, b in enumerate(priors.get("bonds", [])):
     p2 = mol_com_parts[mol_j] if site_j == -1 else mol_vs_parts[(mol_j, site_j)]
     
     system.part.by_id(p1).add_bond((bond, p2))
+
+# Angles (Harmonic)
+for idx, a in enumerate(priors.get("angles", [])):
+    k_bend = a["k"]
+    phi0 = a["theta0"]
+    angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
+    system.bonded_inter.add(angle)
+    
+    mol_i, mol_j, mol_k = a["mol_i"], a["mol_j"], a["mol_k"]
+    
+    # Assumiamo che angoli e diedri agiscano sui Centri di Massa (COM) per ora
+    p1 = mol_com_parts[mol_i]
+    p2 = mol_com_parts[mol_j]
+    p3 = mol_com_parts[mol_k]
+    
+    # In ESPResSo, l'angolo si applica alla particella CENTRALE
+    system.part.by_id(p2).add_bond((angle, p1, p3))
+    print(f"[INFO] Added Angle bond {idx}: mol {mol_i} - {mol_j} - {mol_k}")
+
+# Dihedrals
+for idx, d in enumerate(priors.get("dihedrals", [])):
+    k_dih = d["k"]
+    mult = d.get("n", 1)
+    phase = d["phi0"]
+    dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
+    system.bonded_inter.add(dihedral)
+    
+    mol_i, mol_j, mol_k, mol_l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
+    
+    p1 = mol_com_parts[mol_i]
+    p2 = mol_com_parts[mol_j]
+    p3 = mol_com_parts[mol_k]
+    p4 = mol_com_parts[mol_l]
+    
+    # In ESPResSo, il diedro si applica alla SECONDA particella
+    system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
+    print(f"[INFO] Added Dihedral bond {idx}: mol {mol_i} - {mol_j} - {mol_k} - {mol_l}")
 
 print("[INFO] Activating ML Potential...")
 espressomd.painn.activate_painn_potential(

@@ -40,3 +40,25 @@ Passa il binario al programma C++. Addestrerà una rete Graph Neural Network in 
 
 ## 04_run_espresso.sh
 Carica il modello C++ appena addestrato all'interno del motore di ESPResSo per validare la stabilità strutturale e la conservazione dell'energia!
+
+---
+
+## 05. Visualizzazione (PyMOL)
+Una volta conclusa la simulazione ESPResSo, verrà generato un file di traiettoria Coarse-Grained (`cg_trajectory.vtf`).
+Per visualizzare questa traiettoria in modo elegante e animato, abbiamo incluso uno script utility:
+```bash
+python vtf_to_pymol.py
+```
+Puoi anche decidere come renderizzare le molecole passando il flag opzionale `--style`:
+- `python vtf_to_pymol.py --style tube` (Default: disegna filamenti continui)
+- `python vtf_to_pymol.py --style spheres` (Disegna le singole sfere coarse-grained disconnesse)
+
+Questo script eseguirà due operazioni:
+1. Analizzerà la traiettoria `vtf` scartando i Virtual Sites e manterrà solo i veri Centri di Massa, generando una traiettoria PDB pulita (`cg_trajectory_clean.pdb`).
+2. Genererà uno script di setup per PyMOL (`load_tel22_pymol.pml`).
+
+Per visualizzare l'animazione, apri il terminale e digita:
+```bash
+pymol load_tel22_pymol.pml
+```
+PyMOL si aprirà automaticamente applicando lo stile da te scelto (tubi o sfere) e colorando ogni filamento in modo distinto. Premi "Play" in basso a destra nell'interfaccia di PyMOL per osservare la dinamica termica!

@@ -18,8 +18,8 @@ cat << 'JSON' > tel22_training_config.json
     "n_layers": 2,
     "num_rbf": 30,
     "cutoff": 0.5,
-    "learning_rate": 0.001,
-    "epochs": 5,
+    "learning_rate": 0.0005,
+    "epochs": 20,
     "batch_size": 16
 }
 JSON

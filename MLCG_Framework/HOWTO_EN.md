@@ -84,7 +84,15 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
 #### Priors and Boltzmann Inversion
 If you include the `"bonds"` array as a list of indices (e.g., `[[0, 1]]`), the script will perform statistical **Boltzmann Inversion** on the trajectory distances to automatically derive the harmonic constant $k$ and the equilibrium distance $r_0$.
 
-Alternatively, you can completely disable the priors by leaving `bonds: []`, or **explicitly** define the desired parameters by providing dictionaries. You can use **Harmonic**, **FENE** or **Morse** potentials, with native support for bonds between specific sites rather than just Centers of Mass (using the optional `site_i` and `site_j` keys).
+Alternatively, you can completely disable the priors by leaving `"bonds": []`, or **explicitly** define the desired parameters by providing dictionaries. You can use **Harmonic**, **FENE** or **Morse** potentials, with native support for bonds between specific sites rather than just Centers of Mass (using the optional `site_i` and `site_j` keys).
+
+> [!TIP]
+> **Equilibrium Distance Auto-calculation (`r0`)**
+> For explicit bonds (FENE, Morse, etc.), if you omit the numerical parameter and set `"r0": "auto"`, the script will automatically extract the exact mean distance for that pair of atoms directly from the molecular trajectory! This prevents thermodynamic explosions and elegantly resolves scale mismatches between all-atom and coarse-grained representations.
+
+> [!NOTE]
+> **Morse Potential and Force Capping**
+> In ESPResSo, explicit Morse bonds are injected under the hood as `TabulatedDistance` (extended beyond the box size). The framework automatically applies a **Force Capping** (hard limit) to prevent integration explosions caused by the exponentially steep repulsive wall when monomers get too close, ensuring a perfect balance between bond breakability and thermodynamic stability.
 
 Examples of explicit definition:
 ```json
@@ -94,21 +102,15 @@ Examples of explicit definition:
         "site_i": 2, "site_j": 0,
         "type": "fene",
         "k": 1000.0,
-        "r0": 0.2,
+        "r0": "auto",
         "r_max": 0.3
-    },
-    {
-        "mol_i": 1, "mol_j": 2,
-        "type": "harmonic",
-        "k": 5000.0,
-        "r0": 0.15
     },
     {
         "mol_i": 2, "mol_j": 3,
         "type": "morse",
-        "D": 50.0,
-        "a": 20.0,
-        "r0": 0.2
+        "D": 20.0,
+        "a": 3.0,
+        "r0": "auto"
     }
 ]
 ```
@@ -147,6 +149,29 @@ cd training
 The training will save the compiled PyTorch JIT model optimized for ESPResSo.
 
 ---
+
+#### Using the Morse Potential for Stacking Interactions (TEL22 Example)
+Graph Neural Networks sometimes struggle to natively model non-linear and "fragile" long-range forces like Guanine tetrad stacking or intra-chain Van der Waals forces, especially with limited training data. An elegant and fast way to solve this is to introduce an explicit **Morse Potential** as a prior.
+
+The Morse potential perfectly models the energetic "well" of biological stacking:
+- It provides deep stability at equilibrium (regulated by the parameter `D`, well depth).
+- It allows the interaction to smoothly "break" at larger distances (regulated by the parameter `a` or $\alpha$, well width), unlike harmonic bonds which would generate infinite forces and physically prevent phenomena like thermal melting or unfolding.
+
+**Use Case (TEL22 Tutorial):**
+In the case of G-Quadruplexes (TEL22), planar stacking between guanines is essential for structural compactness. Rather than forcing the Machine Learning Model to learn this complex force entirely from scratch, we explicitly inject "scaffold" Morse bonds between stacked guanines:
+```json
+{
+    "mol_i": 2, "mol_j": 8,
+    "type": "morse",
+    "D": 50.0,
+    "a": 3.0,
+    "r0": "auto"
+}
+```
+In this setup:
+- `D` at `50.0` kJ/mol ensures the structure remains stably folded at physiological temperatures (300K). Lower values (e.g., `20.0`) would facilitate visible thermal unfolding.
+- `"r0": "auto"` allows the framework to read the exact stacking distance directly from the atomistic trajectory (preventing thermodynamic explosions caused by a manually entered `r0` that misaligns with CG dimensions).
+- ESPResSo will automatically apply "Force Capping" on these tabulated bonds to prevent integration explosions if monomers suffer severe thermal collisions at very short distances.
 
 ## Phase 3: Integration and Simulation in ESPResSo
 

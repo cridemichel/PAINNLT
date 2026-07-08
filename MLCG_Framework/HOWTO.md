@@ -84,7 +84,15 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
 #### Priors e Inversione di Boltzmann
 Se includi l'array `"bonds"` come liste di indici (es. `[[0, 1]]`), lo script effettuerà l'**Inversione di Boltzmann** statistica sulle distanze della traiettoria per ricavare automaticamente la costante armonica $k$ e la distanza di equilibrio $r_0$.
 
-In alternativa, puoi disattivare del tutto i priors lasciando `bonds: []`, oppure definire **esplicitamente** i parametri desiderati fornendo dei dizionari. Puoi usare potenziali **Harmonic**, **FENE** o **Morse**, con supporto nativo anche per legami tra siti specifici invece che tra Centri di Massa (tramite le chiavi opzionali `site_i` e `site_j`).
+In alternativa, puoi disattivare del tutto i priors lasciando `"bonds": []`, oppure definire **esplicitamente** i parametri desiderati fornendo dei dizionari. Puoi usare potenziali **Harmonic**, **FENE** o **Morse**, con supporto nativo anche per legami tra siti specifici invece che tra Centri di Massa (tramite le chiavi opzionali `site_i` e `site_j`).
+
+> [!TIP]
+> **Auto-calcolo della Distanza di Equilibrio (`r0`)**
+> Per i legami espliciti (FENE, Morse, ecc.), se ometti il parametro numerico e imposti `"r0": "auto"`, lo script estrarrà automaticamente la distanza media esatta per quella coppia di atomi direttamente dalla traiettoria molecolare! Questo previene esplosioni termodinamiche e risolve elegantemente i mismatch di scala tra all-atom e coarse-grained.
+
+> [!NOTE]
+> **Potenziale di Morse e Force Capping**
+> In ESPResSo, i legami di Morse espliciti sono iniettati sotto il cofano come `TabulatedDistance` (estesi oltre la dimensione del box). Il framework applica automaticamente un **Force Capping** (limite rigido) per prevenire le esplosioni di integrazione causate dal muro repulsivo esponenzialmente ripido quando i monomeri si avvicinano troppo, garantendo il perfetto equilibrio tra la frangibilità del legame e la stabilità termodinamica.
 
 Esempi di definizione esplicita:
 ```json
@@ -94,21 +102,15 @@ Esempi di definizione esplicita:
         "site_i": 2, "site_j": 0,
         "type": "fene",
         "k": 1000.0,
-        "r0": 0.2,
+        "r0": "auto",
         "r_max": 0.3
-    },
-    {
-        "mol_i": 1, "mol_j": 2,
-        "type": "harmonic",
-        "k": 5000.0,
-        "r0": 0.15
     },
     {
         "mol_i": 2, "mol_j": 3,
         "type": "morse",
-        "D": 50.0,
-        "a": 20.0,
-        "r0": 0.2
+        "D": 20.0,
+        "a": 3.0,
+        "r0": "auto"
     }
 ]
 ```
@@ -147,9 +149,30 @@ cd training
 
 Il training salverà il modello PyTorch JIT compilato e ottimizzato per ESPResSo.
 
----
+## Uso del Potenziale di Morse per le Interazioni di Stacking (Esempio TEL22)
+Le reti neurali grafiche a volte faticano a modellare forze non lineari e "fragili" a lungo raggio come l'impilamento (stacking) dei tetrad di Guanina o le forze di Van der Waals intra-catena in modo nativo, specialmente con pochi dati di training. Un modo elegante e veloce per risolvere questo problema è introdurre un **Potenziale di Morse** esplicito come prior.
 
-## Fase 3: Integrazione e Simulazione in ESPResSo
+Il potenziale di Morse modella perfettamente la "buca" energetica dello stacking biologico:
+- Offre una profonda stabilità all'equilibrio (regolata dal parametro `D`, profondità della buca).
+- Permette all'interazione di "rompersi" dolcemente a distanze maggiori (regolato dal parametro `a` o $\alpha$, larghezza della buca), a differenza dei legami armonici che genererebbero forze infinite impedendo fisicamente fenomeni come il melting termico o l'unfolding.
+
+**Caso d'uso (Tutorial TEL22):**
+Nel caso dei G-Quadruplex (TEL22), lo stacking planare tra le guanine è essenziale per la compattezza della struttura. Piuttosto che far imparare questa forza complessa interamente al Modello di Machine Learning, iniettiamo esplicitamente dei legami di Morse "scaffold" (impalcatura) tra le guanine impilate:
+```json
+{
+    "mol_i": 2, "mol_j": 8,
+    "type": "morse",
+    "D": 50.0,
+    "a": 3.0,
+    "r0": "auto"
+}
+```
+In questo setup:
+- `D` a `50.0` kJ/mol garantisce che la struttura rimanga stabilmente foldata a temperature fisiologiche (300K). Valori più bassi (es. `20.0`) faciliterebbero un unfolding termico visibile.
+- `"r0": "auto"` permette al framework di leggere l'esatta distanza di stacking direttamente dalla traiettoria atomistica (evitando esplosioni termodinamiche causate da un `r0` immesso manualmente e non perfettamente allineato con le dimensioni del CG).
+- ESPResSo applicherà automaticamente un "Force Capping" su questi legami tabulati per impedire esplosioni di integrazione qualora i monomeri subiscano urti termici severi a brevissima distanza.
+
+## 4. Esecuzione della Simulazione (ESPResSo)
 
 L'ultima fase è l'utilizzo del modello e dei prior per la produzione MD. Per fare questo, devi prima installare il plugin C++ di PaiNN all'interno del codice sorgente di ESPResSo.
 

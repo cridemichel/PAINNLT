@@ -48,7 +48,10 @@ def generate_topology():
                 "CG_DG_B5": 7
             }
         },
-        "bonds": []
+        },
+        "bonds": [],
+        "angles": [],
+        "dihedrals": []
     }
     
     # 10 chains
@@ -72,6 +75,26 @@ def generate_topology():
             
             # Formato della lista bonds: [mol_i, mol_j, site_i, site_j]
             config["bonds"].append([mol_i, mol_j, site_i, site_j])
+            
+        for i in range(20):
+            config["angles"].append({
+                "mol_i": offset + i, 
+                "mol_j": offset + i + 1, 
+                "mol_k": offset + i + 2,
+                "theta0": "auto", 
+                "k": "auto"
+            })
+            
+        for i in range(19):
+            config["dihedrals"].append({
+                "mol_i": offset + i, 
+                "mol_j": offset + i + 1, 
+                "mol_k": offset + i + 2, 
+                "mol_l": offset + i + 3,
+                "phi0": "auto", 
+                "k": "auto", 
+                "n": 1
+            })
 
     # Write JSON
     with open("tel22_topology.json", "w") as f:
