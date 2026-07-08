@@ -1,0 +1,10 @@
+{
+    "num_species": 4,
+    "hidden_channels": 32,
+    "n_layers": 2,
+    "num_rbf": 30,
+    "cutoff": 0.5,
+    "learning_rate": 0.001,
+    "epochs": 5,
+    "batch_size": 16
+}
