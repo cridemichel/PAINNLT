@@ -82,9 +82,11 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
 ```
 
 #### Priors e Inversione di Boltzmann
-Se includi l'array `"bonds"` (come `[[0, 1]]`), lo script effettuerà l'**Inversione di Boltzmann** statistica sulle distanze della traiettoria per ricavare la costante armonica $k$ e la distanza di equilibrio $r_0$.
-In alternativa, puoi disattivare del tutto i priors lasciando `bonds: []`, oppure definire esplicitamente **FENE** o **Morse** (supporto anche per legami tra siti specifici invece che Centri di Massa):
+Se includi l'array `"bonds"` come liste di indici (es. `[[0, 1]]`), lo script effettuerà l'**Inversione di Boltzmann** statistica sulle distanze della traiettoria per ricavare automaticamente la costante armonica $k$ e la distanza di equilibrio $r_0$.
 
+In alternativa, puoi disattivare del tutto i priors lasciando `bonds: []`, oppure definire **esplicitamente** i parametri desiderati fornendo dei dizionari. Puoi usare potenziali **Harmonic**, **FENE** o **Morse**, con supporto nativo anche per legami tra siti specifici invece che tra Centri di Massa (tramite le chiavi opzionali `site_i` e `site_j`).
+
+Esempi di definizione esplicita:
 ```json
 "bonds": [
     {
@@ -94,6 +96,19 @@ In alternativa, puoi disattivare del tutto i priors lasciando `bonds: []`, oppur
         "k": 1000.0,
         "r0": 0.2,
         "r_max": 0.3
+    },
+    {
+        "mol_i": 1, "mol_j": 2,
+        "type": "harmonic",
+        "k": 5000.0,
+        "r0": 0.15
+    },
+    {
+        "mol_i": 2, "mol_j": 3,
+        "type": "morse",
+        "D": 50.0,
+        "a": 20.0,
+        "r0": 0.2
     }
 ]
 ```

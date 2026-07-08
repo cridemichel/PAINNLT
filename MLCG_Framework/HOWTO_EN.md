@@ -40,20 +40,82 @@ All the code required to generate the training dataset is located in `preprocess
 Before running the script, you need to define how the All-Atom atoms are mapped onto the Coarse-Grained sites and which CG sites are covalently bonded.
 Open the `preprocessing/topology_config.json` file and define:
 - `temperature`: The temperature (in Kelvin) of your All-Atom MD (needed to calculate $k_B T$).
-- `mapping`: Lists of AA atom indices (0-indexed) that make up each CG site.
-- `bonds`: Pairs of CG site indices that are connected by a harmonic prior.
-- `wca_sigma` / `wca_epsilon`: Global parameters (optional) for the excluded volume prior (WCA).
+- `mapping`: Lists of AA atom indices (0-indexed) or atom names that make up each CG site.
+- `bonds`: Index pairs or FENE/Morse configurations for prior insertion.
 
-### 1.2 Generate the Dataset
-Once configured, run the script providing your GROMACS/All-Atom trajectory and topology as input:
+This script supports flexible mapping based on JSON files. You can generate `.bin` files containing positions, forces, and torques on individual sites or centers of mass.
+
+Execution example:
 ```bash
-cd preprocessing
-python3 build_cg_dataset.py --traj /path/to/traj.xtc --top /path/to/conf.gro
+python build_cg_dataset.py \
+    --traj ../GROMACS/ethanol.trr \
+    --topol ../GROMACS/ethanol.gro \
+    --config topology_config.json \
+    --output cg_dataset.bin
 ```
-The script will do three things:
-1. It will calculate the optimal spring constants ($k, r_0$) using Boltzmann Inversion on the CG bond distances observed in the trajectory and save them in `cg_priors.json`.
-2. It will analytically subtract these harmonic forces (and the WCA) from the mapped CG forces, generating the residual dataset `cg_dataset.bin` in `training/`.
-3. It will calculate the masses and inertia tensors for the CG sites/molecules and save them in `rigid_bodies_info.json`.
+
+#### Example of `topology_config.json`
+The configuration file controls temperatures, WCA potentials, spring bonds (priors), and mapping rules (Multi-Bead, COM, ATOM, COG):
+
+```json
+{
+    "temperature": 300.0,
+    "wca_sigma": 0.0,
+    "wca_epsilon": 0.0,
+    "bonds": [
+        [0, 1]
+    ],
+    "mapping": {
+        "mapping_method": "COM",
+        "residues": {
+            "ETH": {
+                "CG_CH3": ["C1", "H1", "H2", "H3"],
+                "CG_CH2": ["C2", "H4", "H5"],
+                "CG_OH":  ["O1", "H6"]
+            }
+        },
+        "site_types": {
+            "CG_CH3": 0, "CG_CH2": 1, "CG_OH": 2
+        }
+    }
+}
+```
+
+#### Priors and Boltzmann Inversion
+If you include the `"bonds"` array as a list of indices (e.g., `[[0, 1]]`), the script will perform statistical **Boltzmann Inversion** on the trajectory distances to automatically derive the harmonic constant $k$ and the equilibrium distance $r_0$.
+
+Alternatively, you can completely disable the priors by leaving `bonds: []`, or **explicitly** define the desired parameters by providing dictionaries. You can use **Harmonic**, **FENE** or **Morse** potentials, with native support for bonds between specific sites rather than just Centers of Mass (using the optional `site_i` and `site_j` keys).
+
+Examples of explicit definition:
+```json
+"bonds": [
+    {
+        "mol_i": 0, "mol_j": 1,
+        "site_i": 2, "site_j": 0,
+        "type": "fene",
+        "k": 1000.0,
+        "r0": 0.2,
+        "r_max": 0.3
+    },
+    {
+        "mol_i": 1, "mol_j": 2,
+        "type": "harmonic",
+        "k": 5000.0,
+        "r0": 0.15
+    },
+    {
+        "mol_i": 2, "mol_j": 3,
+        "type": "morse",
+        "D": 50.0,
+        "a": 20.0,
+        "r0": 0.2
+    }
+]
+```
+
+The script will calculate the resulting forces (and their related **torques**) and subtract them from the target values before saving the binary dataset, exporting the exact parameters to the `cg_priors.json` file.
+It will also analytically subtract these harmonic/FENE/Morse forces (and WCA) from the mapped CG forces, generating the residual dataset `cg_dataset.bin` in `training/`.
+Finally, it will calculate the masses and inertia tensors for the CG sites/molecules and save them in `rigid_bodies_info.json`.
 
 ---
 
@@ -91,37 +153,70 @@ The training will save the compiled PyTorch JIT model optimized for ESPResSo.
 The final phase is the utilization of the model and priors for MD production. To do this, you must first install the PaiNN C++ plugin within the ESPResSo source code.
 
 ### 3.1 Installing the Plugin in ESPResSo
-In the `simulation/espresso_plugin/` folder you will find the 3 files needed for integration.
+In the `simulation/espresso_plugin/` folder you will find the 3 files needed for integration (and a symlink to the architecture file).
 Copy these files into the ESPResSo source code:
 
 ```bash
 # Replace "/path/to/espresso" with your ESPResSo source directory
-cp simulation/espresso_plugin/PaiNN_ML_Potential.cpp /path/to/espresso/src/core/machine_learning/
-cp simulation/espresso_plugin/PaiNN_ML_Potential.hpp /path/to/espresso/src/core/machine_learning/
+cp simulation/espresso_plugin/PaiNN_Architecture.hpp /path/to/espresso/src/core/nonbonded_interactions/
+cp simulation/espresso_plugin/PaiNN_ML_Potential.cpp /path/to/espresso/src/core/nonbonded_interactions/
+cp simulation/espresso_plugin/PaiNN_ML_Potential.hpp /path/to/espresso/src/core/nonbonded_interactions/
 cp simulation/espresso_plugin/painn.pyx /path/to/espresso/src/python/espressomd/
 ```
 
-Afterward, recompile ESPResSo making sure you have PyTorch enabled in your Cmake toolchain:
+Afterward, recompile ESPResSo making sure you have PyTorch linked in your Cmake toolchain:
 ```bash
 cd /path/to/espresso/build
 make -j4
 ```
 
 ### 3.2 Running the Dynamics
-You will find the template script `run_cg_md.py` in the `simulation/` folder.
+The integration of ML + Priors is elegantly handled within the framework. The Neural Network (C++ Plugin) deals **exclusively** with the complex prediction. The Priors (WCA, Harmonic, FENE, Morse) are natively added inside ESPResSo's MD engine.
+
+To simulate, use the `run_cg_md.py` script which:
+1. Instantiates the molecules and Virtual Sites.
+2. Reads `cg_priors.json` and applies ESPResSo bonds to the sites/particles.
+3. Activates the PaiNN C++ potential which will inject its predicted force on each site.
 
 ```bash
-cd simulation
-/path/to/espresso/build/pypresso run_cg_md.py
+python run_cg_md.py \
+    --model best_model.pt \
+    --config best_cg_model_config.json \
+    --priors cg_priors.json \
+    --rb_info rigid_bodies_info.json \
+    --dataset cg_dataset.bin \
+    --steps 10000 \
+    --dt 0.002
 ```
-The script will handle the following:
-1. Load the masses and inertia tensors from the `rigid_bodies_info.json` file (generated in Step 1) to configure the particles in ESPResSo.
-2. Load the topological priors from the `cg_priors.json` file and configure the native harmonic bonds of ESPResSo.
-3. Load the WCA in ESPResSo.
-4. Initialize the `best_cg_model.pt` neural network in ESPResSo via the C++ ML Potential plugin.
-5. Launch the Molecular Dynamics NVE or NVT (Langevin) combining the analytical forces with the neural predictions!
 
-### 3.3 Energy Validation (Quadratic Scaling)
+### 3.4 Rigid Body Dynamics and Particle Filtering
+In the framework, simulating multi-site molecules (Multi-Bead) leverages ESPResSo's **Virtual Sites**:
+1. **The Real Particle (Center of Mass)**: For each rigid molecule, ESPResSo requires a single central particle endowed with mass and an inertia tensor. This is the only particle that the integrator physically moves in space.
+2. **The Virtual Sites (The CG Beads)**: The interaction sites (e.g., `CH3`, `OH`) are instantiated as massless particles, whose position is rigidly anchored to the real particle. Any force applied to a virtual site is automatically translated by ESPResSo into a net force and **torque** on the real particle.
+
+**The Neural Network Problem:**
+The PaiNN neural network is trained *exclusively* on sites (e.g., types `0, 1, 2`). It knows nothing about a "Center of Mass". If we passed the Center of Mass to the ML Model, the latter would crash or produce random noise trying to interpret an unknown chemical species.
+
+**The Solution (The `num_species` Filter):**
+The C++ plugin (`PaiNN_ML_Potential.cpp`) includes an elegant filter: it accepts the `num_species` parameter (the total number of types known to the neural network). 
+During the ESPResSo simulation:
+- Virtual sites are assigned standard types (e.g., `0`, `1`, `2`). The Neural Network sees them, calculates distances, and predicts forces.
+- The "Real" particle (the Center of Mass) is intentionally assigned a "ghost" type, which is an ID greater than or equal to `num_species` (e.g., `type = 100`).
+- The C++ plugin **actively ignores** all particles with `type >= num_species`. 
+
+The Center of Mass thus becomes "invisible" to Machine Learning, but remains perfectly active for ESPResSo's mechanics!
+If you wish to make the Center of Mass particle interact:
+- **Classically (e.g., WCA between molecules)**: Just define the interaction in ESPResSo for `type 100`.
+- **With the Neural Network**: Simply include the Center of Mass as an explicit site in the `topology_config.json` during preprocessing, train the model including it (it will have its own `type` like `3`), and assign it that type in the simulation.
+
+> [!NOTE]
+> **"Real" vs "Virtual" Particles in ESPResSo**
+> ESPResSo does not use the `type` to determine if a particle is Real or Virtual. The `type` is just a label for the Neural Network or Lennard-Jones parameters. The true nature of the particle is decided by the `virtual=True` or `virtual=False` flag during its creation in Python.
+> 
+> * Example: `system.part.add(pos=..., type=100, virtual=False)` creates the real particle. Newton will move it, but the neural network (stopping at types < 100) will ignore it.
+> * Example: `system.part.add(pos=..., type=0, virtual=True)` creates a ghost site attached to the rigid body. The Neural Network will see it, apply force to it, and ESPResSo will leverage it, transferring force and torque to the real rigid body it is bound to.
+
+### 4. Energy Validation (Quadratic Scaling)
 To ensure that the integration of PyTorch and the Priors within ESPResSo conserves energy (symplectic NVE simulation), you can use the dedicated test script:
 ```bash
 cd simulation

@@ -22,12 +22,12 @@ Assuming you have cloned ESPResSo and you are in the project root (`espresso/`),
 
 ```bash
 # Copy the headers and the cpp source into ESPResSo’s core
-cp espresso_integration/PaiNN_Architecture.hpp   espresso/src/core/nonbonded_interactions/
-cp espresso_integration/PaiNN_ML_Potential.hpp   espresso/src/core/nonbonded_interactions/
-cp espresso_integration/PaiNN_ML_Potential.cpp   espresso/src/core/nonbonded_interactions/
+cp espresso_plugin/PaiNN_Architecture.hpp   espresso/src/core/nonbonded_interactions/
+cp espresso_plugin/PaiNN_ML_Potential.hpp   espresso/src/core/nonbonded_interactions/
+cp espresso_plugin/PaiNN_ML_Potential.cpp   espresso/src/core/nonbonded_interactions/
 
 # Copy the Python (Cython) interface
-cp espresso_integration/painn.pyx               espresso/src/python/espressomd/
+cp espresso_plugin/painn.pyx               espresso/src/python/espressomd/
 ```
 
 ### 2. Edit `espresso/src/core/CMakeLists.txt`
@@ -105,14 +105,14 @@ make -j4            # Adjust the parallelism level to your CPU
 
 ## Running & Testing
 
-Inside this `espresso_integration` folder you will find two ready‑to‑run Python scripts that validate the implementation.
+Inside this `espresso_plugin` folder you will find two ready‑to‑run Python scripts that validate the implementation.
 
 ### 5.1 Basic Test (`test_espresso_painn.py`)
 
 Run it with the ESPResSo Python executable:
 
 ```bash
-./espresso/build/pypresso espresso_integration/test_espresso_painn.py
+./espresso/build/pypresso espresso_plugin/test_espresso_painn.py
 ```
 
 The script creates **9 atoms** at random positions, activates the C++ PaiNN potential, and performs **0 integration steps** just to retrieve the predicted forces.
