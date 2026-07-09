@@ -36,7 +36,7 @@ system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
 # Set room temperature: 300 K * 0.008314 kJ/(mol*K) = 2.49 kJ/mol
-system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
+system.thermostat.set_langevin(kT=2.49, gamma=2.0, seed=42)
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
@@ -213,6 +213,8 @@ espressomd.painn.activate_painn_potential(
 import espressomd.io.writer.vtf
 
 print(f"[INFO] Running {args.steps} integration steps...")
+with open("energy.csv", "w") as f_out:
+    f_out.write("Step,E_tot,E_kin\n")
 vtf_filename = "cg_trajectory.vtf"
 with open(vtf_filename, "w") as vtf_file:
     espressomd.io.writer.vtf.writevsf(system, vtf_file)
@@ -231,10 +233,16 @@ with open(vtf_filename, "w") as vtf_file:
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
         
         energy = system.analysis.energy()
-        print(f"\r[INFO] Step {step*chunk_size}/{args.steps} | E_tot: {energy['total']:.2f} | E_kin: {energy['kinetic']:.2f}", end="")
+        step_val = step * chunk_size
+        e_tot = energy['total']
+        e_kin = energy['kinetic']
+        print(f"\r[INFO] Step {step_val}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f}", end="")
+        
+        # Salviamo le energie in un file CSV per poterle graficare e controllare il surriscaldamento
+        with open("energy.csv", "a") as f_out:
+            f_out.write(f"{step_val},{e_tot:.4f},{e_kin:.4f}\n")
 
 print("\n[INFO] Simulation finished successfully.")
 
 # Force immediate exit to bypass PyTorch/MPI teardown crashes on macOS
 os._exit(0)
-

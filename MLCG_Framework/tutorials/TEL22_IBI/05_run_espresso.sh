@@ -7,5 +7,5 @@ echo "[5/5] Simulazione in ESPResSo con IBI + ML"
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
-    --dt 0.002 \
+    --dt 0.001 \
     --steps 50000
