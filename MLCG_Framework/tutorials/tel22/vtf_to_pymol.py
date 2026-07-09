@@ -110,28 +110,46 @@ set sphere_scale, 0.8, tel22_cg"""
     t1_ids, t2_ids, t3_ids = [], [], []
     bond_cmds = []
     
+    first_frame = frames[0]
+    
+    def get_optimal_perimeter(mol_indices):
+        # Data una lista di 4 indici molecola (0-based), trova il ciclo hamiltoniano minimo
+        pts = [first_frame[mol_com_parts[m]] for m in mol_indices]
+        cycles = [
+            [0, 1, 2, 3],
+            [0, 1, 3, 2],
+            [0, 2, 1, 3]
+        ]
+        min_len = float('inf')
+        best_cycle = cycles[0]
+        for c in cycles:
+            l = 0.0
+            for i in range(4):
+                p1, p2 = pts[c[i]], pts[c[(i+1)%4]]
+                l += np.linalg.norm(p1 - p2)
+            if l < min_len:
+                min_len, best_cycle = l, c
+        # Restituisce gli ID PyMOL (che sono mol_idx + 1) nell'ordine ottimale
+        return [mol_indices[i] + 1 for i in best_cycle]
+
     for strand in range(10):
         offset = strand * 22
-        # Indici 1-based assoluti per questo filamento
-        g2, g3, g4 = offset + 2, offset + 3, offset + 4
-        g8, g9, g10 = offset + 8, offset + 9, offset + 10
-        g14, g15, g16 = offset + 14, offset + 15, offset + 16
-        g20, g21, g22 = offset + 20, offset + 21, offset + 22
         
-        t1_ids.extend([g2, g8, g14, g20])
-        t2_ids.extend([g3, g9, g15, g21])
-        t3_ids.extend([g4, g10, g16, g22])
+        # Le 4 guanine per ogni tetrade (indici molecola 0-based)
+        m_t1 = [offset + 1, offset + 7, offset + 13, offset + 19]
+        m_t2 = [offset + 2, offset + 8, offset + 14, offset + 20]
+        m_t3 = [offset + 3, offset + 9, offset + 15, offset + 21]
         
-        # Ordine topologico perimetrale (senza incrociare le diagonali):
-        # La struttura fisica richiede di unire nell'ordine: G2 -> G14 -> G20 -> G8 -> G2
-        bond_cmds.extend([
-            f"bond id {g2}, id {g14}", f"bond id {g14}, id {g20}", 
-            f"bond id {g20}, id {g8}", f"bond id {g8}, id {g2}",
-            f"bond id {g3}, id {g15}", f"bond id {g15}, id {g21}", 
-            f"bond id {g21}, id {g9}", f"bond id {g9}, id {g3}",
-            f"bond id {g4}, id {g16}", f"bond id {g16}, id {g22}", 
-            f"bond id {g22}, id {g10}", f"bond id {g10}, id {g4}"
-        ])
+        # Aggiungiamo agli ID globali per colorare
+        t1_ids.extend([m+1 for m in m_t1])
+        t2_ids.extend([m+1 for m in m_t2])
+        t3_ids.extend([m+1 for m in m_t3])
+        
+        # Troviamo il perimetro ottimo per evitare incroci, calcolandolo dalle coordinate 3D vere!
+        for m_tetrad in [m_t1, m_t2, m_t3]:
+            opt_ids = get_optimal_perimeter(m_tetrad)
+            for i in range(4):
+                bond_cmds.append(f"bond id {opt_ids[i]}, id {opt_ids[(i+1)%4]}")
 
     t1_sel = "+".join(map(str, t1_ids))
     t2_sel = "+".join(map(str, t2_ids))
