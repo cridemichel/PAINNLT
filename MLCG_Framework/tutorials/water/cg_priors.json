@@ -1,0 +1,9 @@
+{
+    "bonds": [],
+    "wca": {
+        "sigma": 0.0,
+        "epsilon": 0.0
+    },
+    "angles": [],
+    "dihedrals": []
+}

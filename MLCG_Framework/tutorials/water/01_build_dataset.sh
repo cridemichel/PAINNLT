@@ -5,9 +5,9 @@ echo "======================================================"
 echo " 01. PREPROCESSING AND DATASET GENERATION (WATER) "
 echo "======================================================"
 
-python3 ../../preprocessing/build_cg_dataset.py \
-    --traj traiettoria.trr \
-    --topol conf.gro \
+uv run ../../preprocessing/build_cg_dataset.py \
+    --trajectory traiettoria.trr \
+    --topology conf.gro \
     --config water_topology.json \
     --output my_water_dataset.bin
 
