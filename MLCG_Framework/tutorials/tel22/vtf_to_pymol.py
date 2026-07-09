@@ -93,61 +93,72 @@ def main():
             
     print(f"File '{pdb_filename}' generato con successo.")
     
-    # Genera i comandi di stile in base alla scelta dell'utente
-    if args.style == "tube":
-        style_cmds = """\
-# Mostra il DNA come tubi continui
+    # Genera i comandi di base per lo stile
+    style_cmds = """\
+# Mostra il DNA come tubi continui (backbone)
 show cartoon, tel22_cg
 cartoon tube, tel22_cg
-set cartoon_tube_radius, 0.5"""
-    else:
-        style_cmds = """\
-# Mostra il DNA come sferette (Coarse-Grained beads)
-show spheres, tel22_cg
-set sphere_scale, 0.8, tel22_cg"""
+set cartoon_tube_radius, 0.4
+color grey, tel22_cg
 
+# Mostra le sferette (Coarse-Grained beads) per tutto
+show spheres, tel22_cg
+set sphere_scale, 0.8, tel22_cg
+
+# Nascondi le sferette per i linker AAT e le adenine terminali (residui non-guanine)
+# Le guanine sono 2,3,4, 8,9,10, 14,15,16, 20,21,22. Tutto il resto è linker.
+hide spheres, resi 1+5-7+11-13+17-19"""
     # Genera le selezioni e i legami per tutti i 10 filamenti
     t1_ids, t2_ids, t3_ids = [], [], []
     bond_cmds = []
     
-    first_frame = frames[0]
+    first_frame = selected_frames[0]
     
-    def get_optimal_perimeter(mol_indices):
-        # Data una lista di 4 indici molecola (0-based), trova il ciclo hamiltoniano minimo
-        pts = [first_frame[mol_com_parts[m]] for m in mol_indices]
-        cycles = [
-            [0, 1, 2, 3],
-            [0, 1, 3, 2],
-            [0, 2, 1, 3]
-        ]
-        min_len = float('inf')
-        best_cycle = cycles[0]
-        for c in cycles:
-            l = 0.0
-            for i in range(4):
-                p1, p2 = pts[c[i]], pts[c[(i+1)%4]]
-                l += np.linalg.norm(p1 - p2)
-            if l < min_len:
-                min_len, best_cycle = l, c
-        # Restituisce gli ID PyMOL (che sono mol_idx + 1) nell'ordine ottimale
-        return [mol_indices[i] + 1 for i in best_cycle]
+    def get_pca_perimeter(mol_indices):
+        # 1. Estrai le coordinate 3D vere
+        pts = np.array([first_frame[mol_com_parts[m]] for m in mol_indices])
+        # 2. Centra i punti
+        center = np.mean(pts, axis=0)
+        pts_centered = pts - center
+        # 3. Calcola il piano migliore (PCA)
+        cov = np.cov(pts_centered.T)
+        eigenvalues, eigenvectors = np.linalg.eigh(cov)
+        v1 = eigenvectors[:, -1]
+        v2 = eigenvectors[:, -2]
+        # 4. Proietta in 2D
+        proj_2d = np.array([[np.dot(p, v1), np.dot(p, v2)] for p in pts_centered])
+        # 5. Calcola gli angoli nel piano per trovare il perimetro convesso (senza incroci!)
+        angles = np.arctan2(proj_2d[:, 1], proj_2d[:, 0])
+        order = np.argsort(angles)
+        
+        # Restituisci gli ID PyMOL (1-based) nell'ordine corretto
+        return [mol_indices[i] + 1 for i in order]
 
     for strand in range(10):
         offset = strand * 22
         
-        # Le 4 guanine per ogni tetrade (indici molecola 0-based)
-        m_t1 = [offset + 1, offset + 7, offset + 13, offset + 19]
-        m_t2 = [offset + 2, offset + 8, offset + 14, offset + 20]
-        m_t3 = [offset + 3, offset + 9, offset + 15, offset + 21]
+        # Le 3 tetradi biologiche (vere) dedotte dalla struttura atomistica 143D 
+        # (topologia basket anti-parallela). I filamenti "up" e "down" causano 
+        # uno scivolamento delle guanine tra la tetrade superiore e inferiore.
+        # Gli indici qui sotto sono "mol_idx" (0-based, quindi G2 = 1, G10 = 9).
         
-        # Aggiungiamo agli ID globali per colorare
+        # Top Tetrad: G2, G10, G14, G22
+        m_t1 = [offset + 1, offset + 9, offset + 13, offset + 21]
+        
+        # Middle Tetrad: G3, G9, G15, G21
+        m_t2 = [offset + 2, offset + 8, offset + 14, offset + 20]
+        
+        # Bottom Tetrad: G4, G8, G16, G20
+        m_t3 = [offset + 3, offset + 7, offset + 15, offset + 19]
+        
+        # Aggiungiamo agli ID globali (1-based) per colorare
         t1_ids.extend([m+1 for m in m_t1])
         t2_ids.extend([m+1 for m in m_t2])
         t3_ids.extend([m+1 for m in m_t3])
         
-        # Troviamo il perimetro ottimo per evitare incroci, calcolandolo dalle coordinate 3D vere!
+        # Troviamo il perimetro ottimo proiettando sul piano complanare (PCA)
         for m_tetrad in [m_t1, m_t2, m_t3]:
-            opt_ids = get_optimal_perimeter(m_tetrad)
+            opt_ids = get_pca_perimeter(m_tetrad)
             for i in range(4):
                 bond_cmds.append(f"bond id {opt_ids[i]}, id {opt_ids[(i+1)%4]}")
 

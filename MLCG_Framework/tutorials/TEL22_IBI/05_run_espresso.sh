@@ -8,4 +8,4 @@ echo "[5/5] Simulazione in ESPResSo con IBI + ML"
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
     --dt 0.002 \
-    --steps 1000
+    --steps 50000
