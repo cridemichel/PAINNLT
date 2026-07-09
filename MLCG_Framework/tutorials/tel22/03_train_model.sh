@@ -10,20 +10,6 @@ if [ ! -f "tel22_dataset.bin" ]; then
     exit 1
 fi
 
-# Generiamo un file di configurazione per il training (veloce per il tutorial)
-cat << 'JSON' > tel22_training_config.json
-{
-    "num_species": 8,
-    "hidden_channels": 32,
-    "n_layers": 2,
-    "num_rbf": 30,
-    "cutoff": 0.5,
-    "learning_rate": 0.0005,
-    "epochs": 20,
-    "batch_size": 16
-}
-JSON
-
 echo "Avvio l'addestramento C++ (5 epoche)..."
 ../../training/build/train_painn \
     tel22_dataset.bin \
