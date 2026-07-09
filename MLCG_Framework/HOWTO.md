@@ -109,7 +109,15 @@ uv run ibi/run_ibi_loop.py \
     --dihedrals DBI
 ```
 - A convergenza ottenuta, le curve ottimali vengono salvate come file `.dat`.
-- Successivamente, usa `generate_residual_dataset.py` per creare un dataset in cui la rete neurale viene addestrata solo sulle forze residue rispetto a questi potenziali esatti.
+- Successivamente, usa di nuovo `build_cg_dataset.py` passando il flag `--priors` per creare il dataset finale. In questo modo lo script capirà di non dover ricalcolare i prior statistici, ma leggerà direttamente le tabelle esatte dell'IBI e le sottrarrà per estrarre i veri residui:
+```bash
+uv run preprocessing/build_cg_dataset.py \
+    --topology md.gro \
+    --trajectory md_whole.trr \
+    --config topology_config.json \
+    --priors cg_priors.json \
+    --output dataset_ibi.bin
+```
 - Per simulare, nel tuo file `cg_priors.json` aggiornato automaticamente, l'impostazione sarà convertita a `"type": "tabulated"` indicando il percorso alla spline generata:
 ```json
 {
