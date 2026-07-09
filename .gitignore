@@ -31,3 +31,5 @@ GROMACS
 **/*.vtf
 **/*.pml
 **/*.pse
+**/*.mp4
+**/*.gif
