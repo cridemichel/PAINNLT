@@ -36,7 +36,7 @@ system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
 # Set room temperature: 300 K * 0.008314 kJ/(mol*K) = 2.49 kJ/mol
-system.thermostat.set_langevin(kT=2.49, gamma=2.0, seed=42)
+system.thermostat.set_langevin(kT=2.49, gamma=10.0, seed=42)
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():

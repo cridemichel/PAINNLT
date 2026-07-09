@@ -3332,7 +3332,7 @@
         }
     ],
     "wca": {
-        "sigma": 0.6,
+        "sigma": 0.3,
         "epsilon": 1.0
     },
     "angles": [

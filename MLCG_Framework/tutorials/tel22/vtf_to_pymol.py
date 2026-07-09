@@ -9,6 +9,15 @@ Genera:
 1. cg_trajectory_clean.pdb: Una traiettoria PDB multi-modello pronta per essere animata.
 2. load_tel22_pymol.pml: Uno script di visualizzazione per PyMOL che applica
    automaticamente i colori alle catene e formatta i filamenti come tubi continui (cartoon).
+
+per generare i png in pymol usare il comando
+
+> mpng frame_, 0, 0, 1
+
+dalla console di pymol
+e poi usare ffmpeg per generare il video nel seguente modo:
+
+> ffmpeg -framerate 30 -start_number 150 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" CGML++_tel22.mp4
 """
 
 import sys
@@ -206,7 +215,7 @@ set depth_cue, on
 set spec_reflect, 0.5
 
 # Imposta il player di animazione
-mset 1 -x
+mset 1 - {len(frames)}
 mplay
 
 print("==========================================================")
