@@ -96,19 +96,30 @@ Alternatively, you can disable automatic inference and explicitly define much mo
 This parametric approach is ultra-fast to evaluate, but assumes ideal closed-form equations.
 
 **2. Iterative Boltzmann Inversion (IBI) [Exact Tabulated Curves]**
-If your system is highly anharmonic or suffers from cross-interferences (e.g., steric repulsion modifies bond distances), the harmonic approximation of DBI is not sufficient. In this case, you can use the integrated IBI pipeline:
-- Use the scripts in the `ibi/` folder to mathematically extract the exact potentials. The `run_ibi_loop.py` script calculates the curves (splines) and, via MD loops in ESPResSo, iteratively corrects them until the simulated distribution mathematically matches the All-Atom target.
-- Next, use `generate_residual_dataset.py` to create a dataset where the neural network is trained only on the residual forces.
-- To simulate, in your `cg_priors.json` file, simply set `"type": "tabulated"` and provide the path to the IBI-generated file:
+If your system is highly anharmonic or suffers from cross-interferences (e.g., steric repulsion modifies bond distances), the harmonic approximation of DBI is not sufficient. In this case, you can use the powerful integrated IBI pipeline with the real ESPResSo engine:
+- Use the script in the `ibi/` folder to mathematically extract the exact potentials. The `run_ibi_loop.py` script natively reads the `_dataset.bin` file and performs **real Molecular Dynamics simulations in ESPResSo**, calculating the Kullback-Leibler divergence and correcting the curves (splines) iteratively via the Henderson equation until the simulated distribution perfectly matches the All-Atom target.
+- The user has total control over the inversion types via the command line. For example, you can request IBI only for bonds, leaving DBI (more stable and efficient) for angles and dihedrals:
+```bash
+uv run ibi/run_ibi_loop.py \
+    --dataset preprocessing/tel22_dataset.bin \
+    --priors preprocessing/cg_priors.json \
+    --iterations 5 \
+    --bonds IBI \
+    --angles DBI \
+    --dihedrals DBI
+```
+- Once convergence is achieved, the optimal curves are saved as `.dat` files.
+- Next, use `generate_residual_dataset.py` to create a dataset where the neural network is trained only on the residual forces with respect to these exact potentials.
+- To simulate, in your automatically updated `cg_priors.json` file, the setting will be converted to `"type": "tabulated"`, indicating the path to the generated spline:
 ```json
 {
     "mol_i": 0, "mol_j": 1,
     "type": "tabulated",
-    "file": "ibi_priors/bond_ibi_final.dat",
-    "min": 0.3, "max": 0.7
+    "file": "ibi_priors/bond_ibi_spline_0.dat",
+    "min": 0.01, "max": 3.0
 }
 ```
-ESPResSo will read the numerical table (for both `TabulatedDistance` bonds and `TabulatedAngle` angles) injecting the exact IBI potential. This choice guarantees native backward compatibility and allows you to freely mix DBI springs and IBI tables for different degrees of freedom!
+ESPResSo will read the numerical table (for `TabulatedDistance` bonds, `TabulatedAngle` angles, and dihedrals), injecting the perfect IBI potential. This choice guarantees native backward compatibility and allows you to freely mix DBI springs and IBI tables for different degrees of freedom!
 
 > [!TIP]
 > **Equilibrium Distance Auto-calculation (`r0`)**
