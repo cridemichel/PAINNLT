@@ -79,3 +79,29 @@ Per valutare quantitativamente se il modello ML è stato in grado di mantenere i
    ```bash
    uv run plot_rg_timeseries.py
    ```
+
+---
+
+## 07. Esperimento Avanzato: Modello Euristico per l'Unfolding (Pure ML)
+
+Se il tuo obiettivo non è solo simulare il G-Quadruplex a 300 K, ma studiarne lo **srotolamento termico (unfolding)** a temperature molto elevate (es. 1000 K), incontrerai un problema: i potenziali classici tabulati per gli Angoli e i Diedri andranno in crash. Quando la spina dorsale si srotola, gli atomi possono allinearsi a 180°, generando una singolarità matematica nei diedri IBI (`bond broken between particles`).
+
+Per risolvere questo problema e simulare l'unfolding, possiamo creare un **Modello Euristico Pure ML**, delegando il 100% della geometria alla Rete Neurale e mantenendo solo le molle `FENE` per l'integrità della spina dorsale e i legami `Morse` per i legami a idrogeno.
+
+Ecco la procedura passo-passo per attivare l'unfolding sicuro:
+
+1. **Eliminare Angoli e Diedri alla fonte:**
+   Lo script `02_build_dataset.sh` rigenera ogni volta il file `cg_priors.json` leggendo dal file principale `tel22_topology.json`. 
+   > [!WARNING]
+   > Non modificare a mano `cg_priors.json`, perché verrà sovrascritto!
+   Apri `tel22_topology.json`, cerca in fondo al file e **svuota** le liste `"angles"` e `"dihedrals"` facendole diventare matrici vuote (`[]`). Assicurati inoltre che il `"wca_sigma"` sia impostato a `0.6` (o maggiore) per evitare compenetrazioni durante le collisioni ad alta temperatura.
+
+2. **Ricalcolare il Dataset e Addestrare:**
+   Rilancia `./02_build_dataset.sh`. Ora lo script non sottrarrà più le forze dei diedri. 
+   Lancia `./03_train_model.sh`. La Rete Neurale dovrà imparare da sola l'intera rigidità torsionale della molecola! (Consiglio: alza le `epochs` a 100 o 200 in `tel22_training_config.json` per aiutarla).
+
+3. **Alzare la Temperatura in ESPResSo:**
+   Il nostro script di esecuzione supporta la variazione dinamica della temperatura tramite l'argomento `--kT`.
+   Apri `04_run_espresso.sh` e aggiungi il parametro `--kT 8.31` (che corrisponde a circa 1000 K, contro i classici 2.49 di 300 K).
+   
+Quando avvierai la simulazione, il modello estrapolerà dolcemente a grandi distanze e il tuo DNA si denaturerà in un perfetto polimero *random-coil* senza mai andare in crash!

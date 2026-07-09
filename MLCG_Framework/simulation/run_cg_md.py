@@ -15,6 +15,7 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
+parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 args = parser.parse_args()
 
 print("[INFO] Loading configurations...")
@@ -35,8 +36,8 @@ print("[INFO] Initializing ESPResSo system...")
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
-# Set room temperature: 300 K * 0.008314 kJ/(mol*K) = 2.49 kJ/mol
-system.thermostat.set_langevin(kT=2.49, gamma=10.0, seed=42)
+# Set temperature using the provided kT argument
+system.thermostat.set_langevin(kT=args.kT, gamma=10.0, seed=42)
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
