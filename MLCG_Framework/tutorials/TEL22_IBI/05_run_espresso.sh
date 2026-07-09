@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-echo "[4/4] Simulazione in ESPResSo con IBI + ML"
+echo "[5/5] Simulazione in ESPResSo con IBI + ML"
 ../../../espresso/build/pypresso ../../simulation/run_cg_md.py \
     --model tel22_model_ibi.pt \
     --config tel22_training_config.json \

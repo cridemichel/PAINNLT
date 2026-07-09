@@ -2,7 +2,7 @@
 set -e
 
 echo "========================================="
-echo "Generating Final Residual Dataset (IBI)"
+echo " [3/5] Generating Final Residual Dataset "
 echo "========================================="
 
 # This script runs build_cg_dataset.py again, but this time passing the 

@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-echo "[2/4] Esecuzione Iterative Boltzmann Inversion (IBI)"
+echo "[2/5] Esecuzione Iterative Boltzmann Inversion (IBI)"
 
 # Esegue il vero loop IBI (Dinamica in ESPResSo + Aggiornamento Henderson)
 uv run ../../ibi/run_ibi_loop.py \
