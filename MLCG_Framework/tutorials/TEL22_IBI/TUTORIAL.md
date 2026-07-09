@@ -21,34 +21,33 @@ Questa cartella (`TEL22_IBI/`) contiene una sequenza di script specificamente pr
 In questa cartella troverai i singoli script numerati da eseguire uno dopo l'altro (o puoi lanciare `run_full_ibi_pipeline.sh` per farli eseguire tutti in sequenza automatica).
 
 ### 01_build_dataset.sh
-Questo script utilizza il nostro pre-processore per trasformare la traiettoria All-Atom in un binario `tel22_dataset.bin` mappando ogni nucleotide.
-Genera inoltre il file base `cg_priors.json` che stabilisce la topologia strutturale.
+Questo script utilizza il nostro pre-processore per trasformare la traiettoria All-Atom in un binario `tel22_dataset.bin` mappando ogni nucleotide e calcolando la statistica per una *Direct Boltzmann Inversion* (DBI) preliminare, necessaria come starting point per il passo successivo. Genera inoltre il file base `cg_priors.json`.
 
-### 02_run_ibi.sh [LA NOVITÀ]
-Questo è il cuore dell'approccio tabulato. Lo script lancia il nostro motore matematico `run_ibi_loop.py` che:
-1. Legge le coordinate bersaglio dal dataset.
-2. Ricava le energie tramite Direct Boltzmann Inversion ($V_0$).
-3. Effettua iterazioni di Dinamica Molecolare simulata per aggiornare i potenziali splinati fino alla convergenza (esportandoli in `ibi_priors/`).
-
-Successivamente, uno script al volo modifica il tuo `cg_priors.json` impostando `"type": "tabulated"` **soltanto per i legami (bonds)**, in modo che ESPResSo legga le curve splinate.
-Infine, calcola esplicitamente la forza esercitata da quelle curve splinate su ogni frame, sottraendole dal dataset originale e generando il **`tel22_residual_dataset.bin`**.
+### 02_run_ibi.sh
+Questo è il cuore dell'approccio tabulato. Lo script lancia il motore matematico `run_ibi_loop.py` che esegue la **Iterative Boltzmann Inversion**:
+1. Legge le coordinate e i target.
+2. Effettua iterazioni reali di Dinamica Molecolare simulata in ESPResSo.
+3. Calcola la divergenza e corregge le curve tramite l'equazione di Henderson.
+4. Sovrascrive automaticamente i legami nel file `cg_priors.json` impostando `"type": "tabulated"` e salvando le spline perfette in `ibi_priors/`.
 
 > [!TIP]
 > **La Strategia Ibrida Chirurgica (Evitare le Cross-Correlazioni)**
 >
-> Noterai che lo script `02_run_ibi.sh` applica le tabelle numeriche (IBI) **esclusivamente ai legami**, lasciando gli **Angoli e i Diedri intatti** (ovvero gestiti analiticamente tramite DBI armonico).
+> Noterai che lo script `02_run_ibi.sh` è configurato per calcolare le tabelle numeriche (IBI) **esclusivamente ai legami** (`--bonds IBI`), lasciando gli **Angoli e i Diedri intatti** (`--angles DBI --dihedrals DBI`).
 > 
-> Perché questa scelta? In molecole giganti come il TEL22, ottimizzare iterativamente (tramite IBI) centinaia di legami, angoli e diedri in contemporanea porta quasi sempre a instabilità numerica. Modificare un legame deforma un angolo adiacente, creando infinite **interferenze incrociate (cross-correlazioni)** che fanno divergere l'algoritmo.
-> 
-> Il framework ci permette di adottare un approccio ibrido allo stato dell'arte:
-> - **Legami**: Trattati con estrema cura tramite curve **IBI** per gestire le collisioni dure e le asimmetrie anarmoniche.
-> - **Angoli e Diedri**: Gestiti con le solide e velocissime equazioni analitiche armoniche (**DBI**). Le loro sottili imperfezioni verranno assorbite molto meglio e senza impazzire dalla Rete Neurale (PaiNN)!
+> Perché questa scelta? In molecole giganti come il TEL22, ottimizzare iterativamente centinaia di gradi di libertà in contemporanea porta quasi sempre a instabilità numerica e interferenze incrociate.
+> Il framework ci permette di adottare un approccio ibrido:
+> - **Legami**: Trattati tramite IBI per gestire asimmetrie anarmoniche.
+> - **Angoli e Diedri**: Gestiti tramite formule analitiche (DBI). Le loro sottili imperfezioni verranno assorbite in seguito dalla Rete Neurale!
 
-### 03_train_model.sh
-Passa il binario al programma C++. Addestrerà la rete Graph Neural Network in C++ (tramite LibTorch). A differenza dell'approccio DBI classico, qui la rete dovrà fare molta meno fatica, dovendo imparare solo il rumore (le forze residue non lineari), mentre i muri sterici sono gestiti matematicamente dall'IBI.
+### 03_subtract_ibi.sh [LA NOVITÀ]
+Adesso che abbiamo le curve IBI perfette, richiamiamo `build_cg_dataset.py` passandogli il flag `--priors`. Invece di calcolare la statistica (DBI), lo script caricherà i potenziali tabulati esatti e li sottrarrà per generare il VERO dataset residuo: **`tel22_dataset_ibi.bin`**.
 
-### 04_run_espresso.sh
-Carica il modello C++ appena addestrato all'interno del motore di ESPResSo. Quando ESPResSo andrà ad applicare i legami, non userà semplici molle di Hooke, ma interpolerà in tempo reale i valori dalle tabelle numeriche `.dat` precedentemente calcolate!
+### 04_train_model.sh
+Passa il nuovo binario residuo al programma C++. Addestrerà la rete Graph Neural Network in C++ (tramite LibTorch). A differenza dell'approccio DBI classico, qui la rete dovrà fare molta meno fatica, dovendo imparare solo il rumore (le forze residue non lineari), mentre i muri sterici sono gestiti matematicamente dalle tabelle IBI.
+
+### 05_run_espresso.sh
+Carica il modello C++ appena addestrato all'interno del motore di ESPResSo. Quando ESPResSo andrà ad applicare i legami, non userà semplici molle di Hooke, ma interpolerà in tempo reale i valori dalle tabelle numeriche `.dat` precedentemente calcolate, sommandole in tempo reale alle predizioni ML.
 
 ---
 
