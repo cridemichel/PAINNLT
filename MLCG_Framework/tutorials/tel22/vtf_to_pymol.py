@@ -106,42 +106,86 @@ set cartoon_tube_radius, 0.5"""
 show spheres, tel22_cg
 set sphere_scale, 0.8, tel22_cg"""
 
+    # Genera le selezioni e i legami per tutti i 10 filamenti
+    t1_ids, t2_ids, t3_ids = [], [], []
+    bond_cmds = []
+    
+    for strand in range(10):
+        offset = strand * 22
+        # Indici 1-based assoluti per questo filamento
+        g2, g3, g4 = offset + 2, offset + 3, offset + 4
+        g8, g9, g10 = offset + 8, offset + 9, offset + 10
+        g14, g15, g16 = offset + 14, offset + 15, offset + 16
+        g20, g21, g22 = offset + 20, offset + 21, offset + 22
+        
+        t1_ids.extend([g2, g8, g14, g20])
+        t2_ids.extend([g3, g9, g15, g21])
+        t3_ids.extend([g4, g10, g16, g22])
+        
+        # Ordine topologico perimetrale (senza incrociare le diagonali):
+        # La struttura fisica richiede di unire nell'ordine: G2 -> G14 -> G20 -> G8 -> G2
+        bond_cmds.extend([
+            f"bond id {g2}, id {g14}", f"bond id {g14}, id {g20}", 
+            f"bond id {g20}, id {g8}", f"bond id {g8}, id {g2}",
+            f"bond id {g3}, id {g15}", f"bond id {g15}, id {g21}", 
+            f"bond id {g21}, id {g9}", f"bond id {g9}, id {g3}",
+            f"bond id {g4}, id {g16}", f"bond id {g16}, id {g22}", 
+            f"bond id {g22}, id {g10}", f"bond id {g10}, id {g4}"
+        ])
+
+    t1_sel = "+".join(map(str, t1_ids))
+    t2_sel = "+".join(map(str, t2_ids))
+    t3_sel = "+".join(map(str, t3_ids))
+    bond_cmds_str = "\n".join(bond_cmds)
+
     # Genera lo script di visualizzazione per PyMOL
     pml_filename = "load_tel22_pymol.pml"
     pml_content = f"""\
 # Script generato automaticamente per visualizzare il TEL22 in PyMOL
 load {pdb_filename}, tel22_cg
 
-# Nasconde le rappresentazioni a linee o sfere disconnesse
+# Nasconde tutte le rappresentazioni di default
 hide all
 
 {style_cmds}
 
-# Colora ogni filamento con un colore distinto per seguire l'unfolding
-color red, chain A
-color green, chain B
-color blue, chain C
-color yellow, chain D
-color cyan, chain E
-color magenta, chain F
-color orange, chain G
-color purple, chain H
-color pink, chain I
-color teal, chain J
+# Colora il backbone
+color grey50, tel22_cg
 
-# Centra la visuale
+# Seleziona e colora le 3 Tetradi per tutti i 10 filamenti
+select tetrad_1, id {t1_sel}
+color red, tetrad_1
+
+select tetrad_2, id {t2_sel}
+color green, tetrad_2
+
+select tetrad_3, id {t3_sel}
+color blue, tetrad_3
+
+# Unisci le guanine della stessa tetrade perimetralmente per evitare incroci diagonali
+{bond_cmds_str}
+
+# Mostra i legami del quadrato come bastoncini sottili
+show sticks, tetrad_1 or tetrad_2 or tetrad_3
+set stick_radius, 0.2
+
+# Migliora la resa visiva
 orient tel22_cg
 bg_color white
 set ray_opaque_background, on
+set depth_cue, on
+set spec_reflect, 0.5
 
-# Imposta il player di animazione (se ci sono piu frame)
+# Imposta il player di animazione
 mset 1 -x
 mplay
 
-echo "=========================================================="
-echo "Traiettoria Coarse-Grained caricata!"
-echo "Premi Play in basso a destra per animare l'unfolding."
-echo "=========================================================="
+print("==========================================================")
+print("Traiettoria Coarse-Grained caricata con visualizzazione a sfere!")
+print("Le 3 tetradi sono colorate in Rosso, Verde e Blu per TUTTI i filamenti.")
+print("I legami evidenziano la corretta topologia planare quadrata.")
+print("Premi Play in basso a destra per animare il movimento.")
+print("==========================================================")
 """
     with open(pml_filename, "w") as out:
         out.write(pml_content)
