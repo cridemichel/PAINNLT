@@ -112,7 +112,7 @@ hide spheres, resi 1+5-7+11-13+17-19"""
     t1_ids, t2_ids, t3_ids = [], [], []
     bond_cmds = []
     
-    first_frame = selected_frames[0]
+    first_frame = frames[0]
     
     def get_pca_perimeter(mol_indices):
         # 1. Estrai le coordinate 3D vere
