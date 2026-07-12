@@ -132,10 +132,7 @@ Se il tuo sistema è altamente anarmonico o soffre di interferenze incrociate (e
 uv run ibi/run_ibi_loop.py \
     --dataset preprocessing/tel22_dataset.bin \
     --priors preprocessing/cg_priors.json \
-    --iterations 5 \
-    --bonds IBI \
-    --angles DBI \
-    --dihedrals DBI
+    --iterations 5
 ```
 - A convergenza ottenuta, le curve ottimali vengono salvate come file `.dat`.
 - Successivamente, usa di nuovo `build_cg_dataset.py` passando il flag `--priors` per creare il dataset finale. In questo modo lo script capirà di non dover ricalcolare i prior statistici, ma leggerà direttamente le tabelle esatte dell'IBI e le sottrarrà per estrarre i veri residui:

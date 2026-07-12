@@ -7,9 +7,6 @@ uv run ../../ibi/run_ibi_loop.py \
     --dataset tel22_dataset.bin \
     --priors cg_priors.json \
     --iterations 3 \
-    --outdir ibi_priors \
-    --bonds IBI \
-    --angles DBI \
-    --dihedrals DBI
+    --outdir ibi_priors
 
 echo "[SUCCESS] IBI completata. cg_priors.json e le tabelle sono state aggiornate."

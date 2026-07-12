@@ -127,11 +127,45 @@ def read_dataset_distributions(bin_file, priors):
                 
     return bond_dists, angle_dists, dihedral_dists, first_frame_centers
 
-def calculate_dbi_potential(values, bins, kT=2.49, periodic=False):
+def extrapolate_potential_and_force(x, V, F, hist):
+    valid_idx = np.where(hist > 1e-5)[0]
+    if len(valid_idx) == 0:
+        return V, F
+    first, last = valid_idx[0], valid_idx[-1]
+    
+    # Ensure the boundary forces are at least slightly repulsive/attractive
+    # F > 0 means pushing to the right (increasing x)
+    # F < 0 means pushing to the left (decreasing x)
+    left_force = max(F[first], 10.0)
+    right_force = min(F[last], -10.0)
+    
+    # Left extrapolation (constant force)
+    for i in range(first - 1, -1, -1):
+        F[i] = left_force
+        V[i] = V[i+1] + left_force * (x[i+1] - x[i])
+        
+    # Right extrapolation (constant force)
+    for i in range(last + 1, len(x)):
+        F[i] = right_force
+        V[i] = V[i-1] - right_force * (x[i] - x[i-1])
+        
+    return V, F
+
+def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type=None):
     hist, bin_edges = np.histogram(values, bins=bins, density=True)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     
+    if jacobian_type == 'bond':
+        hist = hist / (bin_centers**2)
+    elif jacobian_type == 'angle':
+        hist = hist / np.clip(np.sin(bin_centers), 1e-6, None)
+        
+    raw_hist = hist.copy()
     hist = np.clip(hist, 1e-6, None)
+    
+    # Normalize after Jacobian correction
+    hist /= np.sum(hist) * (bin_centers[1] - bin_centers[0])
+    
     potential = -kT * np.log(hist)
     potential -= np.min(potential)
     
@@ -145,10 +179,13 @@ def calculate_dbi_potential(values, bins, kT=2.49, periodic=False):
         force = -np.gradient(potential_smooth, dx)
     else:
         force = -np.gradient(potential_smooth, dx)
+        potential_smooth, force = extrapolate_potential_and_force(bin_centers, potential_smooth, force, raw_hist)
+        
+    force = gaussian_filter1d(force, sigma=2.0, mode=mode)
         
     return bin_centers, potential_smooth, force, hist
 
-def update_ibi_potential(V_i, P_i, P_target, kT=2.49, alpha=0.5, periodic=False):
+def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, periodic=False):
     P_i = np.clip(P_i, 1e-6, None)
     P_target = np.clip(P_target, 1e-6, None)
     
@@ -157,7 +194,17 @@ def update_ibi_potential(V_i, P_i, P_target, kT=2.49, alpha=0.5, periodic=False)
     V_next -= np.min(V_next)
     
     mode = 'wrap' if periodic else 'reflect'
-    return gaussian_filter1d(V_next, sigma=2.0, mode=mode)
+    V_next_smooth = gaussian_filter1d(V_next, sigma=2.0, mode=mode)
+    
+    dx = bin_centers[1] - bin_centers[0]
+    force = -np.gradient(V_next_smooth, dx)
+    
+    if not periodic:
+        V_next_smooth, force = extrapolate_potential_and_force(bin_centers, V_next_smooth, force, P_target)
+        
+    force = gaussian_filter1d(force, sigma=2.0, mode=mode)
+        
+    return V_next_smooth, force
 
 def save_tabulated_potential(filename, x, energy, force):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -202,11 +249,13 @@ if wca.get("epsilon", 0.0) > 0 and wca.get("sigma", 0.0) > 0:
             )
 
 # Apply interactions
+system.force_cap = 2000.0
+
 for b in priors.get("bonds", []):
     if b["type"] == "tabulated":
         data = np.loadtxt(b["file"])
         tb = espressomd.interactions.TabulatedDistance(
-            min=float(b.get("min", 0.01)), max=float(b.get("max", 3.0)), 
+            min=data[0, 0], max=data[-1, 0], 
             energy=data[:, 1], force=data[:, 2]
         )
         system.bonded_inter.add(tb)
@@ -224,7 +273,7 @@ for a in priors.get("angles", []):
     elif a.get("type") == "tabulated":
         data = np.loadtxt(a["file"])
         ta = espressomd.interactions.TabulatedAngle(
-            min=float(a.get("min", 0.0)), max=float(a.get("max", np.pi)),
+            min=data[0, 0], max=data[-1, 0],
             energy=data[:, 1], force=data[:, 2]
         )
         system.bonded_inter.add(ta)
@@ -238,7 +287,7 @@ for d in priors.get("dihedrals", []):
     elif d.get("type") == "tabulated":
         data = np.loadtxt(d["file"])
         td = espressomd.interactions.TabulatedDihedral(
-            min=float(d.get("min", -np.pi)), max=float(d.get("max", np.pi)),
+            min=data[0, 0], max=data[-1, 0],
             energy=data[:, 1], force=data[:, 2]
         )
         system.bonded_inter.add(td)
@@ -258,6 +307,8 @@ import builtins
 print("Running MD...")
 # Burn-in
 system.integrator.run(1000)
+# system.force_cap = 0  # Leave it capped just in case
+
 
 positions = []
 for _ in range(5000):
@@ -267,8 +318,9 @@ for _ in range(5000):
         pos.append(p.pos)
     positions.append(pos)
 
-np.save('{traj_file}', np.array(positions))
-"""
+np.save('{output_traj}', np.array(positions))
+""")
+
 
 
 def main():
@@ -346,7 +398,7 @@ def main():
             
     for name, pool in pooled_angles.items():
         if len(pool["dists"]) == 0: continue
-        bins = np.linspace(0.0, np.pi, 100)
+        bins = np.linspace(-0.1, np.pi + 0.1, 100)
         r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='angle')
         filename = f"{args.outdir}/angle_tabulated_{name}.dat"
         save_tabulated_potential(filename, r, V_0, F_0)
@@ -372,7 +424,7 @@ def main():
             
     for name, pool in pooled_dihedrals.items():
         if len(pool["dists"]) == 0: continue
-        bins = np.linspace(-np.pi, np.pi, 100)
+        bins = np.linspace(-np.pi - 0.1, np.pi + 0.1, 100)
         r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='dihedral', periodic=True)
         filename = f"{args.outdir}/dihedral_tabulated_{name}.dat"
         save_tabulated_potential(filename, r, V_0, F_0)
@@ -423,38 +475,79 @@ def main():
             
         # For simplicity, extract bond distances from MD trajectory
         box_dim = np.array([10.0, 10.0, 10.0])
+        import math
+        def dihedral_angle(p0, p1, p2, p3):
+            b0 = -1.0 * mic_vector(p0, p1, box_dim)
+            b1 = mic_vector(p1, p2, box_dim)
+            b2 = mic_vector(p2, p3, box_dim)
+            b1 /= np.linalg.norm(b1)
+            v = b0 - np.dot(b0, b1)*b1
+            w = b2 - np.dot(b2, b1)*b1
+            x = np.dot(v, w)
+            y = np.dot(np.cross(b1, v), w)
+            return np.arctan2(y, x)
+
         sim_bond_dists = {name: [] for name in ibi_tables.get("bonds", {}).keys()}
+        sim_angle_dists = {name: [] for name in ibi_tables.get("angles", {}).keys()}
+        sim_dihedral_dists = {name: [] for name in ibi_tables.get("dihedrals", {}).keys()}
         
         for frame in positions:
+            # Bonds
             for idx, b in enumerate(priors_data.get("bonds", [])):
                 name = b.get("name", f"idx_{idx}")
                 if name in sim_bond_dists:
                     i, j = b["mol_i"], b["mol_j"]
                     r = np.linalg.norm(mic_vector(frame[i], frame[j], box_dim))
                     sim_bond_dists[name].append(r)
+            
+            # Angles
+            for idx, a in enumerate(priors_data.get("angles", [])):
+                name = a.get("name", f"idx_{idx}")
+                if name in sim_angle_dists:
+                    i, j, k = a["mol_i"], a["mol_j"], a["mol_k"]
+                    v1 = mic_vector(frame[j], frame[i], box_dim)
+                    v2 = mic_vector(frame[j], frame[k], box_dim)
+                    n1, n2 = np.linalg.norm(v1), np.linalg.norm(v2)
+                    if n1 > 1e-6 and n2 > 1e-6:
+                        cos_theta = np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)
+                        sim_angle_dists[name].append(np.arccos(cos_theta))
+
+            # Dihedrals
+            for idx, d in enumerate(priors_data.get("dihedrals", [])):
+                name = d.get("name", f"idx_{idx}")
+                if name in sim_dihedral_dists:
+                    i, j, k, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
+                    sim_dihedral_dists[name].append(dihedral_angle(frame[i], frame[j], frame[k], frame[l]))
                 
-        # Update tabulated potentials
-        print("[INFO] Updating tabulated potentials...")
+        # Update tabulated bonds
+        print("[INFO] Updating tabulated bonds...")
         for name, table in ibi_tables.get("bonds", {}).items():
             sim_dists = sim_bond_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
-            
-            V_next = update_ibi_potential(table["V"], hist_sim, table["P"])
-            dx = table["x"][1] - table["x"][0]
-            F_next = -np.gradient(V_next, dx)
-            
+            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False)
             table["V"] = V_next
             table["F"] = F_next
-            
-            # Save updated
-            filename = f"{args.outdir}/bond_tabulated_{name}.dat"
-            save_tabulated_potential(filename, table["x"], V_next, F_next)
-            
-            # KL divergence
-            P_i_safe = np.clip(hist_sim, 1e-6, None)
-            P_t_safe = np.clip(table["P"], 1e-6, None)
-            kl = np.sum(P_i_safe * np.log(P_i_safe / P_t_safe)) * dx
-            print(f"  -> Bond {name}: KL Divergence = {kl:.4f}")
+            save_tabulated_potential(f"{args.outdir}/bond_tabulated_{name}.dat", table["x"], V_next, F_next)
+
+        # Update tabulated angles
+        print("[INFO] Updating tabulated angles...")
+        for name, table in ibi_tables.get("angles", {}).items():
+            sim_dists = sim_angle_dists[name]
+            hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False)
+            table["V"] = V_next
+            table["F"] = F_next
+            save_tabulated_potential(f"{args.outdir}/angle_tabulated_{name}.dat", table["x"], V_next, F_next)
+
+        # Update tabulated dihedrals
+        print("[INFO] Updating tabulated dihedrals...")
+        for name, table in ibi_tables.get("dihedrals", {}).items():
+            sim_dists = sim_dihedral_dists[name]
+            hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=True)
+            table["V"] = V_next
+            table["F"] = F_next
+            save_tabulated_potential(f"{args.outdir}/dihedral_tabulated_{name}.dat", table["x"], V_next, F_next)
             
     print(f"\n[SUCCESS] IBI Converged after {args.iterations} iterations.")
     
