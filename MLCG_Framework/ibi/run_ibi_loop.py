@@ -267,6 +267,10 @@ for _ in range(5000):
         pos.append(p.pos)
     positions.append(pos)
 
+np.save('{traj_file}', np.array(positions))
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run IBI loop using exact tabulated targets.")
     parser.add_argument("--dataset", required=True, help="Path to the binary dataset file")
