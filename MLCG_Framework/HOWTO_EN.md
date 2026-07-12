@@ -103,14 +103,26 @@ The framework supports two fundamental philosophies to extract prior energies fr
 *(Note on Jacobians: For exact analytical probability matching, the DBI phase corrects for the Phase Space Volume by dividing the raw histogram by the mathematical Jacobian: $1/r^2$ for bonds, and $1/\sin(\theta)$ for angles, preventing geometric entropy bias).*
 
 **1. Analytical Functions (DBI, FENE, Morse, Angles, Dihedrals)**
-If you include the `"bonds"` array as a list of indices (e.g., `[[0, 1]]`), the preprocessing script will perform a statistical inversion (classical DBI) to derive the harmonic constant $k$ and the equilibrium distance $r_0$.
-Alternatively, you can disable automatic inference and explicitly define much more complex analytical parameters for different degrees of freedom. You can use:
+If you include the `"bonds"` array as index lists (e.g., `[[0, 1]]`), the preprocessing script will perform basic statistics (classical DBI) to derive the harmonic constant $k$ and the equilibrium distance $r_0$.
+Alternatively, you can disable automatic inference and explicitly define much more complex analytical parameters for various degrees of freedom. You can use:
 - **Harmonic Bond** (`"type": "harmonic"`): the classic Hooke's spring.
-- **FENE Bond** (`"type": "fene"`): extremely useful for polymer chains where monomers must not exceed a certain $R_{max}$.
+- **FENE Bond** (`"type": "fene"`): very useful for polymer chains where monomers must not drift beyond a certain $R_{max}$.
 - **Morse Bond** (`"type": "morse"`): essential for non-linear bonds that must be able to break (like tetrad stacking or hydrogen bonds).
 - **Harmonic Angles** (in the `"angles"` array): to stabilize the angle between three sites.
 - **Dihedrals** (in the `"dihedrals"` array): to stabilize the torsional conformation between four sites.
-This parametric approach is ultra-fast to evaluate, but assumes ideal closed-form equations.
+This parametric approach is ultra-fast to evaluate but relies on ideal closed equations.
+
+**2. Aggregated Statistics (Typed Topology)**
+If you want multiple bonds (or angles, or dihedrals) to share the **exact same statistics**, you can group them by assigning a `"name"` attribute.
+- *Without name (Bond-by-Bond)*: Each bond receives a $k, r_0$ or an IBI curve calculated exclusively using the frames of its specific atomic pair. Great for unique and exact geometries (e.g. G-Quadruplexes).
+- *With name (Aggregated)*: All bonds with the same `"name"` merge their trajectories into a single large data pool. The framework will extract a global mean/variance (for "auto" springs) or a global IBI curve. Perfect for transferable models or solvents (e.g. assigning `"name": "water_OH"` to all water OH bonds).
+
+```json
+"bonds": [
+    {"mol_i": 0, "mol_j": 1, "type": "ibi", "name": "PO_bond"},
+    {"mol_i": 1, "mol_j": 2, "type": "ibi", "name": "PO_bond"}
+]
+```
 
 **2. Iterative Boltzmann Inversion (IBI) [Exact Tabulated Curves]**
 If your system is highly anharmonic or suffers from cross-interferences (e.g., steric repulsion modifies bond distances), the harmonic approximation of DBI is not sufficient. In this case, you can use the powerful integrated IBI pipeline with the real ESPResSo engine:

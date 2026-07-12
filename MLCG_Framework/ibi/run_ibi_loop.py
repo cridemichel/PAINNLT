@@ -306,62 +306,80 @@ def main():
     ibi_tables["dihedrals"] = {}
     
     # Process Bonds
+    pooled_bonds = {}
     for idx, b in enumerate(priors_data.get("bonds", [])):
         b_type = b.get("type", "unknown")
         if b_type in ["ibi", "dbi"]:
-            dists = bond_dists.get(f"dict_{idx}", [])
-            if len(dists) == 0: continue
+            name = b.get("name", f"idx_{idx}")
+            if name not in pooled_bonds: pooled_bonds[name] = {"dists": [], "type": b_type}
+            pooled_bonds[name]["dists"].extend(bond_dists[idx])
             
-            bins = np.linspace(0.01, 3.0, 300)
-            r, V_0, F_0, P_target = calculate_dbi_potential(dists, bins, jacobian_type='bond')
-            filename = f"{args.outdir}/bond_tabulated_{idx}.dat"
-            save_tabulated_potential(filename, r, V_0, F_0)
-            
-            if b_type == "ibi":
-                ibi_tables["bonds"][idx] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
-            
+    for name, pool in pooled_bonds.items():
+        if len(pool["dists"]) == 0: continue
+        bins = np.linspace(0.01, 3.0, 300)
+        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='bond')
+        filename = f"{args.outdir}/bond_tabulated_{name}.dat"
+        save_tabulated_potential(filename, r, V_0, F_0)
+        if pool["type"] == "ibi":
+            ibi_tables["bonds"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
+
+    for idx, b in enumerate(priors_data.get("bonds", [])):
+        if b.get("type") in ["ibi", "dbi"]:
+            name = b.get("name", f"idx_{idx}")
             b["type"] = "tabulated"
-            b["file"] = filename
+            b["file"] = f"{args.outdir}/bond_tabulated_{name}.dat"
             b["min"] = 0.01
             b["max"] = 3.0
 
     # Process Angles
+    pooled_angles = {}
     for idx, a in enumerate(priors_data.get("angles", [])):
         a_type = a.get("type", "harmonic")
         if a_type in ["ibi", "dbi"]:
-            dists = angle_dists.get(f"dict_{idx}", [])
-            if len(dists) == 0: continue
+            name = a.get("name", f"idx_{idx}")
+            if name not in pooled_angles: pooled_angles[name] = {"dists": [], "type": a_type}
+            pooled_angles[name]["dists"].extend(angle_dists[idx])
             
-            bins = np.linspace(0.0, np.pi, 100)
-            r, V_0, F_0, P_target = calculate_dbi_potential(dists, bins, jacobian_type='angle')
-            filename = f"{args.outdir}/angle_tabulated_{idx}.dat"
-            save_tabulated_potential(filename, r, V_0, F_0)
-            
-            if a_type == "ibi":
-                ibi_tables["angles"][idx] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
-            
+    for name, pool in pooled_angles.items():
+        if len(pool["dists"]) == 0: continue
+        bins = np.linspace(0.0, np.pi, 100)
+        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='angle')
+        filename = f"{args.outdir}/angle_tabulated_{name}.dat"
+        save_tabulated_potential(filename, r, V_0, F_0)
+        if pool["type"] == "ibi":
+            ibi_tables["angles"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
+
+    for idx, a in enumerate(priors_data.get("angles", [])):
+        if a.get("type") in ["ibi", "dbi"]:
+            name = a.get("name", f"idx_{idx}")
             a["type"] = "tabulated"
-            a["file"] = filename
+            a["file"] = f"{args.outdir}/angle_tabulated_{name}.dat"
             a["min"] = 0.0
             a["max"] = np.pi
 
     # Process Dihedrals
+    pooled_dihedrals = {}
     for idx, d in enumerate(priors_data.get("dihedrals", [])):
         d_type = d.get("type", "cosine")
         if d_type in ["ibi", "dbi"]:
-            dists = dihedral_dists.get(f"dict_{idx}", [])
-            if len(dists) == 0: continue
+            name = d.get("name", f"idx_{idx}")
+            if name not in pooled_dihedrals: pooled_dihedrals[name] = {"dists": [], "type": d_type}
+            pooled_dihedrals[name]["dists"].extend(dihedral_dists[idx])
             
-            bins = np.linspace(-np.pi, np.pi, 100)
-            r, V_0, F_0, P_target = calculate_dbi_potential(dists, bins, jacobian_type='dihedral', periodic=True)
-            filename = f"{args.outdir}/dihedral_tabulated_{idx}.dat"
-            save_tabulated_potential(filename, r, V_0, F_0)
-            
-            if d_type == "ibi":
-                ibi_tables["dihedrals"][idx] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
-            
+    for name, pool in pooled_dihedrals.items():
+        if len(pool["dists"]) == 0: continue
+        bins = np.linspace(-np.pi, np.pi, 100)
+        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='dihedral', periodic=True)
+        filename = f"{args.outdir}/dihedral_tabulated_{name}.dat"
+        save_tabulated_potential(filename, r, V_0, F_0)
+        if pool["type"] == "ibi":
+            ibi_tables["dihedrals"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
+
+    for idx, d in enumerate(priors_data.get("dihedrals", [])):
+        if d.get("type") in ["ibi", "dbi"]:
+            name = d.get("name", f"idx_{idx}")
             d["type"] = "tabulated"
-            d["file"] = filename
+            d["file"] = f"{args.outdir}/dihedral_tabulated_{name}.dat"
             d["min"] = -np.pi
             d["max"] = np.pi
             
@@ -401,19 +419,20 @@ def main():
             
         # For simplicity, extract bond distances from MD trajectory
         box_dim = np.array([10.0, 10.0, 10.0])
-        sim_bond_dists = {idx: [] for idx in ibi_tables.get("bonds", {}).keys()}
+        sim_bond_dists = {name: [] for name in ibi_tables.get("bonds", {}).keys()}
         
         for frame in positions:
-            for idx in sim_bond_dists.keys():
-                b = priors_data["bonds"][idx]
-                i, j = b["mol_i"], b["mol_j"]
-                r = np.linalg.norm(mic_vector(frame[i], frame[j], box_dim))
-                sim_bond_dists[idx].append(r)
+            for idx, b in enumerate(priors_data.get("bonds", [])):
+                name = b.get("name", f"idx_{idx}")
+                if name in sim_bond_dists:
+                    i, j = b["mol_i"], b["mol_j"]
+                    r = np.linalg.norm(mic_vector(frame[i], frame[j], box_dim))
+                    sim_bond_dists[name].append(r)
                 
         # Update tabulated potentials
         print("[INFO] Updating tabulated potentials...")
-        for idx, table in ibi_tables.get("bonds", {}).items():
-            sim_dists = sim_bond_dists[idx]
+        for name, table in ibi_tables.get("bonds", {}).items():
+            sim_dists = sim_bond_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
             
             V_next = update_ibi_potential(table["V"], hist_sim, table["P"])
@@ -424,14 +443,14 @@ def main():
             table["F"] = F_next
             
             # Save updated
-            filename = priors_data["bonds"][idx]["file"]
+            filename = f"{args.outdir}/bond_tabulated_{name}.dat"
             save_tabulated_potential(filename, table["x"], V_next, F_next)
             
             # KL divergence
             P_i_safe = np.clip(hist_sim, 1e-6, None)
             P_t_safe = np.clip(table["P"], 1e-6, None)
             kl = np.sum(P_i_safe * np.log(P_i_safe / P_t_safe)) * dx
-            print(f"  -> Bond {idx}: KL Divergence = {kl:.4f}")
+            print(f"  -> Bond {name}: KL Divergence = {kl:.4f}")
             
     print(f"\n[SUCCESS] IBI Converged after {args.iterations} iterations.")
     

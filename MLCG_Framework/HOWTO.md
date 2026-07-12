@@ -112,6 +112,18 @@ In alternativa, puoi disattivare l'inferenza automatica e definire esplicitament
 - **Diedri** (nell'array `"dihedrals"`): per stabilizzare la conformazione torsionale tra quattro siti.
 Questo approccio parametrico è ultra-veloce da valutare, ma si basa su equazioni chiuse ideali.
 
+**2. Statistica Aggregata (Typed Topology)**
+Se vuoi che più legami (o angoli, o diedri) condividano la **stessa identica statistica**, puoi raggrupparli assegnando loro l'attributo `"name"`.
+- *Senza nome (Bond-by-Bond)*: Ogni legame riceve un $k, r_0$ o una curva IBI calcolata esclusivamente usando i frame della sua specifica coppia atomica. Ottimo per geometrie uniche ed esatte (es. G-Quadruplex).
+- *Con nome (Aggregated)*: Tutti i legami con lo stesso `"name"` fondono le loro traiettorie in un unico grande pool di dati. Il framework estrarrà una media/varianza globale (per le molle "auto") o una curva IBI globale. Perfetto per modelli trasferibili o solventi (es. assegnando `"name": "acqua_OH"` a tutti i legami OH dell'acqua).
+
+```json
+"bonds": [
+    {"mol_i": 0, "mol_j": 1, "type": "ibi", "name": "PO_bond"},
+    {"mol_i": 1, "mol_j": 2, "type": "ibi", "name": "PO_bond"}
+]
+```
+
 **2. Iterative Boltzmann Inversion (IBI) [Curve Tabulate Esatte]**
 Se il tuo sistema è altamente anarmonico o soffre di interferenze incrociate (es. la repulsione sterica modifica le distanze di legame), l'approssimazione armonica della DBI non è sufficiente. In questo caso, puoi usare la potente pipeline IBI integrata con il vero motore ESPResSo:
 - Usa lo script nella cartella `ibi/` per estrarre matematicamente i potenziali esatti. Lo script `run_ibi_loop.py` legge nativamente il file `_dataset.bin` ed esegue **vere simulazioni di Dinamica Molecolare in ESPResSo**, calcolando la divergenza di Kullback-Leibler e correggendo le curve (spline) iterativamente tramite l'equazione di Henderson finché la distribuzione simulata non combacia perfettamente con il target All-Atom.
