@@ -158,6 +158,16 @@ uv run preprocessing/build_cg_dataset.py \
 ```
 ESPResSo leggerà la tabella numerica (sia per legami `TabulatedDistance` che per angoli `TabulatedAngle` e diedri) iniettando il potenziale IBI perfetto. Questa scelta garantisce una retrocompatibilità nativa e permette di mischiare liberamente molle DBI e tabelle IBI per gradi di libertà diversi!
 
+### Guida Pratica al Flusso IBI (I tre script)
+L'architettura separa logicamente l'estrazione delle statistiche dalla sottrazione delle forze. Nei tutorial (es. `tel22_IBI`) troverai questo flusso diviso in 3 script:
+
+1. **`01_build_dataset.sh` (Estrazione Statistiche):**
+   Esegue `build_cg_dataset.py` sulla topologia che contiene i prior con `"type": "ibi"`. In questa fase, lo script *non* sottrae le forze IBI dalle forze target (perché le tabelle non esistono ancora!). Salva solo un file `tel22_dataset.bin` che contiene le distribuzioni dei frammenti e le forze atomistiche originali mappate.
+2. **`02_run_ibi.sh` (Generazione Tabelle):**
+   Legge il dataset intermedio ed esegue il loop IBI. Usa la distribuzione target per calcolare la DBI (iterazione 0) e poi avvia iterativamente ESPResSo per correggere il potenziale. A convergenza, esporta i potenziali ottimali `.dat` nella cartella `ibi_priors/` e aggiorna `cg_priors.json` cambiandone il tipo in `"tabulated"`.
+3. **`03_subtract_ibi.sh` (Sottrazione Forze):**
+   Rilancia `build_cg_dataset.py`, ma questa volta passandogli il flag `--priors cg_priors.json` generato dallo step precedente. In questo modo il framework salta la statistica, vede i legami come `"tabulated"`, carica le tabelle `.dat` definitive ed esegue l'interpolazione per sottrarre rigorosamente la forza esatta (IBI) dalle forze residue del dataset. L'output finale `tel22_dataset_ibi.bin` è pronto per addestrare il modello di Machine Learning!
+
 > [!TIP]
 > **Auto-calcolo della Distanza di Equilibrio (`r0`)**
 > Per i legami espliciti (FENE, Morse, ecc.), se ometti il parametro numerico e imposti `"r0": "auto"`, lo script estrarrà automaticamente la distanza media esatta per quella coppia di atomi direttamente dalla traiettoria molecolare! Questo previene esplosioni termodinamiche e risolve elegantemente i mismatch di scala tra all-atom e coarse-grained.
