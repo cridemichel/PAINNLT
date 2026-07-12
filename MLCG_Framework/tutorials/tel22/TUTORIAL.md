@@ -29,7 +29,11 @@ Se apri lo script `01_run_gromacs.sh` vedrai esattamente tutti i comandi necessa
 
 ## 02_build_dataset.sh
 Una volta ottenuti i file `md.trr` e `md.gro`, questo script lancia il nostro pre-processore.
-Utilizza il file `tel22_topology.json` in cui abbiamo specificato di mappare ogni singolo nucleotide (DA, DT, DG, DC) al suo Centro di Massa. Genererà il dataset `tel22_dataset.bin` pronto per la rete neurale.
+Utilizza il file `tel22_topology.json` in cui abbiamo specificato di mappare ogni singolo nucleotide (DA, DT, DG, DC) al suo Centro di Massa, ma con regole fisiche **avanzate**:
+1. **Virtual Sites & WCA Overrides**: Abbiamo disaccoppiato il nucleo fosfato-zucchero dalla base azotata (es. Guanina) assegnando a quest'ultima un *Virtual Site* (site_type 2). Usando `wca_overrides` nel file JSON, la Guanina possiede un repulsore sterico molto più "morbido" ed elastico ($\epsilon = 2.5$) rispetto agli altri siti duri ($\epsilon = 50.0$).
+2. **Priors Site-Dependent**: Gli angoli del DNA e i legami vengono geometricamente misurati e forzati *esattamente* sui Virtual Sites specificati (`site_i: 0`), non sui Centri di Massa generici. Il framework calcolerà automaticamente le forze di torsione per conservare il momento angolare!
+
+Genererà il dataset `tel22_dataset.bin` pronto per la rete neurale.
 
 ---
 

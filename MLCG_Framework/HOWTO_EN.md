@@ -62,8 +62,14 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
     "temperature": 300.0,
     "wca_sigma": 0.0,
     "wca_epsilon": 0.0,
+    "wca_overrides": [
+        {"type_i": 2, "type_j": 2, "sigma": 0.8, "epsilon": 2.5}
+    ],
     "bonds": [
         [0, 1]
+    ],
+    "angles": [
+        {"mol_i": 0, "mol_j": 1, "mol_k": 2, "site_i": 0, "site_j": 0, "site_k": 0, "theta0": "auto", "k": "auto"}
     ],
     "mapping": {
         "mapping_method": "COM",
@@ -81,9 +87,20 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
 }
 ```
 
+#### Advanced Physics: Virtual Sites, Mass Scaling, and WCA Mixing
+The framework introduces a rigid-body structure to accurately map complex molecules.
+- **Mass Scaling for Virtual Sites**: The primary Center of Mass (COM) retains the true mass and inertia of the rigid body. Virtual sites have their mass and inertia artificially scaled by $10^{-5}$ to prevent them from absorbing kinetic energy from the ESPResSo Langevin thermostat, preserving exact thermodynamic temperature.
+- **Lorentz-Berthelot WCA**: WCA interactions between distinct sites are blended using arithmetic mean for $\sigma_{ij} = (\sigma_i + \sigma_j)/2$ and geometric mean for $\epsilon_{ij} = \sqrt{\epsilon_i \epsilon_j}$.
+- **WCA Overrides**: You can define specific LJ properties for peripheral sites (e.g. bulky bases like Guanine) using the `wca_overrides` array.
+
+#### Advanced Physics: Site-Dependent Priors
+By default, Harmonic bonds, Angles, and Dihedrals act on the Centers of Mass. However, you can map them to specific Virtual Sites using the `site_i`, `site_j`, `site_k`, `site_l` parameters (0-indexed referring to the molecule's mapping definition).
+When applied to Virtual Sites, the forces are geometrically exact, and the framework automatically computes the **torque** $\tau = \vec{r}_{site} \times \vec{F}_{site}$ to transfer the rotational momentum back to the main Center of Mass.
+
 #### Priors and Boltzmann Inversion (DBI vs IBI)
 
 The framework supports two fundamental philosophies to extract prior energies from the All-Atom trajectory: **Direct Boltzmann Inversion (DBI)** and **Iterative Boltzmann Inversion (IBI)**.
+*(Note on Jacobians: For exact analytical probability matching, the DBI phase corrects for the Phase Space Volume by dividing the raw histogram by the mathematical Jacobian: $1/r^2$ for bonds, and $1/\sin(\theta)$ for angles, preventing geometric entropy bias).*
 
 **1. Analytical Functions (DBI, FENE, Morse, Angles, Dihedrals)**
 If you include the `"bonds"` array as a list of indices (e.g., `[[0, 1]]`), the preprocessing script will perform a statistical inversion (classical DBI) to derive the harmonic constant $k$ and the equilibrium distance $r_0$.

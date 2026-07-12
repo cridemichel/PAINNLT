@@ -62,8 +62,14 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
     "temperature": 300.0,
     "wca_sigma": 0.0,
     "wca_epsilon": 0.0,
+    "wca_overrides": [
+        {"type_i": 2, "type_j": 2, "sigma": 0.8, "epsilon": 2.5}
+    ],
     "bonds": [
         [0, 1]
+    ],
+    "angles": [
+        {"mol_i": 0, "mol_j": 1, "mol_k": 2, "site_i": 0, "site_j": 0, "site_k": 0, "theta0": "auto", "k": "auto"}
     ],
     "mapping": {
         "mapping_method": "COM",
@@ -81,9 +87,20 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
 }
 ```
 
+#### Fisica Avanzata: Virtual Sites, Mass Scaling e Mixing WCA
+Il framework introduce una struttura a corpi rigidi per mappare accuratamente molecole complesse.
+- **Mass Scaling per i Virtual Sites**: Il Centro di Massa (COM) principale conserva la massa e l'inerzia reali del corpo rigido. I siti virtuali hanno la loro massa e inerzia scalate artificialmente di $10^{-5}$ per impedire loro di assorbire energia cinetica dal termostato di Langevin di ESPResSo, preservando la temperatura termodinamica esatta.
+- **Lorentz-Berthelot WCA**: Le interazioni WCA tra siti distinti vengono miscelate usando la media aritmetica per $\sigma_{ij} = (\sigma_i + \sigma_j)/2$ e la media geometrica per $\epsilon_{ij} = \sqrt{\epsilon_i \epsilon_j}$.
+- **WCA Overrides**: Puoi definire proprietà LJ specifiche per siti periferici (es. basi ingombranti come la Guanina) usando l'array `wca_overrides`.
+
+#### Fisica Avanzata: Priors Site-Dependent
+Di default, i legami Armonici, Angoli e Diedri agiscono sui Centri di Massa. Tuttavia, puoi applicarli a Virtual Sites specifici usando i parametri `site_i`, `site_j`, `site_k`, `site_l` (0-indexed rispetto alla definizione del mapping della molecola).
+Quando applicate ai Virtual Sites, le forze sono geometricamente esatte e il framework calcola automaticamente il **momento torcente** $\tau = \vec{r}_{site} \times \vec{F}_{site}$ per trasferire il momento rotazionale al Centro di Massa principale.
+
 #### Priors e Inversione di Boltzmann (DBI vs IBI)
 
 Il framework supporta due filosofie fondamentali per estrarre le energie a priori dalla traiettoria All-Atom: la **Direct Boltzmann Inversion (DBI)** e l'**Iterative Boltzmann Inversion (IBI)**.
+*(Nota sugli Jacobiani: Per un esatto matching analitico di probabilità, la fase DBI corregge il Volume dello Spazio delle Fasi dividendo l'istogramma grezzo per lo Jacobiano matematico: $1/r^2$ per i legami e $1/\sin(\theta)$ per gli angoli, prevenendo bias entropici).*
 
 **1. Funzioni Analitiche (DBI, FENE, Morse, Angoli, Diedri)**
 Se includi l'array `"bonds"` come liste di indici (es. `[[0, 1]]`), lo script di preprocessing effettuerà una statistica (DBI classica) per ricavare la costante armonica $k$ e la distanza di equilibrio $r_0$.

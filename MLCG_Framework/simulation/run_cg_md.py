@@ -119,13 +119,22 @@ if args.checkpoint:
 
 print("[INFO] Adding priors...")
 # WCA
+import math
 wca = priors.get("wca", {})
 if wca.get("epsilon", 0.0) > 0 and wca.get("sigma", 0.0) > 0:
     for i in range(nn_config["num_species"]):
+        sigma_i = wca.get("overrides", {}).get(str(i), {}).get("sigma", wca["sigma"])
+        eps_i = wca.get("overrides", {}).get(str(i), {}).get("epsilon", wca["epsilon"])
         for j in range(i, nn_config["num_species"]):
+            sigma_j = wca.get("overrides", {}).get(str(j), {}).get("sigma", wca["sigma"])
+            eps_j = wca.get("overrides", {}).get(str(j), {}).get("epsilon", wca["epsilon"])
+            
+            sigma_mix = (sigma_i + sigma_j) / 2.0
+            eps_mix = math.sqrt(eps_i * eps_j)
+            
             system.non_bonded_inter[i, j].lennard_jones.set_params(
-                epsilon=wca["epsilon"], sigma=wca["sigma"],
-                cutoff=wca["sigma"] * (2.0**(1/6)), shift="auto"
+                epsilon=eps_mix, sigma=sigma_mix,
+                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
             )
 
 # Bonds (Harmonic, FENE, Morse)
@@ -198,34 +207,49 @@ for idx, a in enumerate(priors.get("angles", [])):
     system.bonded_inter.add(angle)
     
     mol_i, mol_j, mol_k = a["mol_i"], a["mol_j"], a["mol_k"]
+    site_i, site_j, site_k = a.get("site_i", -1), a.get("site_j", -1), a.get("site_k", -1)
     
-    # Assumiamo che angoli e diedri agiscano sui Centri di Massa (COM) per ora
-    p1 = mol_com_parts[mol_i]
-    p2 = mol_com_parts[mol_j]
-    p3 = mol_com_parts[mol_k]
+    p1 = mol_com_parts[mol_i] if site_i == -1 else mol_vs_parts[(mol_i, site_i)]
+    p2 = mol_com_parts[mol_j] if site_j == -1 else mol_vs_parts[(mol_j, site_j)]
+    p3 = mol_com_parts[mol_k] if site_k == -1 else mol_vs_parts[(mol_k, site_k)]
     
     # In ESPResSo, l'angolo si applica alla particella CENTRALE
     system.part.by_id(p2).add_bond((angle, p1, p3))
-    print(f"[INFO] Added Angle bond {idx}: mol {mol_i} - {mol_j} - {mol_k}")
+    print(f"[INFO] Added Angle bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k}")
 
 # Dihedrals
 for idx, d in enumerate(priors.get("dihedrals", [])):
-    k_dih = d["k"]
-    mult = d.get("n", 1)
-    phase = d["phi0"]
-    dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
+    d_type = d.get("type", "cosine")
+    if d_type == "cosine":
+        k_dih = d["k"]
+        mult = d.get("n", 1)
+        phase = d["phi0"]
+        dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
+    elif d_type == "tabulated":
+        import numpy as np
+        data = np.loadtxt(d["file"])
+        min_tab = float(d.get("min", -np.pi))
+        max_tab = float(d.get("max", np.pi))
+        dihedral = espressomd.interactions.TabulatedDihedral(
+            min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    else:
+        print(f"[WARNING] Unknown dihedral type: {d_type}")
+        continue
+
     system.bonded_inter.add(dihedral)
     
     mol_i, mol_j, mol_k, mol_l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
+    site_i, site_j, site_k, site_l = d.get("site_i", -1), d.get("site_j", -1), d.get("site_k", -1), d.get("site_l", -1)
     
-    p1 = mol_com_parts[mol_i]
-    p2 = mol_com_parts[mol_j]
-    p3 = mol_com_parts[mol_k]
-    p4 = mol_com_parts[mol_l]
+    p1 = mol_com_parts[mol_i] if site_i == -1 else mol_vs_parts[(mol_i, site_i)]
+    p2 = mol_com_parts[mol_j] if site_j == -1 else mol_vs_parts[(mol_j, site_j)]
+    p3 = mol_com_parts[mol_k] if site_k == -1 else mol_vs_parts[(mol_k, site_k)]
+    p4 = mol_com_parts[mol_l] if site_l == -1 else mol_vs_parts[(mol_l, site_l)]
     
     # In ESPResSo, il diedro si applica alla SECONDA particella
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
-    print(f"[INFO] Added Dihedral bond {idx}: mol {mol_i} - {mol_j} - {mol_k} - {mol_l}")
+    print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
 print("[INFO] Activating ML Potential...")
 espressomd.painn.activate_painn_potential(

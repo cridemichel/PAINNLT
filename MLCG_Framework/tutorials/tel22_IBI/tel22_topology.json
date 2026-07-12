@@ -2,6 +2,14 @@
     "temperature": 300.0,
     "wca_sigma": 0.3,
     "wca_epsilon": 1.0,
+    "wca_overrides": {
+        "2": {"sigma": 0.45},
+        "3": {"sigma": 0.45},
+        "4": {"sigma": 0.45},
+        "5": {"sigma": 0.45},
+        "6": {"sigma": 0.45},
+        "7": {"sigma": 0.45}
+    },
     "mapping": {
         "mapping_method": "COM",
         "residues": {

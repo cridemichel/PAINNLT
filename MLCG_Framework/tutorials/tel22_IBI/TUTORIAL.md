@@ -22,6 +22,7 @@ In questa cartella troverai i singoli script numerati da eseguire uno dopo l'alt
 
 ### 01_build_dataset.sh
 Questo script utilizza il nostro pre-processore per trasformare la traiettoria All-Atom in un binario `tel22_dataset.bin` mappando ogni nucleotide e calcolando la statistica per una *Direct Boltzmann Inversion* (DBI) preliminare, necessaria come starting point per il passo successivo. Genera inoltre il file base `cg_priors.json`.
+*(Nota: come configurato in `tel22_topology.json`, le interazioni angolari e diedrali agiranno sui Virtual Sites. Il framework scalerà in automatico forze e torques per riprodurre esattamente la fisica dello scheletro del filamento.)*
 
 ### 02_run_ibi.sh
 Questo è il cuore dell'approccio tabulato. Lo script lancia il motore matematico `run_ibi_loop.py` che esegue la **Iterative Boltzmann Inversion**:
@@ -39,6 +40,8 @@ Questo è il cuore dell'approccio tabulato. Lo script lancia il motore matematic
 > Il framework ci permette di adottare un approccio ibrido:
 > - **Legami**: Trattati tramite IBI per gestire asimmetrie anarmoniche.
 > - **Angoli e Diedri**: Gestiti tramite formule analitiche (DBI). Le loro sottili imperfezioni verranno assorbite in seguito dalla Rete Neurale!
+> 
+> **Fisica dello Jacobiano**: Quando lo script esegue la statistica DBI iniziale, il framework protegge fisicamente l'inversione applicando il volume dello spazio delle fasi (Jacobiano matematico). Questo si traduce nella divisione dell'istogramma per $r^2$ per i legami e per $\sin(\theta)$ per gli angoli. Questo step previene l'introduzione di bias entropici geometrici e fornisce un *initial guess* termodinamico perfetto.
 
 ### 03_subtract_ibi.sh [LA NOVITÀ]
 Adesso che abbiamo le curve IBI perfette, richiamiamo `build_cg_dataset.py` passandogli il flag `--priors`. Invece di calcolare la statistica (DBI), lo script caricherà i potenziali tabulati esatti e li sottrarrà per generare il VERO dataset residuo: **`tel22_dataset_ibi.bin`**.
