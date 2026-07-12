@@ -133,21 +133,23 @@ def extrapolate_potential_and_force(x, V, F, hist):
         return V, F
     first, last = valid_idx[0], valid_idx[-1]
     
-    # Ensure the boundary forces are at least slightly repulsive/attractive
-    # F > 0 means pushing to the right (increasing x)
-    # F < 0 means pushing to the left (decreasing x)
-    left_force = max(F[first], 10.0)
-    right_force = min(F[last], -10.0)
+    k_wall = 5000.0  # Steep harmonic wall
     
-    # Left extrapolation (constant force)
+    # Force the base extrapolation forces to point INWARD safely
+    base_left_force = max(F[first], 10.0)
+    base_right_force = min(F[last], -10.0)
+    
+    # Left extrapolation
     for i in range(first - 1, -1, -1):
-        F[i] = left_force
-        V[i] = V[i+1] + left_force * (x[i+1] - x[i])
+        dx = x[first] - x[i]
+        F[i] = base_left_force + k_wall * dx
+        V[i] = V[i+1] + F[i+1] * (x[i+1] - x[i])
         
-    # Right extrapolation (constant force)
+    # Right extrapolation
     for i in range(last + 1, len(x)):
-        F[i] = right_force
-        V[i] = V[i-1] - right_force * (x[i] - x[i-1])
+        dx = x[i] - x[last]
+        F[i] = base_right_force - k_wall * dx
+        V[i] = V[i-1] - F[i-1] * (x[i] - x[i-1])
         
     return V, F
 
@@ -273,7 +275,6 @@ for a in priors.get("angles", []):
     elif a.get("type") == "tabulated":
         data = np.loadtxt(a["file"])
         ta = espressomd.interactions.TabulatedAngle(
-            min=data[0, 0], max=data[-1, 0],
             energy=data[:, 1], force=data[:, 2]
         )
         system.bonded_inter.add(ta)
@@ -287,16 +288,34 @@ for d in priors.get("dihedrals", []):
     elif d.get("type") == "tabulated":
         data = np.loadtxt(d["file"])
         td = espressomd.interactions.TabulatedDihedral(
-            min=data[0, 0], max=data[-1, 0],
             energy=data[:, 1], force=data[:, 2]
         )
         system.bonded_inter.add(td)
         system.part.by_id(d["mol_j"]).add_bond((td, d["mol_i"], d["mol_k"], d["mol_l"]))
 
+# Debug prints
+print("Distance 164-165 START:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos))
+
+# Check initial forces
+system.integrator.run(0)
+forces = system.part.all().f
+print("--- INITIAL FORCES (BEFORE SD) ---")
+for i, f in enumerate(forces):
+    if np.linalg.norm(f) > 500:
+        print(f"HIGH FORCE START: Particle {{i}} f={{f}} mag={{np.linalg.norm(f):.2f}}")
+
 # Minimize energy
 print("Minimizing energy...")
-system.integrator.set_steepest_descent(f_max=10.0, gamma=10.0, max_displacement=0.01)
-system.integrator.run(1000)
+system.integrator.set_steepest_descent(f_max=100.0, gamma=50.0, max_displacement=0.001)
+system.integrator.run(5000)
+system.integrator.run(0)
+forces = system.part.all().f
+for i, f in enumerate(forces):
+    if np.linalg.norm(f) > 500:
+        print(f"HIGH FORCE AFTER SD: Particle {{i}} f={{f}} mag={{np.linalg.norm(f):.2f}}")
+
+print("Distance 164-165 AFTER SD:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos), flush=True)
+
 system.integrator.set_vv()
 
 # Thermostat (must be set after steepest descent)
@@ -398,8 +417,21 @@ def main():
             
     for name, pool in pooled_angles.items():
         if len(pool["dists"]) == 0: continue
-        bins = np.linspace(-0.1, np.pi + 0.1, 100)
-        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='angle')
+        bins = np.linspace(0.0, np.pi, 300)
+        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='angle', periodic=False)
+        
+        # Protective walls to prevent angles from reaching exactly 0 or pi
+        # which would cause dihedral calculations to crash
+        for i in range(len(r)):
+            if r[i] < 0.1:
+                F_0[i] += 5000.0 * (0.1 - r[i])
+            elif r[i] > np.pi - 0.1:
+                F_0[i] -= 5000.0 * (r[i] - (np.pi - 0.1))
+                
+        # Re-integrate V_0 from F_0 after adding walls
+        for i in range(1, len(r)):
+            V_0[i] = V_0[i-1] - F_0[i-1] * (r[i] - r[i-1])
+
         filename = f"{args.outdir}/angle_tabulated_{name}.dat"
         save_tabulated_potential(filename, r, V_0, F_0)
         if pool["type"] == "ibi":
@@ -424,8 +456,10 @@ def main():
             
     for name, pool in pooled_dihedrals.items():
         if len(pool["dists"]) == 0: continue
-        bins = np.linspace(-np.pi - 0.1, np.pi + 0.1, 100)
-        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='dihedral', periodic=True)
+        bins = np.linspace(0.0, 2 * np.pi, 300)
+        target_values = np.array(pool["dists"])
+        target_values = np.where(target_values < 0, target_values + 2 * np.pi, target_values)
+        r, V_0, F_0, P_target = calculate_dbi_potential(target_values, bins, jacobian_type='dihedral', periodic=True)
         filename = f"{args.outdir}/dihedral_tabulated_{name}.dat"
         save_tabulated_potential(filename, r, V_0, F_0)
         if pool["type"] == "ibi":
@@ -436,8 +470,8 @@ def main():
             name = d.get("name", f"idx_{idx}")
             d["type"] = "tabulated"
             d["file"] = f"{args.outdir}/dihedral_tabulated_{name}.dat"
-            d["min"] = -np.pi
-            d["max"] = np.pi
+            d["min"] = 0.0
+            d["max"] = 2 * np.pi
             
     if args.iterations == 0:
         print("[INFO] User requested 0 iterations. Stopping at DBI.")
@@ -463,6 +497,7 @@ def main():
         res = subprocess.run([args.pypresso, script_name], capture_output=True, text=True)
         if res.returncode != 0:
             print("[ERROR] ESPResSo simulation failed!")
+            print(res.stdout)
             print(res.stderr)
             sys.exit(1)
             

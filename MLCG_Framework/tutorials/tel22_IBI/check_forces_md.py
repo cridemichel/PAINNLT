@@ -31,7 +31,7 @@ if wca.get("epsilon", 0.0) > 0 and wca.get("sigma", 0.0) > 0:
             )
 
 # Apply interactions
-system.force_cap = 2000.0
+system.force_cap = 0.0
 
 for b in priors.get("bonds", []):
     if b["type"] == "tabulated":
@@ -55,6 +55,7 @@ for a in priors.get("angles", []):
     elif a.get("type") == "tabulated":
         data = np.loadtxt(a["file"])
         ta = espressomd.interactions.TabulatedAngle(
+            min=data[0, 0], max=data[-1, 0],
             energy=data[:, 1], force=data[:, 2]
         )
         system.bonded_inter.add(ta)
@@ -68,33 +69,15 @@ for d in priors.get("dihedrals", []):
     elif d.get("type") == "tabulated":
         data = np.loadtxt(d["file"])
         td = espressomd.interactions.TabulatedDihedral(
+            min=data[0, 0], max=data[-1, 0],
             energy=data[:, 1], force=data[:, 2]
         )
         system.bonded_inter.add(td)
         system.part.by_id(d["mol_j"]).add_bond((td, d["mol_i"], d["mol_k"], d["mol_l"]))
 
-# Debug prints
-print("Distance 164-165 START:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos))
-
-# Check initial forces
-system.integrator.run(0)
-forces = system.part.all().f
-print("--- INITIAL FORCES (BEFORE SD) ---")
-for i, f in enumerate(forces):
-    if np.linalg.norm(f) > 500:
-        print(f"HIGH FORCE START: Particle {i} f={f} mag={np.linalg.norm(f):.2f}")
-
 # Minimize energy
 print("Minimizing energy...")
-system.integrator.set_steepest_descent(f_max=100.0, gamma=50.0, max_displacement=0.001)
-system.integrator.run(5000)
-system.integrator.run(0)
-forces = system.part.all().f
-for i, f in enumerate(forces):
-    if np.linalg.norm(f) > 500:
-        print(f"HIGH FORCE AFTER SD: Particle {i} f={f} mag={np.linalg.norm(f):.2f}")
-
-print("Distance 164-165 AFTER SD:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos), flush=True)
+system.integrator.set_steepest_descent(f_max=10.0, gamma=10.0, max_displacement=0.01)
 
 system.integrator.set_vv()
 
@@ -105,7 +88,7 @@ system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
 import builtins
 print("Running MD...")
 # Burn-in
-system.integrator.run(1000)
+
 # system.force_cap = 0  # Leave it capped just in case
 
 
@@ -118,3 +101,15 @@ for _ in range(5000):
     positions.append(pos)
 
 np.save('_tmp_traj.npy', np.array(positions))
+
+system.integrator.run(0)
+forces = system.part.all().f
+for i, f in enumerate(forces):
+    mag = np.linalg.norm(f)
+    if mag > 500:
+        print(f"Particle {i} has HUGE force: {mag:.2f}  vector: {f}")
+
+f164 = system.part.by_id(164).f
+f165 = system.part.by_id(165).f
+print(f"Force on 164: {np.linalg.norm(f164):.2f}")
+print(f"Force on 165: {np.linalg.norm(f165):.2f}")

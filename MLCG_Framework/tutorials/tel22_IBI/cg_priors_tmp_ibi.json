@@ -5786,8 +5786,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 1,
@@ -5797,8 +5797,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 2,
@@ -5808,8 +5808,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 3,
@@ -5819,8 +5819,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 4,
@@ -5830,8 +5830,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 5,
@@ -5841,8 +5841,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 6,
@@ -5852,8 +5852,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 7,
@@ -5863,8 +5863,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 8,
@@ -5874,8 +5874,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 9,
@@ -5885,8 +5885,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 10,
@@ -5896,8 +5896,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 11,
@@ -5907,8 +5907,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 12,
@@ -5918,8 +5918,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 13,
@@ -5929,8 +5929,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 14,
@@ -5940,8 +5940,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 15,
@@ -5951,8 +5951,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 16,
@@ -5962,8 +5962,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 17,
@@ -5973,8 +5973,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 18,
@@ -5984,8 +5984,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 22,
@@ -5995,8 +5995,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 23,
@@ -6006,8 +6006,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 24,
@@ -6017,8 +6017,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 25,
@@ -6028,8 +6028,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 26,
@@ -6039,8 +6039,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 27,
@@ -6050,8 +6050,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 28,
@@ -6061,8 +6061,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 29,
@@ -6072,8 +6072,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 30,
@@ -6083,8 +6083,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 31,
@@ -6094,8 +6094,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 32,
@@ -6105,8 +6105,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 33,
@@ -6116,8 +6116,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 34,
@@ -6127,8 +6127,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 35,
@@ -6138,8 +6138,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 36,
@@ -6149,8 +6149,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 37,
@@ -6160,8 +6160,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 38,
@@ -6171,8 +6171,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 39,
@@ -6182,8 +6182,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 40,
@@ -6193,8 +6193,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 44,
@@ -6204,8 +6204,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 45,
@@ -6215,8 +6215,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 46,
@@ -6226,8 +6226,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 47,
@@ -6237,8 +6237,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 48,
@@ -6248,8 +6248,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 49,
@@ -6259,8 +6259,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 50,
@@ -6270,8 +6270,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 51,
@@ -6281,8 +6281,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 52,
@@ -6292,8 +6292,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 53,
@@ -6303,8 +6303,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 54,
@@ -6314,8 +6314,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 55,
@@ -6325,8 +6325,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 56,
@@ -6336,8 +6336,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 57,
@@ -6347,8 +6347,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 58,
@@ -6358,8 +6358,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 59,
@@ -6369,8 +6369,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 60,
@@ -6380,8 +6380,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 61,
@@ -6391,8 +6391,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 62,
@@ -6402,8 +6402,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 66,
@@ -6413,8 +6413,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 67,
@@ -6424,8 +6424,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 68,
@@ -6435,8 +6435,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 69,
@@ -6446,8 +6446,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 70,
@@ -6457,8 +6457,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 71,
@@ -6468,8 +6468,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 72,
@@ -6479,8 +6479,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 73,
@@ -6490,8 +6490,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 74,
@@ -6501,8 +6501,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 75,
@@ -6512,8 +6512,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 76,
@@ -6523,8 +6523,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 77,
@@ -6534,8 +6534,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 78,
@@ -6545,8 +6545,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 79,
@@ -6556,8 +6556,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 80,
@@ -6567,8 +6567,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 81,
@@ -6578,8 +6578,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 82,
@@ -6589,8 +6589,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 83,
@@ -6600,8 +6600,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 84,
@@ -6611,8 +6611,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 88,
@@ -6622,8 +6622,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 89,
@@ -6633,8 +6633,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 90,
@@ -6644,8 +6644,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 91,
@@ -6655,8 +6655,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 92,
@@ -6666,8 +6666,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 93,
@@ -6677,8 +6677,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 94,
@@ -6688,8 +6688,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 95,
@@ -6699,8 +6699,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 96,
@@ -6710,8 +6710,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 97,
@@ -6721,8 +6721,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 98,
@@ -6732,8 +6732,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 99,
@@ -6743,8 +6743,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 100,
@@ -6754,8 +6754,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 101,
@@ -6765,8 +6765,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 102,
@@ -6776,8 +6776,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 103,
@@ -6787,8 +6787,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 104,
@@ -6798,8 +6798,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 105,
@@ -6809,8 +6809,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 106,
@@ -6820,8 +6820,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 110,
@@ -6831,8 +6831,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 111,
@@ -6842,8 +6842,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 112,
@@ -6853,8 +6853,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 113,
@@ -6864,8 +6864,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 114,
@@ -6875,8 +6875,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 115,
@@ -6886,8 +6886,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 116,
@@ -6897,8 +6897,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 117,
@@ -6908,8 +6908,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 118,
@@ -6919,8 +6919,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 119,
@@ -6930,8 +6930,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 120,
@@ -6941,8 +6941,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 121,
@@ -6952,8 +6952,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 122,
@@ -6963,8 +6963,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 123,
@@ -6974,8 +6974,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 124,
@@ -6985,8 +6985,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 125,
@@ -6996,8 +6996,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 126,
@@ -7007,8 +7007,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 127,
@@ -7018,8 +7018,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 128,
@@ -7029,8 +7029,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 132,
@@ -7040,8 +7040,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 133,
@@ -7051,8 +7051,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 134,
@@ -7062,8 +7062,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 135,
@@ -7073,8 +7073,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 136,
@@ -7084,8 +7084,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 137,
@@ -7095,8 +7095,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 138,
@@ -7106,8 +7106,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 139,
@@ -7117,8 +7117,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 140,
@@ -7128,8 +7128,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 141,
@@ -7139,8 +7139,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 142,
@@ -7150,8 +7150,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 143,
@@ -7161,8 +7161,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 144,
@@ -7172,8 +7172,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 145,
@@ -7183,8 +7183,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 146,
@@ -7194,8 +7194,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 147,
@@ -7205,8 +7205,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 148,
@@ -7216,8 +7216,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 149,
@@ -7227,8 +7227,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 150,
@@ -7238,8 +7238,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 154,
@@ -7249,8 +7249,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 155,
@@ -7260,8 +7260,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 156,
@@ -7271,8 +7271,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 157,
@@ -7282,8 +7282,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 158,
@@ -7293,8 +7293,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 159,
@@ -7304,8 +7304,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 160,
@@ -7315,8 +7315,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 161,
@@ -7326,8 +7326,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 162,
@@ -7337,8 +7337,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 163,
@@ -7348,8 +7348,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 164,
@@ -7359,8 +7359,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 165,
@@ -7370,8 +7370,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 166,
@@ -7381,8 +7381,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 167,
@@ -7392,8 +7392,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 168,
@@ -7403,8 +7403,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 169,
@@ -7414,8 +7414,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 170,
@@ -7425,8 +7425,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 171,
@@ -7436,8 +7436,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 172,
@@ -7447,8 +7447,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 176,
@@ -7458,8 +7458,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 177,
@@ -7469,8 +7469,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 178,
@@ -7480,8 +7480,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 179,
@@ -7491,8 +7491,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 180,
@@ -7502,8 +7502,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 181,
@@ -7513,8 +7513,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 182,
@@ -7524,8 +7524,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 183,
@@ -7535,8 +7535,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 184,
@@ -7546,8 +7546,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 185,
@@ -7557,8 +7557,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 186,
@@ -7568,8 +7568,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 187,
@@ -7579,8 +7579,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 188,
@@ -7590,8 +7590,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 189,
@@ -7601,8 +7601,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 190,
@@ -7612,8 +7612,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 191,
@@ -7623,8 +7623,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 192,
@@ -7634,8 +7634,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 193,
@@ -7645,8 +7645,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 194,
@@ -7656,8 +7656,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 198,
@@ -7667,8 +7667,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 199,
@@ -7678,8 +7678,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 200,
@@ -7689,8 +7689,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 201,
@@ -7700,8 +7700,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 202,
@@ -7711,8 +7711,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 203,
@@ -7722,8 +7722,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 204,
@@ -7733,8 +7733,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 205,
@@ -7744,8 +7744,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 206,
@@ -7755,8 +7755,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 207,
@@ -7766,8 +7766,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 208,
@@ -7777,8 +7777,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 209,
@@ -7788,8 +7788,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 210,
@@ -7799,8 +7799,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 211,
@@ -7810,8 +7810,8 @@
             "type": "tabulated",
             "name": "dih_G_G_G_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_G_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 212,
@@ -7821,8 +7821,8 @@
             "type": "tabulated",
             "name": "dih_G_G_T_T",
             "file": "ibi_priors/dihedral_tabulated_dih_G_G_T_T.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 213,
@@ -7832,8 +7832,8 @@
             "type": "tabulated",
             "name": "dih_G_T_T_A",
             "file": "ibi_priors/dihedral_tabulated_dih_G_T_T_A.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 214,
@@ -7843,8 +7843,8 @@
             "type": "tabulated",
             "name": "dih_T_T_A_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_T_A_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 215,
@@ -7854,8 +7854,8 @@
             "type": "tabulated",
             "name": "dih_T_A_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_T_A_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         },
         {
             "mol_i": 216,
@@ -7865,8 +7865,8 @@
             "type": "tabulated",
             "name": "dih_A_G_G_G",
             "file": "ibi_priors/dihedral_tabulated_dih_A_G_G_G.dat",
-            "min": -3.141592653589793,
-            "max": 3.141592653589793
+            "min": 0.0,
+            "max": 6.283185307179586
         }
     ]
 }
