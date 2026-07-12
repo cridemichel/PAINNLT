@@ -2,7 +2,7 @@
 set -e
 
 echo "======================================================"
-echo " 04. ESPRESSO MD SIMULATION "
+echo " 04. ESPRESSO MD EQUILIBRATION "
 echo "======================================================"
 
 if [ ! -f "tel22_model.pt" ]; then
@@ -10,16 +10,14 @@ if [ ! -f "tel22_model.pt" ]; then
     exit 1
 fi
 
-echo "Avvio la simulazione ESPResSo usando il pypresso di sistema."
-echo "Per personalizzare, apri e modifica lo script run_cg_md.py."
-
-echo "Esecuzione in corso..."
-../../../espresso/build/pypresso ../../simulation/run_cg_md.py \
+echo "Avvio l'equilibrazione con Langevin Dynamics e Force Capping..."
+../../../espresso/build/pypresso ../../simulation/equilibrate.py \
     --model tel22_model.pt \
     --config tel22_training_config.json \
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
-    --steps 50000 \
-    --dt 0.001 \
+    --out_checkpoint equilibrated.npz \
     --kT 2.49
+
+echo "[SUCCESS] Sistema equilibrato e salvato in equilibrated.npz"

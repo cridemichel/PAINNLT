@@ -12,9 +12,8 @@ parser.add_argument("--config", type=str, required=True, help="NN config JSON")
 parser.add_argument("--priors", type=str, required=True, help="cg_priors.json")
 parser.add_argument("--rb_info", type=str, required=True, help="rigid_bodies_info.json")
 parser.add_argument("--dataset", type=str, required=True, help="Dataset to get initial frame from (e.g. cg_dataset.bin)")
-parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
-parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
+parser.add_argument("--out_checkpoint", type=str, default="equilibrated.npz", help="Output checkpoint file")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 args = parser.parse_args()
@@ -38,7 +37,7 @@ system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
 # Set temperature using the provided kT argument
-system.thermostat.set_langevin(kT=args.kT, gamma=10.0, seed=42)
+# Thermostat is OFF initially because Steepest Descent does not support it
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
@@ -92,30 +91,6 @@ with open(args.dataset, "rb") as f:
             p_vs.virtual = True
             p_vs.vs_auto_relate_to(p_com.id)
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
-
-if args.checkpoint:
-    print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")
-    chk = np.load(args.checkpoint)
-    pos = chk["pos"]
-    vel = chk["v"]
-    quat = chk.get("quat", None)
-    omega = chk.get("omega", None)
-    
-    if len(pos) != len(system.part):
-        raise ValueError(f"Checkpoint particle count ({len(pos)}) does not match system ({len(system.part)})")
-        
-    for i in range(len(system.part)):
-        p = system.part.by_id(i)
-        # Virtual sites positions/velocities are strictly tied to COM.
-        # We only set the properties of the real (COM) particles, and the
-        # virtual sites will follow automatically based on their auto-relation.
-        if not p.is_virtual:
-            p.pos = pos[i]
-            p.v = vel[i]
-            if quat is not None:
-                p.quat = quat[i]
-            if omega is not None:
-                p.omega_body = omega[i]
 
 print("[INFO] Adding priors...")
 # WCA
@@ -238,39 +213,40 @@ espressomd.painn.activate_painn_potential(
     device=args.device
 )
 
-import espressomd.io.writer.vtf
+print("[INFO] Phase 1: Warmup with Force Capping...")
+# Use force capping to prevent blowups from initial overlapping conformations.
+# Steepest Descent is avoided because it does not properly handle virtual sites/rigid body rotations.
+system.force_cap = 500.0
+system.time_step = 0.0001
+system.thermostat.set_langevin(kT=args.kT, gamma=100.0, seed=42)
+system.integrator.run(5000)
 
-print(f"[INFO] Running {args.steps} integration steps...")
-with open("energy.csv", "w") as f_out:
-    f_out.write("Step,E_tot,E_kin\n")
-vtf_filename = "cg_trajectory.vtf"
-with open(vtf_filename, "w") as vtf_file:
-    espressomd.io.writer.vtf.writevsf(system, vtf_file)
-    
-    # Inject fake visual bonds connecting COM to its Virtual Sites
-    # This allows VMD `pbc unwrap` to treat the whole nucleotide as a single fragment
-    for mol_idx, com_id in mol_com_parts.items():
-        for (m_idx, s_idx), vs_id in mol_vs_parts.items():
-            if m_idx == mol_idx:
-                vtf_file.write(f"bond {com_id}:{vs_id}\n")
-    
-    chunk_size = 100
-    num_chunks = args.steps // chunk_size
-    for step in range(num_chunks):
-        system.integrator.run(chunk_size)
-        espressomd.io.writer.vtf.writevcf(system, vtf_file)
-        
-        energy = system.analysis.energy()
-        step_val = step * chunk_size
-        e_tot = energy['total']
-        e_kin = energy['kinetic']
-        print(f"\r[INFO] Step {step_val}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f}", end="")
-        
-        # Salviamo le energie in un file CSV per poterle graficare e controllare il surriscaldamento
-        with open("energy.csv", "a") as f_out:
-            f_out.write(f"{step_val},{e_tot:.4f},{e_kin:.4f}\n")
+print("[INFO] Phase 2: Warmup without Force Capping...")
+system.force_cap = 0.0  # Disable force capping
+system.time_step = 0.001
+system.thermostat.set_langevin(kT=args.kT, gamma=10.0, seed=42)
+system.integrator.run(5000)
 
-print("\n[INFO] Simulation finished successfully.")
+print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
+pos = []
+vel = []
+quat = []
+omega = []
+# Ensure particles are saved in exact ID order
+for i in range(len(system.part)):
+    p = system.part.by_id(i)
+    pos.append(p.pos)
+    vel.append(p.v)
+    quat.append(p.quat)
+    # Virtual sites might not have omega_body properly exposed in all ESPResSo versions,
+    # but COM particles definitely do. We save them for all and filter on load.
+    try:
+        omega.append(p.omega_body)
+    except:
+        omega.append([0.0, 0.0, 0.0])
+np.savez(args.out_checkpoint, pos=np.array(pos), v=np.array(vel), quat=np.array(quat), omega=np.array(omega))
+
+print("[INFO] Equilibration finished successfully.")
 
 # Force immediate exit to bypass PyTorch/MPI teardown crashes on macOS
 os._exit(0)
