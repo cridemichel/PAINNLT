@@ -298,17 +298,25 @@ print("Distance 164-165 START:", np.linalg.norm(system.part.by_id(164).pos - sys
 
 # Check initial forces
 system.integrator.run(0)
+print("--- INITIAL ENERGY ---")
+print(system.analysis.energy())
 forces = system.part.all().f
 print("--- INITIAL FORCES (BEFORE SD) ---")
 for i, f in enumerate(forces):
     if np.linalg.norm(f) > 500:
         print(f"HIGH FORCE START: Particle {{i}} f={{f}} mag={{np.linalg.norm(f):.2f}}")
 
-# Minimize energy
-print("Minimizing energy...")
-system.integrator.set_steepest_descent(f_max=100.0, gamma=50.0, max_displacement=0.001)
-system.integrator.run(5000)
+# Minimize energy / Burn-in
+print("Gentle MD burn-in...")
+system.integrator.set_vv()
+system.thermostat.set_langevin(kT=2.49, gamma=10.0, seed=42)
+system.force_cap = 50.0
+system.integrator.run(2000)
+system.force_cap = 0.0
+
 system.integrator.run(0)
+print("--- ENERGY AFTER BURN-IN ---")
+print(system.analysis.energy())
 forces = system.part.all().f
 for i, f in enumerate(forces):
     if np.linalg.norm(f) > 500:
@@ -316,16 +324,11 @@ for i, f in enumerate(forces):
 
 print("Distance 164-165 AFTER SD:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos), flush=True)
 
-system.integrator.set_vv()
-
-# Thermostat (must be set after steepest descent)
 system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
 
 # Run MD and save trajectory
 import builtins
 print("Running MD...")
-# Burn-in
-system.integrator.run(1000)
 # system.force_cap = 0  # Leave it capped just in case
 
 
