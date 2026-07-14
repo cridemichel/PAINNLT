@@ -13,7 +13,8 @@ fi
 echo "Avvio la simulazione ESPResSo usando il pypresso di sistema."
 echo "Per personalizzare, apri e modifica lo script run_cg_md.py."
 
-echo "Esecuzione in corso..."
+echo "Avvio della Dinamica Molecolare Coarse-Grained..."
+export PYTORCH_ENABLE_MPS_FALLBACK=1
 ../../../espresso/build/pypresso ../../simulation/run_cg_md.py \
     --model tel22_model.pt \
     --config tel22_training_config.json \
@@ -21,6 +22,6 @@ echo "Esecuzione in corso..."
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
     --checkpoint equilibrated.npz \
-    --steps 50000 \
+    --steps 20000 \
     --dt 0.001 \
     --kT 2.49

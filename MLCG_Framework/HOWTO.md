@@ -51,6 +51,7 @@ python build_cg_dataset.py \
     --traj ../GROMACS/ethanol.trr \
     --topol ../GROMACS/ethanol.gro \
     --config topology_config.json \
+    --dbi \
     --output cg_dataset.bin
 ```
 
@@ -100,12 +101,25 @@ Quando applicate ai Virtual Sites, le forze sono geometricamente esatte e il fra
 #### Priors e Inversione di Boltzmann (DBI vs IBI)
 
 Il framework supporta due filosofie fondamentali per estrarre le energie a priori dalla traiettoria All-Atom: la **Direct Boltzmann Inversion (DBI)** e l'**Iterative Boltzmann Inversion (IBI)**.
-*(Nota sugli Jacobiani: Per un esatto matching analitico di probabilità, la fase DBI corregge il Volume dello Spazio delle Fasi dividendo l'istogramma grezzo per lo Jacobiano matematico: $1/r^2$ per i legami e $1/\sin(\theta)$ per gli angoli, prevenendo bias entropici).*
+
+##### Dettagli dell'Architettura Matematica DBI
+Quando un grado di libertà è contrassegnato per il DBI puro, lo script `build_cg_dataset.py` esegue una rigorosa pipeline analitica:
+1. **Estrazione e Istogrammazione**: I campioni geometrici vengono estratti da tutti i frame per costruire una distribuzione di densità $P(x)$.
+2. **Inversione Termodinamica (Jacobiani)**: Per ottenere un esatto matching analitico di probabilità e prevenire bias entropici geometrici, l'istogramma grezzo viene diviso per il volume dello spazio delle fasi (Jacobiano matematico) prima di applicare l'inversione:
+   - **Legami:** $V(r) = -k_B T \ln[P(r)/r^2]$ (correzione per l'elemento di volume a guscio sferico)
+   - **Angoli:** $V(\theta) = -k_B T \ln[P(\theta)/\sin(\theta)]$ (correzione per il volume dell'angolo solido)
+   - **Diedri:** $V(\phi) = -k_B T \ln[P(\phi)]$ (nessuna correzione necessaria)
+3. **Smussamento (Smoothing)**: Per evitare che l'interpolazione della forza sia soggetta a rumore o picchi derivanti da bin con pochi sample (specialmente alle code), il potenziale viene regolarizzato passando un kernel gaussiano (`sigma=2.0`).
+4. **Calcolo della Forza**: Svolto analiticamente come gradiente numerico del potenziale smussato: $F = -dV/dx$.
+5. **Estrapolazione Agli Estremi**: Per garantire stabilità assoluta durante la Dinamica Molecolare in ESPResSo ed evitare che il motore esploda se una molecola esplora per fluttuazione termica una regione fuori dal campionamento (ad es. un legame molto dilatato), le code del potenziale tabulato vengono *estrapolate* prolungando la forza costantemente. Questo conferisce al legame un comportamento asintotico di "muro rigido" sicuro al di fuori della regione campionata.
+6. **Esportazione Tabelle**: Il potenziale risultante viene esportato come file numerico tabulato `x V F` in `dbi_tables/`, pronto per l'interpolazione Spline nativa di ESPResSo.
+
 
 **1. Funzioni Analitiche (DBI, FENE, Morse, Angoli, Diedri)**
 Se includi l'array `"bonds"` come liste di indici (es. `[[0, 1]]`), lo script di preprocessing effettuerà una statistica (DBI classica) per ricavare la costante armonica $k$ e la distanza di equilibrio $r_0$.
 In alternativa, puoi disattivare l'inferenza automatica e definire esplicitamente parametri analitici molto più complessi per diversi gradi di libertà. Puoi usare:
-- **Harmonic Bond** (`"type": "harmonic"`): la classica molla di Hooke.
+- **Harmonic Bond** (`"type": "harmonic"`): la classica molla di Hooke calcolata statisticamente basandosi su media/varianza (per default su `"r0": "auto"`, `"k": "auto"`). Estremamente veloce.
+- **Direct Boltzmann Inversion** (`"type": "dbi"`): estrae il vero potenziale termodinamico invertendo gli istogrammi (utile per geometrie e distribuzioni non armoniche o molto asimmetriche). Questa tecnica salva un `.tab` e sfrutta l'estrapolazione delle forze. Supportato anche come flag globale `--dbi` da terminale.
 - **FENE Bond** (`"type": "fene"`): utilissimo per catene polimeriche dove i monomeri non devono allontanarsi oltre un certo $R_{max}$.
 - **Morse Bond** (`"type": "morse"`): essenziale per legami non lineari che devono potersi rompere (come lo stacking dei tetrad o i legami idrogeno).
 - **Angoli Armonici** (nell'array `"angles"`): per stabilizzare l'angolo tra tre siti.

@@ -51,6 +51,7 @@ python build_cg_dataset.py \
     --traj ../GROMACS/ethanol.trr \
     --topol ../GROMACS/ethanol.gro \
     --config topology_config.json \
+    --dbi \
     --output cg_dataset.bin
 ```
 
@@ -100,12 +101,24 @@ When applied to Virtual Sites, the forces are geometrically exact, and the frame
 #### Priors and Boltzmann Inversion (DBI vs IBI)
 
 The framework supports two fundamental philosophies to extract prior energies from the All-Atom trajectory: **Direct Boltzmann Inversion (DBI)** and **Iterative Boltzmann Inversion (IBI)**.
-*(Note on Jacobians: For exact analytical probability matching, the DBI phase corrects for the Phase Space Volume by dividing the raw histogram by the mathematical Jacobian: $1/r^2$ for bonds, and $1/\sin(\theta)$ for angles, preventing geometric entropy bias).*
+
+##### Details of the DBI Mathematical Architecture
+When a degree of freedom is marked for pure DBI, the `build_cg_dataset.py` script executes a rigorous analytical pipeline:
+1. **Extraction and Histogramming**: Geometric samples are extracted from all frames to build a density distribution $P(x)$.
+2. **Thermodynamic Inversion (Jacobians)**: To achieve exact analytical probability matching and prevent geometric entropy biases, the raw histogram is divided by the phase space volume (mathematical Jacobian) before applying the inversion:
+   - **Bonds:** $V(r) = -k_B T \ln[P(r)/r^2]$ (correction for the spherical shell volume element)
+   - **Angles:** $V(\theta) = -k_B T \ln[P(\theta)/\sin(\theta)]$ (correction for the solid angle volume)
+   - **Dihedrals:** $V(\phi) = -k_B T \ln[P(\phi)]$ (no correction needed)
+3. **Smoothing**: To prevent force interpolation from suffering from noise or spikes derived from bins with few samples (especially at the tails), the potential is regularized by applying a Gaussian kernel (`sigma=2.0`).
+4. **Force Calculation**: Performed analytically as the numerical gradient of the smoothed potential: $F = -dV/dx$.
+5. **Endpoint Extrapolation**: To ensure absolute stability during Molecular Dynamics in ESPResSo and prevent the engine from crashing if a molecule explores a region outside the sampling by thermal fluctuation (e.g., a highly stretched bond), the tails of the tabulated potential are *extrapolated* by extending the force constantly. This gives the bond a safe "hard wall" asymptotic behavior outside the sampled region.
+6. **Table Export**: The resulting potential is exported as a tabulated numerical file `x V F` in `dbi_tables/`, ready for ESPResSo's native Spline interpolation.
 
 **1. Analytical Functions (DBI, FENE, Morse, Angles, Dihedrals)**
 If you include the `"bonds"` array as index lists (e.g., `[[0, 1]]`), the preprocessing script will perform basic statistics (classical DBI) to derive the harmonic constant $k$ and the equilibrium distance $r_0$.
 Alternatively, you can disable automatic inference and explicitly define much more complex analytical parameters for various degrees of freedom. You can use:
-- **Harmonic Bond** (`"type": "harmonic"`): the classic Hooke's spring.
+- **Harmonic Bond** (`"type": "harmonic"`): the classic Hooke's spring, calculated statistically based on mean/variance (defaulting to `"r0": "auto"`, `"k": "auto"`). Extremely fast.
+- **Direct Boltzmann Inversion** (`"type": "dbi"`): extracts the true thermodynamic potential by inverting the histograms (useful for non-harmonic or very asymmetric distributions/geometries). This technique saves a `.tab` file and uses force extrapolation. Also supported as a global `--dbi` terminal flag.
 - **FENE Bond** (`"type": "fene"`): very useful for polymer chains where monomers must not drift beyond a certain $R_{max}$.
 - **Morse Bond** (`"type": "morse"`): essential for non-linear bonds that must be able to break (like tetrad stacking or hydrogen bonds).
 - **Harmonic Angles** (in the `"angles"` array): to stabilize the angle between three sites.

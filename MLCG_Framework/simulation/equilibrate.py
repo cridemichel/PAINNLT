@@ -56,7 +56,9 @@ with open(args.dataset, "rb") as f:
     num_total_sites = struct.unpack("i", f.read(4))[0]
     box_dim = struct.unpack("3f", f.read(12))
     
-    system.box_l = box_dim
+    # Ensure box is large enough for cutoff=5.0 + skin=0.4
+    min_box = 11.0
+    system.box_l = [max(b, min_box) for b in box_dim]
     
     for mol_idx in range(num_molecules):
         mol_id = struct.unpack("i", f.read(4))[0]
@@ -225,6 +227,12 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     # In ESPResSo, il diedro si applica alla SECONDA particella
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
+
+print("[INFO] Setting up dummy interactions for Verlet lists...")
+for i in range(nn_config["num_species"] + 2):
+    for j in range(i, nn_config["num_species"] + 2):
+        system.non_bonded_inter[i, j].soft_sphere.set_params(
+            a=0.0, n=1, cutoff=5.0, offset=0.0)
 
 print("[INFO] Activating ML Potential...")
 espressomd.painn.activate_painn_potential(

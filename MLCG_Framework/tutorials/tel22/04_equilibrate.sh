@@ -11,6 +11,7 @@ if [ ! -f "tel22_model.pt" ]; then
 fi
 
 echo "Avvio l'equilibrazione con Langevin Dynamics e Force Capping..."
+export PYTORCH_ENABLE_MPS_FALLBACK=1
 ../../../espresso/build/pypresso ../../simulation/equilibrate.py \
     --model tel22_model.pt \
     --config tel22_training_config.json \

@@ -424,16 +424,15 @@ def main():
         r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='angle', periodic=False)
         
         # Protective walls to prevent angles from reaching exactly 0 or pi
-        # which would cause dihedral calculations to crash
         for i in range(len(r)):
             if r[i] < 0.1:
-                F_0[i] += 5000.0 * (0.1 - r[i])
+                dx = 0.1 - r[i]
+                F_0[i] += 5000.0 * dx
+                V_0[i] += 0.5 * 5000.0 * dx**2
             elif r[i] > np.pi - 0.1:
-                F_0[i] -= 5000.0 * (r[i] - (np.pi - 0.1))
-                
-        # Re-integrate V_0 from F_0 after adding walls
-        for i in range(1, len(r)):
-            V_0[i] = V_0[i-1] - F_0[i-1] * (r[i] - r[i-1])
+                dx = r[i] - (np.pi - 0.1)
+                F_0[i] -= 5000.0 * dx
+                V_0[i] += 0.5 * 5000.0 * dx**2
 
         filename = f"{args.outdir}/angle_tabulated_{name}.dat"
         save_tabulated_potential(filename, r, V_0, F_0)

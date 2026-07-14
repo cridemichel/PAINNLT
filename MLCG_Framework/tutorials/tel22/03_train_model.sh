@@ -25,6 +25,7 @@ cat << 'JSON' > tel22_training_config.json
 JSON
 
 echo "Avvio l'addestramento C++ (5 epoche)..."
+export PYTORCH_ENABLE_MPS_FALLBACK=1
 ../../training/build/train_painn \
     tel22_dataset.bin \
     tel22_model.pt \
