@@ -5,2310 +5,2100 @@
             "mol_j": 1,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 1,
             "mol_j": 2,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 2,
             "mol_j": 3,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 3,
             "mol_j": 4,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 4,
             "mol_j": 5,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 5,
             "mol_j": 6,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 6,
             "mol_j": 7,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 7,
             "mol_j": 8,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 8,
             "mol_j": 9,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 9,
             "mol_j": 10,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 10,
             "mol_j": 11,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 11,
             "mol_j": 12,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 12,
             "mol_j": 13,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 13,
             "mol_j": 14,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 14,
             "mol_j": 15,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 15,
             "mol_j": 16,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 16,
             "mol_j": 17,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 17,
             "mol_j": 18,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 18,
             "mol_j": 19,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 19,
             "mol_j": 20,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 20,
             "mol_j": 21,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 22,
             "mol_j": 23,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 23,
             "mol_j": 24,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 24,
             "mol_j": 25,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 25,
             "mol_j": 26,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 26,
             "mol_j": 27,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 27,
             "mol_j": 28,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 28,
             "mol_j": 29,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 29,
             "mol_j": 30,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 30,
             "mol_j": 31,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 31,
             "mol_j": 32,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 32,
             "mol_j": 33,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 33,
             "mol_j": 34,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 34,
             "mol_j": 35,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 35,
             "mol_j": 36,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 36,
             "mol_j": 37,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 37,
             "mol_j": 38,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 38,
             "mol_j": 39,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 39,
             "mol_j": 40,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 40,
             "mol_j": 41,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 41,
             "mol_j": 42,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 42,
             "mol_j": 43,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 44,
             "mol_j": 45,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 45,
             "mol_j": 46,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 46,
             "mol_j": 47,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 47,
             "mol_j": 48,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 48,
             "mol_j": 49,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 49,
             "mol_j": 50,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 50,
             "mol_j": 51,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 51,
             "mol_j": 52,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 52,
             "mol_j": 53,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 53,
             "mol_j": 54,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 54,
             "mol_j": 55,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 55,
             "mol_j": 56,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 56,
             "mol_j": 57,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 57,
             "mol_j": 58,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 58,
             "mol_j": 59,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 59,
             "mol_j": 60,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 60,
             "mol_j": 61,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 61,
             "mol_j": 62,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 62,
             "mol_j": 63,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 63,
             "mol_j": 64,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 64,
             "mol_j": 65,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 66,
             "mol_j": 67,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 67,
             "mol_j": 68,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 68,
             "mol_j": 69,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 69,
             "mol_j": 70,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 70,
             "mol_j": 71,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 71,
             "mol_j": 72,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 72,
             "mol_j": 73,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 73,
             "mol_j": 74,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 74,
             "mol_j": 75,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 75,
             "mol_j": 76,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 76,
             "mol_j": 77,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 77,
             "mol_j": 78,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 78,
             "mol_j": 79,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 79,
             "mol_j": 80,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 80,
             "mol_j": 81,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 81,
             "mol_j": 82,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 82,
             "mol_j": 83,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 83,
             "mol_j": 84,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 84,
             "mol_j": 85,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 85,
             "mol_j": 86,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 86,
             "mol_j": 87,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 88,
             "mol_j": 89,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 89,
             "mol_j": 90,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 90,
             "mol_j": 91,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 91,
             "mol_j": 92,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 92,
             "mol_j": 93,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 93,
             "mol_j": 94,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 94,
             "mol_j": 95,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 95,
             "mol_j": 96,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 96,
             "mol_j": 97,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 97,
             "mol_j": 98,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 98,
             "mol_j": 99,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 99,
             "mol_j": 100,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 100,
             "mol_j": 101,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 101,
             "mol_j": 102,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 102,
             "mol_j": 103,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 103,
             "mol_j": 104,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 104,
             "mol_j": 105,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 105,
             "mol_j": 106,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 106,
             "mol_j": 107,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 107,
             "mol_j": 108,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 108,
             "mol_j": 109,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 110,
             "mol_j": 111,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 111,
             "mol_j": 112,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 112,
             "mol_j": 113,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 113,
             "mol_j": 114,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 114,
             "mol_j": 115,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 115,
             "mol_j": 116,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 116,
             "mol_j": 117,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 117,
             "mol_j": 118,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 118,
             "mol_j": 119,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 119,
             "mol_j": 120,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 120,
             "mol_j": 121,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 121,
             "mol_j": 122,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 122,
             "mol_j": 123,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 123,
             "mol_j": 124,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 124,
             "mol_j": 125,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 125,
             "mol_j": 126,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 126,
             "mol_j": 127,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 127,
             "mol_j": 128,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 128,
             "mol_j": 129,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 129,
             "mol_j": 130,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 130,
             "mol_j": 131,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 132,
             "mol_j": 133,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 133,
             "mol_j": 134,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 134,
             "mol_j": 135,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 135,
             "mol_j": 136,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 136,
             "mol_j": 137,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 137,
             "mol_j": 138,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 138,
             "mol_j": 139,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 139,
             "mol_j": 140,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 140,
             "mol_j": 141,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 141,
             "mol_j": 142,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 142,
             "mol_j": 143,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 143,
             "mol_j": 144,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 144,
             "mol_j": 145,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 145,
             "mol_j": 146,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 146,
             "mol_j": 147,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 147,
             "mol_j": 148,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 148,
             "mol_j": 149,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 149,
             "mol_j": 150,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 150,
             "mol_j": 151,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 151,
             "mol_j": 152,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 152,
             "mol_j": 153,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 154,
             "mol_j": 155,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 155,
             "mol_j": 156,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 156,
             "mol_j": 157,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 157,
             "mol_j": 158,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 158,
             "mol_j": 159,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 159,
             "mol_j": 160,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 160,
             "mol_j": 161,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 161,
             "mol_j": 162,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 162,
             "mol_j": 163,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 163,
             "mol_j": 164,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 164,
             "mol_j": 165,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 165,
             "mol_j": 166,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 166,
             "mol_j": 167,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 167,
             "mol_j": 168,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 168,
             "mol_j": 169,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 169,
             "mol_j": 170,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 170,
             "mol_j": 171,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 171,
             "mol_j": 172,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 172,
             "mol_j": 173,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 173,
             "mol_j": 174,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 174,
             "mol_j": 175,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 176,
             "mol_j": 177,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 177,
             "mol_j": 178,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 178,
             "mol_j": 179,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 179,
             "mol_j": 180,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 180,
             "mol_j": 181,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 181,
             "mol_j": 182,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 182,
             "mol_j": 183,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 183,
             "mol_j": 184,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 184,
             "mol_j": 185,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 185,
             "mol_j": 186,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 186,
             "mol_j": 187,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 187,
             "mol_j": 188,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 188,
             "mol_j": 189,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 189,
             "mol_j": 190,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 190,
             "mol_j": 191,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 191,
             "mol_j": 192,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 192,
             "mol_j": 193,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 193,
             "mol_j": 194,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 194,
             "mol_j": 195,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 195,
             "mol_j": 196,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 196,
             "mol_j": 197,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 198,
             "mol_j": 199,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 199,
             "mol_j": 200,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 200,
             "mol_j": 201,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 201,
             "mol_j": 202,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 202,
             "mol_j": 203,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 203,
             "mol_j": 204,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 204,
             "mol_j": 205,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 205,
             "mol_j": 206,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 206,
             "mol_j": 207,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 207,
             "mol_j": 208,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 208,
             "mol_j": 209,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 209,
             "mol_j": 210,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 210,
             "mol_j": 211,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 211,
             "mol_j": 212,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 212,
             "mol_j": 213,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 213,
             "mol_j": 214,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_T",
-            "file": "dbi_tables/bb_G_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 455.4105798695462,
+            "r0": 0.6771576413656556,
+            "name": "bb_G_T"
         },
         {
             "mol_i": 214,
             "mol_j": 215,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_T",
-            "file": "dbi_tables/bb_T_T.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 251.61496403019615,
+            "r0": 0.6199871496264373,
+            "name": "bb_T_T"
         },
         {
             "mol_i": 215,
             "mol_j": 216,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_T_A",
-            "file": "dbi_tables/bb_T_A.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 208.26349158008415,
+            "r0": 0.5882453367538572,
+            "name": "bb_T_A"
         },
         {
             "mol_i": 216,
             "mol_j": 217,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_A_G",
-            "file": "dbi_tables/bb_A_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 767.5487264616164,
+            "r0": 0.6213160141425028,
+            "name": "bb_A_G"
         },
         {
             "mol_i": 217,
             "mol_j": 218,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 218,
             "mol_j": 219,
             "site_i": 0,
             "site_j": 0,
-            "type": "tabulated",
-            "name": "bb_G_G",
-            "file": "dbi_tables/bb_G_G.tab",
-            "min": 0.01,
-            "max": 15.0
+            "type": "harmonic",
+            "k": 1550.6644271878329,
+            "r0": 0.6390391778118936,
+            "name": "bb_G_G"
         },
         {
             "mol_i": 1,
@@ -3780,2001 +3570,1801 @@
             "mol_i": 0,
             "mol_j": 1,
             "mol_k": 2,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 1,
             "mol_j": 2,
             "mol_k": 3,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 2,
             "mol_j": 3,
             "mol_k": 4,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 3,
             "mol_j": 4,
             "mol_k": 5,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 4,
             "mol_j": 5,
             "mol_k": 6,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 5,
             "mol_j": 6,
             "mol_k": 7,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 6,
             "mol_j": 7,
             "mol_k": 8,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 7,
             "mol_j": 8,
             "mol_k": 9,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 8,
             "mol_j": 9,
             "mol_k": 10,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 9,
             "mol_j": 10,
             "mol_k": 11,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 10,
             "mol_j": 11,
             "mol_k": 12,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 11,
             "mol_j": 12,
             "mol_k": 13,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 12,
             "mol_j": 13,
             "mol_k": 14,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 13,
             "mol_j": 14,
             "mol_k": 15,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 14,
             "mol_j": 15,
             "mol_k": 16,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 15,
             "mol_j": 16,
             "mol_k": 17,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 16,
             "mol_j": 17,
             "mol_k": 18,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 17,
             "mol_j": 18,
             "mol_k": 19,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 18,
             "mol_j": 19,
             "mol_k": 20,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 19,
             "mol_j": 20,
             "mol_k": 21,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 22,
             "mol_j": 23,
             "mol_k": 24,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 23,
             "mol_j": 24,
             "mol_k": 25,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 24,
             "mol_j": 25,
             "mol_k": 26,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 25,
             "mol_j": 26,
             "mol_k": 27,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 26,
             "mol_j": 27,
             "mol_k": 28,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 27,
             "mol_j": 28,
             "mol_k": 29,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 28,
             "mol_j": 29,
             "mol_k": 30,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 29,
             "mol_j": 30,
             "mol_k": 31,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 30,
             "mol_j": 31,
             "mol_k": 32,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 31,
             "mol_j": 32,
             "mol_k": 33,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 32,
             "mol_j": 33,
             "mol_k": 34,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 33,
             "mol_j": 34,
             "mol_k": 35,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 34,
             "mol_j": 35,
             "mol_k": 36,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 35,
             "mol_j": 36,
             "mol_k": 37,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 36,
             "mol_j": 37,
             "mol_k": 38,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 37,
             "mol_j": 38,
             "mol_k": 39,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 38,
             "mol_j": 39,
             "mol_k": 40,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 39,
             "mol_j": 40,
             "mol_k": 41,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 40,
             "mol_j": 41,
             "mol_k": 42,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 41,
             "mol_j": 42,
             "mol_k": 43,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 44,
             "mol_j": 45,
             "mol_k": 46,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 45,
             "mol_j": 46,
             "mol_k": 47,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 46,
             "mol_j": 47,
             "mol_k": 48,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 47,
             "mol_j": 48,
             "mol_k": 49,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 48,
             "mol_j": 49,
             "mol_k": 50,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 49,
             "mol_j": 50,
             "mol_k": 51,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 50,
             "mol_j": 51,
             "mol_k": 52,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 51,
             "mol_j": 52,
             "mol_k": 53,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 52,
             "mol_j": 53,
             "mol_k": 54,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 53,
             "mol_j": 54,
             "mol_k": 55,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 54,
             "mol_j": 55,
             "mol_k": 56,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 55,
             "mol_j": 56,
             "mol_k": 57,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 56,
             "mol_j": 57,
             "mol_k": 58,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 57,
             "mol_j": 58,
             "mol_k": 59,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 58,
             "mol_j": 59,
             "mol_k": 60,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 59,
             "mol_j": 60,
             "mol_k": 61,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 60,
             "mol_j": 61,
             "mol_k": 62,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 61,
             "mol_j": 62,
             "mol_k": 63,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 62,
             "mol_j": 63,
             "mol_k": 64,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 63,
             "mol_j": 64,
             "mol_k": 65,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 66,
             "mol_j": 67,
             "mol_k": 68,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 67,
             "mol_j": 68,
             "mol_k": 69,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 68,
             "mol_j": 69,
             "mol_k": 70,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 69,
             "mol_j": 70,
             "mol_k": 71,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 70,
             "mol_j": 71,
             "mol_k": 72,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 71,
             "mol_j": 72,
             "mol_k": 73,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 72,
             "mol_j": 73,
             "mol_k": 74,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 73,
             "mol_j": 74,
             "mol_k": 75,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 74,
             "mol_j": 75,
             "mol_k": 76,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 75,
             "mol_j": 76,
             "mol_k": 77,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 76,
             "mol_j": 77,
             "mol_k": 78,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 77,
             "mol_j": 78,
             "mol_k": 79,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 78,
             "mol_j": 79,
             "mol_k": 80,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 79,
             "mol_j": 80,
             "mol_k": 81,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 80,
             "mol_j": 81,
             "mol_k": 82,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 81,
             "mol_j": 82,
             "mol_k": 83,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 82,
             "mol_j": 83,
             "mol_k": 84,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 83,
             "mol_j": 84,
             "mol_k": 85,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 84,
             "mol_j": 85,
             "mol_k": 86,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 85,
             "mol_j": 86,
             "mol_k": 87,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 88,
             "mol_j": 89,
             "mol_k": 90,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 89,
             "mol_j": 90,
             "mol_k": 91,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 90,
             "mol_j": 91,
             "mol_k": 92,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 91,
             "mol_j": 92,
             "mol_k": 93,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 92,
             "mol_j": 93,
             "mol_k": 94,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 93,
             "mol_j": 94,
             "mol_k": 95,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 94,
             "mol_j": 95,
             "mol_k": 96,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 95,
             "mol_j": 96,
             "mol_k": 97,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 96,
             "mol_j": 97,
             "mol_k": 98,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 97,
             "mol_j": 98,
             "mol_k": 99,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 98,
             "mol_j": 99,
             "mol_k": 100,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 99,
             "mol_j": 100,
             "mol_k": 101,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 100,
             "mol_j": 101,
             "mol_k": 102,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 101,
             "mol_j": 102,
             "mol_k": 103,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 102,
             "mol_j": 103,
             "mol_k": 104,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 103,
             "mol_j": 104,
             "mol_k": 105,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 104,
             "mol_j": 105,
             "mol_k": 106,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 105,
             "mol_j": 106,
             "mol_k": 107,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 106,
             "mol_j": 107,
             "mol_k": 108,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 107,
             "mol_j": 108,
             "mol_k": 109,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 110,
             "mol_j": 111,
             "mol_k": 112,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 111,
             "mol_j": 112,
             "mol_k": 113,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 112,
             "mol_j": 113,
             "mol_k": 114,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 113,
             "mol_j": 114,
             "mol_k": 115,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 114,
             "mol_j": 115,
             "mol_k": 116,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 115,
             "mol_j": 116,
             "mol_k": 117,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 116,
             "mol_j": 117,
             "mol_k": 118,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 117,
             "mol_j": 118,
             "mol_k": 119,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 118,
             "mol_j": 119,
             "mol_k": 120,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 119,
             "mol_j": 120,
             "mol_k": 121,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 120,
             "mol_j": 121,
             "mol_k": 122,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 121,
             "mol_j": 122,
             "mol_k": 123,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 122,
             "mol_j": 123,
             "mol_k": 124,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 123,
             "mol_j": 124,
             "mol_k": 125,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 124,
             "mol_j": 125,
             "mol_k": 126,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 125,
             "mol_j": 126,
             "mol_k": 127,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 126,
             "mol_j": 127,
             "mol_k": 128,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 127,
             "mol_j": 128,
             "mol_k": 129,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 128,
             "mol_j": 129,
             "mol_k": 130,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 129,
             "mol_j": 130,
             "mol_k": 131,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 132,
             "mol_j": 133,
             "mol_k": 134,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 133,
             "mol_j": 134,
             "mol_k": 135,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 134,
             "mol_j": 135,
             "mol_k": 136,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 135,
             "mol_j": 136,
             "mol_k": 137,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 136,
             "mol_j": 137,
             "mol_k": 138,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 137,
             "mol_j": 138,
             "mol_k": 139,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 138,
             "mol_j": 139,
             "mol_k": 140,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 139,
             "mol_j": 140,
             "mol_k": 141,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 140,
             "mol_j": 141,
             "mol_k": 142,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 141,
             "mol_j": 142,
             "mol_k": 143,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 142,
             "mol_j": 143,
             "mol_k": 144,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 143,
             "mol_j": 144,
             "mol_k": 145,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 144,
             "mol_j": 145,
             "mol_k": 146,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 145,
             "mol_j": 146,
             "mol_k": 147,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 146,
             "mol_j": 147,
             "mol_k": 148,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 147,
             "mol_j": 148,
             "mol_k": 149,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 148,
             "mol_j": 149,
             "mol_k": 150,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 149,
             "mol_j": 150,
             "mol_k": 151,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 150,
             "mol_j": 151,
             "mol_k": 152,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 151,
             "mol_j": 152,
             "mol_k": 153,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 154,
             "mol_j": 155,
             "mol_k": 156,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 155,
             "mol_j": 156,
             "mol_k": 157,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 156,
             "mol_j": 157,
             "mol_k": 158,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 157,
             "mol_j": 158,
             "mol_k": 159,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 158,
             "mol_j": 159,
             "mol_k": 160,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 159,
             "mol_j": 160,
             "mol_k": 161,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 160,
             "mol_j": 161,
             "mol_k": 162,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 161,
             "mol_j": 162,
             "mol_k": 163,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 162,
             "mol_j": 163,
             "mol_k": 164,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 163,
             "mol_j": 164,
             "mol_k": 165,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 164,
             "mol_j": 165,
             "mol_k": 166,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 165,
             "mol_j": 166,
             "mol_k": 167,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 166,
             "mol_j": 167,
             "mol_k": 168,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 167,
             "mol_j": 168,
             "mol_k": 169,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 168,
             "mol_j": 169,
             "mol_k": 170,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 169,
             "mol_j": 170,
             "mol_k": 171,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 170,
             "mol_j": 171,
             "mol_k": 172,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 171,
             "mol_j": 172,
             "mol_k": 173,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 172,
             "mol_j": 173,
             "mol_k": 174,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 173,
             "mol_j": 174,
             "mol_k": 175,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 176,
             "mol_j": 177,
             "mol_k": 178,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 177,
             "mol_j": 178,
             "mol_k": 179,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 178,
             "mol_j": 179,
             "mol_k": 180,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 179,
             "mol_j": 180,
             "mol_k": 181,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 180,
             "mol_j": 181,
             "mol_k": 182,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 181,
             "mol_j": 182,
             "mol_k": 183,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 182,
             "mol_j": 183,
             "mol_k": 184,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 183,
             "mol_j": 184,
             "mol_k": 185,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 184,
             "mol_j": 185,
             "mol_k": 186,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 185,
             "mol_j": 186,
             "mol_k": 187,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 186,
             "mol_j": 187,
             "mol_k": 188,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 187,
             "mol_j": 188,
             "mol_k": 189,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 188,
             "mol_j": 189,
             "mol_k": 190,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 189,
             "mol_j": 190,
             "mol_k": 191,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 190,
             "mol_j": 191,
             "mol_k": 192,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 191,
             "mol_j": 192,
             "mol_k": 193,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 192,
             "mol_j": 193,
             "mol_k": 194,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 193,
             "mol_j": 194,
             "mol_k": 195,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 194,
             "mol_j": 195,
             "mol_k": 196,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 195,
             "mol_j": 196,
             "mol_k": 197,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 198,
             "mol_j": 199,
             "mol_k": 200,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 199,
             "mol_j": 200,
             "mol_k": 201,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 200,
             "mol_j": 201,
             "mol_k": 202,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 201,
             "mol_j": 202,
             "mol_k": 203,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 202,
             "mol_j": 203,
             "mol_k": 204,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 203,
             "mol_j": 204,
             "mol_k": 205,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 204,
             "mol_j": 205,
             "mol_k": 206,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 205,
             "mol_j": 206,
             "mol_k": 207,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 206,
             "mol_j": 207,
             "mol_k": 208,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 207,
             "mol_j": 208,
             "mol_k": 209,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 208,
             "mol_j": 209,
             "mol_k": 210,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 209,
             "mol_j": 210,
             "mol_k": 211,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 210,
             "mol_j": 211,
             "mol_k": 212,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 211,
             "mol_j": 212,
             "mol_k": 213,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         },
         {
             "mol_i": 212,
             "mol_j": 213,
             "mol_k": 214,
-            "type": "tabulated",
-            "name": "ang_G_G_T",
-            "file": "dbi_tables/ang_G_G_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 63.948786547316075,
+            "theta0": 2.7218681228061947,
+            "name": "ang_G_G_T"
         },
         {
             "mol_i": 213,
             "mol_j": 214,
             "mol_k": 215,
-            "type": "tabulated",
-            "name": "ang_G_T_T",
-            "file": "dbi_tables/ang_G_T_T.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 28.730506019246224,
+            "theta0": 1.2773579619941275,
+            "name": "ang_G_T_T"
         },
         {
             "mol_i": 214,
             "mol_j": 215,
             "mol_k": 216,
-            "type": "tabulated",
-            "name": "ang_T_T_A",
-            "file": "dbi_tables/ang_T_T_A.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 7.703751285635553,
+            "theta0": 2.1539301319915687,
+            "name": "ang_T_T_A"
         },
         {
             "mol_i": 215,
             "mol_j": 216,
             "mol_k": 217,
-            "type": "tabulated",
-            "name": "ang_T_A_G",
-            "file": "dbi_tables/ang_T_A_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 15.50542300929653,
+            "theta0": 2.1417917191902016,
+            "name": "ang_T_A_G"
         },
         {
             "mol_i": 216,
             "mol_j": 217,
             "mol_k": 218,
-            "type": "tabulated",
-            "name": "ang_A_G_G",
-            "file": "dbi_tables/ang_A_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 52.62910111422418,
+            "theta0": 2.595801498935296,
+            "name": "ang_A_G_G"
         },
         {
             "mol_i": 217,
             "mol_j": 218,
             "mol_k": 219,
-            "type": "tabulated",
-            "name": "ang_G_G_G",
-            "file": "dbi_tables/ang_G_G_G.tab",
-            "min": 0.0,
-            "max": 3.141592653589793
+            "type": "harmonic",
+            "k": 71.50208561850846,
+            "theta0": 2.665409078005291,
+            "name": "ang_G_G_G"
         }
     ],
     "dihedrals": []

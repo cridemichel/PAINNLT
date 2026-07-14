@@ -14,7 +14,6 @@ fi
     --traj md_whole.trr \
     --topol md.gro \
     --config tel22_topology.json \
-    --dbi \
     --output tel22_dataset.bin
 
 echo "Dataset tel22_dataset.bin generato con successo."
