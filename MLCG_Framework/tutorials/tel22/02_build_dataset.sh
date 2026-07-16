@@ -11,9 +11,10 @@ if [ ! -f "md.trr" ] || [ ! -f "md.gro" ]; then
 fi
 
 /Users/demichel/PYTHON/bin/python ../../preprocessing/build_cg_dataset.py \
-    --traj md_whole.trr \
-    --topol md.gro \
+    --topology md.gro \
+    --trajectory md_whole.trr \
     --config tel22_topology.json \
+    --dbi \
     --output tel22_dataset.bin
 
 echo "Dataset tel22_dataset.bin generato con successo."
