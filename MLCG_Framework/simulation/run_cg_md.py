@@ -95,6 +95,22 @@ with open(args.dataset, "rb") as f:
             p_vs.vs_auto_relate_to(p_com.id)
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
+print("[INFO] Setting up WCA exclusions (1-2 and 1-3)...")
+wca_exclusions = set()
+for b in priors.get("bonds", []):
+    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
+    wca_exclusions.add((m1, m2))
+for a in priors.get("angles", []):
+    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
+    wca_exclusions.add((m1, m2))
+
+for (m1, m2) in wca_exclusions:
+    m1_parts = [mol_com_parts[m1]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m1]
+    m2_parts = [mol_com_parts[m2]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m2]
+    for p1 in m1_parts:
+        for p2 in m2_parts:
+            system.part.by_id(p1).add_exclusion(p2)
+
 if args.checkpoint:
     print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")
     chk = np.load(args.checkpoint)
