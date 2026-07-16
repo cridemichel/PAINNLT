@@ -246,23 +246,28 @@ espressomd.painn.activate_painn_potential(
 )
 
 print("[INFO] Phase 1: Warmup with Force Capping...")
-# Use force capping to prevent blowups from initial overlapping conformations.
-# Steepest Descent is avoided because it does not properly handle virtual sites/rigid body rotations.
 system.force_cap = 500.0
 system.time_step = 0.0001
 system.thermostat.set_langevin(kT=args.kT, gamma=100.0, seed=42)
-for step in range(50):
-    system.integrator.run(100)
-    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
+for step in range(5):
+    system.integrator.run(20)
+    print(f"\r[INFO] Phase 1 Progress: {(step+1)*20}/100 steps", end="", flush=True)
 print()
+
+max_f = max(np.linalg.norm(p.f) for p in system.part)
+print(f"[DEBUG] Max force in system at end of Phase 1: {max_f:.2f}")
+p1 = system.part.by_id(1027).pos
+p2 = system.part.by_id(1034).pos
+dist = np.linalg.norm(np.array(p1) - np.array(p2))
+print(f"[DEBUG] Distance between 1027 and 1034: {dist:.4f} nm")
 
 print("[INFO] Phase 2: Warmup without Force Capping...")
 system.force_cap = 0.0  # Disable force capping
 system.time_step = 0.001
 system.thermostat.set_langevin(kT=args.kT, gamma=10.0, seed=42)
-for step in range(50):
-    system.integrator.run(100)
-    print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
+for step in range(1):
+    system.integrator.run(10)
+    print(f"\r[INFO] Phase 2 Progress: {(step+1)*10}/10 steps", end="", flush=True)
 print()
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
 pos = []
