@@ -5,6 +5,6 @@
     "num_rbf": 30,
     "cutoff": 0.5,
     "learning_rate": 0.0005,
-    "epochs": 20,
+    "epochs": 100,
     "batch_size": 16
 }
