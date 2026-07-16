@@ -84,9 +84,28 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
         "site_types": {
             "CG_CH3": 0, "CG_CH2": 1, "CG_OH": 2
         }
+    },
+    "rigid_bodies": {
+        "ETH": {
+            "auto_align_sites": true,
+            "sites": {
+                "CG_CH3": {"type": 0, "relative_pos_nm": [0.0, 0.0, 0.0]},
+                "CG_CH2": {"type": 1, "relative_pos_nm": [0.15, 0.0, 0.0]},
+                "CG_OH":  {"type": 2, "relative_pos_nm": [0.25, 0.1, 0.0]}
+            }
+        }
     }
 }
 ```
+
+> [!IMPORTANT]
+> **Rigid Bodies and Kabsch Auto-Alignment**
+> If you define `"rigid_bodies"` in your topology, the script will map those molecules into ESPResSo Rigid Bodies (composed of a central particle with real mass/inertia and virtual sites).
+> 
+> By default (`"auto_align_sites": true`), the `build_cg_dataset.py` script computes the ideal "average" geometry of these sites by extracting all snapshots from the GROMACS trajectory and aligning them with the **Kabsch algorithm**. The resulting geometries are saved in `rigid_bodies_info.json`.
+> During dataset generation (Pass 2), the script uses this exact Kabsch rotation to mathematically reconstruct the ideal rigid sites on every frame before evaluating the prior forces (WCA/DBI/Harmonic). This guarantees **strict physical consistency** with ESPResSo (which does not deform rigid bodies), preventing the ML model from learning massive, unphysical counter-forces caused by instantaneous thermal vibrations.
+> 
+> If you prefer to manually provide the perfect ideal coordinates (e.g. from a PDB) and don't want the script to overwrite them with the trajectory average, set `"auto_align_sites": false`. The script will exactly use the `relative_pos_nm` you typed in the JSON!
 
 #### Advanced Physics: Virtual Sites, Mass Scaling, and WCA Mixing
 The framework introduces a rigid-body structure to accurately map complex molecules.

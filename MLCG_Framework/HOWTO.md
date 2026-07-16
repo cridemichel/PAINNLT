@@ -84,9 +84,28 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
         "site_types": {
             "CG_CH3": 0, "CG_CH2": 1, "CG_OH": 2
         }
+    },
+    "rigid_bodies": {
+        "ETH": {
+            "auto_align_sites": true,
+            "sites": {
+                "CG_CH3": {"type": 0, "relative_pos_nm": [0.0, 0.0, 0.0]},
+                "CG_CH2": {"type": 1, "relative_pos_nm": [0.15, 0.0, 0.0]},
+                "CG_OH":  {"type": 2, "relative_pos_nm": [0.25, 0.1, 0.0]}
+            }
+        }
     }
 }
 ```
+
+> [!IMPORTANT]
+> **Corpi Rigidi e Auto-Allineamento (Algoritmo di Kabsch)**
+> Se definisci `"rigid_bodies"` nella tua topologia, lo script mapperà quelle molecole come Corpi Rigidi in ESPResSo (composti da una particella centrale con massa/inerzia reali e siti virtuali).
+> 
+> Di default (`"auto_align_sites": true`), lo script `build_cg_dataset.py` calcola la geometria "media" ideale di questi siti estraendo tutti gli snapshot dalla traiettoria GROMACS e allineandoli usando l'**Algoritmo di Kabsch**. Le geometrie risultanti vengono salvate in `rigid_bodies_info.json`.
+> Durante la generazione del dataset (Pass 2), lo script usa esattamente questa rotazione di Kabsch per ricostruire matematicamente i siti rigidi ideali su ogni frame prima di valutare le forze prior (WCA/DBI/Harmonic). Questo garantisce una **rigorosa consistenza fisica** con ESPResSo (che non deforma i corpi rigidi), impedendo al modello ML di imparare contro-forze enormi e non fisiche causate dalle vibrazioni termiche istantanee.
+> 
+> Se preferisci fornire manualmente le coordinate ideali perfette (es. da un PDB) e non vuoi che lo script le sovrascriva con la media della traiettoria, imposta `"auto_align_sites": false`. Lo script utilizzerà esattamente le `relative_pos_nm` che hai digitato nel JSON!
 
 #### Fisica Avanzata: Virtual Sites, Mass Scaling e Mixing WCA
 Il framework introduce una struttura a corpi rigidi per mappare accuratamente molecole complesse.
