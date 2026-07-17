@@ -309,12 +309,12 @@ for pair in [(279, 286), (835, 842)]:
     d = system.distance(p1, p2)
     print(f"[DEBUG BEFORE PHASE 2] {pair}: dist={d:.4f} nm", flush=True)
 
-print("[INFO] Phase 2: Warmup with small timestep...", flush=True)
-system.force_cap = 0 # MUST BE 0 so WCA can fight ML Potential!
-system.time_step = 0.0001 # Extremely small timestep for stability
-for step in range(100):
+print("[INFO] Phase 2: Warmup with Force Capping...", flush=True)
+system.force_cap = 1000.0
+system.time_step = 0.001
+for step in range(50):
     system.integrator.run(100)
-    print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/10000 steps", end="", flush=True)
+    print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
 print(flush=True)
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
 pos = []
