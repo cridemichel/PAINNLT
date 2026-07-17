@@ -130,6 +130,12 @@ if wca.get("epsilon", 0.0) > 0 and wca.get("sigma", 0.0) > 0:
                 cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
             )
 
+# Add safety hard-core WCA between all COMs to prevent collapse (r < 0.112 nm)
+system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
+    epsilon=100.0, sigma=0.1,
+    cutoff=0.1 * (2.0**(1/6)), shift="auto"
+)
+
 # Bonds (Harmonic, FENE, Morse)
 for idx, b in enumerate(priors.get("bonds", [])):
     b_type = b.get("type", "harmonic")
@@ -261,16 +267,15 @@ espressomd.painn.activate_painn_potential(
     device=args.device
 )
 
-print("[INFO] Phase 1: Warmup with Force Capping...")
-system.force_cap = 500.0
-system.time_step = 0.0001
-system.thermostat.set_langevin(kT=args.kT, gamma=100.0, seed=42)
+print("[INFO] Phase 1: Warmup with Steepest Descent...")
+system.integrator.set_steepest_descent(f_max=0.0, gamma=50.0, max_displacement=0.005)
 for step in range(50):
     system.integrator.run(100)
     print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
 print()
 
-max_f = max(np.linalg.norm(p.f) for p in system.part)
+system.integrator.set_vv()
+max_f = system.analysis.calc_force_cap() if hasattr(system.analysis, "calc_force_cap") else 0
 print(f"[DEBUG] Max force in system at end of Phase 1: {max_f:.2f}")
 p1 = system.part.by_id(1027).pos
 p2 = system.part.by_id(1034).pos
@@ -280,7 +285,7 @@ print(f"[DEBUG] Distance between 1027 and 1034: {dist:.4f} nm")
 print("[INFO] Phase 2: Warmup without Force Capping...")
 system.force_cap = 0.0  # Disable force capping
 system.time_step = 0.001
-system.thermostat.set_langevin(kT=args.kT, gamma=10.0, seed=42)
+system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
 for step in range(50):
     system.integrator.run(100)
     print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/5000 steps", end="", flush=True)

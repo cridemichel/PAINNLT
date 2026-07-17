@@ -38,7 +38,7 @@ system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
 # Set temperature using the provided kT argument
-system.thermostat.set_langevin(kT=args.kT, gamma=10.0, seed=42)
+system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
@@ -154,6 +154,12 @@ if wca.get("epsilon", 0.0) > 0 and wca.get("sigma", 0.0) > 0:
                 epsilon=eps_mix, sigma=sigma_mix,
                 cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
             )
+
+# Add safety hard-core WCA between all COMs to prevent collapse (r < 0.112 nm)
+system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
+    epsilon=100.0, sigma=0.1,
+    cutoff=0.1 * (2.0**(1/6)), shift="auto"
+)
 
 # Bonds (Harmonic, FENE, Morse)
 for idx, b in enumerate(priors.get("bonds", [])):
