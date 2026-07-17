@@ -38,7 +38,8 @@ system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
 # Set temperature using the provided kT argument
-system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
+system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+system.force_cap = 100.0
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
