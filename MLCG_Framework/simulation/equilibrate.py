@@ -144,9 +144,8 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "fene":
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
     elif b_type == "morse":
-        # ESPResSo does not have a native MorseBond, so we create a tabulated bond
-        import numpy as np
-        rmin_tab = 0.01
+        # We model Morse as tabulated to allow large r without breaking FENE limits
+        rmin_tab = 0.001
         rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
         r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
         
@@ -156,9 +155,6 @@ for idx, b in enumerate(priors.get("bonds", [])):
         energy = b["D"] * (1.0 - exp_term)**2
         force = -2.0 * b["a"] * b["D"] * (1.0 - exp_term) * exp_term
         
-        # Cap forces to avoid integrator explosions near the steep repulsive wall
-        force = np.clip(force, -10000.0, 10000.0)
-        
         bond = espressomd.interactions.TabulatedDistance(
             min=rmin_tab, max=rmax_tab, energy=energy, force=force
         )
@@ -166,8 +162,12 @@ for idx, b in enumerate(priors.get("bonds", [])):
         data = np.loadtxt(b["file"])
         rmin_tab = float(b["min"])
         rmax_tab = float(b["max"])
+        r_vals = data[:, 0]
+        energy = data[:, 1]
+        force = data[:, 2]
+        
         bond = espressomd.interactions.TabulatedDistance(
-            min=rmin_tab, max=rmax_tab, energy=data[:, 1], force=data[:, 2]
+            min=rmin_tab, max=rmax_tab, energy=energy, force=force
         )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
@@ -268,28 +268,33 @@ espressomd.painn.activate_painn_potential(
 )
 
 print("[INFO] Phase 1: Warmup with Steepest Descent...")
-system.integrator.set_steepest_descent(f_max=0.0, gamma=50.0, max_displacement=0.005)
+system.integrator.set_steepest_descent(f_max=0, gamma=10.0, max_displacement=0.001)
 for step in range(50):
     system.integrator.run(100)
     print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
-print()
+print(flush=True)
 
 system.integrator.set_vv()
 max_f = system.analysis.calc_force_cap() if hasattr(system.analysis, "calc_force_cap") else 0
-print(f"[DEBUG] Max force in system at end of Phase 1: {max_f:.2f}")
-p1 = system.part.by_id(1027).pos
-p2 = system.part.by_id(1034).pos
-dist = np.linalg.norm(np.array(p1) - np.array(p2))
-print(f"[DEBUG] Distance between 1027 and 1034: {dist:.4f} nm")
+print(f"[DEBUG] Max force in system at end of Phase 1: {max_f:.2f}", flush=True)
 
-print("[INFO] Phase 2: Warmup without Force Capping...")
-system.force_cap = 0.0  # Disable force capping
+# Don't try to access specific particle positions if they don't exist in all datasets
+try:
+    p1 = system.part.by_id(1027).pos
+    p2 = system.part.by_id(1034).pos
+    dist = np.linalg.norm(np.array(p1) - np.array(p2))
+    print(f"[DEBUG] Distance between 1027 and 1034: {dist:.4f} nm", flush=True)
+except:
+    pass
+
+print("[INFO] Phase 2: Warmup with Force Capping...", flush=True)
+system.force_cap = 1000.0  # Enable force capping to prevent image box overflow
 system.time_step = 0.001
 system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
 for step in range(50):
     system.integrator.run(100)
     print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
-print()
+print(flush=True)
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
 pos = []
 vel = []

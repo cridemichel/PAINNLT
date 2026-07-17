@@ -169,9 +169,8 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "fene":
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
     elif b_type == "morse":
-        # ESPResSo does not have a native MorseBond, so we create a tabulated bond
-        import numpy as np
-        rmin_tab = 0.01
+        # We model Morse as tabulated to allow large r without breaking FENE limits
+        rmin_tab = 0.001
         rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
         r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
         
@@ -181,9 +180,6 @@ for idx, b in enumerate(priors.get("bonds", [])):
         energy = b["D"] * (1.0 - exp_term)**2
         force = -2.0 * b["a"] * b["D"] * (1.0 - exp_term) * exp_term
         
-        # Cap forces to avoid integrator explosions near the steep repulsive wall
-        force = np.clip(force, -10000.0, 10000.0)
-        
         bond = espressomd.interactions.TabulatedDistance(
             min=rmin_tab, max=rmax_tab, energy=energy, force=force
         )
@@ -191,8 +187,12 @@ for idx, b in enumerate(priors.get("bonds", [])):
         data = np.loadtxt(b["file"])
         rmin_tab = float(b["min"])
         rmax_tab = float(b["max"])
+        r_vals = data[:, 0]
+        energy = data[:, 1]
+        force = data[:, 2]
+        
         bond = espressomd.interactions.TabulatedDistance(
-            min=rmin_tab, max=rmax_tab, energy=data[:, 1], force=data[:, 2]
+            min=rmin_tab, max=rmax_tab, energy=energy, force=force
         )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
