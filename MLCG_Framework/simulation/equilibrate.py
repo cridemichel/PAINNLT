@@ -250,11 +250,34 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
-print("[INFO] Setting up dummy interactions for Verlet lists...")
+print("[INFO] Setting up WCA non-bonded interactions to prevent particle collapse...")
+import math
+wca = priors.get("wca", {})
+wca_sigma = wca.get("sigma", 0.3)
+wca_eps = wca.get("epsilon", 1.0)
+overrides = wca.get("overrides", {})
+
+if wca_eps > 0 and wca_sigma > 0:
+    for i in range(nn_config["num_species"]):
+        sigma_i = overrides.get(str(i), {}).get("sigma", wca_sigma)
+        eps_i = overrides.get(str(i), {}).get("epsilon", wca_eps)
+        for j in range(i, nn_config["num_species"]):
+            sigma_j = overrides.get(str(j), {}).get("sigma", wca_sigma)
+            eps_j = overrides.get(str(j), {}).get("epsilon", wca_eps)
+            sigma_mix = (sigma_i + sigma_j) / 2.0
+            eps_mix = math.sqrt(eps_i * eps_j)
+            
+            system.non_bonded_inter[1+i, 1+j].lennard_jones.set_params(
+                epsilon=eps_mix, sigma=sigma_mix,
+                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
+            )
+
+# Add dummy soft_sphere to ensure Verlet lists include all other types
 for i in range(nn_config["num_species"] + 2):
     for j in range(i, nn_config["num_species"] + 2):
-        system.non_bonded_inter[i, j].soft_sphere.set_params(
-            a=0.0, n=1, cutoff=5.0, offset=0.0)
+        if not (1 <= i <= nn_config["num_species"] and 1 <= j <= nn_config["num_species"]):
+            system.non_bonded_inter[i, j].soft_sphere.set_params(
+                a=0.0, n=1, cutoff=5.0, offset=0.0)
 
 print("[INFO] Activating ML Potential...")
 espressomd.painn.activate_painn_potential(
@@ -275,25 +298,23 @@ for step in range(50):
 print(flush=True)
 
 system.integrator.set_vv()
-max_f = system.analysis.calc_force_cap() if hasattr(system.analysis, "calc_force_cap") else 0
-print(f"[DEBUG] Max force in system at end of Phase 1: {max_f:.2f}", flush=True)
-
-# Don't try to access specific particle positions if they don't exist in all datasets
-try:
-    p1 = system.part.by_id(1027).pos
-    p2 = system.part.by_id(1034).pos
-    dist = np.linalg.norm(np.array(p1) - np.array(p2))
-    print(f"[DEBUG] Distance between 1027 and 1034: {dist:.4f} nm", flush=True)
-except:
-    pass
-
-print("[INFO] Phase 2: Warmup with Force Capping...", flush=True)
-system.force_cap = 1000.0  # Enable force capping to prevent image box overflow
+system.force_cap = 1000.0
 system.time_step = 0.001
 system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
-for step in range(50):
+
+import sys
+for pair in [(279, 286), (835, 842)]:
+    p1 = system.part.by_id(pair[0])
+    p2 = system.part.by_id(pair[1])
+    d = system.distance(p1, p2)
+    print(f"[DEBUG BEFORE PHASE 2] {pair}: dist={d:.4f} nm", flush=True)
+
+print("[INFO] Phase 2: Warmup with small timestep...", flush=True)
+system.force_cap = 0 # MUST BE 0 so WCA can fight ML Potential!
+system.time_step = 0.0001 # Extremely small timestep for stability
+for step in range(100):
     system.integrator.run(100)
-    print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
+    print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/10000 steps", end="", flush=True)
 print(flush=True)
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
 pos = []
