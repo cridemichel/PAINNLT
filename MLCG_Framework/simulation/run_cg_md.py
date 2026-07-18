@@ -37,9 +37,10 @@ print("[INFO] Initializing ESPResSo system...")
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
-# Set temperature using the provided kT argument
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
-system.force_cap = 100.0
+
+
+print(f"[INFO] Running {args.steps} integration steps...")
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
@@ -94,23 +95,37 @@ with open(args.dataset, "rb") as f:
             p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5])
             p_vs.virtual = True
             p_vs.vs_auto_relate_to(p_com.id)
+            p_vs.gamma = 0.0
+            p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
-print("[INFO] Setting up WCA exclusions (1-2 and 1-3)...")
+print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
 wca_exclusions = set()
-for b in priors.get("bonds", []):
-    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
-    wca_exclusions.add((m1, m2))
-for a in priors.get("angles", []):
-    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
-    wca_exclusions.add((m1, m2))
 
-for (m1, m2) in wca_exclusions:
-    m1_parts = [mol_com_parts[m1]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m1]
-    m2_parts = [mol_com_parts[m2]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m2]
-    for p1 in m1_parts:
-        for p2 in m2_parts:
-            system.part.by_id(p1).add_exclusion(p2)
+# IMPORTANT: Exclude WCA between ALL virtual sites within the SAME rigid body!
+# In fact, exclude all sites within the same molecule from WCA to be safe,
+# or at least all sites within the same rigid body.
+mol_to_vs = {}
+for (m_idx, s_idx), pid in mol_vs_parts.items():
+    if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
+        if m_idx not in mol_to_vs:
+            mol_to_vs[m_idx] = []
+        mol_to_vs[m_idx].append(pid)
+
+for m_idx, pids in mol_to_vs.items():
+    for i in range(len(pids)):
+        for j in range(i + 1, len(pids)):
+            p1 = system.part.by_id(pids[i])
+            p2 = system.part.by_id(pids[j])
+            p1.add_exclusion(p2)
+
+for ex in wca_exclusions:
+    try:
+        p1 = system.part.by_id(mol_vs_parts.get(ex[0], ex[0]))
+        p2 = system.part.by_id(mol_vs_parts.get(ex[1], ex[1]))
+        p1.add_exclusion(p2)
+    except Exception:
+        continue
 
 if args.checkpoint:
     print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")
@@ -293,9 +308,12 @@ espressomd.painn.activate_painn_potential(
     device=args.device
 )
 
-import espressomd.io.writer.vtf
+system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
+import sys
+import espressomd.io.writer.vtf
 print(f"[INFO] Running {args.steps} integration steps...")
+
 with open("energy.csv", "w") as f_out:
     f_out.write("Step,E_tot,E_kin\n")
 vtf_filename = "cg_trajectory.vtf"
@@ -313,17 +331,41 @@ with open(vtf_filename, "w") as vtf_file:
     num_chunks = args.steps // chunk_size
     for step in range(num_chunks):
         system.integrator.run(chunk_size)
-        espressomd.io.writer.vtf.writevcf(system, vtf_file)
+        energies = system.analysis.energy()
         
-        energy = system.analysis.energy()
-        step_val = step * chunk_size
-        e_tot = energy['total']
-        e_kin = energy['kinetic']
-        print(f"\r[INFO] Step {step_val}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f}", end="", flush=True)
+        # Only print the full breakdown on the first step
+        if step == 0:
+            print(f"[DEBUG] Energy Breakdown at Step 0:")
+            for key, val in energies.items():
+                print(f"  {key}: {val}")
+                
+        e_tot = energies["total"]
+        e_kin = energies["kinetic"]
         
-        # Salviamo le energie in un file CSV per poterle graficare e controllare il surriscaldamento
+        # Calculate E_kin explicitly for COM
+        e_kin_trans = 0.0
+        e_kin_rot = 0.0
+        e_kin_vs = 0.0
+        for p in system.part:
+            v_sq = sum(v**2 for v in p.v)
+            omega_sq = sum(w**2 for w in p.omega_body)
+            k_trans = 0.5 * p.mass * v_sq
+            k_rot = 0.5 * sum(I * w**2 for I, w in zip(p.rinertia, p.omega_body))
+            if p.mass < 1e-4:
+                e_kin_vs += k_trans + k_rot
+            else:
+                e_kin_trans += k_trans
+                e_kin_rot += k_rot
+
         with open("energy.csv", "a") as f_out:
-            f_out.write(f"{step_val},{e_tot:.4f},{e_kin:.4f}\n")
+            f_out.write(f"{step*chunk_size},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
+        
+        max_f = max([sum([f_c**2 for f_c in p.f])**0.5 for p in system.part])
+        max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
+        
+        print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
+        vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
+        espressomd.io.writer.vtf.writevcf(system, vtf_file)
 
 print("\n[INFO] Simulation finished successfully.")
 

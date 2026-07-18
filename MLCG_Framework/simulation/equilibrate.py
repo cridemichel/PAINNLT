@@ -309,13 +309,29 @@ for pair in [(279, 286), (835, 842)]:
     d = system.distance(p1, p2)
     print(f"[DEBUG BEFORE PHASE 2] {pair}: dist={d:.4f} nm", flush=True)
 
-print("[INFO] Phase 2: Warmup with Force Capping...", flush=True)
-system.force_cap = 1000.0
+print("[INFO] Phase 2: Warm-up con force-capping per rilassare i gradi di libertà rotazionali...", flush=True)
+system.force_cap = 500.0
+# Aumentiamo la frizione per dissipare velocemente l'energia rotazionale accumulata
+system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
 system.time_step = 0.001
-for step in range(50):
-    system.integrator.run(100)
-    print(f"\r[INFO] Phase 2 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
+
+for warmup_step in range(20):
+    system.integrator.run(50)
+    # Aumentiamo gradualmente il cap
+    system.force_cap = 500.0 + warmup_step * 50.0
+    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*50}/1000 steps", end="", flush=True)
 print(flush=True)
+
+# Rimuoviamo il force_cap e resettiamo la frizione
+system.force_cap = 0
+system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+
+print("[INFO] Warm-up terminato. Azzeramento delle velocità residue prima del salvataggio...")
+for p in system.part:
+    if p.mass > 1e-4:
+        p.v = [0.0, 0.0, 0.0]
+        p.omega_body = [0.0, 0.0, 0.0]
+
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
 pos = []
 vel = []
