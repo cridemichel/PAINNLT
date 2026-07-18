@@ -281,9 +281,9 @@ for i in range(nn_config["num_species"] + 2):
 
 print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
 system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
-for step in range(50):
+for step in range(100):
     system.integrator.run(100)
-    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
+    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/10000 steps", end="", flush=True)
 print(flush=True)
 
 system.integrator.set_vv()
@@ -295,10 +295,10 @@ system.force_cap = 500.0
 system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
 system.time_step = 0.0001
 
-for warmup_step in range(40):
-    system.integrator.run(50)
-    system.force_cap = 500.0 + warmup_step * 25.0
-    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*50}/2000 steps", end="", flush=True)
+for warmup_step in range(400):
+    system.integrator.run(100)
+    system.force_cap = 500.0 + warmup_step * 2.5
+    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*100}/40000 steps", end="", flush=True)
 print(flush=True)
 
 system.force_cap = 0

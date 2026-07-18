@@ -1,25 +1,25 @@
 {
     "temperature": 300.0,
-    "wca_sigma": 0.1,
+    "wca_sigma": 0.22,
     "wca_epsilon": 1.0,
     "wca_overrides": {
         "2": {
-            "sigma": 0.1
+            "sigma": 0.22
         },
         "3": {
-            "sigma": 0.1
+            "sigma": 0.22
         },
         "4": {
-            "sigma": 0.1
+            "sigma": 0.22
         },
         "5": {
-            "sigma": 0.1
+            "sigma": 0.22
         },
         "6": {
-            "sigma": 0.1
+            "sigma": 0.22
         },
         "7": {
-            "sigma": 0.1
+            "sigma": 0.22
         }
     },
     "mapping": {

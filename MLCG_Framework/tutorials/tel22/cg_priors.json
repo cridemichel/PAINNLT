@@ -3752,26 +3752,26 @@
         }
     ],
     "wca": {
-        "sigma": 0.3,
+        "sigma": 0.22,
         "epsilon": 1.0,
         "overrides": {
             "2": {
-                "sigma": 0.45
+                "sigma": 0.22
             },
             "3": {
-                "sigma": 0.45
+                "sigma": 0.22
             },
             "4": {
-                "sigma": 0.45
+                "sigma": 0.22
             },
             "5": {
-                "sigma": 0.45
+                "sigma": 0.22
             },
             "6": {
-                "sigma": 0.45
+                "sigma": 0.22
             },
             "7": {
-                "sigma": 0.45
+                "sigma": 0.22
             }
         }
     },
