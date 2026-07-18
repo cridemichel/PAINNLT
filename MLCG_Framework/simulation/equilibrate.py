@@ -16,8 +16,9 @@ parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--out_checkpoint", type=str, default="equilibrated.npz", help="Output checkpoint file")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
+parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps for Phase 1 Steepest Descent (default 5000)")
+parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 Classical MD Warmup (default 2000)")
 args = parser.parse_args()
-
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
     nn_config = json.load(f)
@@ -281,9 +282,10 @@ for i in range(nn_config["num_species"] + 2):
 
 print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
 system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
-for step in range(100):
+sd_loops = max(1, args.steps_sd // 100)
+for step in range(sd_loops):
     system.integrator.run(100)
-    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/10000 steps", end="", flush=True)
+    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/{args.steps_sd} steps", end="", flush=True)
 print(flush=True)
 
 system.integrator.set_vv()
@@ -295,10 +297,11 @@ system.force_cap = 500.0
 system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
 system.time_step = 0.0001
 
-for warmup_step in range(400):
+md_loops = max(1, args.steps_md // 100)
+for warmup_step in range(md_loops):
     system.integrator.run(100)
     system.force_cap = 500.0 + warmup_step * 2.5
-    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*100}/40000 steps", end="", flush=True)
+    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*100}/{args.steps_md} steps", end="", flush=True)
 print(flush=True)
 
 system.force_cap = 0
