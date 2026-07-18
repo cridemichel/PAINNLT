@@ -115,6 +115,20 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
 > 
 > Se preferisci fornire manualmente le coordinate ideali perfette (es. da un PDB) e non vuoi che lo script le sovrascriva con la media della traiettoria, imposta `"auto_align_sites": false`. Lo script utilizzerà esattamente le `relative_pos_nm` che hai digitato nel JSON!
 
+### 1.2 Scelta dell'Architettura Termodinamica (Priors vs ML)
+
+Il framework supporta tre diverse filosofie di Coarse-Graining. La scelta dipende dal tipo di sistema e dal bilanciamento desiderato tra stabilità numerica e accuratezza:
+
+1. **Puro Classico (IBI / DBI)**: Esegue simulazioni MD guidate unicamente da tabelle di potenziale ricavate dalle distribuzioni all-atom (ad es. usando lo script `02_run_ibi.sh` fornito nei tutorial). È possibile omettere l'argomento `--model` in `run_cg_md.py` per lanciare la simulazione.
+   - *Pro:* Molto veloce, non richiede addestramento GPU.
+   - *Contro:* I potenziali a 2-corpi non catturano effetti multi-corpo complessi o variazioni conformazionali accoppiate.
+2. **Delta-Learning Tabulato (IBI/DBI + ML)**: Usa i potenziali tabulati perfetti (IBI/DBI) come base, e lascia alla Rete Neurale il compito di imparare solo le piccole correzioni multi-corpo.
+   > [!WARNING]
+   > **Vulnerabilità Topologica:** Questo approccio è numericamente **molto instabile** in MD, specialmente in presenza di Corpi Rigidi complessi. Le tabelle IBI hanno bordi (cutoffs) rigidi. Se il rumore iniziale della rete neurale spinge due atomi appena al di fuori del range della tabella, l'estrapolazione genera forze/torsioni immense che causano l'esplosione immediata dell'integratore (errori "bond broken"). **L'uso di tabelle IBI/DBI combinate con il ML è fortemente sconsigliato a meno che il modello ML non sia perfettamente addestrato per migliaia di epoche.**
+3. **Approccio CGnet (Prior Armonico + ML)**: Utilizza esclusivamente molle armoniche perfette ($V = \frac{1}{2} k (r-r_0)^2$) e interazioni repulsive analitiche (WCA, Morse) per preservare la topologia di base. La Rete Neurale deve imparare **tutta** l'anarmonicità reale.
+   > [!TIP]
+   > **Approccio Raccomandato per ML:** Le funzioni analitiche sono lisce e illimitate. Qualsiasi fluttuazione termica o errore predittivo della Rete Neurale verrà contenuto dolcemente dalla molla, garantendo assoluta stabilità topologica alla simulazione. L'energia extra introdotta dal rumore della rete neurale ("Noise Heating") verrà dissipata in modo sicuro dal termostato di Langevin. È la strada più robusta in assoluto per il Delta-Learning.
+
 #### Fisica Avanzata: Virtual Sites, Mass Scaling e Mixing WCA
 Il framework introduce una struttura a corpi rigidi per mappare accuratamente molecole complesse.
 - **Mass Scaling per i Virtual Sites**: Il Centro di Massa (COM) principale conserva la massa e l'inerzia reali del corpo rigido. I siti virtuali hanno la loro massa e inerzia scalate artificialmente di $10^{-5}$ per impedire loro di assorbire energia cinetica dal termostato di Langevin di ESPResSo, preservando la temperatura termodinamica esatta.

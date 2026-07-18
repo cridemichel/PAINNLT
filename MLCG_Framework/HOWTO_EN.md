@@ -115,6 +115,20 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
 > 
 > If you prefer to manually provide the perfect ideal coordinates (e.g. from a PDB) and don't want the script to overwrite them with the trajectory average, set `"auto_align_sites": false`. The script will exactly use the `relative_pos_nm` you typed in the JSON!
 
+### 1.2 Choice of Thermodynamic Architecture (Priors vs ML)
+
+The framework supports three different Coarse-Graining philosophies. The choice depends on the type of system and the desired balance between numerical stability and accuracy:
+
+1. **Pure Classical (IBI / DBI)**: Runs MD simulations driven solely by potential tables derived from all-atom distributions (e.g., using the `02_run_ibi.sh` script provided in the tutorials). You can omit the `--model` argument in `run_cg_md.py` to launch the simulation.
+   - *Pros:* Very fast, does not require GPU training.
+   - *Cons:* 2-body potentials do not capture complex multi-body effects or coupled conformational changes.
+2. **Tabulated Delta-Learning (IBI/DBI + ML)**: Uses perfect tabulated potentials (IBI/DBI) as a baseline, leaving the Neural Network to learn only small multi-body corrections.
+   > [!WARNING]
+   > **Topological Vulnerability:** This approach is numerically **highly unstable** in MD, especially in the presence of complex Rigid Bodies. IBI tables have strict edges (cutoffs). If the initial noise of the neural network pushes two atoms just outside the table's range, the extrapolation generates immense forces/torques that cause the immediate explosion of the integrator ("bond broken" errors). **The use of IBI/DBI tables combined with ML is strongly discouraged unless the ML model is perfectly trained for thousands of epochs.**
+3. **CGnet Approach (Harmonic Prior + ML)**: Exclusively uses perfect harmonic springs ($V = \frac{1}{2} k (r-r_0)^2$) and analytical repulsive interactions (WCA, Morse) to preserve the basic topology. The Neural Network must learn **all** the real anharmonicity.
+   > [!TIP]
+   > **Recommended Approach for ML:** Analytical functions are smooth and boundless. Any thermal fluctuation or predictive error from the Neural Network will be softly contained by the spring, guaranteeing absolute topological stability to the simulation. The extra energy introduced by the neural network noise ("Noise Heating") will be safely dissipated by the Langevin thermostat. This is by far the most robust path for Delta-Learning.
+
 #### Advanced Physics: Virtual Sites, Mass Scaling, and WCA Mixing
 The framework introduces a rigid-body structure to accurately map complex molecules.
 - **Mass Scaling for Virtual Sites**: The primary Center of Mass (COM) retains the true mass and inertia of the rigid body. Virtual sites have their mass and inertia artificially scaled by $10^{-5}$ to prevent them from absorbing kinetic energy from the ESPResSo Langevin thermostat, preserving exact thermodynamic temperature.
