@@ -48,12 +48,20 @@ Questo script supporta il mapping flessibile basato su file JSON. Puoi generare 
 Esempio di esecuzione:
 ```bash
 python build_cg_dataset.py \
-    --traj ../GROMACS/ethanol.trr \
-    --topol ../GROMACS/ethanol.gro \
+    --trajectory ../GROMACS/ethanol.trr \
+    --topology ../GROMACS/ethanol.gro \
     --config topology_config.json \
     --dbi \
     --output cg_dataset.bin
 ```
+
+**Opzioni supportate da `build_cg_dataset.py`:**
+- `-c`, `--topology`: File di topologia (es. `.tpr` o `.gro`).
+- `-f`, `--trajectory`: File di traiettoria (es. `.trr` o `.xtc`).
+- `-j`, `--config`: File JSON con topologia CG e regole di mapping (default: `topology_config.json`).
+- `--dbi`: Abilita la Direct Boltzmann Inversion (DBI) globale per estrarre le costanti di forza dei legami direttamente dalle distribuzioni termiche.
+- `-p`, `--priors`: File JSON con i prior (es. `cg_priors.json`). Se fornito, lo script salta il calcolo statistico e applica direttamente i prior indicati al dataset. Necessario in fase di IBI.
+- `-o`, `--output`: Nome del file binario di output (default: `../training/cg_dataset.bin`).
 
 #### Esempio di `topology_config.json`
 Il file di configurazione controlla temperature, potenziali WCA, legami a molla (priors) e le regole di mapping (Multi-Bead, COM, ATOM, COG):
@@ -309,26 +317,66 @@ cd /path/to/espresso/build
 make -j4
 ```
 
-### 3.2 Eseguire la Dinamica
-Troverai lo script template `run_cg_md.py` nella cartella `simulation/`.
+### 3.2 Equilibrazione
+Prima di avviare la simulazione di produzione, è fondamentale rilassare il sistema per rimuovere eventuali "clash" sterici (compenetrazioni tra atomi/bead) derivanti dalla topologia iniziale, specialmente quando si usano potenziali repulsivi rigidi.
 
-L'integrazione ML+Priors è gestita elegantemente nel framework. La rete neurale (Plugin C++) si occupa **esclusivamente** della predizione complessa. I Priors (WCA, Harmonic, FENE, Morse) sono aggiunti nativamente nel motore MD di ESPResSo.
-
-Per simulare, usa lo script `run_cg_md.py` che:
-1. Instanzia le molecole e i Virtual Sites.
-2. Legge `cg_priors.json` e applica i legami di ESPResSo sui siti/particelle.
-3. Attiva il potenziale PaiNN C++ che inietterà la sua forza predetta su ogni sito.
+Per l'equilibrazione, usa lo script `equilibrate.py`. Lo script esegue una procedura in più fasi:
+1. **Steepest Descent (Classico)**: Rilassamento con solo i potenziali classici (WCA e legami).
+2. **Langevin Warm-up (Classico)**: Dinamica classica con "force capping" per rilassare i gradi di libertà rotazionali senza far esplodere il sistema.
+3. **Steepest Descent (ML)**: Rilassamento finale includendo la rete neurale.
+4. **Warm-up (ML)**: Breve dinamica con rete neurale attiva e force capping decrescente.
 
 ```bash
-python run_cg_md.py \
-    --model best_model.pt \
+python equilibrate.py \
+    --model best_cg_model.pt \
     --config best_cg_model_config.json \
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset cg_dataset.bin \
-    --steps 10000 \
-    --dt 0.002
+    --out_checkpoint equilibrated.npz \
+    --dt 0.002 \
+    --kT 2.49 \
+    --steps_sd 5000 \
+    --steps_md 2000 \
+    --device auto
 ```
+**Opzioni supportate da `equilibrate.py`:**
+- `--model`, `--config`, `--priors`, `--rb_info`, `--dataset`: File di input richiesti.
+- `--out_checkpoint`: Nome del file di output (default: `equilibrated.npz`). Conterrà le posizioni e velocità rilassate.
+- `--dt`: Time-step per la fase di MD (default: 0.002 ps).
+- `--kT`: Temperatura in kJ/mol (default: 2.49 per 300K).
+- `--steps_sd`: Numero di passi per la fase 1 di Steepest Descent (default: 5000).
+- `--steps_md`: Numero di passi per la fase 2 di Warmup Classico (default: 2000).
+- `--device`: Dispositivo per PyTorch (`cpu`, `cuda`, `mps`, `auto`).
+
+### 3.3 Esecuzione della Dinamica di Produzione
+Troverai lo script template `run_cg_md.py` nella cartella `simulation/`.
+
+L'integrazione ML+Priors è gestita elegantemente nel framework. La rete neurale (Plugin C++) si occupa **esclusivamente** della predizione complessa. I Priors (WCA, Harmonic, FENE, Morse) sono aggiunti nativamente nel motore MD di ESPResSo.
+
+Per simulare, usa lo script `run_cg_md.py` che caricherà le coordinate equilibrate dal checkpoint e avvierà la produzione:
+
+```bash
+python run_cg_md.py \
+    --model best_cg_model.pt \
+    --config best_cg_model_config.json \
+    --priors cg_priors.json \
+    --rb_info rigid_bodies_info.json \
+    --dataset cg_dataset.bin \
+    --checkpoint equilibrated.npz \
+    --steps 10000 \
+    --dt 0.002 \
+    --kT 2.49 \
+    --device auto
+```
+
+**Opzioni supportate da `run_cg_md.py`:**
+- `--model`, `--config`, `--priors`, `--rb_info`, `--dataset`: File di input richiesti.
+- `--checkpoint`: File `.npz` prodotto da `equilibrate.py` contenente coordinate e velocità di partenza. Se omesso, partirà dalle coordinate del frame 0 del dataset.
+- `--steps`: Numero di passi di simulazione (default: 10000).
+- `--dt`: Time-step in picosecondi (default: 0.002 ps).
+- `--kT`: Temperatura in kJ/mol (default: 2.49).
+- `--device`: Dispositivo per PyTorch.
 
 ### 3.4 Dinamica dei Corpi Rigidi e Filtro delle Particelle
 Nel framework, la simulazione di molecole a più siti (Multi-Bead) sfrutta i **Virtual Sites** di ESPResSo:
