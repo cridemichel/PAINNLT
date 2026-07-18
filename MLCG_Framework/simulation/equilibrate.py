@@ -279,7 +279,37 @@ for i in range(nn_config["num_species"] + 2):
             system.non_bonded_inter[i, j].soft_sphere.set_params(
                 a=0.0, n=1, cutoff=5.0, offset=0.0)
 
-print("[INFO] Activating ML Potential...")
+print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
+system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
+for step in range(50):
+    system.integrator.run(100)
+    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
+print(flush=True)
+
+system.integrator.set_vv()
+
+import sys
+for pair in [(279, 286), (835, 842)]:
+    p1 = system.part.by_id(pair[0])
+    p2 = system.part.by_id(pair[1])
+    d = system.distance(p1, p2)
+    print(f"[DEBUG BEFORE PHASE 2] {pair}: dist={d:.4f} nm", flush=True)
+
+print("[INFO] Phase 2: Warm-up con force-capping per rilassare i gradi di libertà rotazionali (Classical)...", flush=True)
+system.force_cap = 500.0
+system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
+system.time_step = 0.0001
+
+for warmup_step in range(40):
+    system.integrator.run(50)
+    system.force_cap = 500.0 + warmup_step * 25.0
+    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*50}/2000 steps", end="", flush=True)
+print(flush=True)
+
+system.force_cap = 0
+system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+
+print("[INFO] Activating ML Potential now that the system is physically relaxed...")
 espressomd.painn.activate_painn_potential(
     model_path=args.model,
     num_species=nn_config["num_species"],
@@ -290,39 +320,23 @@ espressomd.painn.activate_painn_potential(
     device=args.device
 )
 
-print("[INFO] Phase 1: Warmup with Steepest Descent...")
-system.integrator.set_steepest_descent(f_max=0, gamma=10.0, max_displacement=0.001)
-for step in range(50):
-    system.integrator.run(100)
-    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/5000 steps", end="", flush=True)
-print(flush=True)
-
+print("[INFO] Phase 3: Final Steepest Descent with ML Potential to settle on the new surface...")
+system.thermostat.turn_off()
+system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
+system.integrator.run(1000)
 system.integrator.set_vv()
-system.force_cap = 1000.0
-system.time_step = 0.001
-system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
 
-import sys
-for pair in [(279, 286), (835, 842)]:
-    p1 = system.part.by_id(pair[0])
-    p2 = system.part.by_id(pair[1])
-    d = system.distance(p1, p2)
-    print(f"[DEBUG BEFORE PHASE 2] {pair}: dist={d:.4f} nm", flush=True)
-
-print("[INFO] Phase 2: Warm-up con force-capping per rilassare i gradi di libertà rotazionali...", flush=True)
+print("[INFO] Phase 4: Final Warm-up with ML Potential to relax orientations...", flush=True)
 system.force_cap = 500.0
-# Aumentiamo la frizione per dissipare velocemente l'energia rotazionale accumulata
 system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
-system.time_step = 0.001
+system.time_step = 0.0001
 
-for warmup_step in range(20):
+for warmup_step in range(40):
     system.integrator.run(50)
-    # Aumentiamo gradualmente il cap
-    system.force_cap = 500.0 + warmup_step * 50.0
-    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*50}/1000 steps", end="", flush=True)
+    system.force_cap = 500.0 + warmup_step * 25.0
+    print(f"\r[INFO] Phase 4 Progress: {(warmup_step+1)*50}/2000 steps", end="", flush=True)
 print(flush=True)
 
-# Rimuoviamo il force_cap e resettiamo la frizione
 system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
