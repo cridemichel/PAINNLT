@@ -288,12 +288,7 @@ print(flush=True)
 
 system.integrator.set_vv()
 
-import sys
-for pair in [(279, 286), (835, 842)]:
-    p1 = system.part.by_id(pair[0])
-    p2 = system.part.by_id(pair[1])
-    d = system.distance(p1, p2)
-    print(f"[DEBUG BEFORE PHASE 2] {pair}: dist={d:.4f} nm", flush=True)
+
 
 print("[INFO] Phase 2: Warm-up con force-capping per rilassare i gradi di libertà rotazionali (Classical)...", flush=True)
 system.force_cap = 500.0

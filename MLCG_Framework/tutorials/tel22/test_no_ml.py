@@ -7,11 +7,11 @@ import struct
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, required=True, help="Trained ML potential (.pt)")
-parser.add_argument("--config", type=str, required=True, help="NN config JSON")
-parser.add_argument("--priors", type=str, required=True, help="cg_priors.json")
-parser.add_argument("--rb_info", type=str, required=True, help="rigid_bodies_info.json")
-parser.add_argument("--dataset", type=str, required=True, help="Dataset to get initial frame from (e.g. cg_dataset.bin)")
+parser.add_argument("--model", type=str, required=False, help="Trained ML potential (.pt)")
+parser.add_argument("--config", type=str, required=False, help="NN config JSON")
+parser.add_argument("--priors", type=str, required=False, help="cg_priors.json")
+parser.add_argument("--rb_info", type=str, required=False, help="rigid_bodies_info.json")
+parser.add_argument("--dataset", type=str, required=False, help="Dataset to get initial frame from (e.g. cg_dataset.bin)")
 parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
@@ -298,15 +298,15 @@ for i in range(nn_config["num_species"] + 2):
             a=0.0, n=1, cutoff=5.0, offset=0.0)
 
 print("[INFO] Activating ML Potential...")
-espressomd.painn.activate_painn_potential(
-    model_path=args.model,
-    num_species=nn_config["num_species"],
-    hidden_channels=nn_config["hidden_channels"],
-    n_layers=nn_config["n_layers"],
-    num_rbf=nn_config["num_rbf"],
-    cutoff=nn_config["cutoff"],
-    device=args.device
-)
+#espressomd.painn.activate_painn_potential(
+#    model_path=args.model,
+#    num_species=nn_config["num_species"],
+#    hidden_channels=nn_config["hidden_channels"],
+#    n_layers=nn_config["n_layers"],
+#    num_rbf=nn_config["num_rbf"],
+#    cutoff=nn_config["cutoff"],
+#    device=args.device
+#)
 
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
@@ -333,7 +333,12 @@ with open(vtf_filename, "w") as vtf_file:
         system.integrator.run(chunk_size)
         energies = system.analysis.energy()
         
-
+        # Only print the full breakdown on the first step
+        if step == 0:
+            print(f"[DEBUG] Energy Breakdown at Step 0:")
+            for key, val in energies.items():
+                print(f"  {key}: {val}")
+        
         e_tot = energies["total"]
         e_kin = energies["kinetic"]
         
