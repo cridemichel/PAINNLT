@@ -115,7 +115,8 @@ print("[INFO] Adding priors...")
 # WCA
 import math
 wca = priors.get("wca", {})
-if wca.get("epsilon", 0.0) > 0 and wca.get("sigma", 0.0) > 0:
+has_wca = wca.get("sigma", 0.0) > 0 or len(wca.get("overrides", {})) > 0
+if wca.get("epsilon", 0.0) > 0 and has_wca:
     for i in range(nn_config["num_species"]):
         sigma_i = wca.get("overrides", {}).get(str(i), {}).get("sigma", wca["sigma"])
         eps_i = wca.get("overrides", {}).get(str(i), {}).get("epsilon", wca["epsilon"])
@@ -258,7 +259,8 @@ wca_sigma = wca.get("sigma", 0.3)
 wca_eps = wca.get("epsilon", 1.0)
 overrides = wca.get("overrides", {})
 
-if wca_eps > 0 and wca_sigma > 0:
+has_wca = wca_sigma > 0 or len(overrides) > 0
+if wca_eps > 0 and has_wca:
     for i in range(nn_config["num_species"]):
         sigma_i = overrides.get(str(i), {}).get("sigma", wca_sigma)
         eps_i = overrides.get(str(i), {}).get("epsilon", wca_eps)

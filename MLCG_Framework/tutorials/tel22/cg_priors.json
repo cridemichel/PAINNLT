@@ -3753,39 +3753,39 @@
     ],
     "wca": {
         "sigma": 0.0,
-        "epsilon": 1.0,
+        "epsilon": 1000.0,
         "overrides": {
             "0": {
                 "sigma": 0.284,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             },
             "1": {
                 "sigma": 0.309,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             },
             "2": {
                 "sigma": 0.345,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             },
             "3": {
                 "sigma": 0.26,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             },
             "4": {
                 "sigma": 0.26,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             },
             "5": {
                 "sigma": 0.25,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             },
             "6": {
                 "sigma": 0.249,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             },
             "7": {
                 "sigma": 0.249,
-                "epsilon": 1.0
+                "epsilon": 1000.0
             }
         }
     },
