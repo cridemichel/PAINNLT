@@ -320,10 +320,7 @@ espressomd.painn.activate_painn_potential(
     device=args.device
 )
 
-print("[INFO] Phase 3: Final Steepest Descent with ML Potential to settle on the new surface...")
-system.thermostat.turn_off()
-system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
-system.integrator.run(1000)
+# Skip Steepest Descent with ML potential to avoid unphysical rigid body rotations
 system.integrator.set_vv()
 
 print("[INFO] Phase 4: Final Warm-up with ML Potential to relax orientations...", flush=True)
