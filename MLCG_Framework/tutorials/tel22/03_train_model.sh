@@ -14,12 +14,12 @@ fi
 cat << 'JSON' > tel22_training_config.json
 {
     "num_species": 8,
-    "hidden_channels": 32,
-    "n_layers": 2,
-    "num_rbf": 30,
-    "cutoff": 0.5,
+    "hidden_channels": 64,
+    "n_layers": 3,
+    "num_rbf": 50,
+    "cutoff": 1.0,
     "learning_rate": 0.0005,
-    "epochs": 100,
+    "epochs": 1000,
     "batch_size": 16
 }
 JSON
