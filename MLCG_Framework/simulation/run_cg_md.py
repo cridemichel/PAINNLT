@@ -17,6 +17,7 @@ parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
+parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
 args = parser.parse_args()
 
 print("[INFO] Loading configurations...")
@@ -37,7 +38,10 @@ print("[INFO] Initializing ESPResSo system...")
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
-system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
+if not args.nve:
+    system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
+else:
+    system.thermostat.turn_off()
 
 
 print(f"[INFO] Running {args.steps} integration steps...")
@@ -312,14 +316,15 @@ if args.model:
 else:
     print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")
 
-system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
+if not args.nve:
+    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
 
 import sys
 import espressomd.io.writer.vtf
 print(f"[INFO] Running {args.steps} integration steps...")
 
 with open("energy.csv", "w") as f_out:
-    f_out.write("Step,E_tot,E_kin\n")
+    f_out.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
 vtf_filename = "cg_trajectory.vtf"
 with open(vtf_filename, "w") as vtf_file:
     espressomd.io.writer.vtf.writevsf(system, vtf_file)
@@ -331,7 +336,8 @@ with open(vtf_filename, "w") as vtf_file:
             if m_idx == mol_idx:
                 vtf_file.write(f"bond {com_id}:{vs_id}\n")
     
-    chunk_size = 100
+    # Ensure we get exactly 100 data points for any simulation length
+    chunk_size = max(1, args.steps // 100)
     num_chunks = args.steps // chunk_size
     for step in range(num_chunks):
         system.integrator.run(chunk_size)
