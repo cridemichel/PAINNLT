@@ -343,6 +343,18 @@ int main(int argc, char* argv[]) {
 
     // Inizializza il Modello
     PaiNNModel model(num_species, dim, layers, num_rbf, cutoff);
+    std::ifstream f(model_path.c_str());
+    if (f.good()) {
+        try {
+            torch::load(model, model_path);
+            std::cout << "[INFO] Modello esistente caricato da: " << model_path << "\n";
+        } catch (const std::exception& e) {
+            std::cerr << "[WARNING] Impossibile caricare il modello " << model_path << ": " << e.what() << "\n";
+            std::cerr << "Inizio da zero.\n";
+        }
+    } else {
+        std::cout << "[INFO] Nessun modello esistente trovato in " << model_path << ". Inizio training da zero.\n";
+    }
     model->to(device);
 
     // Iperparametri Training 

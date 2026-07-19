@@ -340,11 +340,19 @@ with open(vtf_filename, "w") as vtf_file:
     chunk_size = max(1, args.steps // 100)
     num_chunks = args.steps // chunk_size
     for step in range(num_chunks):
+        if step == 0:
+            system.integrator.run(0) # Evaluate forces without advancing time!
+            
+            f_all = system.part.all().f
+            print(f"DEBUG: Max force at step 0: {np.max(np.abs(f_all))} kJ/mol/nm")
+            print(f"DEBUG: Any NaN forces? {np.isnan(f_all).any()}")
         system.integrator.run(chunk_size)
         energies = system.analysis.energy()
         
 
         e_tot = energies["total"]
+        if args.model:
+            e_tot += espressomd.painn.get_painn_energy()
         e_kin = energies["kinetic"]
         
         # Calculate E_kin explicitly for COM
@@ -375,4 +383,6 @@ with open(vtf_filename, "w") as vtf_file:
 print("\n[INFO] Simulation finished successfully.")
 
 # Force immediate exit to bypass PyTorch/MPI teardown crashes on macOS
+import sys
+sys.stdout.flush()
 os._exit(0)

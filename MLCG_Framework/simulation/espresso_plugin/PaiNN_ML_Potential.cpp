@@ -69,6 +69,8 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         atomic_numbers.push_back(p.type()); // Assumiamo che il 'type' di ESPResSo sia l'atomic number
     }
     
+    int num_local_ml_particles = current_idx;
+    
     // Raccogliamo anche le particelle ghost per le interazioni di bordo (PBC)
     auto ghost_particles = cell_structure.ghost_particles();
     for (auto& p : ghost_particles) {
@@ -134,7 +136,10 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
 
     // 4. Inferenza del Modello
     torch::Tensor energy = model->forward_with_rij(t_atomic_numbers, t_r_ij, t_edge_index, t_batch);
-    m_last_energy = energy.sum().item<double>();
+    
+    // CORREZIONE BUG GHOST PARTICLES:
+    // Sommiamo solo l'energia atomica calcolata per le particelle *reali* (locali), ignorando i ghost.
+    m_last_energy = energy.slice(0, 0, num_local_ml_particles).sum().item<double>();
     
     // 5. Calcolo delle Forze (Gradients w.r.t r_ij)
     auto grads = torch::autograd::grad({energy.sum()}, {t_r_ij}, {torch::ones_like(energy.sum())}, false, false);

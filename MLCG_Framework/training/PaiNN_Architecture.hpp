@@ -93,7 +93,7 @@ struct PaiNNModelImpl : torch::nn::Module {
     torch::Tensor forward(BatchType& batch) {
         auto row = batch.edge_index[0], col = batch.edge_index[1]; 
         auto r_ij = batch.coordinates.index({col}) - batch.coordinates.index({row});
-        auto d_ij = torch::norm(r_ij, 2, 1) + 1e-8; 
+        auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
 
         torch::Tensor s = embedding->forward(batch.atomic_numbers);
         torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
@@ -122,7 +122,7 @@ struct PaiNNModelImpl : torch::nn::Module {
                                    torch::Tensor edge_index, 
                                    torch::Tensor batch_indices) {
         
-        auto d_ij = torch::norm(r_ij, 2, 1) + 1e-8; 
+        auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
         
         torch::Tensor s = embedding->forward(atomic_numbers);
         torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
