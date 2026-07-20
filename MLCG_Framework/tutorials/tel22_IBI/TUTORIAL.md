@@ -49,8 +49,14 @@ Adesso che abbiamo le curve IBI perfette, richiamiamo `build_cg_dataset.py` pass
 ### 04_train_model.sh
 Passa il nuovo binario residuo al programma C++. Addestrerà la rete Graph Neural Network in C++ (tramite LibTorch). A differenza dell'approccio DBI classico, qui la rete dovrà fare molta meno fatica, dovendo imparare solo il rumore (le forze residue non lineari), mentre i muri sterici sono gestiti matematicamente dalle tabelle IBI.
 
-### 05_run_espresso.sh
-Carica il modello C++ appena addestrato all'interno del motore di ESPResSo. Quando ESPResSo andrà ad applicare i legami, non userà semplici molle di Hooke, ma interpolerà in tempo reale i valori dalle tabelle numeriche `.dat` precedentemente calcolate, sommandole in tempo reale alle predizioni ML.
+### extrapolate_ibi_tables.py [LA SOLUZIONE SOTA]
+Prima di avviare la simulazione, è vitale estrapolare le tabelle IBI! Le tabelle estratte coprono solo il dominio campionato (es. 0.1 nm -> 2.9 nm). Se la rete neurale spinge gli atomi anche solo di poco fuori da questo limite, ESPResSo crasherà lanciando un errore `bond broken`. Seguendo le *best practices* (SOTA, come in VOTCA), esegui `../../../espresso/build/pypresso extrapolate_ibi_tables.py` per estendere artificialmente e in modo sicuro le tabelle fino a distanze grandissime ($5.0$ nm) agganciando una molla lineare per le code. Questo garantisce stabilità incondizionata.
+
+### 05_equilibrate.sh
+Esegue la *Steepest Descent* e un breve riscaldamento, essenziale affinché il sistema ibrido ML+IBI si assesti prima di far partire la simulazione produttiva, salvando le coordinate in `equilibrated.npz`.
+
+### 06_run_espresso.sh
+Carica il modello C++ appena addestrato all'interno del motore di ESPResSo e parte dalla configurazione equilibrata. Quando ESPResSo andrà ad applicare i legami, non userà semplici molle di Hooke, ma interpolerà i valori dalle tabelle numeriche `.dat` estrapolate, sommandole in tempo reale alle predizioni ML.
 
 ---
 
