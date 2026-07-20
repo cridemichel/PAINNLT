@@ -46,11 +46,14 @@ Passa il binario al programma C++. Addestrerà una rete Graph Neural Network in 
 Carica il modello C++ appena addestrato all'interno del motore di ESPResSo per validare la stabilità strutturale e la conservazione dell'energia!
 
 > [!TIP]
-> **Stabilità dell'Energia NVE e Bias**
-> Se il tuo modello utilizza reti neurali con layer lineari provvisti di Bias (es. `PaiNN`), potresti riscontrare fluttuazioni ed esplosioni dell'energia termodinamica dovute a discontinuità di forza al raggio di cutoff.
+> **Stabilità dell'Energia NVE e Discontinuità Termodinamiche**
+> Storicamente, i modelli Graph Neural Networks (come PaiNN) causavano una deriva energetica nelle simulazioni NVE a causa di una discontinuità matematica di ordine $\mathcal{C}^1$ al raggio di cutoff. Questo difetto originava dalla presenza di un *bias* nei layer lineari accoppiati alle distanze spaziali, vanificando lo scaling nativo $\mathcal{O}(dt^2)$ dell'integratore Velocity-Verlet.
 >
-> Per risolvere matematicamente questo problema, abbiamo introdotto il flag `--apply_envelope` nello script `run_cg_md.py`. Passando questo flag, il motore C++ moltiplicherà a posteriori l'output del layer per una funzione *cosine envelope*, forzando l'interazione dolcemente a zero ai bordi del raggio di cutoff. Questo ti garantirà simulazioni NVE stabili in eterno!
-> Esempio di esecuzione: `python ../../simulation/run_cg_md.py --apply_envelope ...`
+> Per risolvere questo problema alla radice e garantire una purezza termodinamica perfetta, il framework ML-CG include tre nuove feature configurabili nell'architettura C++:
+> 1. **Disattivazione del Bias**: Impostando `--use_bias` a `false` (valore di default), il network rinuncia ai gradienti non-nulli al bordo del cutoff, stabilizzando nativamente l'energia.
+> 2. **Toxvaerd Smoothing ($\mathcal{C}^3$)**: L'antiquato e discontinuo *cosine cutoff* è stato sostituito ovunque con il polinomio razionale di Toxvaerd ($n=4$), garantendo che l'energia, le forze e le curvature si annullino in modo analiticamente liscio con continuità $\mathcal{C}^3$. Il grado di "smussamento" è configurabile adimesionalmente tramite `--toxvaerd_alpha` (default: 0.1).
+> 3. **Envelope Opzionale**: Se decidi di usare comunque reti neurali pre-addestrate con Bias attivi, puoi impostare il flag `--apply_envelope` in `run_cg_md.py`. Questo avvolgerà l'output con la funzione di Toxvaerd sopprimendo a valle gli "scalini" di forza e garantendoti simulazioni NVE perennemente stabili!
+> Esempio: `python ../../simulation/run_cg_md.py --use_bias --apply_envelope --toxvaerd_alpha 0.1`
 
 ---
 

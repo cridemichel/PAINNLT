@@ -135,6 +135,12 @@ Il framework introduce una struttura a corpi rigidi per mappare accuratamente mo
 - **Lorentz-Berthelot WCA**: Le interazioni WCA tra siti distinti vengono miscelate usando la media aritmetica per $\sigma_{ij} = (\sigma_i + \sigma_j)/2$ e la media geometrica per $\epsilon_{ij} = \sqrt{\epsilon_i \epsilon_j}$.
 - **WCA Overrides**: Puoi definire proprietà LJ specifiche per siti periferici (es. basi ingombranti come la Guanina) usando l'array `wca_overrides`.
 
+#### Fisica Avanzata: Stabilità Termodinamica NVE e Toxvaerd Cutoff
+Le Reti Neurali a Grafo (GNN) come PaiNN possono introdurre instabilità numeriche (deriva energetica) durante le simulazioni NVE a causa di discontinuità matematiche ai bordi del raggio di cutoff. Il framework risolve questo problema nativamente garantendo una continuità di ordine $\mathcal{C}^3$ per preservare lo scaling esatto $\mathcal{O}(dt^2)$ dell'integratore Velocity-Verlet.
+- **Toxvaerd Smoothing**: Le funzioni di inviluppo tradizionali (come il coseno) sono state sostituite da un polinomio razionale di Toxvaerd ($n=4$), che porta dolcemente a zero energia, forza e curvatura in modo analitico.
+- **Parametrizzazione Bias**: Puoi addestrare il modello configurando `"use_bias": false` in `tel22_training_config.json`. Questo rimuove gli "scalini" di forza alla fonte.
+- **Envelope Opzionale**: Se utilizzi modelli con bias attivi (`"use_bias": true`), puoi abilitare `"apply_envelope": true` per forzare il decadimento $\mathcal{C}^3$ a valle, proteggendo la simulazione. Entrambi i parametri possono essere modulati adimesionalmente con `"toxvaerd_alpha": 0.1`.
+
 #### Fisica Avanzata: Priors Site-Dependent
 Di default, i legami Armonici, Angoli e Diedri agiscono sui Centri di Massa. Tuttavia, puoi applicarli a Virtual Sites specifici usando i parametri `site_i`, `site_j`, `site_k`, `site_l` (0-indexed rispetto alla definizione del mapping della molecola).
 Quando applicate ai Virtual Sites, le forze sono geometricamente esatte e il framework calcola automaticamente il **momento torcente** $\tau = \vec{r}_{site} \times \vec{F}_{site}$ per trasferire il momento rotazionale al Centro di Massa principale.

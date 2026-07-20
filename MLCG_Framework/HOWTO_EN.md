@@ -135,6 +135,12 @@ The framework introduces a rigid-body structure to accurately map complex molecu
 - **Lorentz-Berthelot WCA**: WCA interactions between distinct sites are blended using arithmetic mean for $\sigma_{ij} = (\sigma_i + \sigma_j)/2$ and geometric mean for $\epsilon_{ij} = \sqrt{\epsilon_i \epsilon_j}$.
 - **WCA Overrides**: You can define specific LJ properties for peripheral sites (e.g. bulky bases like Guanine) using the `wca_overrides` array.
 
+#### Advanced Physics: NVE Thermodynamic Stability and Toxvaerd Cutoff
+Graph Neural Networks (GNNs) like PaiNN can introduce numerical instabilities (energy drift) during NVE simulations due to mathematical discontinuities at the edges of the cutoff radius. The framework solves this problem natively by guaranteeing $\mathcal{C}^3$ order continuity to preserve the exact $\mathcal{O}(dt^2)$ scaling of the Velocity-Verlet integrator.
+- **Toxvaerd Smoothing**: Traditional envelope functions (like cosine) have been replaced by a Toxvaerd rational polynomial ($n=4$), which gently brings energy, force, and curvature to zero analytically.
+- **Bias Parameterization**: You can train the model by configuring `"use_bias": false` in `tel22_training_config.json`. This removes force "steps" at their source.
+- **Optional Envelope**: If you use models with active biases (`"use_bias": true`), you can enable `"apply_envelope": true` to force $\mathcal{C}^3$ decay downstream, protecting the simulation. Both parameters can be dimensionlessly modulated with `"toxvaerd_alpha": 0.1`.
+
 #### Advanced Physics: Site-Dependent Priors
 By default, Harmonic bonds, Angles, and Dihedrals act on the Centers of Mass. However, you can map them to specific Virtual Sites using the `site_i`, `site_j`, `site_k`, `site_l` parameters (0-indexed referring to the molecule's mapping definition).
 When applied to Virtual Sites, the forces are geometrically exact, and the framework automatically computes the **torque** $\tau = \vec{r}_{site} \times \vec{F}_{site}$ to transfer the rotational momentum back to the main Center of Mass.
