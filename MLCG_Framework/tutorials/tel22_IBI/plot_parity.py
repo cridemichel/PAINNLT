@@ -2,8 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from scipy.stats import pearsonr
-from sklearn.metrics import mean_squared_error, r2_score
 
 csv_file = "parity_forces.csv"
 
@@ -31,13 +29,18 @@ f_pred_all = np.concatenate([f_pred_x, f_pred_y, f_pred_z])
 mae = np.mean(np.abs(f_pred_all - f_target_all))
 
 # Calcolo RMSE
-rmse = np.sqrt(mean_squared_error(f_target_all, f_pred_all))
+rmse = np.sqrt(np.mean((f_pred_all - f_target_all)**2))
 
 # Calcolo R^2 (Coefficiente di Determinazione)
-r2 = r2_score(f_target_all, f_pred_all)
+ss_res = np.sum((f_target_all - f_pred_all)**2)
+ss_tot = np.sum((f_target_all - np.mean(f_target_all))**2)
+r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
 
-# Calcolo R (Pearson Correlation)
-pearson_r, _ = pearsonr(f_target_all, f_pred_all)
+# Calcolo R (Correlazione di Pearson)
+cov = np.cov(f_target_all, f_pred_all)[0, 1]
+std_target = np.std(f_target_all)
+std_pred = np.std(f_pred_all)
+pearson_r = cov / (std_target * std_pred) if (std_target * std_pred) != 0 else 0
 
 print(f"--- RISULTATI FORZE SUL VALIDATION SET ---")
 print(f"Punti analizzati (Componenti 3N) : {len(f_target_all)}")
