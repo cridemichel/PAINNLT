@@ -19,11 +19,11 @@ log_stds_env = np.log10(std_devs_env)
 plt.figure(figsize=(10, 8))
 
 # Plot Toxvaerd Envelope
-plt.scatter(log_dts, log_stds_env, color='purple', marker='s', s=100, zorder=5, label='Toxvaerd C4 Envelope (bias=1)')
+plt.scatter(log_dts, log_stds_env, color='purple', marker='s', s=100, zorder=5, label='Toxvaerd Cutoff + Envelope (bias=1)')
 # Plot Toxvaerd C4, bias=0
-plt.scatter(log_dts, log_stds_tox, color='blue', s=100, zorder=5, label='Toxvaerd C4 (bias=0)')
+plt.scatter(log_dts, log_stds_tox, color='blue', s=100, zorder=5, label='Toxvaerd Cutoff (bias=0)')
 # Plot Cosine C1, bias=0
-plt.scatter(log_dts, log_stds_cos, color='green', marker='^', s=100, zorder=5, label='Reference (Cosine C1, bias=0)')
+plt.scatter(log_dts, log_stds_cos, color='green', marker='^', s=100, zorder=5, label='Reference (Cosine Cutoff, bias=0)')
 
 # Ideal Verlet Scaling
 x_ideal = np.array([-2.5, -1.9])

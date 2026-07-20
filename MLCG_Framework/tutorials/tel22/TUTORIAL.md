@@ -46,14 +46,13 @@ Passa il binario al programma C++. Addestrerà una rete Graph Neural Network in 
 Carica il modello C++ appena addestrato all'interno del motore di ESPResSo per validare la stabilità strutturale e la conservazione dell'energia!
 
 > [!TIP]
-> **Stabilità dell'Energia NVE e Discontinuità Termodinamiche**
-> Storicamente, i modelli Graph Neural Networks (come PaiNN) causavano una deriva energetica nelle simulazioni NVE a causa di una discontinuità matematica di ordine $\mathcal{C}^1$ al raggio di cutoff. Questo difetto originava dalla presenza di un *bias* nei layer lineari accoppiati alle distanze spaziali, vanificando lo scaling nativo $\mathcal{O}(dt^2)$ dell'integratore Velocity-Verlet.
->
-> Per risolvere questo problema alla radice e garantire una purezza termodinamica perfetta, il framework ML-CG include tre nuove feature configurabili nell'architettura C++:
-> 1. **Disattivazione del Bias**: Impostando `--use_bias` a `false` (valore di default), il network rinuncia ai gradienti non-nulli al bordo del cutoff, stabilizzando nativamente l'energia.
-> 2. **Toxvaerd Smoothing ($\mathcal{C}^3$)**: L'antiquato e discontinuo *cosine cutoff* è stato sostituito ovunque con il polinomio razionale di Toxvaerd ($n=4$), garantendo che l'energia, le forze e le curvature si annullino in modo analiticamente liscio con continuità $\mathcal{C}^3$. Il grado di "smussamento" è configurabile adimesionalmente tramite `--toxvaerd_alpha` (default: 0.1).
-> 3. **Envelope Opzionale**: Se decidi di usare comunque reti neurali pre-addestrate con Bias attivi, puoi impostare il flag `--apply_envelope` in `run_cg_md.py`. Questo avvolgerà l'output con la funzione di Toxvaerd sopprimendo a valle gli "scalini" di forza e garantendoti simulazioni NVE perennemente stabili!
-> Esempio: `python ../../simulation/run_cg_md.py --use_bias --apply_envelope --toxvaerd_alpha 0.1`
+> [!TIP]
+> **Stabilità NVE: Il Trade-off tra Bias ed Envelope**
+> I modelli Graph Neural Networks (come PaiNN) generano tipicamente discontinuità al raggio di cutoff a causa dei *bias* nei layer lineari, distruggendo lo scaling nativo $\mathcal{O}(dt^2)$ dell'integratore Verlet nelle simulazioni NVE. Per risolvere questo problema, il framework usa nativamente lo Smoothing di Toxvaerd ($\mathcal{C}^3$). Nel tutorial puoi scegliere due approcci:
+> 
+> 1. **Approccio Rigoroso (Default nel Tutorial):** `use_bias=false` nel training (nessun envelope in MD). La rete non ha gradienti discontinui. Lo scaling è numericamente perfetto ($\approx 1.99$), ideale per NVE di precisione, anche se l'errore assoluto a corto raggio cresce leggermente per la perdita dei parametri di bias.
+> 2. **Approccio Termodinamico:** Se modifichi `use_bias=true` nel training per abbassare l'errore assoluto, **devi** usare l'envelope. Aggiungendo il flag `--apply_envelope` in `run_cg_md.py`, l'output verrà avvolto e schiacciato a zero dal cutoff di Toxvaerd. Lo scaling sarà leggermente sub-ottimale ($\approx 1.89$), ma le fluttuazioni dell'energia resteranno molto più piccole in valore assoluto!
+> Esempio (Approccio Termodinamico): `python ../../simulation/run_cg_md.py --apply_envelope --toxvaerd_alpha 0.1`
 
 ---
 

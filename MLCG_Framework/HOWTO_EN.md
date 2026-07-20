@@ -277,11 +277,11 @@ make -j4
 In the `training/` folder you will find the `cg_model_config.json` file. This file acts as the **control hub** for the network: before starting the training, you can modify parameters such as `hidden_channels`, `n_layers`, `cutoff`, `learning_rate`, and `epochs` here. The C++ code will read this file at runtime without any need to recompile!
 
 > [!TIP]
-> **Toxvaerd C4 Smoothing and Verlet Stability**
-> To ensure perfect numerical stability for the Verlet Integrator and exceptional energy conservation in MD simulations (achieving quadratic scaling with the timestep $O(dt^2)$), the framework natively implements **Toxvaerd Smoothing**. You can activate it in `cg_model_config.json` using:
-> - `"apply_envelope": true`
-> - `"use_bias": false` (Critical: removes internal linear biases, preventing abrupt jumps in force derivatives at the cutoff radius)
-> - `"toxvaerd_alpha": 0.1` (Controls the width of the smoothing region near the cutoff)
+> **Toxvaerd C4 Smoothing and Verlet Stability (The Bias vs Envelope Trade-off)**
+> Graph Neural Networks equipped with *bias* parameters generate discontinuous jumps in force derivatives at the cutoff radius, destroying the quadratic scalability of the Verlet integrator. The framework solves this problem by using the continuous and mathematically rigorous **Toxvaerd C4** cutoff. There are two configurable approaches in `cg_model_config.json`:
+> 
+> 1. **Rigorous Approach (Recommended / Default):** `"use_bias": false` and `"apply_envelope": false`. By eradicating the bias parameters, the network's signal decays to zero smoothly and naturally following the RBF filters. This guarantees perfect theoretical scaling ($\approx 1.99$). However, without biases, the network has fewer free parameters and struggles slightly more to fit short-range energies.
+> 2. **Thermodynamic Approach (Lower Absolute Error):** `"use_bias": true` and `"apply_envelope": true`. The network retains its biases (higher expressive power and significantly lower absolute error), but the forces are "forcibly" zeroed out at the cutoff by an external envelope function. Since the network is trained with the active envelope, it learns to compensate for this damping. The theoretical scaling is slightly more nervous ($\approx 1.89$), but absolute energy fluctuations are much smaller.
 
 > [!TIP]
 > **Lipschitz Regularization**
@@ -408,7 +408,7 @@ python run_cg_md.py \
 
 > [!TIP]
 > **NVE Stability and Neural Network Bias**
-> If you run NVE simulations (without thermostat) and notice an "energy drift" or explosions at small time-steps, the culprit is the force discontinuity at the cutoff radius introduced by the linear layers of the neural network equipped with *Bias*. To mathematically solve this flaw (without having to retrain the model without bias!), add the `--apply_envelope` flag. The C++ engine will take care of smoothly canceling the interactions at the cutoff boundaries, guaranteeing flawless energy conservation!
+> By default, the framework trains models with `"use_bias": false` and does not apply the envelope, guaranteeing $\mathcal{O}(dt^2)$ scaling natively. However, if you explicitly choose to train a model with biases (the "Thermodynamic Approach" for lower absolute errors), you **must** use the `--apply_envelope` flag during the simulation. The C++ engine will take care of smoothly canceling the interactions at the cutoff boundaries using the Toxvaerd C4 envelope, guaranteeing flawless energy conservation without catastrophic energy drifts!
 
 ### 3.4 Rigid Body Dynamics and Particle Filtering
 In the framework, simulating multi-site molecules (Multi-Bead) leverages ESPResSo's **Virtual Sites**:

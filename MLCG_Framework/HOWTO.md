@@ -279,11 +279,11 @@ make -j4
 Nella cartella `training/` troverai il file `cg_model_config.json`. Questo file è la **centralina di controllo** della rete: prima di lanciare l'addestramento, puoi modificare qui dentro parametri come `hidden_channels`, `n_layers`, `cutoff`, `learning_rate` e le `epochs`. Il codice C++ leggerà questo file in tempo reale senza bisogno di ricompilare!
 
 > [!TIP]
-> **Toxvaerd C4 Smoothing e Stabilità di Verlet**
-> Per garantire la perfetta stabilità numerica del Verlet Integrator e una conservazione dell'energia eccezionale in simulazioni MD (scalabilità quadratica con il timestep $O(dt^2)$), il framework implementa nativamente lo **Smoothing di Toxvaerd**. Nel `cg_model_config.json` puoi attivarlo usando:
-> - `"apply_envelope": true`
-> - `"use_bias": false` (Critico: rimuove i bias lineari interni, impedendo salti bruschi delle derivate della forza al raggio di cutoff)
-> - `"toxvaerd_alpha": 0.1` (Controlla la larghezza della regione di smorzamento vicino al cutoff)
+> **Toxvaerd C4 Smoothing e Stabilità di Verlet (Il Trade-off tra Bias ed Envelope)**
+> Le Reti Neurali a Grafo con parametri di *bias* generano salti discontinui delle derivate di forza al raggio di cutoff, distruggendo la scalabilità quadratica dell'integratore Verlet. Il framework risolve il problema usando il cutoff continuo e matematicamente rigoroso di **Toxvaerd C4**. Esistono due approcci configurabili in `cg_model_config.json`:
+> 
+> 1. **Approccio Rigoroso (Raccomandato / Default):** `"use_bias": false` e `"apply_envelope": false`. Rimuovendo alla radice i parametri di bias, il segnale della rete decade a zero in modo dolcissimo e naturale seguendo i filtri RBF. Questo garantisce uno scaling teorico perfetto ($\approx 1.99$). Tuttavia, rimuovendo i bias, la rete ha meno parametri liberi e fatica leggermente di più a fittare l'energia a corto raggio.
+> 2. **Approccio Termodinamico (Errore Minore):** `"use_bias": true` e `"apply_envelope": true`. La rete mantiene i bias (elevata potenza espressiva ed errore assoluto nettamente inferiore), ma le forze vengono "forzatamente" azzerate al cutoff da una funzione di inviluppo esterna. Poiché la rete viene addestrata con l'envelope attivo, impara a compensare la strozzatura. Lo scaling teorico è leggermente più nervoso ($\approx 1.89$) ma le fluttuazioni energetiche assolute sono molto più contenute.
 
 > [!TIP]
 > **Regolarizzazione di Lipschitz**
@@ -409,7 +409,7 @@ python run_cg_md.py \
 
 > [!TIP]
 > **Stabilità NVE e Bias della Rete Neurale**
-> Se esegui simulazioni NVE (senza termostato) e noti una "deriva" dell'energia (energy drift) o esplosioni a piccolo time-step, il colpevole è la discontinuità della forza al raggio di cutoff introdotta dai layer lineari della rete neurale dotati di *Bias*. Per risolvere matematicamente questo difetto (senza dover riaddestrare il modello senza bias!), aggiungi il flag `--apply_envelope`. Il motore C++ si occuperà di annullare in modo fluido le interazioni ai bordi del cutoff, garantendo una conservazione dell'energia impeccabile!
+> Di default, il framework addestra i modelli con `"use_bias": false` e non applica alcun envelope, garantendo uno scaling $\mathcal{O}(dt^2)$ nativo. Tuttavia, se decidi intenzionalmente di addestrare un modello con i bias (l'approccio termodinamico per ridurre l'errore assoluto), **devi** usare il flag `--apply_envelope` in simulazione. Il motore C++ si occuperà di annullare in modo fluido le interazioni ai bordi del cutoff tramite l'inviuppo Toxvaerd C4, garantendo una conservazione dell'energia impeccabile senza derive catastrofiche!
 
 ### 3.4 Dinamica dei Corpi Rigidi e Filtro delle Particelle
 Nel framework, la simulazione di molecole a più siti (Multi-Bead) sfrutta i **Virtual Sites** di ESPResSo:
