@@ -320,6 +320,10 @@ int main(int argc, char* argv[]) {
     if (argc >= 3) model_path = argv[2];
     if (argc >= 4) config_path = argv[3];
 
+    bool apply_envelope = false;
+    bool use_bias = false;
+    double toxvaerd_alpha = 0.1;
+
     // Lettura JSON
     std::ifstream config_file(config_path);
     if (config_file.is_open()) {
@@ -330,6 +334,9 @@ int main(int argc, char* argv[]) {
         if (j.contains("n_layers")) layers = j["n_layers"];
         if (j.contains("num_rbf")) num_rbf = j["num_rbf"];
         if (j.contains("cutoff")) cutoff = j["cutoff"];
+        if (j.contains("apply_envelope")) apply_envelope = j["apply_envelope"];
+        if (j.contains("use_bias")) use_bias = j["use_bias"];
+        if (j.contains("toxvaerd_alpha")) toxvaerd_alpha = j["toxvaerd_alpha"];
         if (j.contains("epochs")) max_epochs = j["epochs"];
         if (j.contains("learning_rate")) initial_lr = j["learning_rate"];
         if (j.contains("weight_decay")) weight_decay_val = j["weight_decay"];
@@ -342,7 +349,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Inizializza il Modello
-    PaiNNModel model(num_species, dim, layers, num_rbf, cutoff);
+    PaiNNModel model(num_species, dim, layers, num_rbf, cutoff, apply_envelope, use_bias, toxvaerd_alpha);
     std::ifstream f(model_path.c_str());
     if (f.good()) {
         try {

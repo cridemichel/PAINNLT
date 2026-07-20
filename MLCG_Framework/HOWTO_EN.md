@@ -390,6 +390,12 @@ python run_cg_md.py \
 - `--dt`: Time-step in picoseconds (default: 0.002 ps).
 - `--kT`: Temperature in kJ/mol (default: 2.49).
 - `--device`: PyTorch device.
+- `--nve`: Runs the simulation in the NVE ensemble (no thermostat).
+- `--apply_envelope`: Multiplies the forces predicted by the PaiNN network by a cosine function (envelope) at the cutoff radius to smoothly zero them out, solving NVE stability issues caused by linear Biases.
+
+> [!TIP]
+> **NVE Stability and Neural Network Bias**
+> If you run NVE simulations (without thermostat) and notice an "energy drift" or explosions at small time-steps, the culprit is the force discontinuity at the cutoff radius introduced by the linear layers of the neural network equipped with *Bias*. To mathematically solve this flaw (without having to retrain the model without bias!), add the `--apply_envelope` flag. The C++ engine will take care of smoothly canceling the interactions at the cutoff boundaries, guaranteeing flawless energy conservation!
 
 ### 3.4 Rigid Body Dynamics and Particle Filtering
 In the framework, simulating multi-site molecules (Multi-Bead) leverages ESPResSo's **Virtual Sites**:

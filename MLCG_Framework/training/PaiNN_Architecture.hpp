@@ -9,16 +9,15 @@
 struct PaiNNMessageImpl : torch::nn::Module {
     torch::nn::Linear scalar_mlp{nullptr}, filter_mlp{nullptr};
     bool m_apply_envelope;
-    PaiNNMessageImpl(int dim, int num_rbf, bool apply_envelope = false) : m_apply_envelope(apply_envelope) { 
+    PaiNNMessageImpl(int dim, int num_rbf, bool apply_envelope = false, bool use_bias = false) : m_apply_envelope(apply_envelope) { 
         scalar_mlp = register_module("scalar_mlp", torch::nn::Linear(dim, dim * 3));
-        // AGGIUNTA: Sostituito 20 con num_rbf
-        filter_mlp = register_module("filter_mlp", torch::nn::Linear(num_rbf, dim * 3)); 
+        filter_mlp = register_module("filter_mlp", torch::nn::Linear(torch::nn::LinearOptions(num_rbf, dim * 3).bias(use_bias))); 
     }
-    std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, torch::Tensor rbf, torch::Tensor r_ij_norm, torch::Tensor cos_cutoff) {
+    std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, torch::Tensor rbf, torch::Tensor r_ij_norm, torch::Tensor tox_cutoff) {
         auto row = edge_index[0], col = edge_index[1]; 
         auto w = filter_mlp->forward(rbf); 
         if (m_apply_envelope) {
-            w = w * cos_cutoff.unsqueeze(1);
+            w = w * tox_cutoff.unsqueeze(1);
         }
         auto interaction = scalar_mlp->forward(s.index({row})) * w;      
         auto chunks = interaction.chunk(3, 1);
@@ -68,12 +67,15 @@ struct PaiNNModelImpl : torch::nn::Module {
     double cutoff_radius; 
     int num_radial_basis; 
     bool apply_envelope;
-    PaiNNModelImpl(int num_embeddings, int dim, int layers, int num_rbf = 20, double cutoff = 5.0, bool env = false) 
-        : num_layers(layers), cutoff_radius(cutoff), num_radial_basis(num_rbf), apply_envelope(env) {
+    bool use_bias;
+    double toxvaerd_alpha;
+    
+    PaiNNModelImpl(int num_embeddings, int dim, int layers, int num_rbf = 20, double cutoff = 5.0, bool env = false, bool ubias = false, double t_alpha = 0.1) 
+        : num_layers(layers), cutoff_radius(cutoff), num_radial_basis(num_rbf), apply_envelope(env), use_bias(ubias), toxvaerd_alpha(t_alpha) {
         
         embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
         for (int i = 0; i < layers; ++i) {
-            messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim, num_rbf, apply_envelope)));
+            messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim, num_rbf, apply_envelope, use_bias)));
             updates.push_back(register_module("update_" + std::to_string(i), PaiNNUpdate(dim)));
         }
         readout = register_module("readout", torch::nn::Sequential(
@@ -81,16 +83,19 @@ struct PaiNNModelImpl : torch::nn::Module {
         ));
     }
 
-    // Espansione RBF con Cosine Cutoff integrato per stabilità dinamica
+    // Espansione RBF con Toxvaerd Cutoff (C3 smooth energy)
     torch::Tensor expansion_rbf(torch::Tensor d_ij) {
         double r_c = cutoff_radius; 
-        auto cos_cutoff = 0.5 * (torch::cos(M_PI * d_ij / r_c) + 1.0);
-        cos_cutoff = torch::where(d_ij > r_c, torch::zeros_like(cos_cutoff), cos_cutoff);
+        
+        auto x = (r_c - d_ij) / r_c;
+        auto x_n = torch::pow(x, 4);
+        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
+        tox_cutoff = torch::where(d_ij > r_c, torch::zeros_like(tox_cutoff), tox_cutoff);
 
         auto centers = torch::linspace(0.0, r_c, num_radial_basis, d_ij.options());
-        double sigma = r_c / num_radial_basis; // Larghezza dipendente dinamicamente dalla scala
+        double sigma = r_c / num_radial_basis;
         auto rbf = torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, sigma), 2));
-        return rbf * cos_cutoff.unsqueeze(1);
+        return rbf * tox_cutoff.unsqueeze(1);
     }
     
     // --- FORWARD COMPATIBILE CON PAINN.CPP (TRAINING) ---
@@ -106,12 +111,13 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
         
-        auto cos_cutoff = 0.5 * (torch::cos(M_PI * d_ij / cutoff_radius) + 1.0);
-        cos_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(cos_cutoff), cos_cutoff);
+        auto x = (cutoff_radius - d_ij) / cutoff_radius;
+        auto x_n = torch::pow(x, 4);
+        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
+        tox_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(tox_cutoff), tox_cutoff);
 
-        // Corretto bug di parsing del template sostituendo lo structured binding
         for (int i = 0; i < num_layers; ++i) {
-            auto msg_out = messages[i]->forward(s, v, batch.edge_index, rbf, r_ij_norm, cos_cutoff);
+            auto msg_out = messages[i]->forward(s, v, batch.edge_index, rbf, r_ij_norm, tox_cutoff);
             s = s + msg_out.first; 
             v = v + msg_out.second;
             
@@ -138,11 +144,13 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
         
-        auto cos_cutoff = 0.5 * (torch::cos(M_PI * d_ij / cutoff_radius) + 1.0);
-        cos_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(cos_cutoff), cos_cutoff);
+        auto x = (cutoff_radius - d_ij) / cutoff_radius;
+        auto x_n = torch::pow(x, 4);
+        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
+        tox_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(tox_cutoff), tox_cutoff);
 
         for (int i = 0; i < num_layers; ++i) {
-            auto msg_out = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm, cos_cutoff);
+            auto msg_out = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm, tox_cutoff);
             s = s + msg_out.first; 
             v = v + msg_out.second;
             

@@ -18,6 +18,9 @@ parser.add_argument("--device", type=str, default="auto", help="Device for ML (c
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps for Phase 1 Steepest Descent (default 5000)")
 parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 Classical MD Warmup (default 2000)")
+parser.add_argument("--apply_envelope", action="store_true", help="Apply cosine envelope to PaiNN output")
+parser.add_argument("--use_bias", action="store_true", help="Use biases in filter_mlp")
+parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
 args = parser.parse_args()
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
@@ -317,6 +320,9 @@ espressomd.painn.activate_painn_potential(
     n_layers=nn_config["n_layers"],
     num_rbf=nn_config["num_rbf"],
     cutoff=nn_config["cutoff"],
+    apply_envelope=args.apply_envelope,
+    use_bias=args.use_bias,
+    toxvaerd_alpha=args.toxvaerd_alpha,
     device=args.device
 )
 

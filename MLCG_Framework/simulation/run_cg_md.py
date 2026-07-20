@@ -15,10 +15,14 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
-parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
+parser.add_argument("--no_log", action="store_true", help="Disable wandb logging")
+parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
+parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
 parser.add_argument("--apply_envelope", action="store_true", help="Apply cosine envelope to PaiNN output")
+parser.add_argument("--use_bias", action="store_true", help="Use biases in filter_mlp")
+parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
 args = parser.parse_args()
 
 print("[INFO] Loading configurations...")
@@ -313,6 +317,8 @@ if args.model:
         num_rbf=nn_config["num_rbf"],
         cutoff=nn_config["cutoff"],
         apply_envelope=args.apply_envelope,
+        use_bias=args.use_bias,
+        toxvaerd_alpha=args.toxvaerd_alpha,
         device=args.device
     )
 else:

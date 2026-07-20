@@ -16,8 +16,11 @@ cat << 'JSON' > tel22_training_config.json
     "num_species": 8,
     "hidden_channels": 64,
     "n_layers": 2,
-    "num_rbf": 50,
-    "cutoff": 1.0,
+    "num_rbf": 32,
+    "cutoff": 1.2616,
+    "apply_envelope": false,
+    "use_bias": false,
+    "toxvaerd_alpha": 0.1,
     "learning_rate": 0.0005,
     "epochs": 100,
     "batch_size": 16
