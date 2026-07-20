@@ -15,7 +15,7 @@ echo "[2/3] Estrazione delle Forze dal Validation Set..."
 echo ""
 echo "[3/3] Generazione del Grafico (Parity Plot) e metriche..."
 # L'estrattore ha generato parity_forces.csv, ora Python lo plotta
-python3 plot_parity.py
+../../mlcg_venv/bin/python3 plot_parity.py
 
 echo ""
 echo "Finito! Controlla l'immagine 'parity_plot.png'."
