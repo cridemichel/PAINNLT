@@ -11,11 +11,11 @@ for dt in dts:
     steps = int(total_time / dt)
     print(f"\n--- Running NVE for dt = {dt} ps, steps = {steps} ---")
     
-    # Run the MD simulation with use_bias=false (omitting --use_bias) and apply_envelope
+    # Run the MD simulation with use_bias=false (omitting --use_bias) and apply_envelope=false (omitting --apply_envelope)
     cmd = [
         "../../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
-        "--model", "tel22_model_fixed.pt",
-        "--config", "tel22_training_config.json",
+        "--model", "tel22_model_bias0_true.pt",
+        "--config", "tel22_training_config_bias0.json",
         "--priors", "cg_priors.json",
         "--rb_info", "rigid_bodies_info.json",
         "--dataset", "tel22_dataset.bin",
@@ -23,8 +23,7 @@ for dt in dts:
         "--nve",
         "--dt", str(dt),
         "--steps", str(steps),
-        "--device", "cpu",
-        "--apply_envelope"
+        "--device", "cpu"
     ]
     
     # Capture output
