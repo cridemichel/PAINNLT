@@ -45,6 +45,13 @@ Passa il binario al programma C++. Addestrerà una rete Graph Neural Network in 
 ## 04_run_espresso.sh
 Carica il modello C++ appena addestrato all'interno del motore di ESPResSo per validare la stabilità strutturale e la conservazione dell'energia!
 
+> [!TIP]
+> **Stabilità dell'Energia NVE e Bias**
+> Se il tuo modello utilizza reti neurali con layer lineari provvisti di Bias (es. `PaiNN`), potresti riscontrare fluttuazioni ed esplosioni dell'energia termodinamica dovute a discontinuità di forza al raggio di cutoff.
+>
+> Per risolvere matematicamente questo problema, abbiamo introdotto il flag `--apply_envelope` nello script `run_cg_md.py`. Passando questo flag, il motore C++ moltiplicherà a posteriori l'output del layer per una funzione *cosine envelope*, forzando l'interazione dolcemente a zero ai bordi del raggio di cutoff. Questo ti garantirà simulazioni NVE stabili in eterno!
+> Esempio di esecuzione: `python ../../simulation/run_cg_md.py --apply_envelope ...`
+
 ---
 
 ## 05. Visualizzazione (PyMOL)

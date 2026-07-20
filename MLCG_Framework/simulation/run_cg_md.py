@@ -18,6 +18,7 @@ parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
+parser.add_argument("--apply_envelope", action="store_true", help="Apply cosine envelope to PaiNN output")
 args = parser.parse_args()
 
 print("[INFO] Loading configurations...")
@@ -311,6 +312,7 @@ if args.model:
         n_layers=nn_config["n_layers"],
         num_rbf=nn_config["num_rbf"],
         cutoff=nn_config["cutoff"],
+        apply_envelope=args.apply_envelope,
         device=args.device
     )
 else:
@@ -340,12 +342,6 @@ with open(vtf_filename, "w") as vtf_file:
     chunk_size = max(1, args.steps // 100)
     num_chunks = args.steps // chunk_size
     for step in range(num_chunks):
-        if step == 0:
-            system.integrator.run(0) # Evaluate forces without advancing time!
-            
-            f_all = system.part.all().f
-            print(f"DEBUG: Max force at step 0: {np.max(np.abs(f_all))} kJ/mol/nm")
-            print(f"DEBUG: Any NaN forces? {np.isnan(f_all).any()}")
         system.integrator.run(chunk_size)
         energies = system.analysis.energy()
         
