@@ -404,11 +404,11 @@ python run_cg_md.py \
 - `--kT`: Temperature in kJ/mol (default: 2.49).
 - `--device`: PyTorch device.
 - `--nve`: Runs the simulation in the NVE ensemble (no thermostat).
-- `--apply_envelope`: Multiplies the forces predicted by the PaiNN network by a cosine function (envelope) at the cutoff radius to smoothly zero them out, solving NVE stability issues caused by linear Biases.
+- `--apply_envelope`: Multiplies the forces predicted by the PaiNN network by a cosine function (envelope) at the cutoff radius to smoothly zero them out, solving NVE stability issues caused by linear Biases. (Optional: automatically loaded from the training JSON!)
 
 > [!TIP]
 > **NVE Stability and Neural Network Bias**
-> By default, the framework trains models with `"use_bias": false` and does not apply the envelope, guaranteeing $\mathcal{O}(dt^2)$ scaling natively. However, if you explicitly choose to train a model with biases (the "Thermodynamic Approach" for lower absolute errors), you **must** use the `--apply_envelope` flag during the simulation. The C++ engine will take care of smoothly canceling the interactions at the cutoff boundaries using the Toxvaerd C4 envelope, guaranteeing flawless energy conservation without catastrophic energy drifts!
+> By default, the framework trains models with `"use_bias": false` and `"apply_envelope": false`, guaranteeing $\mathcal{O}(dt^2)$ scaling natively. However, if you explicitly choose to train a model with biases (the "Thermodynamic Approach" for lower absolute errors), it is highly recommended to enable `"apply_envelope": true` in the training config. The simulation scripts (`equilibrate.py` and `run_cg_md.py`) will **automatically read** the `use_bias` and `apply_envelope` parameters from your `training_config.json`, ensuring absolute consistency between training and ESPResSo simulation. You no longer need to remember manual CLI flags!
 
 ### 3.4 Rigid Body Dynamics and Particle Filtering
 In the framework, simulating multi-site molecules (Multi-Bead) leverages ESPResSo's **Virtual Sites**:

@@ -320,8 +320,8 @@ espressomd.painn.activate_painn_potential(
     n_layers=nn_config["n_layers"],
     num_rbf=nn_config["num_rbf"],
     cutoff=nn_config["cutoff"],
-    apply_envelope=args.apply_envelope,
-    use_bias=args.use_bias,
+    apply_envelope=nn_config.get("apply_envelope", args.apply_envelope),
+    use_bias=nn_config.get("use_bias", args.use_bias),
     toxvaerd_alpha=args.toxvaerd_alpha,
     device=args.device
 )

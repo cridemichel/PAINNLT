@@ -8,5 +8,6 @@ echo "[6/6] Simulazione in ESPResSo con IBI + ML"
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
     --checkpoint equilibrated.npz \
+    --apply_envelope \
     --dt 0.001 \
     --steps 50000

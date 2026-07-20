@@ -51,8 +51,8 @@ Carica il modello C++ appena addestrato all'interno del motore di ESPResSo per v
 > I modelli Graph Neural Networks (come PaiNN) generano tipicamente discontinuità al raggio di cutoff a causa dei *bias* nei layer lineari, distruggendo lo scaling nativo $\mathcal{O}(dt^2)$ dell'integratore Verlet nelle simulazioni NVE. Per risolvere questo problema, il framework usa nativamente lo Smoothing di Toxvaerd ($\mathcal{C}^3$). Nel tutorial puoi scegliere due approcci:
 > 
 > 1. **Approccio Rigoroso (Default nel Tutorial):** `use_bias=false` nel training (nessun envelope in MD). La rete non ha gradienti discontinui. Lo scaling è numericamente perfetto ($\approx 1.99$), ideale per NVE di precisione, anche se l'errore assoluto a corto raggio cresce leggermente per la perdita dei parametri di bias.
-> 2. **Approccio Termodinamico:** Se modifichi `use_bias=true` nel training per abbassare l'errore assoluto, **devi** usare l'envelope. Aggiungendo il flag `--apply_envelope` in `run_cg_md.py`, l'output verrà avvolto e schiacciato a zero dal cutoff di Toxvaerd. Lo scaling sarà leggermente sub-ottimale ($\approx 1.89$), ma le fluttuazioni dell'energia resteranno molto più piccole in valore assoluto!
-> Esempio (Approccio Termodinamico): `python ../../simulation/run_cg_md.py --apply_envelope --toxvaerd_alpha 0.1`
+> 2. **Approccio Termodinamico:** Se decidi di impostare `"use_bias": true` nel file di configurazione del training per abbassare l'errore assoluto, è fortemente raccomandato abilitare contemporaneamente `"apply_envelope": true`. I tuoi script di simulazione (`04_equilibrate.sh` e `05_run_espresso.sh`) non necessitano più di flag manuali: essi andranno a leggere automaticamente il file di configurazione (`tel22_training_config.json`) e applicheranno l'envelope di Toxvaerd se la rete è stata addestrata per richiederlo. Lo scaling sarà leggermente sub-ottimale ($\approx 1.89$), ma le fluttuazioni dell'energia resteranno molto più piccole in valore assoluto!
+> *Nota*: I parametri numerici avanzati (es. `toxvaerd_alpha`) possono ancora essere passati manualmente, ma il flag strutturale sull'envelope non è più necessario a CLI.
 
 ---
 

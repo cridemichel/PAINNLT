@@ -7,5 +7,6 @@ echo "[5/6] Equilibrazione del sistema (Steepest Descent + Warmup)"
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
+    --apply_envelope \
     --out_checkpoint equilibrated.npz
 echo "[SUCCESS] Sistema equilibrato e salvato in equilibrated.npz"

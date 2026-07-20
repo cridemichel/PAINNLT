@@ -1,27 +1,48 @@
+import torch
 import numpy as np
+import json
+import sys
+import os
+sys.path.append(os.path.abspath("../../training/src"))
+import dataset
+from model import PaiNN
 
-# We'll just run the _tmp_ibi_md.py but intercept the run
-with open("_tmp_ibi_md.py", "r") as f:
-    code = f.read()
+print("Loading dataset...")
+ds = dataset.CGDataset("tel22_dataset_ibi.bin")
+print(f"Dataset size: {len(ds)}")
 
-# Replace the run block with our own force inspection
-code = code.replace("system.integrator.run(1000)", "")
-code = code.replace("system.force_cap = 2000.0", "system.force_cap = 0.0")
+with open("tel22_training_config.json") as f:
+    config = json.load(f)
 
-# Append our diagnostic code
-diagnostic_code = """
-system.integrator.run(0)
-forces = system.part.all().f
-for i, f in enumerate(forces):
-    mag = np.linalg.norm(f)
-    if mag > 500:
-        print(f"Particle {i} has HUGE force: {mag:.2f}  vector: {f}")
+model = PaiNN(
+    num_species=config["num_species"],
+    hidden_channels=config["hidden_channels"],
+    n_layers=config["n_layers"],
+    num_rbf=config["num_rbf"],
+    cutoff=config["cutoff"]
+)
+model.load_state_dict(torch.load("tel22_model_ibi.pt", map_location="cpu"))
+model.eval()
 
-f164 = system.part.by_id(164).f
-f165 = system.part.by_id(165).f
-print(f"Force on 164: {np.linalg.norm(f164):.2f}")
-print(f"Force on 165: {np.linalg.norm(f165):.2f}")
-"""
+data = ds[0]
+pos = data.pos.unsqueeze(0)
+species = data.species.unsqueeze(0)
 
-with open("check_forces_md.py", "w") as f:
-    f.write(code + diagnostic_code)
+# Evaluate model
+with torch.no_grad():
+    ml_forces, ml_torques = model(pos, species)
+
+target_f = data.force
+target_t = data.torque
+
+print("ML Forces (first 5):")
+print(ml_forces[0, :5])
+print("Target Forces (first 5):")
+print(target_f[:5])
+
+error_f = torch.abs(ml_forces.squeeze(0) - target_f)
+print(f"Max Force Error: {error_f.max().item():.2f}")
+print(f"Mean Force Error: {error_f.mean().item():.2f}")
+
+print("Max ML Force:", ml_forces.abs().max().item())
+print("Max Target Force:", target_f.abs().max().item())

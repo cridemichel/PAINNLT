@@ -588,6 +588,11 @@ def main():
             
     print(f"\n[SUCCESS] IBI Converged after {args.iterations} iterations.")
     
+    # Save updated priors back to the original file
+    print(f"[INFO] Saving updated priors with tabulated paths to {args.priors}")
+    with open(args.priors, "w") as f:
+        json.dump(priors_data, f, indent=4)
+        
     # Cleanup temp files
     if os.path.exists(script_name): os.remove(script_name)
     if os.path.exists(traj_name): os.remove(traj_name)

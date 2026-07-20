@@ -405,11 +405,11 @@ python run_cg_md.py \
 - `--kT`: Temperatura in kJ/mol (default: 2.49).
 - `--device`: Dispositivo per PyTorch.
 - `--nve`: Esegue la simulazione nell'ensemble NVE (nessun termostato).
-- `--apply_envelope`: Moltiplica le forze predette dalla rete PaiNN per una funzione coseno (envelope) al raggio di cutoff per azzerarle gradualmente, risolvendo i problemi di stabilità NVE causati dai Bias lineari.
+- `--apply_envelope`: Moltiplica le forze predette dalla rete PaiNN per una funzione coseno (envelope) al raggio di cutoff per azzerarle gradualmente, risolvendo i problemi di stabilità NVE causati dai Bias lineari. (Opzionale: viene caricato in automatico dal JSON di training!)
 
 > [!TIP]
 > **Stabilità NVE e Bias della Rete Neurale**
-> Di default, il framework addestra i modelli con `"use_bias": false` e non applica alcun envelope, garantendo uno scaling $\mathcal{O}(dt^2)$ nativo. Tuttavia, se decidi intenzionalmente di addestrare un modello con i bias (l'approccio termodinamico per ridurre l'errore assoluto), **devi** usare il flag `--apply_envelope` in simulazione. Il motore C++ si occuperà di annullare in modo fluido le interazioni ai bordi del cutoff tramite l'inviuppo Toxvaerd C4, garantendo una conservazione dell'energia impeccabile senza derive catastrofiche!
+> Di default, il framework addestra i modelli con `"use_bias": false` e `"apply_envelope": false`, garantendo uno scaling $\mathcal{O}(dt^2)$ nativo. Tuttavia, se decidi intenzionalmente di addestrare un modello con i bias (l'approccio termodinamico per ridurre l'errore assoluto), è caldamente consigliato abilitare `"apply_envelope": true` nel config di addestramento. Gli script di simulazione (`equilibrate.py` e `run_cg_md.py`) **leggeranno automaticamente** i parametri `use_bias` e `apply_envelope` dal tuo `training_config.json`, garantendoti una coerenza assoluta tra la fase di addestramento e la simulazione in ESPResSo. Non dovrai più ricordarti di aggiungere flag manuali!
 
 ### 3.4 Dinamica dei Corpi Rigidi e Filtro delle Particelle
 Nel framework, la simulazione di molecole a più siti (Multi-Bead) sfrutta i **Virtual Sites** di ESPResSo:
