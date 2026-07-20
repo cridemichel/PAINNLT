@@ -24,7 +24,9 @@ for dt in dts:
         "--nve",
         "--dt", str(dt),
         "--steps", str(steps),
-        "--device", "cpu"
+        "--device", "cpu",
+        "--use_bias",
+        "--apply_envelope"
     ]
     
     # Capture output
@@ -59,20 +61,20 @@ log_dts = np.log10(dts)
 log_stds_tox = np.log10(std_devs_toxvaerd)
 log_stds_bias0 = np.log10(std_devs_bias_0)
 
-plt.scatter(log_dts, log_stds_tox, color='blue', s=100, zorder=5, label='Current (Toxvaerd C4, bias=0)')
+plt.scatter(log_dts, log_stds_tox, color='blue', s=100, zorder=5, label='Current (Toxvaerd C4, bias=1, env=1)')
 plt.scatter(log_dts, log_stds_bias0, color='green', marker='^', s=100, zorder=5, label='Reference (Cosine C1, bias=0)')
 
 # Theoretical slope 2 line (passes through the first point)
 x_line = np.linspace(min(log_dts)-0.1, max(log_dts)+0.1, 100)
-y_line_ideal = 2.0 * (x_line - log_dts[0]) + log_stds_bias0[0]
+y_line_ideal = 2.0 * (x_line - log_dts[0]) + log_stds_tox[0]
 plt.plot(x_line, y_line_ideal, color='red', linestyle='--', linewidth=2, label=r'Ideal Verlet Scaling ($\mathcal{O}(dt^2)$)')
 
-# Fit a line for Toxvaerd
+# Fit a line for Toxvaerd (bias=1, env=1)
 valid_tox = ~np.isnan(log_stds_tox)
 if np.sum(valid_tox) > 1:
     slope_tox, intercept_tox = np.polyfit(log_dts[valid_tox], log_stds_tox[valid_tox], 1)
     y_fit_tox = slope_tox * x_line + intercept_tox
-    plt.plot(x_line, y_fit_tox, color='blue', linestyle=':', alpha=0.7, label=f'Fit Toxvaerd C4 (slope = {slope_tox:.2f})')
+    plt.plot(x_line, y_fit_tox, color='blue', linestyle=':', alpha=0.7, label=f'Fit Toxvaerd C4 env (slope = {slope_tox:.2f})')
 
 # Fit a line for Bias=0 Reference
 slope_b0, intercept_b0 = np.polyfit(log_dts, log_stds_bias0, 1)
@@ -85,5 +87,5 @@ plt.title('Energy Conservation Scaling (Verlet Integrator)')
 plt.grid(True, linestyle=':', alpha=0.7)
 plt.legend()
 plt.tight_layout()
-plt.savefig('energy_conservation_toxvaerd_scaling.png', dpi=300)
-print("\n[INFO] Plot saved to energy_conservation_toxvaerd_scaling.png")
+plt.savefig('energy_conservation_toxvaerd_scaling_final.png', dpi=300)
+print("\n[INFO] Plot saved to energy_conservation_toxvaerd_scaling_final.png")

@@ -279,6 +279,13 @@ make -j4
 Nella cartella `training/` troverai il file `cg_model_config.json`. Questo file è la **centralina di controllo** della rete: prima di lanciare l'addestramento, puoi modificare qui dentro parametri come `hidden_channels`, `n_layers`, `cutoff`, `learning_rate` e le `epochs`. Il codice C++ leggerà questo file in tempo reale senza bisogno di ricompilare!
 
 > [!TIP]
+> **Toxvaerd C4 Smoothing e Stabilità di Verlet**
+> Per garantire la perfetta stabilità numerica del Verlet Integrator e una conservazione dell'energia eccezionale in simulazioni MD (scalabilità quadratica con il timestep $O(dt^2)$), il framework implementa nativamente lo **Smoothing di Toxvaerd**. Nel `cg_model_config.json` puoi attivarlo usando:
+> - `"apply_envelope": true`
+> - `"use_bias": false` (Critico: rimuove i bias lineari interni, impedendo salti bruschi delle derivate della forza al raggio di cutoff)
+> - `"toxvaerd_alpha": 0.1` (Controlla la larghezza della regione di smorzamento vicino al cutoff)
+
+> [!TIP]
 > **Regolarizzazione di Lipschitz**
 > Nel file `.json` puoi aggiungere o modificare il parametro `"lipschitz_lambda": 0.001`. Questo parametro introduce una penalità L2 sulla magnitudine delle forze durante l'addestramento (ispirata a CGnet). Attivandola, il modello imparerà a prevedere superfici di energia più dolci, prevenendo gradienti enormi ed esplosioni durante la simulazione in ESPResSo. Se lo imposti a `0.0`, l'overhead aggiuntivo viene completamente bypassato garantendo la totale retrocompatibilità.
 
