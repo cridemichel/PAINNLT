@@ -13,7 +13,7 @@ fi
 echo "Avvio l'equilibrazione con Langevin Dynamics e Force Capping..."
 export PYTORCH_ENABLE_MPS_FALLBACK=1
 ../../../espresso/build/pypresso ../../simulation/equilibrate.py \
-    --model tel22_model.pt \
+    --model tel22_model_fixed.pt \
     --config tel22_training_config.json \
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
