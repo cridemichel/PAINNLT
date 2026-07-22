@@ -1003,10 +1003,22 @@ with open(args.output, "wb") as f:
             else:
                 dV_dtheta = 0.0
                 
+            if abs(dV_dtheta) > 1000.0:
+                dV_dtheta = np.sign(dV_dtheta) * 1000.0
+
             grad_i_cos = r_jk / (d_ji * d_jk) - cos_theta * r_ji / (d_ji**2)
             grad_k_cos = r_ji / (d_ji * d_jk) - cos_theta * r_jk / (d_jk**2)
-            f_i = (dV_dtheta / sin_theta) * grad_i_cos
-            f_k = (dV_dtheta / sin_theta) * grad_k_cos
+            
+            scalar_force = dV_dtheta / sin_theta
+            if abs(scalar_force) > 1000.0:
+                scalar_force = np.sign(scalar_force) * 1000.0
+                
+            f_i = scalar_force * grad_i_cos
+            f_k = scalar_force * grad_k_cos
+            
+            # Explicit vector clip to prevent gradient magnitude explosion
+            f_i = np.clip(f_i, -1000.0, 1000.0)
+            f_k = np.clip(f_k, -1000.0, 1000.0)
             f_j = -(f_i + f_k)
             
             res_forces[i] -= f_i
@@ -1078,6 +1090,9 @@ with open(args.output, "wb") as f:
             else:
                 dV_dphi = 0.0
                 
+            if abs(dV_dphi) > 1000.0:
+                dV_dphi = np.sign(dV_dphi) * 1000.0
+                
             f_i = (b2_norm / n1_norm2) * dV_dphi * n1
             f_l = -(b2_norm / n2_norm2) * dV_dphi * n2
             
@@ -1088,6 +1103,13 @@ with open(args.output, "wb") as f:
             
             f_j = -f_i + term1 - term2
             f_k = -f_l - term1 + term2
+            
+            # Explicit vector clip to prevent any component from exceeding the safety threshold
+            f_i = np.clip(f_i, -1000.0, 1000.0)
+            f_l = np.clip(f_l, -1000.0, 1000.0)
+            f_j = np.clip(f_j, -1000.0, 1000.0)
+            f_k = np.clip(f_k, -1000.0, 1000.0)
+            
             res_forces[i] -= f_i
             res_forces[j] -= f_j
             res_forces[k_idx] -= f_k

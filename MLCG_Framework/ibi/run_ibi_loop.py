@@ -238,16 +238,38 @@ num_particles = len(initial_pos)
 
 # Setup particles with realistic initial coordinates
 for i in range(num_particles):
-    system.part.add(id=i, pos=initial_pos[i], type=0)
+    system.part.add(id=i, pos=initial_pos[i], type=i)
+
+# WCA Exclusions (1-2 and 1-3)
+wca_exclusions = set()
+for b in priors.get("bonds", []):
+    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
+    wca_exclusions.add((m1, m2))
+for a in priors.get("angles", []):
+    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
+    wca_exclusions.add((m1, m2))
+for (m1, m2) in wca_exclusions:
+    system.part.by_id(m1).add_exclusion(m2)
 
 # WCA Non-Bonded interactions
 wca = priors.get("wca", {{}})
-if wca.get("epsilon", 0.0) > 0 and wca.get("sigma", 0.0) > 0:
+has_wca = wca.get("sigma", 0.0) > 0 or len(wca.get("overrides", {{}})) > 0
+if wca.get("epsilon", 0.0) > 0 and has_wca:
+    wca_sigma = wca.get("sigma", 0.3)
+    wca_eps = wca.get("epsilon", 1.0)
+    overrides = wca.get("overrides", {{}})
     for i in range(num_particles):
+        sigma_i = overrides.get(str(i), {{}}).get("sigma", wca_sigma)
+        eps_i = overrides.get(str(i), {{}}).get("epsilon", wca_eps)
         for j in range(i+1, num_particles):
-            system.non_bonded_inter[0, 0].lennard_jones.set_params(
-                epsilon=wca["epsilon"], sigma=wca["sigma"],
-                cutoff=wca["sigma"] * (2.0**(1/6)), shift="auto"
+            sigma_j = overrides.get(str(j), {{}}).get("sigma", wca_sigma)
+            eps_j = overrides.get(str(j), {{}}).get("epsilon", wca_eps)
+            
+            sig = 0.5 * (sigma_i + sigma_j)
+            eps = np.sqrt(eps_i * eps_j)
+            system.non_bonded_inter[system.part.by_id(i).type, system.part.by_id(j).type].lennard_jones.set_params(
+                epsilon=eps, sigma=sig,
+                cutoff=sig * (2.0**(1/6)), shift="auto"
             )
 
 # Apply interactions
