@@ -108,12 +108,9 @@ with open(args.dataset, "rb") as f:
             p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
-print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
-wca_exclusions = set()
+print("[INFO] Setting up WCA exclusions (Intra-molecular and 1-2, 1-3)...")
 
-# IMPORTANT: Exclude WCA between ALL virtual sites within the SAME rigid body!
-# In fact, exclude all sites within the same molecule from WCA to be safe,
-# or at least all sites within the same rigid body.
+# 1. Intra-molecular exclusions
 mol_to_vs = {}
 for (m_idx, s_idx), pid in mol_vs_parts.items():
     if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
@@ -128,13 +125,29 @@ for m_idx, pids in mol_to_vs.items():
             p2 = system.part.by_id(pids[j])
             p1.add_exclusion(p2)
 
-for ex in wca_exclusions:
-    try:
-        p1 = system.part.by_id(mol_vs_parts.get(ex[0], ex[0]))
-        p2 = system.part.by_id(mol_vs_parts.get(ex[1], ex[1]))
-        p1.add_exclusion(p2)
-    except Exception:
-        continue
+# 2. 1-2 and 1-3 molecule exclusions (Inter-molecular bonds/angles)
+wca_exclusions = set()
+for b in priors.get("bonds", []):
+    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
+    wca_exclusions.add((m1, m2))
+for a in priors.get("angles", []):
+    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
+    wca_exclusions.add((m1, m2))
+
+for (m1, m2) in wca_exclusions:
+    m1_parts = [mol_com_parts.get(m1)] if m1 in mol_com_parts else []
+    m1_parts += [pid for (m, s), pid in mol_vs_parts.items() if m == m1 and isinstance(m, int)]
+    m2_parts = [mol_com_parts.get(m2)] if m2 in mol_com_parts else []
+    m2_parts += [pid for (m, s), pid in mol_vs_parts.items() if m == m2 and isinstance(m, int)]
+    
+    for pid1 in m1_parts:
+        for pid2 in m2_parts:
+            if pid1 is not None and pid2 is not None:
+                try:
+                    system.part.by_id(pid1).add_exclusion(system.part.by_id(pid2))
+                except Exception:
+                    pass
+
 
 if args.checkpoint:
     print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")

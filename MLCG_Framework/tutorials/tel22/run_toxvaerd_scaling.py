@@ -24,9 +24,7 @@ for dt in dts:
         "--nve",
         "--dt", str(dt),
         "--steps", str(steps),
-        "--device", "cpu",
-        "--use_bias",
-        "--apply_envelope"
+        "--device", "auto"
     ]
     
     # Capture output
