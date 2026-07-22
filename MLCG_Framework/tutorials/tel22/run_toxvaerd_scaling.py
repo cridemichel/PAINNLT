@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 
 dts = [0.004, 0.006, 0.008, 0.01]
-total_time = 0.5 # 0.5 ps
+total_time = 2.0 # 2.0 ps (doubled simulation time again)
 
 std_devs_toxvaerd = []
 
@@ -12,7 +12,7 @@ for dt in dts:
     steps = int(total_time / dt)
     print(f"\n--- Running NVE for dt = {dt} ps, steps = {steps} ---")
     
-    # Run the MD simulation with the current settings (use_bias=false, toxvaerd_alpha=0.1)
+    # Run the MD simulation with the current settings
     cmd = [
         "../../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
         "--model", "tel22_model.pt",
@@ -21,6 +21,7 @@ for dt in dts:
         "--rb_info", "rigid_bodies_info.json",
         "--dataset", "tel22_dataset.bin",
         "--checkpoint", "equilibrated.npz",
+        "--apply_envelope",
         "--nve",
         "--dt", str(dt),
         "--steps", str(steps),
@@ -67,7 +68,7 @@ x_line = np.linspace(min(log_dts)-0.1, max(log_dts)+0.1, 100)
 y_line_ideal = 2.0 * (x_line - log_dts[0]) + log_stds_tox[0]
 plt.plot(x_line, y_line_ideal, color='red', linestyle='--', linewidth=2, label=r'Ideal Verlet Scaling ($\mathcal{O}(dt^2)$)')
 
-# Fit a line for Toxvaerd (bias=1, env=1)
+# Fit a line for Toxvaerd
 valid_tox = ~np.isnan(log_stds_tox)
 if np.sum(valid_tox) > 1:
     slope_tox, intercept_tox = np.polyfit(log_dts[valid_tox], log_stds_tox[valid_tox], 1)
