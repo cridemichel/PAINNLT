@@ -21,7 +21,7 @@ cat << 'JSON' > tel22_training_config.json
     "apply_envelope": false,
     "use_bias": false,
     "toxvaerd_alpha": 0.1,
-    "learning_rate": 0.0005,
+    "learning_rate": 0.001,
     "epochs": 100,
     "batch_size": 16
 }
