@@ -3,7 +3,6 @@ import glob
 import numpy as np
 
 def extrapolate_table(filepath, is_angle=False):
-    # Read the data, skipping the header "# x energy force"
     try:
         data = np.loadtxt(filepath, comments='#')
     except Exception as e:
@@ -11,7 +10,6 @@ def extrapolate_table(filepath, is_angle=False):
         return
 
     if len(data) < 2:
-        print(f"File {filepath} has too few rows.")
         return
 
     x = data[:, 0]
@@ -21,21 +19,11 @@ def extrapolate_table(filepath, is_angle=False):
     x_min, u_min, f_min = x[0], energy[0], force[0]
     x_max, u_max, f_max = x[-1], energy[-1], force[-1]
 
-    # Calculate slopes for force extrapolation
-    # slope = df/dx. We want negative slopes for restoring forces.
-    k_left = (force[1] - force[0]) / (x[1] - x[0])
-    if k_left > 0:
-        k_left = -1000.0  # Enforce stiff repulsion if not inherently repulsive
-        
-    k_right = (force[-1] - force[-2]) / (x[-1] - x[-2])
-    if k_right > 0:
-        k_right = -1000.0 # Enforce stiff restoring force if not inherently attractive
-
-    # Define the padding grid
+    # Padding
     dx = x[1] - x[0]
     
     # Left padding
-    target_min = 0.0 if is_angle else 0.001
+    target_min = 0.01 if is_angle else 0.001
     num_left = int(np.floor((x_min - target_min) / dx))
     
     left_rows = []
@@ -43,10 +31,25 @@ def extrapolate_table(filepath, is_angle=False):
         for i in range(num_left, 0, -1):
             xi = x_min - i * dx
             if xi < target_min: continue
-            # Linear force extrapolation: F(x) = f_min + k_left * (x - x_min)
-            fi = f_min + k_left * (xi - x_min)
-            # Energy integration: U(x) = U_min - ( F_min*(x - x_min) + 0.5*k_left*(x - x_min)^2 )
-            ui = u_min - (f_min * (xi - x_min) + 0.5 * k_left * (xi - x_min)**2)
+            
+            if not is_angle:
+                # WCA Extrapolation for Bonds: F(x) = F_min * (x_min/x)^13
+                # We assume f_min is repulsive (positive). If not, fallback to constant force.
+                if f_min > 0 and xi > 0:
+                    ratio = x_min / xi
+                    fi = f_min * (ratio**13)
+                    # U(x) = U_min + F_min*x_min/12 * ( (x_min/x)^12 - 1 )
+                    ui = u_min + (f_min * x_min / 12.0) * ((ratio**12) - 1.0)
+                else:
+                    f_left_extrap = max(f_min, 10.0)
+                    fi = f_left_extrap
+                    ui = u_min - fi * (xi - x_min)
+            else:
+                # Constant force extrapolation for angles
+                f_left_extrap = max(f_min, 10.0)
+                fi = f_left_extrap
+                ui = u_min - fi * (xi - x_min)
+                
             left_rows.append([xi, ui, fi])
 
     # Right padding
@@ -58,10 +61,12 @@ def extrapolate_table(filepath, is_angle=False):
         for i in range(1, num_right + 1):
             xi = x_max + i * dx
             if xi > target_max: continue
-            # Linear force extrapolation: F(x) = f_max + k_right * (x - x_max)
-            fi = f_max + k_right * (xi - x_max)
-            # Energy integration: U(x) = U_max - ( F_max*(x - x_max) + 0.5*k_right*(x - x_max)^2 )
-            ui = u_max - (f_max * (xi - x_max) + 0.5 * k_right * (xi - x_max)**2)
+            
+            # Right side extrapolation (bonds and angles): Constant force
+            f_right_extrap = min(f_max, -10.0)
+            fi = f_right_extrap
+            ui = u_max - fi * (xi - x_max)
+                
             right_rows.append([xi, ui, fi])
 
     # Combine
@@ -74,9 +79,9 @@ def extrapolate_table(filepath, is_angle=False):
 
     new_data = np.array(new_data)
 
-    # Save over the same file
+    # Save
     with open(filepath, 'w') as f:
-        f.write("# x energy force (Extrapolated)\n")
+        f.write("# x energy force (WCA/Constant Extrapolated)\n")
         for row in new_data:
             f.write(f"{row[0]:.6f} {row[1]:.6f} {row[2]:.6f}\n")
             
@@ -96,7 +101,7 @@ def main():
     for angle_file in glob.glob(os.path.join(priors_dir, "angle_tabulated_*.dat")):
         extrapolate_table(angle_file, is_angle=True)
 
-    print("All tables successfully extrapolated!")
+    print("All tables successfully WCA-extrapolated!")
 
 if __name__ == "__main__":
     main()

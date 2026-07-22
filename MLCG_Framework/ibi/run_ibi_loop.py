@@ -132,49 +132,74 @@ def read_dataset_distributions(bin_file, priors):
                 
     return bond_dists, angle_dists, dihedral_dists, first_frame_centers, np.array(first_frame_types)
 
-def extrapolate_potential_and_force(x, V, F, hist):
+def extrapolate_potential_and_force(x, V, F, hist, target_type='bond'):
     valid_idx = np.where(hist > 1e-5)[0]
     if len(valid_idx) == 0:
         return V, F
     first, last = valid_idx[0], valid_idx[-1]
     
     # Left extrapolation (repulsive core)
-    # Calculate empirical slope K_left to ensure C1 continuity of the potential (C0 for force)
-    if first + 1 < len(x):
-        k_left = (F[first + 1] - F[first]) / (x[first + 1] - x[first])
-    else:
-        k_left = -100.0
-    
-    # Sicurezza: K_left deve essere negativo per essere repulsivo
-    k_left = min(k_left, -50.0)
-    
     base_left_force = F[first]
     x_left = x[first]
     V_left = V[first]
     
-    for i in range(first - 1, -1, -1):
-        dx = x[i] - x_left
-        F[i] = base_left_force + k_left * dx
-        V[i] = V_left - base_left_force * dx - 0.5 * k_left * (dx**2)
+    if target_type == 'bond':
+        # WCA Extrapolation for Bonds: F(x) = F_min * (x_min/x)^13
+        if base_left_force > 0 and x_left > 0:
+            for i in range(first - 1, -1, -1):
+                if x[i] <= 0:
+                    F[i] = F[i+1]
+                    V[i] = V[i+1]
+                    continue
+                ratio = min(x_left / x[i], 100.0) # Prevent catastrophic overflow
+                fi = base_left_force * (ratio**13)
+                ui = V_left + (base_left_force * x_left / 12.0) * ((ratio**12) - 1.0)
+                # Cap extremely large forces to prevent table precision issues
+                F[i] = min(fi, 50000.0)
+                V[i] = ui
+        else:
+            # Fallback
+            for i in range(first - 1, -1, -1):
+                dx = x[i] - x_left
+                F[i] = max(base_left_force, 10.0)
+                V[i] = V_left - F[i] * dx
+    else:
+        # Constant Force for Angles / Dihedrals
+        for i in range(first - 1, -1, -1):
+            dx = x[i] - x_left
+            F[i] = max(base_left_force, 10.0)
+            V[i] = V_left - F[i] * dx
         
     # Right extrapolation (attractive tail / zero)
-    if last - 1 >= 0:
-        k_right = (F[last] - F[last - 1]) / (x[last] - x[last - 1])
-    else:
-        k_right = -50.0
-        
-    k_right = min(k_right, -10.0)
-    
     base_right_force = F[last]
     x_right = x[last]
     V_right = V[last]
     
     for i in range(last + 1, len(x)):
         dx = x[i] - x_right
-        F[i] = base_right_force + k_right * dx
-        V[i] = V_right - base_right_force * dx - 0.5 * k_right * (dx**2)
+        F[i] = min(base_right_force, -10.0)
+        V[i] = V_right - F[i] * dx
         
     return V, F
+
+def enforce_consistency_and_cap(x, V_orig, F_orig, force_max=100.0):
+    F_capped = np.clip(F_orig, -force_max, force_max)
+    min_idx = np.argmin(V_orig)
+    V_new = np.zeros_like(V_orig)
+    V_new[min_idx] = V_orig[min_idx]
+    
+    for i in range(min_idx, len(x) - 1):
+        dx = x[i+1] - x[i]
+        avg_F = 0.5 * (F_capped[i] + F_capped[i+1])
+        V_new[i+1] = V_new[i] - avg_F * dx
+        
+    for i in range(min_idx, 0, -1):
+        dx = x[i] - x[i-1]
+        avg_F = 0.5 * (F_capped[i] + F_capped[i-1])
+        V_new[i-1] = V_new[i] + avg_F * dx
+        
+    V_new -= np.min(V_new)
+    return V_new, F_capped
 
 def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type=None):
     hist, bin_edges = np.histogram(values, bins=bins, density=True)
@@ -188,13 +213,11 @@ def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type
     raw_hist = hist.copy()
     hist = np.clip(hist, 1e-6, None)
     
-    # Normalize after Jacobian correction
     hist /= np.sum(hist) * (bin_centers[1] - bin_centers[0])
     
     potential = -kT * np.log(hist)
     potential -= np.min(potential)
     
-    # Smooth
     mode = 'wrap' if periodic else 'reflect'
     potential_smooth = gaussian_filter1d(potential, sigma=2.0, mode=mode)
     
@@ -204,17 +227,14 @@ def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type
         force = -np.gradient(potential_smooth, dx)
     else:
         force = -np.gradient(potential_smooth, dx)
-        potential_smooth, force = extrapolate_potential_and_force(bin_centers, potential_smooth, force, raw_hist)
+        potential_smooth, force = extrapolate_potential_and_force(bin_centers, potential_smooth, force, raw_hist, target_type=jacobian_type)
         
     F_0 = -np.gradient(potential_smooth, bin_centers)
-    
-    # Cap forces to avoid integration blow-up (ESPResSo force_cap does not apply to bonded interactions)
-    FORCE_MAX = 500.0
-    F_0 = np.clip(F_0, -FORCE_MAX, FORCE_MAX)
+    potential_smooth, F_0 = enforce_consistency_and_cap(bin_centers, potential_smooth, F_0, force_max=50000.0)
         
     return bin_centers, potential_smooth, F_0, hist
 
-def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, periodic=False):
+def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, periodic=False, target_type='bond'):
     P_i = np.clip(P_i, 1e-6, None)
     P_target = np.clip(P_target, 1e-6, None)
     
@@ -229,12 +249,10 @@ def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, pe
     force = -np.gradient(V_next_smooth, dx)
     
     if not periodic:
-        V_next_smooth, force = extrapolate_potential_and_force(bin_centers, V_next_smooth, force, P_target)
+        V_next_smooth, force = extrapolate_potential_and_force(bin_centers, V_next_smooth, force, P_target, target_type=target_type)
         
     force = gaussian_filter1d(force, sigma=2.0, mode=mode)
-    
-    FORCE_MAX = 500.0
-    force = np.clip(force, -FORCE_MAX, FORCE_MAX)
+    V_next_smooth, force = enforce_consistency_and_cap(bin_centers, V_next_smooth, force, force_max=50000.0)
         
     return V_next_smooth, force
 
@@ -654,7 +672,7 @@ def main():
         for name, table in ibi_tables.get("bonds", {}).items():
             sim_dists = sim_bond_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False)
+            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='bond')
             table["V"] = V_next
             table["F"] = F_next
             save_tabulated_potential(f"{args.outdir}/bond_tabulated_{name}.dat", table["x"], V_next, F_next)
@@ -664,7 +682,7 @@ def main():
         for name, table in ibi_tables.get("angles", {}).items():
             sim_dists = sim_angle_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False)
+            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='angle')
             table["V"] = V_next
             table["F"] = F_next
             save_tabulated_potential(f"{args.outdir}/angle_tabulated_{name}.dat", table["x"], V_next, F_next)
@@ -674,7 +692,7 @@ def main():
         for name, table in ibi_tables.get("dihedrals", {}).items():
             sim_dists = sim_dihedral_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=True)
+            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=True, target_type='dihedral')
             table["V"] = V_next
             table["F"] = F_next
             save_tabulated_potential(f"{args.outdir}/dihedral_tabulated_{name}.dat", table["x"], V_next, F_next)

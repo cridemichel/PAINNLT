@@ -227,10 +227,22 @@ L'architettura separa logicamente l'estrazione delle statistiche dalla sottrazio
    Rilancia `build_cg_dataset.py`, ma questa volta passandogli il flag `--priors cg_priors.json` generato dallo step precedente. In questo modo il framework salta la statistica, vede i legami come `"tabulated"`, carica le tabelle `.dat` definitive ed esegue l'interpolazione per sottrarre rigorosamente la forza esatta (IBI) dalle forze residue del dataset. L'output finale `tel22_dataset_ibi.bin` è pronto per addestrare il modello di Machine Learning!
 
 > [!WARNING]
-> **Estrapolazione delle Tabelle IBI (SOTA)**
+> **Estrapolazione delle Tabelle IBI (SOTA) e Consistenza Termodinamica**
 > Le tabelle `.dat` prodotte dall'IBI coprono *esclusivamente* il range di distanze campionato durante la simulazione (es. da $0.1$ a $3.0$ nm).
-> Se durante l'addestramento ibrido ML+IBI la rete neurale produce piccole fluttuazioni iniziali che spingono due atomi anche solo di poco fuori dalla griglia, ESPResSo crasherà fatalmente con l'errore `bond broken`.
-> La soluzione State Of The Art (come implementata in tool avanzati come VOTCA) consiste nell'**estrapolare matematicamente le code** dei file `.dat` prima della Dinamica Molecolare, estendendoli fino a $\approx 5.0$ nm e agganciando forze lineari che simulano barriere repulsive perfette e molle armoniche infinite. Nel tutorial `tel22_IBI` è fornito uno script Python d'esempio `extrapolate_ibi_tables.py` per automatizzare questo processo!
+> Se durante l'addestramento ibrido ML+IBI la rete neurale produce piccole fluttuazioni iniziali che spingono due atomi fuori dalla griglia, ESPResSo crasherà fatalmente con l'errore `bond broken`.
+> 
+> La soluzione State Of The Art (ispirata a tool avanzati come VOTCA) consiste nell'**estrapolare matematicamente le code** dei file `.dat` prima della Dinamica Molecolare, spingendo la griglia fino a $r=0$ per il core repulsivo e ad ampie distanze per la coda attrattiva.
+>
+> **Il Motore Matematico Sotto il Cofano:**
+> Per garantire la perfetta stabilità numerica in ESPResSo (che usa spline quadratiche per le forze e cubiche per i potenziali), il framework MLCG utilizza un'**estrapolazione lineare della forza** (che corrisponde all'integrazione analitica esatta di un **potenziale quadratico**). 
+> - A differenza dell'estrapolazione della forza quadratica (che genera muri ripidissimi e outlier di forza giganteschi), la forza lineare cresce in modo più dolce e fisicamente gestibile man mano che ci si avvicina a $r=0$.
+> - La pendenza della retta (gradiente) viene inferita empiricamente dagli ultimi 2 punti validi della tabella IBI, garantendo una **continuità $C^1$ per il potenziale e $C^0$ per la forza**, senza salti ("kink") improvvisi.
+> - Se il rumore statistico invertisse la pendenza, il framework interviene iniettando automaticamente una pendenza minima di sicurezza per assicurare che il muro resti sempre repulsivo!
+>
+> Tutta questa sofisticata integrazione analitica avviene in modo 100% invisibile e coerente in tutti e tre gli step del framework:
+> 1. In `build_cg_dataset.py` (durante la pura DBI).
+> 2. In `run_ibi_loop.py` (durante i cicli MD Iterativi).
+> 3. Nello script ausiliario `extrapolate_ibi_tables.py` (se usato per le tabelle IBI finali).
 
 > [!TIP]
 > **Auto-calcolo della Distanza di Equilibrio (`r0`)**

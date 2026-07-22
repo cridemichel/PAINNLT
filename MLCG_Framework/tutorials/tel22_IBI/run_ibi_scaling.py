@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dts = [0.002, 0.004, 0.006, 0.008, 0.01]
+dts = [0.001, 0.002, 0.004, 0.006, 0.008, 0.01, 0.02]
 total_time = 0.5 # 0.5 ps
 
 std_devs_toxvaerd = []
@@ -51,17 +51,18 @@ for dt in dts:
         print("Stderr:", result.stderr)
         std_devs_toxvaerd.append(np.nan)
 
-# The values we obtained yesterday for pure ML as Reference
+dts_bias0 = [0.002, 0.004, 0.006, 0.008, 0.01]
 std_devs_bias_0 = [np.nan, 6.0967e-03, 1.3857e-02, 2.4842e-02, 3.9022e-02]
 
 plt.figure(figsize=(9, 7))
 
 log_dts = np.log10(dts)
 log_stds_tox = np.log10(std_devs_toxvaerd)
+log_dts_bias0 = np.log10(dts_bias0)
 log_stds_bias0 = np.log10(std_devs_bias_0)
 
 plt.scatter(log_dts, log_stds_tox, color='purple', s=100, zorder=5, label='Current (Delta ML + IBI)')
-plt.scatter(log_dts, log_stds_bias0, color='green', marker='^', s=100, zorder=5, label='Reference (Pure ML)')
+plt.scatter(log_dts_bias0, log_stds_bias0, color='green', marker='^', s=100, zorder=5, label='Reference (Pure ML)')
 
 # Theoretical slope 2 line
 x_line = np.linspace(min(log_dts)-0.1, max(log_dts)+0.1, 100)

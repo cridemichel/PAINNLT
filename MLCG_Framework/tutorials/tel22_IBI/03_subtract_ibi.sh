@@ -12,7 +12,6 @@ uv run ../../preprocessing/build_cg_dataset.py \
     --trajectory md_whole.trr \
     --config tel22_topology.json \
     --priors cg_priors.json \
-    --output tel22_dataset_ibi.bin \
-    --clip_forces 150.0
+    --output tel22_dataset_ibi.bin
 
 echo "[SUCCESS] Final residual dataset created as tel22_dataset_ibi.bin"
