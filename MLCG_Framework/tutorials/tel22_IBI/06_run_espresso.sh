@@ -8,7 +8,6 @@ PYTHONUNBUFFERED=1 ../../../espresso/build/pypresso ../../simulation/run_cg_md.p
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
     --checkpoint equilibrated.npz \
-    --apply_envelope \
-    --dt 0.001 \
-    --steps 50000 \
+    --dt 0.0005 \
+    --steps 100000 \
     --log_interval 100

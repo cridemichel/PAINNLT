@@ -43,6 +43,7 @@ parser.add_argument("-j", "--config", type=str, default="topology_config.json", 
 parser.add_argument("--dbi", action="store_true", help="Applica Direct Boltzmann Inversion (DBI) globale invece di approssimazioni armoniche (auto)")
 parser.add_argument("-p", "--priors", type=str, default=None, help="File JSON con prior pre-esistenti (salta calcolo statistico DBI e carica questo)")
 parser.add_argument("-o", "--output", type=str, default="../training/cg_dataset.bin", help="Nome del file binario di output")
+parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
 args = parser.parse_args()
 
 try:
@@ -169,31 +170,23 @@ def save_tabulated_potential(filename, x, V, F, x_min, x_max, pad_left=True, pad
             pad_F = np.full_like(pad_x, F[0])
             pad_V = V[0] - F[0] * (pad_x - x[0])
         else:
-            # ESPResSo uses Cubic Splines for Energy -> Quadratic Splines for Force.
-            # We use a Quadratic Force polynomial F(r) = a*r^2 + b*r + c to perfectly match C0 and C1 at x[0],
-            # while guaranteeing F(0) = F_max to prevent particle collapse at r=0.
+            # Implementazione stile VOTCA: estrapolazione quadratica del potenziale,
+            # ovvero estrapolazione lineare della forza.
             if len(F) > 1:
                 K0 = (F[1] - F[0]) / (x[1] - x[0])
             else:
                 K0 = -100.0
                 
+            # Sicurezza: K0 deve essere negativo affinché la forza repulsiva cresca 
+            # diminuendo la distanza. Se per caso c'è rumore e K0 è positivo, lo forziamo negativo.
+            K0 = min(K0, -50.0)
+            
             x0 = x[0]
             F0 = F[0]
             
-            # For distances, we MUST have a strong repulsive core at r=0.
-            # For angles, a simple linear force extrapolation (a=0) is fine.
-            if not is_dihedral and "ang" not in filename:
-                F_max = max(10000.0, F0 + 1000.0)
-            else:
-                # Linear force extrapolation for angles
-                F_max = F0 - K0 * x0
-                
-            # Calculate coefficients for F(r) = a*r^2 + b*r + F_max
-            a = K0 / x0 - (F0 - F_max) / (x0**2)
-            b = 2.0 * (F0 - F_max) / x0 - K0
-            
-            pad_F = a * pad_x**2 + b * pad_x + F_max
-            pad_V = V[0] + (a/3.0) * (x0**3 - pad_x**3) + (b/2.0) * (x0**2 - pad_x**2) + F_max * (x0 - pad_x)
+            pad_F = F0 + K0 * (pad_x - x0)
+            pad_V = V[0] - F0 * (pad_x - x0) - 0.5 * K0 * (pad_x - x0)**2
+        
         out_x.extend(pad_x)
         out_V.extend(pad_V)
         out_F.extend(pad_F)
@@ -1121,7 +1114,16 @@ with open(args.output, "wb") as f:
             if site_l != -1: res_torques[l] -= np.cross(mic_vector(frame_centers[l], pos_l, box_dim), f_l)
             
             
-        # 3.3 Scrittura nel file
+        # 3.2.2 Sottrazione Diedri
+        # (Omitted lines in between handled properly)
+        
+        # 3.3 Clip delle forze residue e scrittura nel file
+        # Il clip finale è FONDAMENTALE quando si usa l'IBI, perché la sottrazione dei potenziali IBI (che hanno muri molto ripidi)
+        # crea degli artefatti spaventosi (forze > 1000) sui bordi delle distribuzioni.
+        if args.clip_forces is not None:
+            res_forces = np.clip(res_forces, -args.clip_forces, args.clip_forces)
+            res_torques = np.clip(res_torques, -args.clip_forces, args.clip_forces)
+        
         for mol_id in range(num_molecules):
             num_sites = len(frame_sites[mol_id])
             f.write(struct.pack("i", mol_id))

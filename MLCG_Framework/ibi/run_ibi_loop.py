@@ -52,10 +52,11 @@ def read_dataset_distributions(bin_file, priors):
     angle_dists = {idx: [] for idx in range(len(priors.get("angles", [])))}
     dihedral_dists = {idx: [] for idx in range(len(priors.get("dihedrals", [])))}
     first_frame_centers = None
+    first_frame_types = None
     
     with open(bin_file, "rb") as f:
         data = f.read(4)
-        if not data: return bond_dists, angle_dists, dihedral_dists, []
+        if not data: return bond_dists, angle_dists, dihedral_dists, [], []
         num_frames = struct.unpack("i", data)[0]
         
         for frame_idx in range(num_frames):
@@ -65,6 +66,7 @@ def read_dataset_distributions(bin_file, priors):
             
             frame_centers = []
             frame_sites = []
+            frame_types = []
             
             for _ in range(num_molecules):
                 mol_id = struct.unpack("i", f.read(4))[0]
@@ -81,9 +83,12 @@ def read_dataset_distributions(bin_file, priors):
                 
                 frame_centers.append(center)
                 frame_sites.append(sites)
+                # In our generic dataset, the CG bead type corresponds to the first site type
+                frame_types.append(site_type if num_sites > 0 else 0)
                 
             if frame_idx == 0:
                 first_frame_centers = frame_centers
+                first_frame_types = frame_types
                 
             # Extract bond lengths
             for idx, b in enumerate(priors.get("bonds", [])):
@@ -125,7 +130,7 @@ def read_dataset_distributions(bin_file, priors):
                 phi = get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim)
                 dihedral_dists[idx].append(phi)
                 
-    return bond_dists, angle_dists, dihedral_dists, first_frame_centers
+    return bond_dists, angle_dists, dihedral_dists, first_frame_centers, np.array(first_frame_types)
 
 def extrapolate_potential_and_force(x, V, F, hist):
     valid_idx = np.where(hist > 1e-5)[0]
@@ -133,23 +138,41 @@ def extrapolate_potential_and_force(x, V, F, hist):
         return V, F
     first, last = valid_idx[0], valid_idx[-1]
     
-    k_wall = 5000.0  # Steep harmonic wall
+    # Left extrapolation (repulsive core)
+    # Calculate empirical slope K_left to ensure C1 continuity of the potential (C0 for force)
+    if first + 1 < len(x):
+        k_left = (F[first + 1] - F[first]) / (x[first + 1] - x[first])
+    else:
+        k_left = -100.0
     
-    # Force the base extrapolation forces to point INWARD safely
-    base_left_force = max(F[first], 10.0)
-    base_right_force = min(F[last], -10.0)
+    # Sicurezza: K_left deve essere negativo per essere repulsivo
+    k_left = min(k_left, -50.0)
     
-    # Left extrapolation
+    base_left_force = F[first]
+    x_left = x[first]
+    V_left = V[first]
+    
     for i in range(first - 1, -1, -1):
-        dx = x[first] - x[i]
-        F[i] = base_left_force + k_wall * dx
-        V[i] = V[i+1] + F[i+1] * (x[i+1] - x[i])
+        dx = x[i] - x_left
+        F[i] = base_left_force + k_left * dx
+        V[i] = V_left - base_left_force * dx - 0.5 * k_left * (dx**2)
         
-    # Right extrapolation
+    # Right extrapolation (attractive tail / zero)
+    if last - 1 >= 0:
+        k_right = (F[last] - F[last - 1]) / (x[last] - x[last - 1])
+    else:
+        k_right = -50.0
+        
+    k_right = min(k_right, -10.0)
+    
+    base_right_force = F[last]
+    x_right = x[last]
+    V_right = V[last]
+    
     for i in range(last + 1, len(x)):
-        dx = x[i] - x[last]
-        F[i] = base_right_force - k_wall * dx
-        V[i] = V[i-1] - F[i-1] * (x[i] - x[i-1])
+        dx = x[i] - x_right
+        F[i] = base_right_force + k_right * dx
+        V[i] = V_right - base_right_force * dx - 0.5 * k_right * (dx**2)
         
     return V, F
 
@@ -217,10 +240,39 @@ def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, pe
 
 def save_tabulated_potential(filename, x, energy, force):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
+    
+    x = list(x)
+    energy = list(energy)
+    force = list(force)
+    
+    # Pad lower bound with 0.0 for bonds/angles
+    if x[0] > 0.0 and x[0] < 0.1:
+        dx = x[0] - 0.0
+        energy.insert(0, energy[0] + force[0] * dx)
+        force.insert(0, force[0])
+        x.insert(0, 0.0)
+        
+    # Pad upper bounds for ESPResSo strict limits
+    if 3.1 < x[-1] < np.pi:
+        dx = np.pi - x[-1]
+        energy.append(energy[-1] - force[-1] * dx)
+        force.append(force[-1])
+        x.append(np.pi)
+    elif 6.2 < x[-1] < 2 * np.pi:
+        dx = 2 * np.pi - x[-1]
+        energy.append(energy[-1] - force[-1] * dx)
+        force.append(force[-1])
+        x.append(2 * np.pi)
+    elif 4.5 < x[-1] < 5.0:
+        dx = 5.0 - x[-1]
+        energy.append(energy[-1] - force[-1] * dx)
+        force.append(force[-1])
+        x.append(5.0)
+
     data = np.column_stack((x, energy, force))
     np.savetxt(filename, data, fmt="%.6f", header="x energy force")
 
-def write_espresso_runner(script_name, priors_file, output_traj, initial_pos_file):
+def write_espresso_runner(script_name, priors_file, output_traj, initial_pos_file, types):
     """
     Writes a temporary Python script that runs ESPResSo MD using only priors.
     """
@@ -242,10 +294,11 @@ system.cell_system.skin = 0.4
 # Load initial positions
 initial_pos = np.load('{initial_pos_file}')
 num_particles = len(initial_pos)
+types = {repr(types.tolist())}
 
 # Setup particles with realistic initial coordinates
 for i in range(num_particles):
-    system.part.add(id=i, pos=initial_pos[i], type=i)
+    system.part.add(id=i, pos=initial_pos[i], type=int(types[i]))
 
 # WCA Exclusions (1-2 and 1-3)
 wca_exclusions = set()
@@ -265,16 +318,17 @@ if wca.get("epsilon", 0.0) > 0 and has_wca:
     wca_sigma = wca.get("sigma", 0.3)
     wca_eps = wca.get("epsilon", 1.0)
     overrides = wca.get("overrides", {{}})
-    for i in range(num_particles):
-        sigma_i = overrides.get(str(i), {{}}).get("sigma", wca_sigma)
-        eps_i = overrides.get(str(i), {{}}).get("epsilon", wca_eps)
-        for j in range(i+1, num_particles):
-            sigma_j = overrides.get(str(j), {{}}).get("sigma", wca_sigma)
-            eps_j = overrides.get(str(j), {{}}).get("epsilon", wca_eps)
+    unique_types = set(int(t) for t in types)
+    for t_i in unique_types:
+        sigma_i = overrides.get(str(t_i), {{}}).get("sigma", wca_sigma)
+        eps_i = overrides.get(str(t_i), {{}}).get("epsilon", wca_eps)
+        for t_j in unique_types:
+            sigma_j = overrides.get(str(t_j), {{}}).get("sigma", wca_sigma)
+            eps_j = overrides.get(str(t_j), {{}}).get("epsilon", wca_eps)
             
             sig = 0.5 * (sigma_i + sigma_j)
             eps = np.sqrt(eps_i * eps_j)
-            system.non_bonded_inter[system.part.by_id(i).type, system.part.by_id(j).type].lennard_jones.set_params(
+            system.non_bonded_inter[t_i, t_j].lennard_jones.set_params(
                 epsilon=eps, sigma=sig,
                 cutoff=sig * (2.0**(1/6)), shift="auto"
             )
@@ -336,23 +390,34 @@ for i, f in enumerate(forces):
         print(f"HIGH FORCE START: Particle {{i}} f={{f}} mag={{np.linalg.norm(f):.2f}}")
 
 # Minimize energy / Burn-in
-print("Gentle MD burn-in...")
+print("Gentle MD burn-in (Steepest Descent)...")
 system.integrator.set_steepest_descent(f_max=1000.0, gamma=50.0, max_displacement=0.001)
-system.integrator.run(2000)
-system.integrator.set_vv()
-system.thermostat.set_langevin(kT=2.49, gamma=10.0, seed=42)
+system.integrator.run(3000)
 
-system.integrator.run(0)
-print("--- ENERGY AFTER BURN-IN ---")
-print(system.analysis.energy())
+print("--- FORCES AFTER SD ---")
 forces = system.part.all().f
 for i, f in enumerate(forces):
     if np.linalg.norm(f) > 500:
         print(f"HIGH FORCE AFTER SD: Particle {{i}} f={{f}} mag={{np.linalg.norm(f):.2f}}")
 
-print("Distance 164-165 AFTER SD:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos), flush=True)
+print("Phase 2: Warm-up MD with small timestep and high friction...")
+system.integrator.set_vv()
+system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
+system.force_cap = 500.0
+system.time_step = 0.0001
 
-system.thermostat.set_langevin(kT=2.49, gamma=1.0, seed=42)
+for _ in range(50):
+    system.integrator.run(100)
+
+print("Phase 3: Production MD...")
+system.force_cap = 1000.0
+system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
+system.time_step = 0.002
+system.time_step = 0.002
+
+system.integrator.run(100000)
+
+print("Distance 164-165 AFTER SD:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos), flush=True)
 
 # Run MD and save trajectory
 import builtins
@@ -393,9 +458,9 @@ def main():
         priors_data = json.load(f)
         
     print(f"[INFO] Reading target dataset: {args.dataset}")
-    bond_dists, angle_dists, dihedral_dists, first_frame_centers = read_dataset_distributions(args.dataset, priors_data)
+    bond_dists, angle_dists, dihedral_dists, first_frame_centers, types = read_dataset_distributions(args.dataset, priors_data)
     
-    # Save initial positions for ESPResSo
+    # Check dataset limitsial positions for ESPResSo
     initial_pos_file = "_tmp_initial_pos.npy"
     np.save(initial_pos_file, np.array(first_frame_centers))
     
@@ -422,7 +487,7 @@ def main():
             
     for name, pool in pooled_bonds.items():
         if len(pool["dists"]) == 0: continue
-        bins = np.linspace(0.01, 3.0, 300)
+        bins = np.linspace(0.0, 5.0, 300)
         r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='bond')
         filename = f"{args.outdir}/bond_tabulated_{name}.dat"
         save_tabulated_potential(filename, r, V_0, F_0)
@@ -521,7 +586,7 @@ def main():
     for it in range(1, args.iterations + 1):
         print(f"\n[INFO] --- IBI Iteration {it}/{args.iterations} ---")
         
-        write_espresso_runner(script_name, tmp_priors, traj_name, initial_pos_file)
+        write_espresso_runner(script_name, tmp_priors, traj_name, initial_pos_file, types)
         
         print(f"[INFO] Running ESPResSo MD simulation...")
         res = subprocess.run([args.pypresso, script_name], capture_output=True, text=True)

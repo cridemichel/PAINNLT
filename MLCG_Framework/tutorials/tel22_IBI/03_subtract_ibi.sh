@@ -11,6 +11,8 @@ uv run ../../preprocessing/build_cg_dataset.py \
     --topology md.gro \
     --trajectory md_whole.trr \
     --config tel22_topology.json \
-    --output tel22_dataset_ibi.bin
+    --priors cg_priors.json \
+    --output tel22_dataset_ibi.bin \
+    --clip_forces 150.0
 
 echo "[SUCCESS] Final residual dataset created as tel22_dataset_ibi.bin"

@@ -8,6 +8,6 @@
     "epochs": 50,
     "batch_size": 16,
     "lipschitz_lambda": 0.001,
-    "apply_envelope": true,
+    "apply_envelope": false,
     "use_bias": false
 }
