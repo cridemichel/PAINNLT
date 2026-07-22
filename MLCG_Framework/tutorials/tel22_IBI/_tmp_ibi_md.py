@@ -110,11 +110,10 @@ for i, f in enumerate(forces):
 
 # Minimize energy / Burn-in
 print("Gentle MD burn-in...")
+system.integrator.set_steepest_descent(f_max=1000.0, gamma=50.0, max_displacement=0.001)
+system.integrator.run(2000)
 system.integrator.set_vv()
 system.thermostat.set_langevin(kT=2.49, gamma=10.0, seed=42)
-system.force_cap = 50.0
-system.integrator.run(2000)
-system.force_cap = 0.0
 
 system.integrator.run(0)
 print("--- ENERGY AFTER BURN-IN ---")

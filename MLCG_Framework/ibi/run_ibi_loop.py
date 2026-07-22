@@ -183,9 +183,13 @@ def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type
         force = -np.gradient(potential_smooth, dx)
         potential_smooth, force = extrapolate_potential_and_force(bin_centers, potential_smooth, force, raw_hist)
         
-    force = gaussian_filter1d(force, sigma=2.0, mode=mode)
+    F_0 = -np.gradient(potential_smooth, bin_centers)
+    
+    # Cap forces to avoid integration blow-up (ESPResSo force_cap does not apply to bonded interactions)
+    FORCE_MAX = 500.0
+    F_0 = np.clip(F_0, -FORCE_MAX, FORCE_MAX)
         
-    return bin_centers, potential_smooth, force, hist
+    return bin_centers, potential_smooth, F_0, hist
 
 def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, periodic=False):
     P_i = np.clip(P_i, 1e-6, None)
@@ -205,6 +209,9 @@ def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, pe
         V_next_smooth, force = extrapolate_potential_and_force(bin_centers, V_next_smooth, force, P_target)
         
     force = gaussian_filter1d(force, sigma=2.0, mode=mode)
+    
+    FORCE_MAX = 500.0
+    force = np.clip(force, -FORCE_MAX, FORCE_MAX)
         
     return V_next_smooth, force
 
@@ -330,11 +337,10 @@ for i, f in enumerate(forces):
 
 # Minimize energy / Burn-in
 print("Gentle MD burn-in...")
+system.integrator.set_steepest_descent(f_max=1000.0, gamma=50.0, max_displacement=0.001)
+system.integrator.run(2000)
 system.integrator.set_vv()
 system.thermostat.set_langevin(kT=2.49, gamma=10.0, seed=42)
-system.force_cap = 50.0
-system.integrator.run(2000)
-system.force_cap = 0.0
 
 system.integrator.run(0)
 print("--- ENERGY AFTER BURN-IN ---")
