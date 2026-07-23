@@ -319,7 +319,6 @@ espressomd.painn.activate_painn_potential(
     n_layers=nn_config["n_layers"],
     num_rbf=nn_config["num_rbf"],
     cutoff=nn_config["cutoff"],
-
     toxvaerd_alpha=args.toxvaerd_alpha,
     device=args.device
 )

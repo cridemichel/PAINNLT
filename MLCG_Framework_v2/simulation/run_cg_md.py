@@ -109,10 +109,14 @@ with open(args.dataset, "rb") as f:
 
 print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
 wca_exclusions = set()
+for b in priors.get("bonds", []):
+    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
+    wca_exclusions.add((m1, m2))
+for a in priors.get("angles", []):
+    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
+    wca_exclusions.add((m1, m2))
 
 # IMPORTANT: Exclude WCA between ALL virtual sites within the SAME rigid body!
-# In fact, exclude all sites within the same molecule from WCA to be safe,
-# or at least all sites within the same rigid body.
 mol_to_vs = {}
 for (m_idx, s_idx), pid in mol_vs_parts.items():
     if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
@@ -127,12 +131,15 @@ for m_idx, pids in mol_to_vs.items():
             p2 = system.part.by_id(pids[j])
             p1.add_exclusion(p2)
 
-for ex in wca_exclusions:
-    try:
-        p1 = system.part.by_id(mol_vs_parts.get(ex[0], ex[0]))
-        p2 = system.part.by_id(mol_vs_parts.get(ex[1], ex[1]))
-        p1.add_exclusion(p2)
-    except Exception:
+for (m1, m2) in wca_exclusions:
+    m1_parts = [mol_com_parts[m1]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m1]
+    m2_parts = [mol_com_parts[m2]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m2]
+    for p1 in m1_parts:
+        for p2 in m2_parts:
+            try:
+                system.part.by_id(p1).add_exclusion(p2)
+            except Exception:
+                pass
         continue
 
 if args.checkpoint:
@@ -315,7 +322,6 @@ if args.model:
         n_layers=nn_config["n_layers"],
         num_rbf=nn_config["num_rbf"],
         cutoff=nn_config["cutoff"],
-
         toxvaerd_alpha=args.toxvaerd_alpha,
         device=args.device
     )
@@ -376,7 +382,7 @@ with open(vtf_filename, "w") as vtf_file:
         max_f = max([sum([f_c**2 for f_c in p.f])**0.5 for p in system.part])
         max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
         
-        print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
+        print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.6f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
         vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
 
