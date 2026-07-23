@@ -94,7 +94,7 @@ with open(args.dataset, "rb") as f:
         p_com = system.part.add(
             pos=center, type=DUMMY_COM_TYPE,
             mass=mass, rinertia=inertia,
-            rotation=[True, True, True],
+            rotation=[True, True, True] if num_sites > 1 else [False, False, False],
             mol_id=mol_idx
         )
         mol_com_parts[mol_idx] = p_com.id
