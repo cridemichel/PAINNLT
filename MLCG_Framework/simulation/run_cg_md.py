@@ -41,6 +41,7 @@ print("[INFO] Initializing ESPResSo system...")
 # For a real run, box_l should be read from the first frame of the dataset or config.
 # Here we just set a large box and will resize it if needed.
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
+system.force_cap = 10000.0
 system.time_step = args.dt
 system.cell_system.skin = 0.4
 if not args.nve:
@@ -126,28 +127,7 @@ for m_idx, pids in mol_to_vs.items():
             p2 = system.part.by_id(pids[j])
             p1.add_exclusion(p2)
 
-# 2. 1-2 and 1-3 molecule exclusions (Inter-molecular bonds/angles)
-wca_exclusions = set()
-for b in priors.get("bonds", []):
-    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
-    wca_exclusions.add((m1, m2))
-for a in priors.get("angles", []):
-    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
-    wca_exclusions.add((m1, m2))
 
-for (m1, m2) in wca_exclusions:
-    m1_parts = [mol_com_parts.get(m1)] if m1 in mol_com_parts else []
-    m1_parts += [pid for (m, s), pid in mol_vs_parts.items() if m == m1 and isinstance(m, int)]
-    m2_parts = [mol_com_parts.get(m2)] if m2 in mol_com_parts else []
-    m2_parts += [pid for (m, s), pid in mol_vs_parts.items() if m == m2 and isinstance(m, int)]
-    
-    for pid1 in m1_parts:
-        for pid2 in m2_parts:
-            if pid1 is not None and pid2 is not None:
-                try:
-                    system.part.by_id(pid1).add_exclusion(system.part.by_id(pid2))
-                except Exception:
-                    pass
 
 
 if args.checkpoint:
