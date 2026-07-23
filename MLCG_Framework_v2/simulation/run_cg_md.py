@@ -349,7 +349,7 @@ with open(vtf_filename, "w") as vtf_file:
                 vtf_file.write(f"bond {com_id}:{vs_id}\n")
     
     # Ensure we get exactly 100 data points for any simulation length
-    chunk_size = max(1, args.steps // 100)
+    chunk_size = max(1, args.steps // 400)
     num_chunks = args.steps // chunk_size
     for step in range(num_chunks):
         system.integrator.run(chunk_size)

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dts = [0.001, 0.002, 0.0032, 0.0054, 0.0076, 0.0098, 0.012]
+dts = [0.002, 0.0032, 0.0054, 0.0076, 0.0098, 0.012]
 total_time = 0.5 # 0.5 ps
 
 std_devs = []
