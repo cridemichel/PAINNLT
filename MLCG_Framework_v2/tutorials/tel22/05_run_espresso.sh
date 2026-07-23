@@ -22,6 +22,6 @@ export PYTORCH_ENABLE_MPS_FALLBACK=1 && ../../../espresso/build/pypresso ../../s
     --dataset tel22_dataset.bin \
     --checkpoint equilibrated.npz \
     --steps 20000 \
-    --dt 0.001 \
+    --dt 0.0005 \
     --kT 2.49\
     --device mps
