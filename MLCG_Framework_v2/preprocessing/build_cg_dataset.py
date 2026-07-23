@@ -435,10 +435,12 @@ if derived_priors is None:
                         
             if min_d_t < np.inf:
                 optimal_sigma = min_d_t / (2**(1/6))
-                optimal_sigma = np.ceil(optimal_sigma * 1000) / 1000.0
+                # Usa np.floor per garantire che il cutoff (sigma * 1.122) sia strettamente MINORE di min_d_t!
+                # In questo modo F_wca = 0 su tutto il dataset di training.
+                optimal_sigma = np.floor(optimal_sigma * 1000) / 1000.0
                 overrides_dict[str(int(t))] = {
                     "sigma": optimal_sigma,
-                    "epsilon": WCA_EPSILON if WCA_EPSILON > 0 else 1.0
+                    "epsilon": WCA_EPSILON if WCA_EPSILON > 0 else 1000.0
                 }
                 print(f"  -> Tipo {int(t)}: min_dist = {min_d_t:.4f} nm -> optimal_sigma = {optimal_sigma:.3f} nm")
                 
@@ -447,7 +449,7 @@ if derived_priors is None:
     else:
         WCA_SIGMA_VAL = float(WCA_SIGMA)
 
-    derived_priors = {"bonds": [], "wca": {"sigma": WCA_SIGMA_VAL, "epsilon": WCA_EPSILON, "overrides": WCA_OVERRIDES}}
+    derived_priors = {"bonds": [], "wca": {"sigma": WCA_SIGMA_VAL, "epsilon": WCA_EPSILON if WCA_EPSILON > 0 else 1000.0, "overrides": WCA_OVERRIDES}}
     
     for b, dists in bond_distances.items():
         if isinstance(b, str): continue
