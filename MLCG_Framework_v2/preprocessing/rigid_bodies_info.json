@@ -1,0 +1,1991 @@
+{
+    "0": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "1": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "2": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "3": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "4": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "5": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "6": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "7": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "8": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "9": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "10": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "11": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "12": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "13": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "14": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "15": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "16": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "17": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "18": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "19": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "20": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "21": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "22": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "23": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "24": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "25": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "26": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "27": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "28": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "29": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "30": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "31": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "32": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "33": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "34": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "35": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "36": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "37": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "38": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "39": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "40": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "41": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "42": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "43": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "44": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "45": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "46": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "47": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "48": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "49": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "50": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "51": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "52": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "53": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "54": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "55": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "56": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "57": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "58": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "59": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "60": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "61": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "62": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "63": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "64": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "65": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "66": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "67": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "68": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "69": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "70": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "71": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "72": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "73": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "74": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "75": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "76": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "77": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "78": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "79": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "80": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "81": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "82": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "83": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "84": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "85": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "86": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "87": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "88": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "89": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "90": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "91": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "92": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "93": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "94": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "95": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "96": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "97": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "98": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "99": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "100": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "101": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "102": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "103": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "104": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "105": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "106": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "107": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "108": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "109": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "110": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "111": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "112": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "113": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "114": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "115": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "116": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "117": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "118": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "119": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "120": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "121": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "122": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "123": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "124": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "125": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "126": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "127": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "128": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "129": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "130": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "131": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "132": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "133": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "134": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "135": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "136": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "137": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "138": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "139": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "140": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "141": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "142": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "143": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "144": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "145": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "146": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "147": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "148": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "149": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "150": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "151": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "152": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "153": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "154": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "155": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "156": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "157": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "158": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "159": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "160": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "161": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "162": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "163": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "164": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "165": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "166": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "167": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "168": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "169": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "170": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "171": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "172": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "173": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "174": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "175": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "176": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "177": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "178": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "179": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "180": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "181": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "182": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "183": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "184": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "185": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "186": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "187": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "188": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "189": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "190": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "191": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "192": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "193": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "194": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "195": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "196": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "197": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "198": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "199": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "200": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "201": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "202": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "203": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "204": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "205": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "206": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "207": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "208": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "209": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "210": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "211": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "212": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "213": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "214": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "215": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "216": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "217": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "218": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "219": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    },
+    "220": {
+        "resname": "SOL",
+        "mass_amu": 18.015,
+        "inertia_amu_nm2": [
+            0.006,
+            0.0134,
+            0.0194
+        ]
+    }
+}

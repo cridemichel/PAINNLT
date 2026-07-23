@@ -1,0 +1,22 @@
+{
+    "temperature": 300.0,
+    "wca_sigma": 0.0,
+    "wca_epsilon": 0.0,
+    "bonds": [
+        [0, 1],
+        [1, 2]
+    ],
+    "mapping": {
+        "mapping_method": "COM",
+        "residues": {
+            "ETH": {
+                "CG_CH3": ["C1", "H1", "H2", "H3"],
+                "CG_CH2": ["C2", "H4", "H5"],
+                "CG_OH":  ["O1", "H6"]
+            }
+        },
+        "site_types": {
+            "CG_CH3": 0, "CG_CH2": 1, "CG_OH": 2
+        }
+    }
+}
