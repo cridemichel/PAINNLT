@@ -147,6 +147,13 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     auto grads = torch::autograd::grad({energy.sum()}, {t_r_ij}, {torch::ones_like(energy.sum())}, false, false);
     torch::Tensor f_r_ij = grads[0].cpu(); // Riportiamo i gradienti su CPU per assegnarli a ESPResSo
 
+    // CORREZIONE CRITICA: Limitiamo esplicitamente SOLTANTO la magnitudo della forza ML.
+    // In questo modo, se la rete neurale impazzisce e predice un'attrazione di 1.000.000 kJ/mol, 
+    // viene troncata (es. a 500 kJ/mol/nm), permettendo al potenziale classico WCA di agire 
+    // come un muro invalicabile di cemento armato (dato che lui NON viene troncato).
+    torch::Tensor norms = torch::norm(f_r_ij, 2, 1, /*keepdim=*/true);
+    f_r_ij = torch::where(norms > 500.0, f_r_ij * (500.0 / norms), f_r_ij);
+
     // 6. Assegnazione delle Forze alle Particelle ESPResSo
     // Per ogni arco col->row (dove r_ij = r_col - r_row), la forza associata a r_ij è f_r_ij.
     // Forza su col: -f_r_ij

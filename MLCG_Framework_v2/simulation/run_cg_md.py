@@ -42,7 +42,7 @@ print("[INFO] Initializing ESPResSo system...")
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
-system.force_cap = 10000.0
+# system.force_cap = 10000.0 # Rimosso! Limitava il WCA permettendo compenetrazioni. Abbiamo limitato le forze ML in C++.
 if not args.nve:
     system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
 else:
