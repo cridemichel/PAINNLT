@@ -93,15 +93,14 @@ with open(args.dataset, "rb") as f:
         p_com = system.part.add(
             pos=center, type=DUMMY_COM_TYPE,
             mass=mass, rinertia=inertia,
-            rotation=[True, True, True],
-            mol_id=mol_idx
+            rotation=[True, True, True]
         )
         mol_com_parts[mol_idx] = p_com.id
         
         for site_idx, (stype, spos) in enumerate(zip(site_types, site_positions)):
             # Virtual sites must have near-zero mass/inertia to not inflate the total system mass.
             # ESPResSo requires mass > 0, so we use 1e-5.
-            p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5], mol_id=mol_idx)
+            p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5])
             p_vs.virtual = True
             p_vs.vs_auto_relate_to(p_com.id)
             p_vs.gamma = 0.0
@@ -384,31 +383,6 @@ with open(vtf_filename, "w") as vtf_file:
         max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
         
         print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.6f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
-
-        import numpy as np
-
-
-        all_ids = [p.id for p in system.part]
-        forces = {p.id: np.array(p.f) for p in system.part}
-        positions = {p.id: np.array(p.pos) for p in system.part}
-        types = {p.id: p.type for p in system.part}
-
-        max_id = max(forces, key=lambda i: np.dot(forces[i], forces[i]))
-        p_max_pos = positions[max_id]
-        p_max_type = types[max_id]
-
-        # trova le distanze da tutte le altre particelle (ignora self, usa system.distance per il MIC con box periodico)
-        dists = []
-        for pid in all_ids:
-            if pid == max_id:
-                continue
-            d = system.distance(system.part.by_id(max_id), system.part.by_id(pid))
-            dists.append((d, pid, types[pid]))
-        dists.sort(key=lambda x: x[0])
-
-        print(f"[DEBUG] max_f particle id={max_id} type={p_max_type} |f|={np.linalg.norm(forces[max_id]):.2f} pos={p_max_pos}")
-        for d, pid, t in dists[:5]:
-            print(f"        neighbor id={pid} type={t} dist={d:.4f} nm")
         vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
 

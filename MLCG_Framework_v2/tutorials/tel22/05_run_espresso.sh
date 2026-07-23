@@ -24,4 +24,5 @@ export PYTORCH_ENABLE_MPS_FALLBACK=1 && ../../../espresso/build/pypresso ../../s
     --steps 20000 \
     --dt 0.001 \
     --kT 2.49\
+    --nve \
     --device mps

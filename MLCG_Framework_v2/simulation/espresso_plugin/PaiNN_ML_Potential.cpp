@@ -83,40 +83,43 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     int total_particles = current_idx;
     if (total_particles == 0) return;
 
-    // 2. Costruzione del grafo usando il neighbor list di ESPResSo
+    // 2. Costruzione del grafo bypassando il non_bonded_loop per ignorare le esclusioni di ESPResSo
     std::vector<int64_t> edge_rows;
     std::vector<int64_t> edge_cols;
     std::vector<float> r_ij_data;
     
-    auto painn_kernel = [&](Particle const &p1, Particle const &p2, Distance const &d) {
-        if (p1.type() >= m_num_species || p2.type() >= m_num_species) return; // Filtro particelle non ML
-        if (d.dist2 > m_cutoff * m_cutoff) return; // Filtro cutoff
-        
-        int idx1 = pid_to_idx[p1.id()];
-        int idx2 = pid_to_idx[p2.id()];
-        
-        // In ESPResSo, d.vec21 è il vettore da p2 a p1 (pos1 - pos2).
-        // Nel training, r_ij = pos_row - pos_col.
-        // Se row = p2 (idx2) e col = p1 (idx1), allora r_ij = pos2 - pos1 = -d.vec21.
-        
-        // Arco p1 -> p2 (col=p1, row=p2)
-        edge_rows.push_back(idx2);
-        edge_cols.push_back(idx1);
-        r_ij_data.push_back(static_cast<float>(-d.vec21[0]));
-        r_ij_data.push_back(static_cast<float>(-d.vec21[1]));
-        r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
-        
-        // Arco p2 -> p1 (col=p2, row=p1)
-        // r_ij = pos1 - pos2 = +d.vec21
-        edge_rows.push_back(idx1);
-        edge_cols.push_back(idx2);
-        r_ij_data.push_back(static_cast<float>(d.vec21[0]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[1]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[2]));
-    };
-
-    // Esegue il loop di ESPResSo su tutte le coppie di vicini
-    cell_structure.non_bonded_loop(painn_kernel, verlet_criterion);
+    // Otteniamo BoxGeometry per le condizioni periodiche
+    auto const& box_geo = static_cast<const CellStructure&>(cell_structure).decomposition().box();
+    
+    for (size_t i = 0; i < total_particles; ++i) {
+        for (size_t j = i + 1; j < total_particles; ++j) {
+            Particle const* p1 = idx_to_particle[i];
+            Particle const* p2 = idx_to_particle[j];
+            
+            // Skip se appartengono alla stessa molecola
+            if (p1->mol_id() == p2->mol_id()) continue;
+            
+            // Vettore da p2 a p1 (pos1 - pos2) con minimum image convention
+            auto vec21 = box_geo.get_mi_vector(p1->pos(), p2->pos());
+            double dist2 = vec21.norm2();
+            
+            if (dist2 > m_cutoff * m_cutoff) continue;
+            
+            // Arco p1 -> p2 (col=p1, row=p2)
+            edge_rows.push_back(j); // j è l'indice di p2
+            edge_cols.push_back(i); // i è l'indice di p1
+            r_ij_data.push_back(static_cast<float>(-vec21[0]));
+            r_ij_data.push_back(static_cast<float>(-vec21[1]));
+            r_ij_data.push_back(static_cast<float>(-vec21[2]));
+            
+            // Arco p2 -> p1 (col=p2, row=p1)
+            edge_rows.push_back(i);
+            edge_cols.push_back(j);
+            r_ij_data.push_back(static_cast<float>(vec21[0]));
+            r_ij_data.push_back(static_cast<float>(vec21[1]));
+            r_ij_data.push_back(static_cast<float>(vec21[2]));
+        }
+    }
     
     int num_edges = edge_rows.size();
     if (num_edges == 0) return; // Nessuna interazione

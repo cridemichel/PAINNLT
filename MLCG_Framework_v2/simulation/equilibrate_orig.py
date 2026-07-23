@@ -7,23 +7,20 @@ import struct
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
+parser.add_argument("--model", type=str, required=True, help="Trained ML potential (.pt)")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
 parser.add_argument("--priors", type=str, required=True, help="cg_priors.json")
 parser.add_argument("--rb_info", type=str, required=True, help="rigid_bodies_info.json")
 parser.add_argument("--dataset", type=str, required=True, help="Dataset to get initial frame from (e.g. cg_dataset.bin)")
-parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
-parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
-parser.add_argument("--no_log", action="store_true", help="Disable wandb logging")
-parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
-parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
+parser.add_argument("--out_checkpoint", type=str, default="equilibrated.npz", help="Output checkpoint file")
+parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
-parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
+parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps for Phase 1 Steepest Descent (default 5000)")
+parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 Classical MD Warmup (default 2000)")
 
 parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
 args = parser.parse_args()
-
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
     nn_config = json.load(f)
@@ -42,13 +39,8 @@ print("[INFO] Initializing ESPResSo system...")
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
-if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
-else:
-    system.thermostat.turn_off()
-
-
-print(f"[INFO] Running {args.steps} integration steps...")
+# Set temperature using the provided kT argument
+# Thermostat is OFF initially because Steepest Descent does not support it
 
 def get_rb_data_by_sites(site_types, rb_info):
     for resname, data in rb_info.items():
@@ -93,22 +85,19 @@ with open(args.dataset, "rb") as f:
         p_com = system.part.add(
             pos=center, type=DUMMY_COM_TYPE,
             mass=mass, rinertia=inertia,
-            rotation=[True, True, True],
-            mol_id=mol_idx
+            rotation=[True, True, True]
         )
         mol_com_parts[mol_idx] = p_com.id
         
         for site_idx, (stype, spos) in enumerate(zip(site_types, site_positions)):
             # Virtual sites must have near-zero mass/inertia to not inflate the total system mass.
             # ESPResSo requires mass > 0, so we use 1e-5.
-            p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5], mol_id=mol_idx)
+            p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5])
             p_vs.virtual = True
             p_vs.vs_auto_relate_to(p_com.id)
-            p_vs.gamma = 0.0
-            p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
-print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
+print("[INFO] Setting up WCA exclusions (1-2 and 1-3)...")
 wca_exclusions = set()
 for b in priors.get("bonds", []):
     m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
@@ -117,55 +106,12 @@ for a in priors.get("angles", []):
     m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
     wca_exclusions.add((m1, m2))
 
-# IMPORTANT: Exclude WCA between ALL virtual sites within the SAME rigid body!
-mol_to_vs = {}
-for (m_idx, s_idx), pid in mol_vs_parts.items():
-    if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
-        if m_idx not in mol_to_vs:
-            mol_to_vs[m_idx] = []
-        mol_to_vs[m_idx].append(pid)
-
-for m_idx, pids in mol_to_vs.items():
-    for i in range(len(pids)):
-        for j in range(i + 1, len(pids)):
-            p1 = system.part.by_id(pids[i])
-            p2 = system.part.by_id(pids[j])
-            p1.add_exclusion(p2)
-
 for (m1, m2) in wca_exclusions:
     m1_parts = [mol_com_parts[m1]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m1]
     m2_parts = [mol_com_parts[m2]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m2]
     for p1 in m1_parts:
         for p2 in m2_parts:
-            try:
-                system.part.by_id(p1).add_exclusion(p2)
-            except Exception:
-                pass
-        continue
-
-if args.checkpoint:
-    print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")
-    chk = np.load(args.checkpoint)
-    pos = chk["pos"]
-    vel = chk["v"]
-    quat = chk.get("quat", None)
-    omega = chk.get("omega", None)
-    
-    if len(pos) != len(system.part):
-        raise ValueError(f"Checkpoint particle count ({len(pos)}) does not match system ({len(system.part)})")
-        
-    for i in range(len(system.part)):
-        p = system.part.by_id(i)
-        # Virtual sites positions/velocities are strictly tied to COM.
-        # We only set the properties of the real (COM) particles, and the
-        # virtual sites will follow automatically based on their auto-relation.
-        if not p.is_virtual:
-            p.pos = pos[i]
-            p.v = vel[i]
-            if quat is not None:
-                p.quat = quat[i]
-            if omega is not None:
-                p.omega_body = omega[i]
+            system.part.by_id(p1).add_exclusion(p2)
 
 print("[INFO] Adding priors...")
 # WCA
@@ -308,113 +254,118 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
-print("[INFO] Setting up dummy interactions for Verlet lists...")
+print("[INFO] Setting up WCA non-bonded interactions to prevent particle collapse...")
+import math
+wca = priors.get("wca", {})
+wca_sigma = wca.get("sigma", 0.3)
+wca_eps = wca.get("epsilon", 1.0)
+overrides = wca.get("overrides", {})
+
+has_wca = wca_sigma > 0 or len(overrides) > 0
+if wca_eps > 0 and has_wca:
+    for i in range(nn_config["num_species"]):
+        sigma_i = overrides.get(str(i), {}).get("sigma", wca_sigma)
+        eps_i = overrides.get(str(i), {}).get("epsilon", wca_eps)
+        for j in range(i, nn_config["num_species"]):
+            sigma_j = overrides.get(str(j), {}).get("sigma", wca_sigma)
+            eps_j = overrides.get(str(j), {}).get("epsilon", wca_eps)
+            sigma_mix = (sigma_i + sigma_j) / 2.0
+            eps_mix = math.sqrt(eps_i * eps_j)
+            
+            system.non_bonded_inter[1+i, 1+j].lennard_jones.set_params(
+                epsilon=eps_mix, sigma=sigma_mix,
+                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
+            )
+
+# Add dummy soft_sphere to ensure Verlet lists include all other types
 for i in range(nn_config["num_species"] + 2):
     for j in range(i, nn_config["num_species"] + 2):
-        system.non_bonded_inter[i, j].soft_sphere.set_params(
-            a=0.0, n=1, cutoff=5.0, offset=0.0)
+        if not (1 <= i <= nn_config["num_species"] and 1 <= j <= nn_config["num_species"]):
+            system.non_bonded_inter[i, j].soft_sphere.set_params(
+                a=0.0, n=1, cutoff=5.0, offset=0.0)
 
-if args.model:
-    print("[INFO] Activating ML Potential...")
-    espressomd.painn.activate_painn_potential(
-        model_path=args.model,
-        num_species=nn_config["num_species"],
-        hidden_channels=nn_config["hidden_channels"],
-        n_layers=nn_config["n_layers"],
-        num_rbf=nn_config["num_rbf"],
-        cutoff=nn_config["cutoff"],
-        toxvaerd_alpha=args.toxvaerd_alpha,
-        device=args.device
-    )
-else:
-    print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")
+print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
+system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
+sd_loops = max(1, args.steps_sd // 100)
+for step in range(sd_loops):
+    system.integrator.run(100)
+    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/{args.steps_sd} steps", end="", flush=True)
+print(flush=True)
 
-if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
-
-import sys
-import espressomd.io.writer.vtf
-print(f"[INFO] Running {args.steps} integration steps...")
-
-with open("energy.csv", "w") as f_out:
-    f_out.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
-vtf_filename = "cg_trajectory.vtf"
-with open(vtf_filename, "w") as vtf_file:
-    espressomd.io.writer.vtf.writevsf(system, vtf_file)
-    
-    # Inject fake visual bonds connecting COM to its Virtual Sites
-    # This allows VMD `pbc unwrap` to treat the whole nucleotide as a single fragment
-    for mol_idx, com_id in mol_com_parts.items():
-        for (m_idx, s_idx), vs_id in mol_vs_parts.items():
-            if m_idx == mol_idx:
-                vtf_file.write(f"bond {com_id}:{vs_id}\n")
-    
-    # Ensure we get exactly 100 data points for any simulation length
-    chunk_size = max(1, args.steps // 400)
-    num_chunks = args.steps // chunk_size
-    for step in range(num_chunks):
-        system.integrator.run(chunk_size)
-        energies = system.analysis.energy()
-        
-
-        e_tot = energies["total"]
-        if args.model:
-            e_tot += espressomd.painn.get_painn_energy()
-        e_kin = energies["kinetic"]
-        
-        # Calculate E_kin explicitly for COM
-        e_kin_trans = 0.0
-        e_kin_rot = 0.0
-        e_kin_vs = 0.0
-        for p in system.part:
-            v_sq = sum(v**2 for v in p.v)
-            omega_sq = sum(w**2 for w in p.omega_body)
-            k_trans = 0.5 * p.mass * v_sq
-            k_rot = 0.5 * sum(I * w**2 for I, w in zip(p.rinertia, p.omega_body))
-            if p.mass < 1e-4:
-                e_kin_vs += k_trans + k_rot
-            else:
-                e_kin_trans += k_trans
-                e_kin_rot += k_rot
-
-        with open("energy.csv", "a") as f_out:
-            f_out.write(f"{step*chunk_size},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
-        
-        max_f = max([sum([f_c**2 for f_c in p.f])**0.5 for p in system.part])
-        max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
-        
-        print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.6f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
-
-        import numpy as np
+system.integrator.set_vv()
 
 
-        all_ids = [p.id for p in system.part]
-        forces = {p.id: np.array(p.f) for p in system.part}
-        positions = {p.id: np.array(p.pos) for p in system.part}
-        types = {p.id: p.type for p in system.part}
 
-        max_id = max(forces, key=lambda i: np.dot(forces[i], forces[i]))
-        p_max_pos = positions[max_id]
-        p_max_type = types[max_id]
+print("[INFO] Phase 2: Warm-up con force-capping per rilassare i gradi di libertà rotazionali (Classical)...", flush=True)
+system.force_cap = 500.0
+system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
+system.time_step = 0.0001
 
-        # trova le distanze da tutte le altre particelle (ignora self, usa system.distance per il MIC con box periodico)
-        dists = []
-        for pid in all_ids:
-            if pid == max_id:
-                continue
-            d = system.distance(system.part.by_id(max_id), system.part.by_id(pid))
-            dists.append((d, pid, types[pid]))
-        dists.sort(key=lambda x: x[0])
+md_loops = max(1, args.steps_md // 100)
+for warmup_step in range(md_loops):
+    system.integrator.run(100)
+    system.force_cap = 500.0 + warmup_step * 2.5
+    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*100}/{args.steps_md} steps", end="", flush=True)
+print(flush=True)
 
-        print(f"[DEBUG] max_f particle id={max_id} type={p_max_type} |f|={np.linalg.norm(forces[max_id]):.2f} pos={p_max_pos}")
-        for d, pid, t in dists[:5]:
-            print(f"        neighbor id={pid} type={t} dist={d:.4f} nm")
-        vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
-        espressomd.io.writer.vtf.writevcf(system, vtf_file)
+system.force_cap = 0
+system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
-print("\n[INFO] Simulation finished successfully.")
+print("[INFO] Activating ML Potential now that the system is physically relaxed...")
+espressomd.painn.activate_painn_potential(
+    model_path=args.model,
+    num_species=nn_config["num_species"],
+    hidden_channels=nn_config["hidden_channels"],
+    n_layers=nn_config["n_layers"],
+    num_rbf=nn_config["num_rbf"],
+    cutoff=nn_config["cutoff"],
+    toxvaerd_alpha=args.toxvaerd_alpha,
+    device=args.device
+)
+
+# Skip Steepest Descent with ML potential to avoid unphysical rigid body rotations
+system.integrator.set_vv()
+
+print("[INFO] Phase 4: Final Warm-up with ML Potential to relax orientations...", flush=True)
+system.force_cap = 500.0
+system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
+system.time_step = 0.0001
+
+for warmup_step in range(40):
+    system.integrator.run(50)
+    system.force_cap = 500.0 + warmup_step * 25.0
+    print(f"\r[INFO] Phase 4 Progress: {(warmup_step+1)*50}/2000 steps", end="", flush=True)
+print(flush=True)
+
+system.force_cap = 0
+system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+
+print("[INFO] Warm-up terminato. Azzeramento delle velocità residue prima del salvataggio...")
+for p in system.part:
+    if p.mass > 1e-4:
+        p.v = [0.0, 0.0, 0.0]
+        p.omega_body = [0.0, 0.0, 0.0]
+
+print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
+pos = []
+vel = []
+quat = []
+omega = []
+# Ensure particles are saved in exact ID order
+for i in range(len(system.part)):
+    p = system.part.by_id(i)
+    pos.append(p.pos)
+    vel.append(p.v)
+    quat.append(p.quat)
+    # Virtual sites might not have omega_body properly exposed in all ESPResSo versions,
+    # but COM particles definitely do. We save them for all and filter on load.
+    try:
+        omega.append(p.omega_body)
+    except:
+        omega.append([0.0, 0.0, 0.0])
+np.savez(args.out_checkpoint, pos=np.array(pos), v=np.array(vel), quat=np.array(quat), omega=np.array(omega))
+
+print("[INFO] Equilibration finished successfully.")
 
 # Force immediate exit to bypass PyTorch/MPI teardown crashes on macOS
-import sys
-sys.stdout.flush()
 os._exit(0)

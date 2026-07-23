@@ -46,6 +46,7 @@ for dt in dts:
         print(f"-> Std(E) = {std_e:.5e} kJ/mol")
     else:
         print("-> Error: could not parse energies!")
+        print("STDERR:", result.stderr)
         std_devs.append(np.nan)
 
 # Plotting the scaling
