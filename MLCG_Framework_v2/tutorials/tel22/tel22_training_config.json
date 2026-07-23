@@ -6,7 +6,7 @@
     "cutoff": 1.2616,
 
     "toxvaerd_alpha": 0.1,
-    "learning_rate": 0.0005,
-    "epochs": 100,
+    "learning_rate": 0.001,
+    "epochs": 50,
     "batch_size": 16
 }

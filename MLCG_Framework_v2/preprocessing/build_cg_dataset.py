@@ -52,16 +52,8 @@ WCA_OVERRIDES = config_data.get("wca_overrides", {})
 
 
 
-# Precompute 1-2 and 1-3 molecule exclusions to avoid massive WCA spikes between bonded neighbors
-WCA_EXCLUSIONS = set()
-for b in config_data.get("bonds", []):
-    if isinstance(b, dict):
-        m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
-        WCA_EXCLUSIONS.add((m1, m2))
-for a in config_data.get("angles", []):
-    if isinstance(a, dict):
-        m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
-        WCA_EXCLUSIONS.add((m1, m2))
+# ANGLES will be loaded below
+
 ANGLES = config_data.get("angles", [])
 DIHEDRALS = config_data.get("dihedrals", [])
 
@@ -451,7 +443,7 @@ if derived_priors is None:
                 print(f"  -> Tipo {int(t)}: min_dist = {min_d_t:.4f} nm -> optimal_sigma = {optimal_sigma:.3f} nm")
                 
         WCA_OVERRIDES = overrides_dict
-        WCA_SIGMA_VAL = 0.0 # Valore di fallback
+        WCA_SIGMA_VAL = 0.25 # Valore di fallback sicuro
     else:
         WCA_SIGMA_VAL = float(WCA_SIGMA)
 
@@ -662,8 +654,7 @@ with open(args.output, "wb") as f:
                     mol_i = flat_mol[i]
                     mol_j = flat_mol[j]
                     
-                    if (min(mol_i, mol_j), max(mol_i, mol_j)) in WCA_EXCLUSIONS:
-                        continue
+
                         
                     r_sq = dist_sq[i, j]
                     r = np.sqrt(r_sq)

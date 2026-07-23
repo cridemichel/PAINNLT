@@ -3542,8 +3542,8 @@
         }
     ],
     "wca": {
-        "sigma": 0.0,
-        "epsilon": 50.0,
+        "sigma": 0.25,
+        "epsilon": 1.0,
         "overrides": {
             "0": {
                 "sigma": 0.284,

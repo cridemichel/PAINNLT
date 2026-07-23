@@ -42,6 +42,7 @@ print("[INFO] Initializing ESPResSo system...")
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
+system.force_cap = 10000.0
 if not args.nve:
     system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
 else:
@@ -108,40 +109,6 @@ with open(args.dataset, "rb") as f:
             p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
-print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
-wca_exclusions = set()
-for b in priors.get("bonds", []):
-    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
-    wca_exclusions.add((m1, m2))
-for a in priors.get("angles", []):
-    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
-    wca_exclusions.add((m1, m2))
-
-# IMPORTANT: Exclude WCA between ALL virtual sites within the SAME rigid body!
-mol_to_vs = {}
-for (m_idx, s_idx), pid in mol_vs_parts.items():
-    if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
-        if m_idx not in mol_to_vs:
-            mol_to_vs[m_idx] = []
-        mol_to_vs[m_idx].append(pid)
-
-for m_idx, pids in mol_to_vs.items():
-    for i in range(len(pids)):
-        for j in range(i + 1, len(pids)):
-            p1 = system.part.by_id(pids[i])
-            p2 = system.part.by_id(pids[j])
-            p1.add_exclusion(p2)
-
-for (m1, m2) in wca_exclusions:
-    m1_parts = [mol_com_parts[m1]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m1]
-    m2_parts = [mol_com_parts[m2]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m2]
-    for p1 in m1_parts:
-        for p2 in m2_parts:
-            try:
-                system.part.by_id(p1).add_exclusion(p2)
-            except Exception:
-                pass
-        continue
 
 if args.checkpoint:
     print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")
@@ -167,9 +134,34 @@ if args.checkpoint:
             if omega is not None:
                 p.omega_body = omega[i]
 
+print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
+
+# 1. Intra-molecular exclusions
+mol_to_vs = {}
+for (m_idx, s_idx), pid in mol_vs_parts.items():
+    if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
+        if m_idx not in mol_to_vs:
+            mol_to_vs[m_idx] = []
+        mol_to_vs[m_idx].append(pid)
+
+for m_idx, pids in mol_to_vs.items():
+    for i in range(len(pids)):
+        for j in range(i + 1, len(pids)):
+            p1 = system.part.by_id(pids[i])
+            p2 = system.part.by_id(pids[j])
+            try:
+                p1.add_exclusion(p2)
+            except Exception:
+                pass
+
+
+
+
+
 print("[INFO] Adding priors...")
 # WCA
 import math
+
 wca = priors.get("wca", {})
 has_wca = wca.get("sigma", 0.0) > 0 or len(wca.get("overrides", {})) > 0
 if wca.get("epsilon", 0.0) > 0 and has_wca:
@@ -335,7 +327,6 @@ if not args.nve:
 import sys
 import espressomd.io.writer.vtf
 print(f"[INFO] Running {args.steps} integration steps...")
-
 with open("energy.csv", "w") as f_out:
     f_out.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
 vtf_filename = "cg_trajectory.vtf"
@@ -385,30 +376,23 @@ with open(vtf_filename, "w") as vtf_file:
         
         print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.6f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
 
-        import numpy as np
+        # --- DEBUG: identifica la particella con forza massima e i suoi vicini INTERMOLECOLARI ---
+        p_max = max(system.part, key=lambda p: sum(f_c**2 for f_c in p.f))
+        max_mol_id = p_max.mol_id
+        print(f"[DEBUG] max_f particle id={p_max.id} type={p_max.type} mol_id={max_mol_id} |f|={max_f:.2f} pos={p_max.pos}")
 
-
-        all_ids = [p.id for p in system.part]
-        forces = {p.id: np.array(p.f) for p in system.part}
-        positions = {p.id: np.array(p.pos) for p in system.part}
-        types = {p.id: p.type for p in system.part}
-
-        max_id = max(forces, key=lambda i: np.dot(forces[i], forces[i]))
-        p_max_pos = positions[max_id]
-        p_max_type = types[max_id]
-
-        # trova le distanze da tutte le altre particelle (ignora self, usa system.distance per il MIC con box periodico)
         dists = []
-        for pid in all_ids:
-            if pid == max_id:
+        for p_other in system.part:
+            if p_other.id == p_max.id:
                 continue
-            d = system.distance(system.part.by_id(max_id), system.part.by_id(pid))
-            dists.append((d, pid, types[pid]))
+            if p_other.mol_id == max_mol_id:
+                continue  # scarta i vicini della stessa molecola (già esclusi dal grafo ML)
+            d = system.distance(p_max, p_other)
+            dists.append((d, p_other.id, p_other.type, p_other.mol_id))
         dists.sort(key=lambda x: x[0])
-
-        print(f"[DEBUG] max_f particle id={max_id} type={p_max_type} |f|={np.linalg.norm(forces[max_id]):.2f} pos={p_max_pos}")
-        for d, pid, t in dists[:5]:
-            print(f"        neighbor id={pid} type={t} dist={d:.4f} nm")
+        for d, pid, t, mid in dists[:5]:
+            print(f"        neighbor id={pid} type={t} mol_id={mid} dist={d:.4f} nm")
+        # --- FINE DEBUG ---
         vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
 
