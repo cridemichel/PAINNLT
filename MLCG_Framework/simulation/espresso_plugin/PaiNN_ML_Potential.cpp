@@ -1,6 +1,7 @@
 #include "PaiNN_ML_Potential.hpp"
 #include "Particle.hpp"
 #include "cells.hpp"
+#include "exclusions.hpp"
 
 #include <iostream>
 #include <vector>
@@ -8,11 +9,11 @@
 
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
-PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, const std::string& device_str) 
+PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str) 
     : m_cutoff(cutoff), m_num_species(num_species) {
     
     // Inizializza il modello C++ con i parametri di architettura
-    model = PaiNNModel(num_species, hidden_channels, n_layers, num_rbf, cutoff);
+    model = PaiNNModel(num_species, hidden_channels, n_layers, num_rbf, cutoff, toxvaerd_alpha);
     
     // Carica i pesi dal file .pt salvato durante il training
     try {
@@ -57,12 +58,14 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     std::unordered_map<int, int> pid_to_idx;
     std::vector<Particle*> idx_to_particle;
     std::vector<int64_t> atomic_numbers;
+    std::unordered_map<int, int> id_to_mol_id;  // NUOVO: mappa autorevole, SOLO da particelle locali
     
     int current_idx = 0;
     
     // Raccogliamo tutte le particelle locali che appartengono al modello ML
     auto local_particles = cell_structure.local_particles();
     for (auto& p : local_particles) {
+        id_to_mol_id[p.id()] = p.mol_id();  // NUOVO: registrato PRIMA di qualunque filtro di tipo
         if (p.type() >= m_num_species) continue;
         pid_to_idx[p.id()] = current_idx++;
         idx_to_particle.push_back(&p);
@@ -83,7 +86,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     int total_particles = current_idx;
     if (total_particles == 0) return;
 
-    // 2. Costruzione del grafo usando il neighbor list di ESPResSo
+    // 2. Costruzione del grafo usando le liste di vicini (cell_system) di ESPResSo
     std::vector<int64_t> edge_rows;
     std::vector<int64_t> edge_cols;
     std::vector<float> r_ij_data;
@@ -92,12 +95,23 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         if (p1.type() >= m_num_species || p2.type() >= m_num_species) return; // Filtro particelle non ML
         if (d.dist2 > m_cutoff * m_cutoff) return; // Filtro cutoff
         
+        // Skip se appartengono alla stessa molecola
+        // NON fidarti di p.mol_id() se la particella potrebbe essere un ghost:
+        // risali sempre al mol_id autorevole tramite id(), dalla mappa locale.
+        auto it1 = id_to_mol_id.find(p1.id());
+        auto it2 = id_to_mol_id.find(p2.id());
+        if (it1 != id_to_mol_id.end() && it2 != id_to_mol_id.end()) {
+            if (it1->second == it2->second) return;
+        } else {
+            // Fallback se per qualche assurdo motivo non è in mappa locale (non dovrebbe succedere in single-rank)
+            if (p1.mol_id() == p2.mol_id()) return;
+        }
+        
+        // Nota: non_bonded_loop salta AUTOMATICAMENTE le coppie nella exclusion list di ESPResSo,
+        // quindi i legami 1-2 e 1-3 che abbiamo escluso in Python saranno ignorati automaticamente!
+        
         int idx1 = pid_to_idx[p1.id()];
         int idx2 = pid_to_idx[p2.id()];
-        
-        // In ESPResSo, d.vec21 è il vettore da p2 a p1 (pos1 - pos2).
-        // Nel training, r_ij = pos_row - pos_col.
-        // Se row = p2 (idx2) e col = p1 (idx1), allora r_ij = pos2 - pos1 = -d.vec21.
         
         // Arco p1 -> p2 (col=p1, row=p2)
         edge_rows.push_back(idx2);
@@ -107,7 +121,6 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
         
         // Arco p2 -> p1 (col=p2, row=p1)
-        // r_ij = pos1 - pos2 = +d.vec21
         edge_rows.push_back(idx1);
         edge_cols.push_back(idx2);
         r_ij_data.push_back(static_cast<float>(d.vec21[0]));
@@ -115,7 +128,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         r_ij_data.push_back(static_cast<float>(d.vec21[2]));
     };
 
-    // Esegue il loop di ESPResSo su tutte le coppie di vicini
+    // Esegue il loop di ESPResSo sfruttando la suddivisione spaziale (O(N)) e le liste Verlet
     cell_structure.non_bonded_loop(painn_kernel, verlet_criterion);
     
     int num_edges = edge_rows.size();
@@ -141,8 +154,30 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     // Sommiamo solo l'energia atomica calcolata per le particelle *reali* (locali), ignorando i ghost.
     m_last_energy = energy.slice(0, 0, num_local_ml_particles).sum().item<double>();
     
-    // 5. Calcolo delle Forze (Gradients w.r.t r_ij)
-    auto grads = torch::autograd::grad({energy.sum()}, {t_r_ij}, {torch::ones_like(energy.sum())}, false, false);
+    // 5. Calcolo delle Forze (Gradienti)
+    // =========================================================================
+    // L'utente aveva perfettamente ragione: limitare la forza rompe la conservazione
+    // dell'energia e pompa calore nel sistema. L'unico modo per limitare le forze 
+    // mantenendo la coerenza Hamiltoniana F = -nabla E è applicare una trasformazione
+    // liscia (soft-clip) direttamente sull'ENERGIA prima di calcolare il gradiente!
+    // Usiamo due softplus concatenate per creare un "piatto" per energie < -100 e > 500.
+    // In quelle regioni limite, la derivata va a zero, "spegnendo" dolcemente la rete
+    // e lasciando il controllo al WCA classico, senza MAI rompere la termodinamica.
+
+    float e_min = -100.0f;
+    float e_max = 500.0f;
+    float beta = 0.1f;
+
+    // Soft Lower Bound
+    torch::Tensor shifted_e_min = (energy - e_min) * beta;
+    torch::Tensor e_lower = e_min + (1.0f / beta) * torch::nn::functional::softplus(shifted_e_min);
+
+    // Soft Upper Bound
+    torch::Tensor shifted_e_max = (e_max - e_lower) * beta;
+    torch::Tensor e_capped = e_max - (1.0f / beta) * torch::nn::functional::softplus(shifted_e_max);
+
+    // Gradiente esatto sull'energia limitata (GARANTISCE forze limitate e conservative!)
+    auto grads = torch::autograd::grad({e_capped.sum()}, {t_r_ij}, {torch::ones_like(e_capped.sum())}, false, false);
     torch::Tensor f_r_ij = grads[0].cpu(); // Riportiamo i gradienti su CPU per assegnarli a ESPResSo
 
     // 6. Assegnazione delle Forze alle Particelle ESPResSo

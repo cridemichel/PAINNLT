@@ -14,7 +14,7 @@
 
 class PaiNN_ML_Potential {
 public:
-    PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, const std::string& device_str = "auto");
+    PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str = "auto");
 
     // Evaluates the ML potential and adds forces to particles
     void calculate_forces(CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion);
