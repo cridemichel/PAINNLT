@@ -6,7 +6,7 @@ from libcpp.memory cimport make_shared, shared_ptr
 # Dichiara l'interfaccia C++
 cdef extern from "core/nonbonded_interactions/PaiNN_ML_Potential.hpp":
     cdef cppclass PaiNN_ML_Potential:
-        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, const string& device_str)
+        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const string& device_str)
         double get_cutoff()
         double get_last_energy()
         
@@ -18,7 +18,7 @@ def get_painn_energy():
         return global_painn_potential.get().get_last_energy()
     return 0.0
 
-def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, device: str = "auto"):
+def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float = 0.0, device: str = "auto"):
     """
     Attiva il potenziale globale PaiNN in ESPResSo.
     
@@ -28,6 +28,7 @@ def activate_painn_potential(model_path: str, num_species: int, hidden_channels:
     :param n_layers: Number of layes for message passing
     :param num_rbf: Number of gaussian bases
     :param cutoff: cutoff radius
+    :param toxvaerd_alpha: toxvaerd alpha parameter (default 0.0)
     :param device: "auto", "cpu", "cuda", "mps"
     """
     global global_painn_potential
@@ -39,9 +40,10 @@ def activate_painn_potential(model_path: str, num_species: int, hidden_channels:
     cdef int c_n_layers = n_layers
     cdef int c_num_rbf = num_rbf
     cdef double c_cutoff = cutoff
+    cdef double c_toxvaerd_alpha = toxvaerd_alpha
     
     global_painn_potential = make_shared[PaiNN_ML_Potential](
-        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, cpp_device
+        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, c_toxvaerd_alpha, cpp_device
     )
     
     print(f"PaiNN ML Potential attivato: {model_path} (cutoff={cutoff}, device={device})")

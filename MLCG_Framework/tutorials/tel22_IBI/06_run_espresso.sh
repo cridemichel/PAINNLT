@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 echo "[6/6] Simulazione in ESPResSo con IBI + ML"
-PYTHONUNBUFFERED=1 ../../../espresso/build/pypresso ../../simulation/run_cg_md.py \
+PYTHONUNBUFFERED=1 ../../espresso/build/pypresso ../../simulation/run_cg_md.py \
     --model tel22_model_ibi.pt \
     --config tel22_training_config.json \
     --priors cg_priors.json \

@@ -1,5 +1,7 @@
 #include "PaiNN_ML_Potential.hpp"
 #include "Particle.hpp"
+#include "nonbonded_interactions/VerletCriterion.hpp"
+#include "system/System.hpp"
 #include "cells.hpp"
 #include "exclusions.hpp"
 
@@ -180,6 +182,10 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     // Forza su row: +f_r_ij
     auto f_r_ij_acc = f_r_ij.accessor<float, 2>();
     
+    double f_cap = System::get_system().get_force_cap();
+    bool use_cap = (f_cap > 0.0);
+    double f_cap_sq = f_cap * f_cap;
+    
     for (int e = 0; e < num_edges; ++e) {
         int r = edge_rows[e]; // row
         int c = edge_cols[e]; // col
@@ -187,6 +193,16 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         float fx = f_r_ij_acc[e][0];
         float fy = f_r_ij_acc[e][1];
         float fz = f_r_ij_acc[e][2];
+        
+        if (use_cap) {
+            float fsq = fx*fx + fy*fy + fz*fz;
+            if (fsq > f_cap_sq) {
+                float scale = f_cap / std::sqrt(fsq);
+                fx *= scale;
+                fy *= scale;
+                fz *= scale;
+            }
+        }
         
         // Assegniamo le forze (ESPResSo gestirà la comunicazione delle forze dei ghost)
         // La forza è la derivata negativa dell'energia rispetto alla posizione.

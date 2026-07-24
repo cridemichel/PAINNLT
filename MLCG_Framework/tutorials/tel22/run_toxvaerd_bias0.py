@@ -13,7 +13,7 @@ for dt in dts:
     
     # Run the MD simulation with use_bias=false (omitting --use_bias) and apply_envelope=false (omitting --apply_envelope)
     cmd = [
-        "../../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
+        "../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
         "--model", "tel22_model_bias0_true.pt",
         "--config", "tel22_training_config_bias0.json",
         "--priors", "cg_priors.json",

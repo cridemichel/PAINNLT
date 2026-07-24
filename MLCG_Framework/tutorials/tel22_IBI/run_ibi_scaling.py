@@ -14,7 +14,7 @@ for dt in dts:
     
     # Run the MD simulation with the current settings (IBI tables extrapolated)
     cmd = [
-        "../../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
+        "../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
         "--model", "tel22_model_ibi.pt",
         "--config", "tel22_training_config.json",
         "--priors", "cg_priors.json",

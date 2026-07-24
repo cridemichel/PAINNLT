@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 echo "[5/6] Equilibrazione del sistema (Steepest Descent + Warmup)"
-../../../espresso/build/pypresso ../../simulation/equilibrate.py \
+../../espresso/build/pypresso ../../simulation/equilibrate.py \
     --model tel22_model_ibi.pt \
     --config tel22_training_config.json \
     --priors cg_priors.json \
