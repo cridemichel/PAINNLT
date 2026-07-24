@@ -10,4 +10,5 @@ PYTHONUNBUFFERED=1 ../../../espresso/build/pypresso ../../simulation/run_cg_md.p
     --checkpoint equilibrated.npz \
     --dt 0.0001 \
     --steps 100000 \
+    --nve \
     --log_interval 100
