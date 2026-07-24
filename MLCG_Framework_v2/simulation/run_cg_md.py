@@ -378,23 +378,7 @@ with open(vtf_filename, "w") as vtf_file:
         
         print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.6f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
 
-        # --- DEBUG: identifica la particella con forza massima e i suoi vicini INTERMOLECOLARI ---
-        p_max = max(system.part, key=lambda p: sum(f_c**2 for f_c in p.f))
-        max_mol_id = p_max.mol_id
-        print(f"[DEBUG] max_f particle id={p_max.id} type={p_max.type} mol_id={max_mol_id} |f|={max_f:.2f} pos={p_max.pos}")
 
-        dists = []
-        for p_other in system.part:
-            if p_other.id == p_max.id:
-                continue
-            if p_other.mol_id == max_mol_id:
-                continue  # scarta i vicini della stessa molecola (già esclusi dal grafo ML)
-            d = system.distance(p_max, p_other)
-            dists.append((d, p_other.id, p_other.type, p_other.mol_id))
-        dists.sort(key=lambda x: x[0])
-        for d, pid, t, mid in dists[:5]:
-            print(f"        neighbor id={pid} type={t} mol_id={mid} dist={d:.4f} nm")
-        # --- FINE DEBUG ---
         vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
 

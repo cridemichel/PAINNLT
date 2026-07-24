@@ -456,6 +456,21 @@ Se si desidera far interagire la particella del Centro di Massa:
 > * Esempio: `system.part.add(pos=..., type=100, virtual=False)` crea la particella reale. Newton la muoverà, ma la rete neurale (fermandosi ai tipi < 100) la ignorerà.
 > * Esempio: `system.part.add(pos=..., type=0, virtual=True)` crea un sito fantasma attaccato al corpo rigido. La Rete Neurale lo vedrà, applicherà la forza su di esso, ed ESPResSo farà leva trasferendo forza e momento torcente al corpo rigido reale a cui è legato.
 
+### 3.5 Capping Termodinamico Conservativo e Gestione dei Ghost (Plugin C++)
+L'integrazione nativa del ML in ESPResSo deve fare i conti con i bordi periodici e gli stati ad altissima energia. Il nostro plugin in C++ (`PaiNN_ML_Potential.cpp`) include due fondamentali meccanismi fisici "under-the-hood" per mantenere la stabilità e la conservazione dell'energia:
+
+**1. Il Capping Termodinamico Conservativo (Soft-Clip)**
+I potenziali ML possono produrre gradienti estremi in caso di compenetrazioni atomiche ($r \to 0$), portando le simulazioni a crash o ad esplosioni di energia. 
+Il "force capping" tradizionale (es. troncare brutalmente la forza a 500 kJ/mol/nm) introduce lavoro non conservativo: integrare una forza troncata che non è l'esatto gradiente della potenziale rompe l'Hamiltoniana, causando la divergenza della temperatura nel sistema NVE/NVT.
+Per risolvere questo, **nel plugin applichiamo una funzione differenziabile (*softplus*) direttamente all'ENERGIA potenziale grezza**, creando un asintoto orizzontale dolce per valori $< -100$ e $> 500$ kJ/mol. In questo modo:
+* Quando le particelle collidono, l'energia si satura dolcemente e la sua derivata (la forza attrattiva/repulsiva della rete) va verso zero.
+* La forza applicata al sistema rimane *esattamente* il gradiente analitico dell'energia limitata ($F = -\nabla E_{capped}$).
+* Questo preserva al 100% la termodinamica del sistema e la conservazione Hamiltoniana: il calcolo ricade sui rami classici WCA, evitando esplosioni termiche ed energetiche.
+
+**2. Sincronizzazione Autorevole dei "Ghost" ESPResSo**
+ESPResSo duplica temporaneamente le particelle (chiamate *ghost*) per calcolare le interazioni ai bordi della scatola di simulazione periodica. Spesso, attributi come il `mol_id` non vengono sincronizzati coerentemente sui ghost.
+Per evitare che il ML calcoli interazioni intra-molecolari (ignorate di default) tra un ghost e una particella reale a causa di un disallineamento dell'ID molecolare, il plugin C++ crea una **mappa locale autorevole `id_to_mol_id`** all'inizio dello step, costruita solo dalle particelle reali. Durante la costruzione del tensore del grafo spaziale, le identità molecolari dei ghost vengono rigorosamente ricavate da questa mappa locale. Questo impedisce catastrofici picchi di forza causati da distanze di legame erroneamente valutate attraverso il box.
+
 ### 4. Validazione dell'Energia (Scaling Quadratico)
 Per assicurarti che l'integrazione di PyTorch e dei Prior all'interno di ESPResSo conservi l'energia (simulazione NVE simplettica), puoi usare lo script di test dedicato:
 ```bash

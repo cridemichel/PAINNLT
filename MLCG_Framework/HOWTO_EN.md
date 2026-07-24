@@ -455,6 +455,21 @@ If you wish to make the Center of Mass particle interact:
 > * Example: `system.part.add(pos=..., type=100, virtual=False)` creates the real particle. Newton will move it, but the neural network (stopping at types < 100) will ignore it.
 > * Example: `system.part.add(pos=..., type=0, virtual=True)` creates a ghost site attached to the rigid body. The Neural Network will see it, apply force to it, and ESPResSo will leverage it, transferring force and torque to the real rigid body it is bound to.
 
+### 3.5 Conservative Thermodynamic Capping and Ghost Management (C++ Plugin)
+The native integration of ML into ESPResSo must deal with periodic boundaries and extremely high energy states. Our C++ plugin (`PaiNN_ML_Potential.cpp`) includes two fundamental physical mechanisms "under-the-hood" to maintain stability and energy conservation:
+
+**1. Conservative Thermodynamic Capping (Soft-Clip)**
+ML potentials can produce extreme gradients in the case of atomic overlaps ($r \to 0$), causing simulations to crash or explode in energy.
+Traditional "force capping" (e.g., brutally truncating the force at 500 kJ/mol/nm) introduces non-conservative work: integrating a truncated force that is not the exact gradient of the potential breaks the Hamiltonian, causing the temperature to diverge in NVE/NVT ensembles.
+To solve this, **in the plugin we apply a differentiable function (*softplus*) directly to the raw potential ENERGY**, creating a smooth horizontal asymptote for values $< -100$ and $> 500$ kJ/mol. In this way:
+* When particles collide, the energy saturates smoothly and its derivative (the attractive/repulsive force of the network) goes towards zero.
+* The force applied to the system remains *exactly* the analytical gradient of the capped energy ($F = -\nabla E_{capped}$).
+* This preserves the thermodynamics of the system and the Hamiltonian conservation at 100%: the calculation falls back onto the classical WCA branches, preventing thermal and energy explosions.
+
+**2. Authoritative Synchronization of ESPResSo "Ghosts"**
+ESPResSo temporarily duplicates particles (called *ghosts*) to calculate interactions at the boundaries of the periodic simulation box. Often, attributes like the `mol_id` are not consistently synchronized on the ghosts.
+To prevent the ML from calculating intra-molecular interactions (ignored by default) between a ghost and a real particle due to a mismatch in the molecular ID, the C++ plugin creates an **authoritative local map `id_to_mol_id`** at the beginning of the step, built only from real particles. During the construction of the spatial graph tensor, the molecular identities of the ghosts are strictly derived from this local map. This prevents catastrophic force spikes caused by erroneously evaluated bond distances across the box.
+
 ### 4. Energy Validation (Quadratic Scaling)
 To ensure that the integration of PyTorch and the Priors within ESPResSo conserves energy (symplectic NVE simulation), you can use the dedicated test script:
 ```bash
