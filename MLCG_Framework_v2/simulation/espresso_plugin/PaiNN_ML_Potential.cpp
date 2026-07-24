@@ -152,7 +152,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     // viene troncata (es. a 500 kJ/mol/nm), permettendo al potenziale classico WCA di agire 
     // come un muro invalicabile di cemento armato (dato che lui NON viene troncato).
     torch::Tensor norms = torch::norm(f_r_ij, 2, 1, /*keepdim=*/true);
-    f_r_ij = torch::where(norms > 500.0, f_r_ij * (500.0 / norms), f_r_ij);
+    f_r_ij = torch::where(norms > 1e7, f_r_ij * (1e7 / norms), f_r_ij);
 
     // 6. Assegnazione delle Forze alle Particelle ESPResSo
     // Per ogni arco col->row (dove r_ij = r_col - r_row), la forza associata a r_ij è f_r_ij.

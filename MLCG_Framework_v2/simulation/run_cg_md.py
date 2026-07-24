@@ -44,7 +44,7 @@ system.time_step = args.dt
 system.cell_system.skin = 0.4
 # system.force_cap = 10000.0 # Rimosso! Limitava il WCA permettendo compenetrazioni. Abbiamo limitato le forze ML in C++.
 if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=10.0, gamma_rot=10.0, seed=42)
+    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
 else:
     system.thermostat.turn_off()
 
@@ -180,11 +180,13 @@ if wca.get("epsilon", 0.0) > 0 and has_wca:
                 cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
             )
 
-# Add safety hard-core WCA between all COMs to prevent collapse (r < 0.112 nm)
-system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
-    epsilon=100.0, sigma=0.1,
-    cutoff=0.1 * (2.0**(1/6)), shift="auto"
-)
+# [RIMOSSO] Add safety hard-core WCA between all COMs to prevent collapse
+# Ora che le forze ML sono limitate a 500 nel C++, il normale WCA sui siti virtuali 
+# è più che sufficiente a impedire la compenetrazione!
+# system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
+#     epsilon=1.0, sigma=0.35,
+#     cutoff=0.35 * (2.0**(1/6)), shift="auto"
+# )
 
 # Bonds (Harmonic, FENE, Morse)
 for idx, b in enumerate(priors.get("bonds", [])):
