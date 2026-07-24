@@ -1,0 +1,355 @@
+--- /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/preprocessing/build_cg_dataset.py	2026-07-23 22:14:51
++++ /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/preprocessing/build_cg_dataset.py	2026-07-23 22:12:45
+@@ -8,30 +8,7 @@
+ from scipy.ndimage import gaussian_filter1d
+ from scipy.spatial.distance import cdist
+ 
+-class EspressoTabulatedForce:
+-    def __init__(self, minval, maxval, force_tab):
+-        self.minval = float(minval)
+-        self.maxval = float(maxval)
+-        self.force_tab = np.array(force_tab, dtype=float)
+-        self.size = len(force_tab)
+-        if self.size > 1:
+-            self.invstepsize = (self.size - 1) / (self.maxval - self.minval)
+-        else:
+-            self.invstepsize = 0.0
+ 
+-    def __call__(self, x):
+-        # We process a scalar x value
+-        x_clamped = max(self.minval, min(x, self.maxval))
+-        ind = int(np.floor((x_clamped - self.minval) * self.invstepsize))
+-        
+-        ind = max(0, min(ind, self.size - 2))
+-        
+-        dx = x_clamped - (self.minval + ind / self.invstepsize)
+-        
+-        f0 = self.force_tab[ind]
+-        f1 = self.force_tab[ind + 1]
+-        
+-        return f0 + dx * self.invstepsize * (f1 - f0)
+ 
+ # =====================================================================
+ # 1. PARSING ARGOMENTI E CARICAMENTO TOPOLOGIA
+@@ -40,7 +17,7 @@
+ parser.add_argument("-c", "--topology", type=str, required=True, help="File di topologia (es. .tpr o .gro)")
+ parser.add_argument("-f", "--trajectory", type=str, required=True, help="File di traiettoria (es. .trr o .xtc)")
+ parser.add_argument("-j", "--config", type=str, default="topology_config.json", help="File JSON con topologia CG e mapping")
+-parser.add_argument("--dbi", action="store_true", help="Applica Direct Boltzmann Inversion (DBI) globale invece di approssimazioni armoniche (auto)")
++
+ parser.add_argument("-p", "--priors", type=str, default=None, help="File JSON con prior pre-esistenti (salta calcolo statistico DBI e carica questo)")
+ parser.add_argument("-o", "--output", type=str, default="../training/cg_dataset.bin", help="Nome del file binario di output")
+ parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
+@@ -73,41 +50,8 @@
+ WCA_EPSILON = config_data.get("wca_epsilon", 0.0)
+ WCA_OVERRIDES = config_data.get("wca_overrides", {})
+ 
+-def extrapolate_force(r, force, r_min, r_max):
+-    """
+-    Extrapolates the force linearly on both sides to avoid flat tails.
+-    Also adds a hard repulsive WCA-like core at very short distances (r < 0.22)
+-    to prevent the ML potential from collapsing bonded pairs into its 'black hole'.
+-    """
+-    valid_idx = np.where(~np.isnan(force))[0]
+-    if len(valid_idx) < 2:
+-        return force
+-    
+-    valid_start = valid_idx[0]
+-    valid_end = valid_idx[-1]
+-    
+-    # Extrapolate left side (repulsive)
+-    k_left = (force[valid_start+1] - force[valid_start]) / (r[valid_start+1] - r[valid_start])
+-    if k_left > 0: k_left = -k_left # Must be repulsive!
+-    
+-    for i in range(valid_start - 1, -1, -1):
+-        dr = r[i] - r[valid_start]
+-        extrap_f = force[valid_start] + k_left * dr
+-        
+-        # Add hard WCA-like core for r < 0.22 nm to fight ML potential black hole
+-        # We use a very stiff 1/r^12 force.
+-        # At r=0.22, it's 0. At r=0.15, it's massive.
+-        sigma_core = 0.20
+-        if r[i] < sigma_core * (2.0**(1/6)):
+-            # WCA force: 24 * epsilon * (2 * (sigma/r)^12 - (sigma/r)^6) / r
+-            # We use a large epsilon, e.g., 100.0
+-            sr6 = (sigma_core / max(0.001, r[i]))**6
+-            f_core = 24 * 100.0 * (2 * sr6**2 - sr6) / max(0.001, r[i])
+-            extrap_f += f_core
+-            
+-        force[i] = extrap_f
+ 
+-# Precompute 1-2 and 1-3 molecule exclusions to avoid massive WCA spikes between bonded neighbors
++
+ # ANGLES will be loaded below
+ 
+ ANGLES = config_data.get("angles", [])
+@@ -122,92 +66,7 @@
+     alpha_chars = ''.join([c for c in atom_name if c.isalpha()]).upper()
+     return ATOMIC_MASSES.get(alpha_chars[0], 12.0) if alpha_chars else 12.0
+ 
+-def compute_dbi_potential(values, is_angle=False, is_dihedral=False, min_val=None, max_val=None, bins=100, kBT=2.49):
+-    if len(values) == 0:
+-        return None, None, None
+-    
+-    if min_val is None:
+-        min_val = np.min(values)
+-    if max_val is None:
+-        max_val = np.max(values)
+-        
+-    hist, edges = np.histogram(values, bins=bins, range=(min_val, max_val), density=True)
+-    centers = 0.5 * (edges[:-1] + edges[1:])
+-    
+-    min_prob = 1e-6
+-    hist_clipped = np.clip(hist, min_prob, None)
+-    
+-    V = -kBT * np.log(hist_clipped)
+-        
+-    V -= np.min(V)
+-    V_smooth = gaussian_filter1d(V, sigma=2.0)
+-    
+-    dx = centers[1] - centers[0]
+-    F = -np.gradient(V_smooth, dx)
+-    
+-    return centers, V_smooth, F
+ 
+-def save_tabulated_potential(filename, x, V, F, x_min, x_max, pad_left=True, pad_right=True, is_dihedral=False):
+-    out_x = []
+-    out_V = []
+-    out_F = []
+-    dx = x[1] - x[0]
+-    
+-    k_ext = 500000.0 # Extremely stiff harmonic spring for extrapolation
+-    
+-    if pad_left and x[0] > x_min:
+-        n_pad = max(1, int(np.ceil((x[0] - x_min) / dx)))
+-        pad_x = np.linspace(x_min, x[0] - dx, n_pad)
+-        
+-        if is_dihedral:
+-            pad_F = np.full_like(pad_x, F[0])
+-            pad_V = V[0] - F[0] * (pad_x - x[0])
+-        else:
+-            # Implementazione stile VOTCA: estrapolazione quadratica del potenziale,
+-            # ovvero estrapolazione lineare della forza.
+-            if len(F) > 1:
+-                K0 = (F[1] - F[0]) / (x[1] - x[0])
+-            else:
+-                K0 = -100.0
+-                
+-            # Sicurezza: K0 deve essere negativo affinché la forza repulsiva cresca 
+-            # diminuendo la distanza. Se per caso c'è rumore e K0 è positivo, lo forziamo negativo.
+-            K0 = min(K0, -50.0)
+-            
+-            x0 = x[0]
+-            F0 = F[0]
+-            
+-            pad_F = F0 + K0 * (pad_x - x0)
+-            pad_V = V[0] - F0 * (pad_x - x0) - 0.5 * K0 * (pad_x - x0)**2
+-        
+-        out_x.extend(pad_x)
+-        out_V.extend(pad_V)
+-        out_F.extend(pad_F)
+-        
+-    out_x.extend(x)
+-    out_V.extend(V)
+-    out_F.extend(F)
+-    
+-    if pad_right and x[-1] < x_max:
+-        n_pad = max(1, int(np.ceil((x_max - x[-1]) / dx)))
+-        pad_x = np.linspace(x[-1] + dx, x_max, n_pad)
+-        
+-        if is_dihedral:
+-            pad_F = np.full_like(pad_x, F[-1])
+-            pad_V = V[-1] - F[-1] * (pad_x - x[-1])
+-        else:
+-            # Gentle harmonic extrapolation to avoid global Spline oscillations
+-            k_ext = 50.0 
+-            pad_F = -k_ext * (pad_x - x[-1]) + F[-1]
+-            pad_V = V[-1] + 0.5 * k_ext * (pad_x - x[-1])**2 - F[-1] * (pad_x - x[-1])
+-            
+-        out_x.extend(pad_x)
+-        out_V.extend(pad_V)
+-        out_F.extend(pad_F)
+-        
+-    out_data = np.column_stack((out_x, out_V, out_F))
+-    os.makedirs(os.path.dirname(filename), exist_ok=True)
+-    np.savetxt(filename, out_data, fmt="%.6f", header="x V F")
+ 
+ def get_unwrapped_positions(positions, box_dim):
+     unwrapped = np.copy(positions)
+@@ -620,29 +479,11 @@
+             if b_name not in shared_bond_distances: shared_bond_distances[b_name] = []
+             shared_bond_distances[b_name].extend(bond_distances[f"dict_{b_idx}"])
+ 
+-    # Aggiungi eventuali legami espliciti (FENE, Morse, IBI, DBI, o Harmonic custom) forniti come dizionari
++    # Aggiungi eventuali legami espliciti (FENE, Morse, o Harmonic custom) forniti come dizionari
+     for b_idx, b in enumerate(BONDS):
+         if isinstance(b, dict):
+             b_type = b.get("type", "unknown")
+-            if args.dbi and b_type == "harmonic" and b.get("r0") == "auto" and b.get("k", "auto") == "auto":
+-                b_type = "dbi"
+-                
+-            if b_type == "dbi":
+-                vals = shared_bond_distances[b["name"]] if "name" in b else bond_distances[f"dict_{b_idx}"]
+-                if len(vals) > 0:
+-                    b_name = b.get("name", f"bond_{b['mol_i']}_{b['mol_j']}")
+-                    tab_file = f"dbi_tables/{b_name}.tab"
+-                    centers, V, F = compute_dbi_potential(vals, kBT=1.0/BETA, bins=100)
+-                    if centers is not None:
+-                        save_tabulated_potential(tab_file, centers, V, F, x_min=0.001, x_max=15.0)
+-                        b["type"] = "tabulated"
+-                        b["file"] = tab_file
+-                        b["min"] = 0.001
+-                        b["max"] = 15.0
+-                        b.pop("k", None)
+-                        b.pop("r0", None)
+-                        print(f"  -> Calcolato DBI per legame {b['mol_i']}-{b['mol_j']} (salvato in {tab_file})")
+-            elif b_type not in ["ibi", "tabulated"] and b.get("r0") == "auto":
++            if b.get("r0") == "auto":
+                 vals = shared_bond_distances[b["name"]] if "name" in b else bond_distances[f"dict_{b_idx}"]
+                 if len(vals) > 0:
+                     b["r0"] = float(np.mean(vals))
+@@ -652,8 +493,7 @@
+                     print(f"  -> Auto-calcolato r0 per legame esplicito ({b_type}) {b['mol_i']}-{b['mol_j']}: r0 = {b['r0']:.4f} nm")
+             
+             derived_priors["bonds"].append(b)
+-            if b.get("type") != "tabulated" and b.get("r0") != "auto":
+-                print(f"  -> Legame esplicito ({b.get('type', b_type)}) aggiunto: {b['mol_i']}-{b['mol_j']}")
++            print(f"  -> Legame esplicito ({b.get('type', b_type)}) aggiunto: {b['mol_i']}-{b['mol_j']}")
+ 
+     shared_angle_values = {}
+     for idx, a in enumerate(ANGLES):
+@@ -666,23 +506,8 @@
+     for idx, a in enumerate(ANGLES):
+         vals = shared_angle_values[a["name"]] if "name" in a else angle_values[f"dict_{idx}"]
+         a_type = a.get("type", "harmonic")
+-        if args.dbi and a_type == "harmonic" and a.get("theta0") == "auto" and a.get("k", "auto") == "auto":
+-            a_type = "dbi"
+             
+-        if len(vals) > 0 and a_type == "dbi":
+-            a_name = a.get("name", f"angle_{a['mol_i']}_{a['mol_j']}_{a['mol_k']}")
+-            tab_file = f"dbi_tables/{a_name}.tab"
+-            centers, V, F = compute_dbi_potential(vals, is_angle=True, kBT=1.0/BETA, bins=100)
+-            if centers is not None:
+-                save_tabulated_potential(tab_file, centers, V, F, x_min=0.0, x_max=np.pi)
+-                a["type"] = "tabulated"
+-                a["file"] = tab_file
+-                a["min"] = 0.0
+-                a["max"] = np.pi
+-                a.pop("k", None)
+-                a.pop("theta0", None)
+-                print(f"  -> Calcolato DBI per angolo {a['mol_i']}-{a['mol_j']}-{a['mol_k']} (salvato in {tab_file})")
+-        elif len(vals) > 0 and a_type not in ["ibi", "tabulated"]:
++        if len(vals) > 0:
+             if a.get("theta0") == "auto":
+                 a["theta0"] = float(np.mean(vals))
+             if a.get("k") == "auto":
+@@ -690,10 +515,7 @@
+                 a["k"] = float(1.0 / (BETA * var_theta)) if var_theta > 1e-12 else 0.0
+         
+         derived_priors["angles"].append(a)
+-        if a.get("type") in ["ibi", "tabulated"]:
+-            print(f"  -> Angle aggiunto ({a.get('type')}): {a['mol_i']}-{a['mol_j']}-{a['mol_k']}")
+-        else:
+-            print(f"  -> Angle aggiunto: {a['mol_i']}-{a['mol_j']}-{a['mol_k']} (theta0={a.get('theta0', 0):.4f} rad, k={a.get('k', 0):.2f})")
++        print(f"  -> Angle aggiunto: {a['mol_i']}-{a['mol_j']}-{a['mol_k']} (theta0={a.get('theta0', 0):.4f} rad, k={a.get('k', 0):.2f})")
+ 
+     shared_dihedral_values = {}
+     for idx, d in enumerate(DIHEDRALS):
+@@ -706,24 +528,8 @@
+     for idx, d in enumerate(DIHEDRALS):
+         vals = shared_dihedral_values[d["name"]] if "name" in d else dihedral_values[f"dict_{idx}"]
+         d_type = d.get("type", "cosine")
+-        if args.dbi and d_type == "cosine" and d.get("phi0") == "auto" and d.get("K", "auto") == "auto":
+-            d_type = "dbi"
+             
+-        if len(vals) > 0 and d_type == "dbi":
+-            d_name = d.get("name", f"dihedral_{d['mol_i']}_{d['mol_j']}_{d['mol_k']}_{d['mol_l']}")
+-            tab_file = f"dbi_tables/{d_name}.tab"
+-            centers, V, F = compute_dbi_potential(vals, is_dihedral=True, kBT=1.0/BETA, bins=100)
+-            if centers is not None:
+-                save_tabulated_potential(tab_file, centers, V, F, x_min=-np.pi, x_max=np.pi, is_dihedral=True)
+-                d["type"] = "tabulated"
+-                d["file"] = tab_file
+-                d["min"] = -np.pi
+-                d["max"] = np.pi
+-                d.pop("k", None)
+-                d.pop("phi0", None)
+-                d.pop("n", None)
+-                print(f"  -> Calcolato DBI per diedro {d['mol_i']}-{d['mol_j']}-{d['mol_k']}-{d['mol_l']} (salvato in {tab_file})")
+-        elif len(vals) > 0 and d_type not in ["ibi", "tabulated"]:
++        if len(vals) > 0:
+             if d.get("phi0") == "auto":
+                 sin_vals = np.sin(vals)
+                 cos_vals = np.cos(vals)
+@@ -733,10 +539,7 @@
+                 d["k"] = float(1.0 / (BETA * var_phi)) if var_phi > 1e-12 else 0.0
+         
+         derived_priors["dihedrals"].append(d)
+-        if d.get("type") in ["ibi", "tabulated"]:
+-            print(f"  -> Dihedral aggiunto ({d.get('type')}): {d['mol_i']}-{d['mol_j']}-{d['mol_k']}-{d['mol_l']}")
+-        else:
+-            print(f"  -> Dihedral aggiunto: {d['mol_i']}-{d['mol_j']}-{d['mol_k']}-{d['mol_l']} (phi0={d.get('phi0', 0):.4f} rad, k={d.get('k', 0):.2f})")
++        print(f"  -> Dihedral aggiunto: {d['mol_i']}-{d['mol_j']}-{d['mol_k']}-{d['mol_l']} (phi0={d.get('phi0', 0):.4f} rad, k={d.get('k', 0):.2f})")
+ 
+     # Save priors for simulation
+     with open("cg_priors.json", "w") as pf:
+@@ -911,16 +714,8 @@
+                 exp_term = np.exp(-a * diff)
+                 f_scalar = - 2.0 * a * D * (1.0 - exp_term) * exp_term
+ 
+-            elif b_type == "tabulated":
+-                table_file = b["file"]
+-                if table_file not in cached_tables:
+-                    data = np.loadtxt(table_file)
+-                    rmin_tab = float(b["min"])
+-                    rmax_tab = float(b["max"])
+-                    cached_tables[table_file] = EspressoTabulatedForce(rmin_tab, rmax_tab, data[:, 2])
+-                
+-                f_scalar = cached_tables[table_file](r)
+ 
++
+             # Safety clamp: prevents a single badly-sampled bin from injecting
+             # enormous forces into the residual dataset and crashing training.
+             F_MAX_BOND = 10000.0  # kJ/mol/nm
+@@ -974,19 +769,7 @@
+             
+             if a_type == "harmonic":
+                 dV_dtheta = a["k"] * (theta - a["theta0"])
+-            elif a_type == "tabulated":
+-                try:
+-                    table_file = a["file"]
+-                    if table_file not in cached_tables:
+-                        table_data = np.loadtxt(table_file)
+-                        rmin_tab = float(a["min"])
+-                        rmax_tab = float(a["max"])
+-                        cached_tables[table_file] = EspressoTabulatedForce(rmin_tab, rmax_tab, table_data[:, 2])
+-                    
+-                    dV_dtheta = cached_tables[table_file](theta) # Espresso evaluator
+-                    dV_dtheta = -dV_dtheta # since espresso uses Force = -dV/dtheta, we need dV/dtheta for our math
+-                except:
+-                    dV_dtheta = 0.0
++
+             else:
+                 dV_dtheta = 0.0
+                 
+@@ -1061,19 +844,7 @@
+             if d_type == "cosine":
+                 n_mult = d.get("n", 1)
+                 dV_dphi = d["k"] * n_mult * np.sin(n_mult * phi - d["phi0"])
+-            elif d_type == "tabulated":
+-                try:
+-                    table_file = d["file"]
+-                    if table_file not in cached_tables:
+-                        table_data = np.loadtxt(table_file)
+-                        rmin_tab = float(d["min"])
+-                        rmax_tab = float(d["max"])
+-                        cached_tables[table_file] = EspressoTabulatedForce(rmin_tab, rmax_tab, table_data[:, 2])
+-                        
+-                    dV_dphi = cached_tables[table_file](phi) # Espresso evaluator
+-                    dV_dphi = -dV_dphi
+-                except:
+-                    dV_dphi = 0.0
++
+             else:
+                 dV_dphi = 0.0
+                 
