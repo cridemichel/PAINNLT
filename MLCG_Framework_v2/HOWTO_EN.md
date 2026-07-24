@@ -111,23 +111,17 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
 > If you define `"rigid_bodies"` in your topology, the script will map those molecules into ESPResSo Rigid Bodies (composed of a central particle with real mass/inertia and virtual sites).
 > 
 > By default (`"auto_align_sites": true`), the `build_cg_dataset.py` script computes the ideal "average" geometry of these sites by extracting all snapshots from the GROMACS trajectory and aligning them with the **Kabsch algorithm**. The resulting geometries are saved in `rigid_bodies_info.json`.
-> During dataset generation (Pass 2), the script uses this exact Kabsch rotation to mathematically reconstruct the ideal rigid sites on every frame before evaluating the prior forces (WCA/DBI/Harmonic). This guarantees **strict physical consistency** with ESPResSo (which does not deform rigid bodies), preventing the ML model from learning massive, unphysical counter-forces caused by instantaneous thermal vibrations.
+> During dataset generation (Pass 2), the script uses this exact Kabsch rotation to mathematically reconstruct the ideal rigid sites on every frame before evaluating the prior forces (WCA/Harmonic). This guarantees **strict physical consistency** with ESPResSo (which does not deform rigid bodies), preventing the ML model from learning massive, unphysical counter-forces caused by instantaneous thermal vibrations.
 > 
 > If you prefer to manually provide the perfect ideal coordinates (e.g. from a PDB) and don't want the script to overwrite them with the trajectory average, set `"auto_align_sites": false`. The script will exactly use the `relative_pos_nm` you typed in the JSON!
 
-### 1.2 Choice of Thermodynamic Architecture (Priors vs ML)
+#### 1.2 Thermodynamic Architecture (Analytical Priors + End-to-End ML)
 
-The framework supports three different Coarse-Graining philosophies. The choice depends on the type of system and the desired balance between numerical stability and accuracy:
-
-1. **Pure Classical (IBI / DBI)**: Runs MD simulations driven solely by potential tables derived from all-atom distributions (e.g., using the `02_run_ibi.sh` script provided in the tutorials). You can omit the `--model` argument in `run_cg_md.py` to launch the simulation.
-   - *Pros:* Very fast, does not require GPU training.
-   - *Cons:* 2-body potentials do not capture complex multi-body effects or coupled conformational changes.
-2. **Tabulated Delta-Learning (IBI/DBI + ML)**: Uses perfect tabulated potentials (IBI/DBI) as a baseline, leaving the Neural Network to learn only small multi-body corrections.
-   > [!WARNING]
-   > **Topological Vulnerability:** This approach is numerically **highly unstable** in MD, especially in the presence of complex Rigid Bodies. IBI tables have strict edges (cutoffs). If the initial noise of the neural network pushes two atoms just outside the table's range, the extrapolation generates immense forces/torques that cause the immediate explosion of the integrator ("bond broken" errors). **The use of IBI/DBI tables combined with ML is strongly discouraged unless the ML model is perfectly trained for thousands of epochs.**
-3. **CGnet Approach (Harmonic Prior + ML)**: Exclusively uses perfect harmonic springs ($V = \frac{1}{2} k (r-r_0)^2$) and analytical repulsive interactions (WCA, Morse) to preserve the basic topology. The Neural Network must learn **all** the real anharmonicity.
-   > [!TIP]
-   > **Recommended Approach for ML:** Analytical functions are smooth and boundless. Any thermal fluctuation or predictive error from the Neural Network will be softly contained by the spring, guaranteeing absolute topological stability to the simulation. The extra energy introduced by the neural network noise ("Noise Heating") will be safely dissipated by the Langevin thermostat. This is by far the most robust path for Delta-Learning.
+The v2 framework exclusively uses the **Analytical Priors + End-to-End Neural Network** hybrid approach.
+The PyTorch neural network learns **all** the anharmonicity and multi-body effects (via training on forces and, optionally, frames derived from Force-Matching or End-to-End), while the MD engine integrates basic analytical functions to guarantee topological stability:
+- The analytical functions (Harmonic, FENE, Morse, WCA) are smooth and unbounded.
+- Any thermal fluctuation or predictive error of the Neural Network will be softly contained by the spring (or repelled by the excluded volume), guaranteeing absolute topological stability to the simulation and preventing the "bond broken" errors typical of old IBI tables.
+- The extra energy introduced by the neural network noise ("Noise Heating") is safely dissipated by the Langevin thermostat in NVT, or asymptotically limited by the Conservative Thermodynamic Capping integrated in the C++ plugin for NVE simulations.
 
 #### Advanced Physics: Virtual Sites, Mass Scaling, and WCA Mixing
 The framework introduces a rigid-body structure to accurately map complex molecules.
@@ -145,85 +139,7 @@ Graph Neural Networks (GNNs) like PaiNN can introduce numerical instabilities (e
 By default, Harmonic bonds, Angles, and Dihedrals act on the Centers of Mass. However, you can map them to specific Virtual Sites using the `site_i`, `site_j`, `site_k`, `site_l` parameters (0-indexed referring to the molecule's mapping definition).
 When applied to Virtual Sites, the forces are geometrically exact, and the framework automatically computes the **torque** $\tau = \vec{r}_{site} \times \vec{F}_{site}$ to transfer the rotational momentum back to the main Center of Mass.
 
-#### Priors and Boltzmann Inversion (DBI vs IBI)
 
-The framework supports two fundamental philosophies to extract prior energies from the All-Atom trajectory: **Direct Boltzmann Inversion (DBI)** and **Iterative Boltzmann Inversion (IBI)**.
-
-##### Details of the DBI Mathematical Architecture
-When a degree of freedom is marked for pure DBI, the `build_cg_dataset.py` script executes a rigorous analytical pipeline:
-1. **Extraction and Histogramming**: Geometric samples are extracted from all frames to build a density distribution $P(x)$.
-2. **Thermodynamic Inversion (Jacobians)**: To achieve exact analytical probability matching and prevent geometric entropy biases, the raw histogram is divided by the phase space volume (mathematical Jacobian) before applying the inversion:
-   - **Bonds:** $V(r) = -k_B T \ln[P(r)/r^2]$ (correction for the spherical shell volume element)
-   - **Angles:** $V(\theta) = -k_B T \ln[P(\theta)/\sin(\theta)]$ (correction for the solid angle volume)
-   - **Dihedrals:** $V(\phi) = -k_B T \ln[P(\phi)]$ (no correction needed)
-3. **Smoothing**: To prevent force interpolation from suffering from noise or spikes derived from bins with few samples (especially at the tails), the potential is regularized by applying a Gaussian kernel (`sigma=2.0`).
-4. **Force Calculation**: Performed analytically as the numerical gradient of the smoothed potential: $F = -dV/dx$.
-5. **Endpoint Extrapolation**: To ensure absolute stability during Molecular Dynamics in ESPResSo and prevent the engine from crashing if a molecule explores a region outside the sampling by thermal fluctuation (e.g., a highly stretched bond), the tails of the tabulated potential are *extrapolated* by extending the force constantly. This gives the bond a safe "hard wall" asymptotic behavior outside the sampled region.
-6. **Table Export**: The resulting potential is exported as a tabulated numerical file `x V F` in `dbi_tables/`, ready for ESPResSo's native Spline interpolation.
-
-**1. Analytical Functions (DBI, FENE, Morse, Angles, Dihedrals)**
-If you include the `"bonds"` array as index lists (e.g., `[[0, 1]]`), the preprocessing script will perform basic statistics (classical DBI) to derive the harmonic constant $k$ and the equilibrium distance $r_0$.
-Alternatively, you can disable automatic inference and explicitly define much more complex analytical parameters for various degrees of freedom. You can use:
-- **Harmonic Bond** (`"type": "harmonic"`): the classic Hooke's spring, calculated statistically based on mean/variance (defaulting to `"r0": "auto"`, `"k": "auto"`). Extremely fast.
-- **Direct Boltzmann Inversion** (`"type": "dbi"`): extracts the true thermodynamic potential by inverting the histograms (useful for non-harmonic or very asymmetric distributions/geometries). This technique saves a `.tab` file and uses force extrapolation. Also supported as a global `--dbi` terminal flag.
-- **FENE Bond** (`"type": "fene"`): very useful for polymer chains where monomers must not drift beyond a certain $R_{max}$.
-- **Morse Bond** (`"type": "morse"`): essential for non-linear bonds that must be able to break (like tetrad stacking or hydrogen bonds).
-- **Harmonic Angles** (in the `"angles"` array): to stabilize the angle between three sites.
-- **Dihedrals** (in the `"dihedrals"` array): to stabilize the torsional conformation between four sites.
-This parametric approach is ultra-fast to evaluate but relies on ideal closed equations.
-
-**2. Aggregated Statistics (Typed Topology)**
-If you want multiple bonds (or angles, or dihedrals) to share the **exact same statistics**, you can group them by assigning a `"name"` attribute.
-- *Without name (Bond-by-Bond)*: Each bond receives a $k, r_0$ or an IBI curve calculated exclusively using the frames of its specific atomic pair. Great for unique and exact geometries (e.g. G-Quadruplexes).
-- *With name (Aggregated)*: All bonds with the same `"name"` merge their trajectories into a single large data pool. The framework will extract a global mean/variance (for "auto" springs) or a global IBI curve. Perfect for transferable models or solvents (e.g. assigning `"name": "water_OH"` to all water OH bonds).
-
-```json
-"bonds": [
-    {"mol_i": 0, "mol_j": 1, "type": "ibi", "name": "PO_bond"},
-    {"mol_i": 1, "mol_j": 2, "type": "ibi", "name": "PO_bond"}
-]
-```
-
-**2. Iterative Boltzmann Inversion (IBI) [Exact Tabulated Curves]**
-If your system is highly anharmonic or suffers from cross-interferences (e.g., steric repulsion modifies bond distances), the harmonic approximation of DBI is not sufficient. In this case, you can use the powerful integrated IBI pipeline with the real ESPResSo engine:
-- Use the script in the `ibi/` folder to mathematically extract the exact potentials. The `run_ibi_loop.py` script natively reads the `_dataset.bin` file and performs **real Molecular Dynamics simulations in ESPResSo**, calculating the Kullback-Leibler divergence and correcting the curves (splines) iteratively via the Henderson equation until the simulated distribution perfectly matches the All-Atom target.
-- The user has total control over the inversion types via the command line. For example, you can request IBI only for bonds, leaving DBI (more stable and efficient) for angles and dihedrals:
-```bash
-uv run ibi/run_ibi_loop.py \
-    --dataset preprocessing/tel22_dataset.bin \
-    --priors preprocessing/cg_priors.json \
-    --iterations 5
-```
-- Once convergence is achieved, the optimal curves are saved as `.dat` files.
-- Next, use `build_cg_dataset.py` again by passing the `--priors` flag to create the final dataset. This way the script will know not to recalculate the statistical priors, but will directly read the exact IBI tables and subtract them to extract the true residuals:
-```bash
-uv run preprocessing/build_cg_dataset.py \
-    --topology md.gro \
-    --trajectory md_whole.trr \
-    --config topology_config.json \
-    --priors cg_priors.json \
-    --output dataset_ibi.bin
-```
-- To simulate, in your automatically updated `cg_priors.json` file, the setting will be converted to `"type": "tabulated"`, indicating the path to the generated spline:
-```json
-{
-    "mol_i": 0, "mol_j": 1,
-    "type": "tabulated",
-    "file": "ibi_priors/bond_ibi_spline_0.dat",
-    "min": 0.01, "max": 3.0
-}
-```
-ESPResSo will read the numerical table (both for `TabulatedDistance` bonds, `TabulatedAngle` angles, and dihedrals) injecting the perfect IBI potential. This choice guarantees native backward compatibility and allows freely mixing DBI springs and IBI tables for different degrees of freedom!
-
-### Practical Guide to the IBI Workflow (The Three Scripts)
-The architecture logically separates the statistics extraction from the force subtraction. In the tutorials (e.g., `tel22_IBI`), you will find this workflow divided into 3 scripts:
-
-1. **`01_build_dataset.sh` (Statistics Extraction):**
-   Runs `build_cg_dataset.py` on the topology that contains the priors with `"type": "ibi"`. At this stage, the script does *not* subtract the IBI forces from the target forces (because the tables don't exist yet!). It only saves a `tel22_dataset.bin` file containing the fragment distributions and the mapped original atomistic forces.
-2. **`02_run_ibi.sh` (Table Generation):**
-   Reads the intermediate dataset and executes the IBI loop. It uses the target distribution to compute the DBI (iteration 0) and then iteratively launches ESPResSo to correct the potential. Upon convergence, it exports the optimal `.dat` potentials to the `ibi_priors/` folder and updates `cg_priors.json` changing their type to `"tabulated"`.
-3. **`03_subtract_ibi.sh` (Force Subtraction):**
-   Reruns `build_cg_dataset.py`, but this time passing the `--priors cg_priors.json` flag generated by the previous step. In this way, the framework skips the statistical inference, sees the bonds as `"tabulated"`, loads the definitive `.dat` tables, and performs the interpolation to rigorously subtract the exact force (IBI) from the residual forces of the dataset. The final output `tel22_dataset_ibi.bin` is ready to train the Machine Learning model!
 
 > [!TIP]
 > **Equilibrium Distance Auto-calculation (`r0`)**
@@ -436,6 +352,21 @@ If you wish to make the Center of Mass particle interact:
 > 
 > * Example: `system.part.add(pos=..., type=100, virtual=False)` creates the real particle. Newton will move it, but the neural network (stopping at types < 100) will ignore it.
 > * Example: `system.part.add(pos=..., type=0, virtual=True)` creates a ghost site attached to the rigid body. The Neural Network will see it, apply force to it, and ESPResSo will leverage it, transferring force and torque to the real rigid body it is bound to.
+
+### 3.5 Conservative Thermodynamic Capping and Ghost Management (C++ Plugin)
+The native integration of ML into ESPResSo must deal with periodic boundaries and extremely high energy states. Our C++ plugin (`PaiNN_ML_Potential.cpp`) includes two fundamental physical mechanisms "under-the-hood" to maintain stability and energy conservation:
+
+**1. Conservative Thermodynamic Capping (Soft-Clip)**
+ML potentials can produce extreme gradients in the case of atomic overlaps ($r \to 0$), causing simulations to crash or explode in energy.
+Traditional "force capping" (e.g., brutally truncating the force at 500 kJ/mol/nm) introduces non-conservative work: integrating a truncated force that is not the exact gradient of the potential breaks the Hamiltonian, causing the temperature to diverge in NVE/NVT ensembles.
+To solve this, **in the plugin we apply a differentiable function (*softplus*) directly to the raw potential ENERGY**, creating a smooth horizontal asymptote for values $< -100$ and $> 500$ kJ/mol. In this way:
+* When particles collide, the energy saturates smoothly and its derivative (the attractive/repulsive force of the network) goes towards zero.
+* The force applied to the system remains *exactly* the analytical gradient of the capped energy ($F = -\nabla E_{capped}$).
+* This preserves the thermodynamics of the system and the Hamiltonian conservation at 100%: the calculation falls back onto the classical WCA branches, preventing thermal and energy explosions.
+
+**2. Authoritative Synchronization of ESPResSo "Ghosts"**
+ESPResSo temporarily duplicates particles (called *ghosts*) to calculate interactions at the boundaries of the periodic simulation box. Often, attributes like the `mol_id` are not consistently synchronized on the ghosts.
+To prevent the ML from calculating intra-molecular interactions (ignored by default) between a ghost and a real particle due to a mismatch in the molecular ID, the C++ plugin creates an **authoritative local map `id_to_mol_id`** at the beginning of the step, built only from real particles. During the construction of the spatial graph tensor, the molecular identities of the ghosts are strictly derived from this local map. This prevents catastrophic force spikes caused by erroneously evaluated bond distances across the box.
 
 ### 4. Energy Validation (Quadratic Scaling)
 To ensure that the integration of PyTorch and the Priors within ESPResSo conserves energy (symplectic NVE simulation), you can use the dedicated test script:

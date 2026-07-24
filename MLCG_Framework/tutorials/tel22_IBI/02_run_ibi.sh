@@ -10,3 +10,11 @@ uv run ../../ibi/run_ibi_loop.py \
     --outdir ibi_priors
 
 echo "[SUCCESS] IBI completata. cg_priors.json e le tabelle sono state aggiornate."
+
+echo "[INFO] Esecuzione estrapolazione code (SOTA) per prevenire bond broken..."
+uv run python extrapolate_ibi_tables.py
+
+echo "[INFO] Esecuzione capping (max 150 kJ/mol*nm) per abbattere la varianza delle forze..."
+uv run python cap_ibi_forces.py --max_force 150.0
+
+echo "[SUCCESS] Tabelle pronte per la sottrazione."

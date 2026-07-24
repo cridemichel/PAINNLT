@@ -115,19 +115,13 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
 > 
 > Se preferisci fornire manualmente le coordinate ideali perfette (es. da un PDB) e non vuoi che lo script le sovrascriva con la media della traiettoria, imposta `"auto_align_sites": false`. Lo script utilizzerà esattamente le `relative_pos_nm` che hai digitato nel JSON!
 
-### 1.2 Scelta dell'Architettura Termodinamica (Priors vs ML)
+### 1.2 Architettura Termodinamica (Prior Analitici + ML End-to-End)
 
-Il framework supporta tre diverse filosofie di Coarse-Graining. La scelta dipende dal tipo di sistema e dal bilanciamento desiderato tra stabilità numerica e accuratezza:
-
-1. **Puro Classico (IBI / DBI)**: Esegue simulazioni MD guidate unicamente da tabelle di potenziale ricavate dalle distribuzioni all-atom (ad es. usando lo script `02_run_ibi.sh` fornito nei tutorial). È possibile omettere l'argomento `--model` in `run_cg_md.py` per lanciare la simulazione.
-   - *Pro:* Molto veloce, non richiede addestramento GPU.
-   - *Contro:* I potenziali a 2-corpi non catturano effetti multi-corpo complessi o variazioni conformazionali accoppiate.
-2. **Delta-Learning Tabulato (IBI/DBI + ML)**: Usa i potenziali tabulati perfetti (IBI/DBI) come base, e lascia alla Rete Neurale il compito di imparare solo le piccole correzioni multi-corpo.
-   > [!WARNING]
-   > **Vulnerabilità Topologica:** Questo approccio è numericamente **molto instabile** in MD, specialmente in presenza di Corpi Rigidi complessi. Le tabelle IBI hanno bordi (cutoffs) rigidi. Se il rumore iniziale della rete neurale spinge due atomi appena al di fuori del range della tabella, l'estrapolazione genera forze/torsioni immense che causano l'esplosione immediata dell'integratore (errori "bond broken"). **L'uso di tabelle IBI/DBI combinate con il ML è fortemente sconsigliato a meno che il modello ML non sia perfettamente addestrato per migliaia di epoche.**
-3. **Approccio CGnet (Prior Armonico + ML)**: Utilizza esclusivamente molle armoniche perfette ($V = \frac{1}{2} k (r-r_0)^2$) e interazioni repulsive analitiche (WCA, Morse) per preservare la topologia di base. La Rete Neurale deve imparare **tutta** l'anarmonicità reale.
-   > [!TIP]
-   > **Approccio Raccomandato per ML:** Le funzioni analitiche sono lisce e illimitate. Qualsiasi fluttuazione termica o errore predittivo della Rete Neurale verrà contenuto dolcemente dalla molla, garantendo assoluta stabilità topologica alla simulazione. L'energia extra introdotta dal rumore della rete neurale ("Noise Heating") verrà dissipata in modo sicuro dal termostato di Langevin. È la strada più robusta in assoluto per il Delta-Learning.
+Il framework v2 utilizza esclusivamente l'approccio ibrido **Prior Analitici + Rete Neurale End-to-End**.
+La rete neurale PyTorch impara **tutta** l'anarmonicità e gli effetti multi-corpo (tramite un addestramento su forze e, opzionalmente, frame derivati dal Force-Matching o End-to-End), mentre il motore MD integra delle funzioni analitiche di base per garantire la stabilità topologica:
+- Le funzioni analitiche (Harmonic, FENE, Morse, WCA) sono lisce e illimitate.
+- Qualsiasi fluttuazione termica o errore predittivo della Rete Neurale verrà contenuto dolcemente dalla molla (o respinto dal volume escluso), garantendo assoluta stabilità topologica alla simulazione e prevenendo gli errori "bond broken" tipici delle vecchie tabelle IBI.
+- L'energia extra introdotta dal rumore della rete neurale ("Noise Heating") viene dissipata in modo sicuro dal termostato di Langevin in NVT, o limitata asintoticamente dal Capping Termodinamico Conservativo integrato nel plugin C++ per le simulazioni NVE.
 
 #### Fisica Avanzata: Virtual Sites, Mass Scaling e Mixing WCA
 Il framework introduce una struttura a corpi rigidi per mappare accuratamente molecole complesse.
@@ -145,92 +139,7 @@ Le Reti Neurali a Grafo (GNN) come PaiNN possono introdurre instabilità numeric
 Di default, i legami Armonici, Angoli e Diedri agiscono sui Centri di Massa. Tuttavia, puoi applicarli a Virtual Sites specifici usando i parametri `site_i`, `site_j`, `site_k`, `site_l` (0-indexed rispetto alla definizione del mapping della molecola).
 Quando applicate ai Virtual Sites, le forze sono geometricamente esatte e il framework calcola automaticamente il **momento torcente** $\tau = \vec{r}_{site} \times \vec{F}_{site}$ per trasferire il momento rotazionale al Centro di Massa principale.
 
-#### Priors e Inversione di Boltzmann (DBI vs IBI)
 
-Il framework supporta due filosofie fondamentali per estrarre le energie a priori dalla traiettoria All-Atom: la **Direct Boltzmann Inversion (DBI)** e l'**Iterative Boltzmann Inversion (IBI)**.
-
-##### Dettagli dell'Architettura Matematica DBI
-Quando un grado di libertà è contrassegnato per il DBI puro, lo script `build_cg_dataset.py` esegue una rigorosa pipeline analitica:
-1. **Estrazione e Istogrammazione**: I campioni geometrici vengono estratti da tutti i frame per costruire una distribuzione di densità $P(x)$.
-2. **Inversione Termodinamica (Jacobiani)**: Per ottenere un esatto matching analitico di probabilità e prevenire bias entropici geometrici, l'istogramma grezzo viene diviso per il volume dello spazio delle fasi (Jacobiano matematico) prima di applicare l'inversione:
-   - **Legami:** $V(r) = -k_B T \ln[P(r)/r^2]$ (correzione per l'elemento di volume a guscio sferico)
-   - **Angoli:** $V(\theta) = -k_B T \ln[P(\theta)/\sin(\theta)]$ (correzione per il volume dell'angolo solido)
-   - **Diedri:** $V(\phi) = -k_B T \ln[P(\phi)]$ (nessuna correzione necessaria)
-3. **Smussamento (Smoothing)**: Per evitare che l'interpolazione della forza sia soggetta a rumore o picchi derivanti da bin con pochi sample (specialmente alle code), il potenziale viene regolarizzato passando un kernel gaussiano (`sigma=2.0`).
-4. **Calcolo della Forza**: Svolto analiticamente come gradiente numerico del potenziale smussato: $F = -dV/dx$.
-5. **Estrapolazione Agli Estremi**: Per garantire stabilità assoluta durante la Dinamica Molecolare in ESPResSo ed evitare che il motore esploda se una molecola esplora per fluttuazione termica una regione fuori dal campionamento (ad es. un legame molto dilatato), le code del potenziale tabulato vengono *estrapolate* prolungando la forza costantemente. Questo conferisce al legame un comportamento asintotico di "muro rigido" sicuro al di fuori della regione campionata.
-6. **Esportazione Tabelle**: Il potenziale risultante viene esportato come file numerico tabulato `x V F` in `dbi_tables/`, pronto per l'interpolazione Spline nativa di ESPResSo.
-
-
-**1. Funzioni Analitiche (DBI, FENE, Morse, Angoli, Diedri)**
-Se includi l'array `"bonds"` come liste di indici (es. `[[0, 1]]`), lo script di preprocessing effettuerà una statistica (DBI classica) per ricavare la costante armonica $k$ e la distanza di equilibrio $r_0$.
-In alternativa, puoi disattivare l'inferenza automatica e definire esplicitamente parametri analitici molto più complessi per diversi gradi di libertà. Puoi usare:
-- **Harmonic Bond** (`"type": "harmonic"`): la classica molla di Hooke calcolata statisticamente basandosi su media/varianza (per default su `"r0": "auto"`, `"k": "auto"`). Estremamente veloce.
-- **Direct Boltzmann Inversion** (`"type": "dbi"`): estrae il vero potenziale termodinamico invertendo gli istogrammi (utile per geometrie e distribuzioni non armoniche o molto asimmetriche). Questa tecnica salva un `.tab` e sfrutta l'estrapolazione delle forze. Supportato anche come flag globale `--dbi` da terminale.
-- **FENE Bond** (`"type": "fene"`): utilissimo per catene polimeriche dove i monomeri non devono allontanarsi oltre un certo $R_{max}$.
-- **Morse Bond** (`"type": "morse"`): essenziale per legami non lineari che devono potersi rompere (come lo stacking dei tetrad o i legami idrogeno).
-- **Angoli Armonici** (nell'array `"angles"`): per stabilizzare l'angolo tra tre siti.
-- **Diedri** (nell'array `"dihedrals"`): per stabilizzare la conformazione torsionale tra quattro siti.
-Questo approccio parametrico è ultra-veloce da valutare, ma si basa su equazioni chiuse ideali.
-
-**2. Statistica Aggregata (Typed Topology)**
-Se vuoi che più legami (o angoli, o diedri) condividano la **stessa identica statistica**, puoi raggrupparli assegnando loro l'attributo `"name"`.
-- *Senza nome (Bond-by-Bond)*: Ogni legame riceve un $k, r_0$ o una curva IBI calcolata esclusivamente usando i frame della sua specifica coppia atomica. Ottimo per geometrie uniche ed esatte (es. G-Quadruplex).
-- *Con nome (Aggregated)*: Tutti i legami con lo stesso `"name"` fondono le loro traiettorie in un unico grande pool di dati. Il framework estrarrà una media/varianza globale (per le molle "auto") o una curva IBI globale. Perfetto per modelli trasferibili o solventi (es. assegnando `"name": "acqua_OH"` a tutti i legami OH dell'acqua).
-
-```json
-"bonds": [
-    {"mol_i": 0, "mol_j": 1, "type": "ibi", "name": "PO_bond"},
-    {"mol_i": 1, "mol_j": 2, "type": "ibi", "name": "PO_bond"}
-]
-```
-
-**2. Iterative Boltzmann Inversion (IBI) [Curve Tabulate Esatte]**
-Se il tuo sistema è altamente anarmonico o soffre di interferenze incrociate (es. la repulsione sterica modifica le distanze di legame), l'approssimazione armonica della DBI non è sufficiente. In questo caso, puoi usare la potente pipeline IBI integrata con il vero motore ESPResSo:
-- Usa lo script nella cartella `ibi/` per estrarre matematicamente i potenziali esatti. Lo script `run_ibi_loop.py` legge nativamente il file `_dataset.bin` ed esegue **vere simulazioni di Dinamica Molecolare in ESPResSo**, calcolando la divergenza di Kullback-Leibler e correggendo le curve (spline) iterativamente tramite l'equazione di Henderson finché la distribuzione simulata non combacia perfettamente con il target All-Atom.
-- L'utente ha controllo totale sulle tipologie di inversione tramite riga di comando. Puoi ad esempio richiedere l'IBI solo per i legami, lasciando la DBI (più stabile ed efficiente) per angoli e diedri:
-```bash
-uv run ibi/run_ibi_loop.py \
-    --dataset preprocessing/tel22_dataset.bin \
-    --priors preprocessing/cg_priors.json \
-    --iterations 5
-```
-- A convergenza ottenuta, le curve ottimali vengono salvate come file `.dat`.
-- Successivamente, usa di nuovo `build_cg_dataset.py` passando il flag `--priors` per creare il dataset finale. In questo modo lo script capirà di non dover ricalcolare i prior statistici, ma leggerà direttamente le tabelle esatte dell'IBI e le sottrarrà per estrarre i veri residui:
-```bash
-uv run preprocessing/build_cg_dataset.py \
-    --topology md.gro \
-    --trajectory md_whole.trr \
-    --config topology_config.json \
-    --priors cg_priors.json \
-    --output dataset_ibi.bin
-```
-- Per simulare, nel tuo file `cg_priors.json` aggiornato automaticamente, l'impostazione sarà convertita a `"type": "tabulated"` indicando il percorso alla spline generata:
-```json
-{
-    "mol_i": 0, "mol_j": 1,
-    "type": "tabulated",
-    "file": "ibi_priors/bond_ibi_spline_0.dat",
-    "min": 0.01, "max": 3.0
-}
-```
-ESPResSo leggerà la tabella numerica (sia per legami `TabulatedDistance` che per angoli `TabulatedAngle` e diedri) iniettando il potenziale IBI perfetto. Questa scelta garantisce una retrocompatibilità nativa e permette di mischiare liberamente molle DBI e tabelle IBI per gradi di libertà diversi!
-
-### Guida Pratica al Flusso IBI (I tre script)
-L'architettura separa logicamente l'estrazione delle statistiche dalla sottrazione delle forze. Nei tutorial (es. `tel22_IBI`) troverai questo flusso diviso in 3 script:
-
-1. **`01_build_dataset.sh` (Estrazione Statistiche):**
-   Esegue `build_cg_dataset.py` sulla topologia che contiene i prior con `"type": "ibi"`. In questa fase, lo script *non* sottrae le forze IBI dalle forze target (perché le tabelle non esistono ancora!). Salva solo un file `tel22_dataset.bin` che contiene le distribuzioni dei frammenti e le forze atomistiche originali mappate.
-2. **`02_run_ibi.sh` (Generazione Tabelle):**
-   Legge il dataset intermedio ed esegue il loop IBI. Usa la distribuzione target per calcolare la DBI (iterazione 0) e poi avvia iterativamente ESPResSo per correggere il potenziale. A convergenza, esporta i potenziali ottimali `.dat` nella cartella `ibi_priors/` e aggiorna `cg_priors.json` cambiandone il tipo in `"tabulated"`.
-3. **`03_subtract_ibi.sh` (Sottrazione Forze):**
-   Rilancia `build_cg_dataset.py`, ma questa volta passandogli il flag `--priors cg_priors.json` generato dallo step precedente. In questo modo il framework salta la statistica, vede i legami come `"tabulated"`, carica le tabelle `.dat` definitive ed esegue l'interpolazione per sottrarre rigorosamente la forza esatta (IBI) dalle forze residue del dataset. L'output finale `tel22_dataset_ibi.bin` è pronto per addestrare il modello di Machine Learning!
-
-> [!WARNING]
-> **Estrapolazione delle Tabelle IBI (SOTA)**
-> Le tabelle `.dat` prodotte dall'IBI coprono *esclusivamente* il range di distanze campionato durante la simulazione (es. da $0.1$ a $3.0$ nm).
-> Se durante l'addestramento ibrido ML+IBI la rete neurale produce piccole fluttuazioni iniziali che spingono due atomi anche solo di poco fuori dalla griglia, ESPResSo crasherà fatalmente con l'errore `bond broken`.
-> La soluzione State Of The Art (come implementata in tool avanzati come VOTCA) consiste nell'**estrapolare matematicamente le code** dei file `.dat` prima della Dinamica Molecolare, estendendoli fino a $\approx 5.0$ nm e agganciando forze lineari che simulano barriere repulsive perfette e molle armoniche infinite. Nel tutorial `tel22_IBI` è fornito uno script Python d'esempio `extrapolate_ibi_tables.py` per automatizzare questo processo!
 
 > [!TIP]
 > **Auto-calcolo della Distanza di Equilibrio (`r0`)**
@@ -443,6 +352,21 @@ Se si desidera far interagire la particella del Centro di Massa:
 > 
 > * Esempio: `system.part.add(pos=..., type=100, virtual=False)` crea la particella reale. Newton la muoverà, ma la rete neurale (fermandosi ai tipi < 100) la ignorerà.
 > * Esempio: `system.part.add(pos=..., type=0, virtual=True)` crea un sito fantasma attaccato al corpo rigido. La Rete Neurale lo vedrà, applicherà la forza su di esso, ed ESPResSo farà leva trasferendo forza e momento torcente al corpo rigido reale a cui è legato.
+
+### 3.5 Capping Termodinamico Conservativo e Gestione dei Ghost (Plugin C++)
+L'integrazione nativa del ML in ESPResSo deve fare i conti con i bordi periodici e gli stati ad altissima energia. Il nostro plugin in C++ (`PaiNN_ML_Potential.cpp`) include due fondamentali meccanismi fisici "under-the-hood" per mantenere la stabilità e la conservazione dell'energia:
+
+**1. Il Capping Termodinamico Conservativo (Soft-Clip)**
+I potenziali ML possono produrre gradienti estremi in caso di compenetrazioni atomiche ($r \to 0$), portando le simulazioni a crash o ad esplosioni di energia. 
+Il "force capping" tradizionale (es. troncare brutalmente la forza a 500 kJ/mol/nm) introduce lavoro non conservativo: integrare una forza troncata che non è l'esatto gradiente della potenziale rompe l'Hamiltoniana, causando la divergenza della temperatura nel sistema NVE/NVT.
+Per risolvere questo, **nel plugin applichiamo una funzione differenziabile (*softplus*) direttamente all'ENERGIA potenziale grezza**, creando un asintoto orizzontale dolce per valori $< -100$ e $> 500$ kJ/mol. In questo modo:
+* Quando le particelle collidono, l'energia si satura dolcemente e la sua derivata (la forza attrattiva/repulsiva della rete) va verso zero.
+* La forza applicata al sistema rimane *esattamente* il gradiente analitico dell'energia limitata ($F = -\nabla E_{capped}$).
+* Questo preserva al 100% la termodinamica del sistema e la conservazione Hamiltoniana: il calcolo ricade sui rami classici WCA, evitando esplosioni termiche ed energetiche.
+
+**2. Sincronizzazione Autorevole dei "Ghost" ESPResSo**
+ESPResSo duplica temporaneamente le particelle (chiamate *ghost*) per calcolare le interazioni ai bordi della scatola di simulazione periodica. Spesso, attributi come il `mol_id` non vengono sincronizzati coerentemente sui ghost.
+Per evitare che il ML calcoli interazioni intra-molecolari (ignorate di default) tra un ghost e una particella reale a causa di un disallineamento dell'ID molecolare, il plugin C++ crea una **mappa locale autorevole `id_to_mol_id`** all'inizio dello step, costruita solo dalle particelle reali. Durante la costruzione del tensore del grafo spaziale, le identità molecolari dei ghost vengono rigorosamente ricavate da questa mappa locale. Questo impedisce catastrofici picchi di forza causati da distanze di legame erroneamente valutate attraverso il box.
 
 ### 4. Validazione dell'Energia (Scaling Quadratico)
 Per assicurarti che l'integrazione di PyTorch e dei Prior all'interno di ESPResSo conservi l'energia (simulazione NVE simplettica), puoi usare lo script di test dedicato:
