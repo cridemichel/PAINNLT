@@ -352,7 +352,7 @@ if wca.get("epsilon", 0.0) > 0 and has_wca:
             )
 
 # Apply interactions
-system.force_cap = 2000.0
+# system.force_cap = 2000.0
 
 for b in priors.get("bonds", []):
     if b["type"] == "tabulated":
@@ -421,14 +421,14 @@ for i, f in enumerate(forces):
 print("Phase 2: Warm-up MD with small timestep and high friction...")
 system.integrator.set_vv()
 system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
-system.force_cap = 500.0
+# system.force_cap = 500.0
 system.time_step = 0.0001
 
 for _ in range(50):
     system.integrator.run(100)
 
 print("Phase 3: Production MD...")
-system.force_cap = 1000.0
+# system.force_cap = 1000.0
 system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
 system.time_step = 0.002
 system.time_step = 0.002

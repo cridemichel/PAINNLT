@@ -41,7 +41,7 @@ print("[INFO] Initializing ESPResSo system...")
 # For a real run, box_l should be read from the first frame of the dataset or config.
 # Here we just set a large box and will resize it if needed.
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
-system.force_cap = 10000.0
+# system.force_cap = 10000.0  # Rimosso per non rompere l'Hamiltoniana
 system.time_step = args.dt
 system.cell_system.skin = 0.4
 if not args.nve:
