@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 dts = [0.004, 0.006, 0.008, 0.01]
-total_time = 0.5 # 0.5 ps
+total_time = 1.0 # 1.0 ps
 
 std_devs_toxvaerd_bias0 = []
 
