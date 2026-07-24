@@ -150,32 +150,26 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     // 4. Inferenza del Modello
     torch::Tensor energy = model->forward_with_rij(t_atomic_numbers, t_r_ij, t_edge_index, t_batch);
     
-    // CORREZIONE BUG GHOST PARTICLES:
-    // Sommiamo solo l'energia atomica calcolata per le particelle *reali* (locali), ignorando i ghost.
-    m_last_energy = energy.slice(0, 0, num_local_ml_particles).sum().item<double>();
-    
-    // 5. Calcolo delle Forze (Gradienti)
-    // =========================================================================
-    // L'utente aveva perfettamente ragione: limitare la forza rompe la conservazione
-    // dell'energia e pompa calore nel sistema. L'unico modo per limitare le forze 
-    // mantenendo la coerenza Hamiltoniana F = -nabla E è applicare una trasformazione
-    // liscia (soft-clip) direttamente sull'ENERGIA prima di calcolare il gradiente!
-    // Usiamo due softplus concatenate per creare un "piatto" per energie < -100 e > 500.
-    // In quelle regioni limite, la derivata va a zero, "spegnendo" dolcemente la rete
-    // e lasciando il controllo al WCA classico, senza MAI rompere la termodinamica.
-
+    // 5. Capping Termodinamico Conservativo
+    // Applichiamo il soft-clip direttamente sull'ENERGIA PRIMA di prenderne la somma,
+    // in modo da limitare le forze (tramite derivata nulla) senza rompere l'Hamiltoniana.
     float e_min = -100.0f;
     float e_max = 500.0f;
     float beta = 0.1f;
 
-    // Soft Lower Bound
     torch::Tensor shifted_e_min = (energy - e_min) * beta;
     torch::Tensor e_lower = e_min + (1.0f / beta) * torch::nn::functional::softplus(shifted_e_min);
 
-    // Soft Upper Bound
     torch::Tensor shifted_e_max = (e_max - e_lower) * beta;
     torch::Tensor e_capped = e_max - (1.0f / beta) * torch::nn::functional::softplus(shifted_e_max);
 
+    // CORREZIONE BUG GHOST PARTICLES E CONSERVAZIONE:
+    // Sommiamo solo l'energia CAPPATA calcolata per le particelle *reali* (locali).
+    // Questo è vitale perché ESPResSo stampa questa energia come E_potenziale.
+    // Se passassimo l'energia raw, ESPResSo misurerebbe salti enormi (-500.000) non fisici!
+    m_last_energy = e_capped.slice(0, 0, num_local_ml_particles).sum().item<double>();
+    
+    // 6. Calcolo delle Forze (Gradienti)
     // Gradiente esatto sull'energia limitata (GARANTISCE forze limitate e conservative!)
     auto grads = torch::autograd::grad({e_capped.sum()}, {t_r_ij}, {torch::ones_like(e_capped.sum())}, false, false);
     torch::Tensor f_r_ij = grads[0].cpu(); // Riportiamo i gradienti su CPU per assegnarli a ESPResSo
