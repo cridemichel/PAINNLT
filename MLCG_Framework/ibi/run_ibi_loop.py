@@ -155,7 +155,7 @@ def extrapolate_potential_and_force(x, V, F, hist, target_type='bond'):
                 fi = base_left_force * (ratio**13)
                 ui = V_left + (base_left_force * x_left / 12.0) * ((ratio**12) - 1.0)
                 # Cap extremely large forces to prevent table precision issues
-                F[i] = min(fi, 50000.0)
+                F[i] = min(fi, 150.0)
                 V[i] = ui
         else:
             # Fallback
@@ -230,7 +230,7 @@ def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type
         potential_smooth, force = extrapolate_potential_and_force(bin_centers, potential_smooth, force, raw_hist, target_type=jacobian_type)
         
     F_0 = -np.gradient(potential_smooth, bin_centers)
-    potential_smooth, F_0 = enforce_consistency_and_cap(bin_centers, potential_smooth, F_0, force_max=50000.0)
+    potential_smooth, F_0 = enforce_consistency_and_cap(bin_centers, potential_smooth, F_0, force_max=150.0)
         
     return bin_centers, potential_smooth, F_0, hist
 
@@ -252,7 +252,7 @@ def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, pe
         V_next_smooth, force = extrapolate_potential_and_force(bin_centers, V_next_smooth, force, P_target, target_type=target_type)
         
     force = gaussian_filter1d(force, sigma=2.0, mode=mode)
-    V_next_smooth, force = enforce_consistency_and_cap(bin_centers, V_next_smooth, force, force_max=50000.0)
+    V_next_smooth, force = enforce_consistency_and_cap(bin_centers, V_next_smooth, force, force_max=150.0)
         
     return V_next_smooth, force
 
@@ -352,7 +352,7 @@ if wca.get("epsilon", 0.0) > 0 and has_wca:
             )
 
 # Apply interactions
-# system.force_cap = 2000.0
+system.force_cap = 2000.0
 
 for b in priors.get("bonds", []):
     if b["type"] == "tabulated":
@@ -421,14 +421,14 @@ for i, f in enumerate(forces):
 print("Phase 2: Warm-up MD with small timestep and high friction...")
 system.integrator.set_vv()
 system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
-# system.force_cap = 500.0
+system.force_cap = 500.0
 system.time_step = 0.0001
 
 for _ in range(50):
     system.integrator.run(100)
 
 print("Phase 3: Production MD...")
-# system.force_cap = 1000.0
+system.force_cap = 1000.0
 system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
 system.time_step = 0.002
 system.time_step = 0.002
