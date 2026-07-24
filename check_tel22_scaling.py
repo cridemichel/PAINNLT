@@ -4,9 +4,9 @@ import re
 import os
 
 dts = [0.012, 0.008, 0.004, 0.002, 0.001]
-# We want constant physical time. For example, 12 ps.
-# steps = 12 / dt
-steps = [1000, 1500, 3000, 6000, 12000]
+# We want constant physical time. 1 ps is enough.
+# steps = 1 / dt
+steps = [83, 125, 250, 500, 1000]
 
 print(f"{'dt':>8} | {'Steps':>6} | {'Std(E_tot)':>12} | {'Ratio':>8}")
 print("-" * 45)
