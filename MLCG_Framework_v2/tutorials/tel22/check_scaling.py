@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 
 dts = [0.002, 0.0032, 0.0054, 0.0076, 0.0098, 0.012]
-total_time = 1.0 # 1.0 ps
+total_time = 2.0 # 2.0 ps
 
 std_devs = []
 
@@ -72,5 +72,5 @@ plt.title('Energy Conservation Scaling (Verlet Integrator + Toxvaerd Cutoff)')
 plt.grid(True, linestyle=':', alpha=0.7)
 plt.legend()
 plt.tight_layout()
-plt.savefig('energy_conservation_scaling_1ps.png', dpi=300)
-print("\n[INFO] Plot saved to energy_conservation_scaling_1ps.png")
+plt.savefig('energy_conservation_scaling_2ps.png', dpi=300)
+print("\n[INFO] Plot saved to energy_conservation_scaling_2ps.png")
