@@ -70,8 +70,7 @@ with open(args.dataset, "rb") as f:
     box_dim = struct.unpack("3f", f.read(12))
     
     # Ensure box is large enough for cutoff=5.0 + skin=0.4
-    min_box = 11.0
-    system.box_l = [max(b, min_box) for b in box_dim]
+    system.box_l = box_dim
     
     for mol_idx in range(num_molecules):
         mol_id = struct.unpack("i", f.read(4))[0]
@@ -175,11 +174,6 @@ if wca.get("epsilon", 0.0) > 0 and has_wca:
                 cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
             )
 
-# Add safety hard-core WCA between all COMs to prevent collapse (r < 0.112 nm)
-system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
-    epsilon=100.0, sigma=0.1,
-    cutoff=0.1 * (2.0**(1/6)), shift="auto"
-)
 
 # Bonds (Harmonic, FENE, Morse)
 for idx, b in enumerate(priors.get("bonds", [])):
@@ -310,6 +304,8 @@ if args.model:
         n_layers=nn_config["n_layers"],
         num_rbf=nn_config["num_rbf"],
         cutoff=nn_config["cutoff"],
+        apply_envelope=False,
+        use_bias=False,
         toxvaerd_alpha=args.toxvaerd_alpha,
         device=args.device
     )

@@ -772,7 +772,7 @@ with open(args.output, "wb") as f:
         
         # [NEW LOGIC] RECONSTRUCT IDEAL SITES FOR PRIOR SUBTRACTION
         # Applichiamo Kabsch per posizionare i siti ideali con l'orientamento istantaneo
-        for mol_idx, (m_type, r_name) in enumerate(mol_resnames):
+        for mol_idx, r_name in enumerate(mol_resnames):
             if r_name in rigid_bodies_info and "sites" in rigid_bodies_info[r_name]:
                 site_names = list(rigid_bodies_info[r_name]["sites"].keys())
                 if len(site_names) < 2: continue
@@ -951,15 +951,9 @@ with open(args.output, "wb") as f:
             site_i, site_j, site_k = a.get("site_i", -1), a.get("site_j", -1), a.get("site_k", -1)
             pos_i, pos_j, pos_k = frame_centers[i], frame_centers[j], frame_centers[k_idx]
             
-            if site_i != -1:
-                for st, sp in frame_sites[i]:
-                    if st == site_i: pos_i = sp; break
-            if site_j != -1:
-                for st, sp in frame_sites[j]:
-                    if st == site_j: pos_j = sp; break
-            if site_k != -1:
-                for st, sp in frame_sites[k_idx]:
-                    if st == site_k: pos_k = sp; break
+            if site_i != -1: pos_i = frame_sites[i][site_i][1]
+            if site_j != -1: pos_j = frame_sites[j][site_j][1]
+            if site_k != -1: pos_k = frame_sites[k_idx][site_k][1]
             
             r_ji = mic_vector(pos_j, pos_i, box_dim)
             r_jk = mic_vector(pos_j, pos_k, box_dim)
@@ -1028,18 +1022,10 @@ with open(args.output, "wb") as f:
             site_i, site_j, site_k, site_l = d.get("site_i", -1), d.get("site_j", -1), d.get("site_k", -1), d.get("site_l", -1)
             pos_i, pos_j, pos_k, pos_l = frame_centers[i], frame_centers[j], frame_centers[k_idx], frame_centers[l]
             
-            if site_i != -1:
-                for st, sp in frame_sites[i]:
-                    if st == site_i: pos_i = sp; break
-            if site_j != -1:
-                for st, sp in frame_sites[j]:
-                    if st == site_j: pos_j = sp; break
-            if site_k != -1:
-                for st, sp in frame_sites[k_idx]:
-                    if st == site_k: pos_k = sp; break
-            if site_l != -1:
-                for st, sp in frame_sites[l]:
-                    if st == site_l: pos_l = sp; break
+            if site_i != -1: pos_i = frame_sites[i][site_i][1]
+            if site_j != -1: pos_j = frame_sites[j][site_j][1]
+            if site_k != -1: pos_k = frame_sites[k_idx][site_k][1]
+            if site_l != -1: pos_l = frame_sites[l][site_l][1]
             b1 = mic_vector(pos_i, pos_j, box_dim)
             b2 = mic_vector(pos_j, pos_k, box_dim)
             b3 = mic_vector(pos_k, pos_l, box_dim)

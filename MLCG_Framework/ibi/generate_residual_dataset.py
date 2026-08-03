@@ -12,6 +12,7 @@ import struct
 # ]
 # ///
 
+raise RuntimeError("This script is deprecated. Use build_cg_dataset.py instead to properly regenerate the dataset and recalculate the Kabsch alignments on the fly.")
 def compute_tabulated_force_magnitude(r, table_r, table_f):
     # Linear interpolation of force
     # If r is out of bounds, we clip to the nearest edge

@@ -19,7 +19,6 @@ parser.add_argument("--no_log", action="store_true", help="Disable wandb logging
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
-parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
 
 parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
@@ -132,24 +131,6 @@ if args.checkpoint:
                 p.quat = quat[i]
             if omega is not None:
                 p.omega_body = omega[i]
-
-if args.init_kT is not None:
-    print(f"[INFO] Initializing velocities to kT={args.init_kT}...")
-    for p in system.part:
-        if not p.is_virtual:
-            mass = p.mass
-            # Translational velocity
-            p.v = np.sqrt(args.init_kT / mass) * np.random.randn(3)
-            # Rotational velocity
-            if any(p.rotation):
-                I = p.rinertia
-                # Only apply to axes that are allowed to rotate
-                omega = np.zeros(3)
-                for axis in range(3):
-                    if p.rotation[axis]:
-                        omega[axis] = np.sqrt(args.init_kT / I[axis]) * np.random.randn()
-                p.omega_body = omega
-
 
 print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
 
@@ -326,83 +307,33 @@ for i in range(nn_config["num_species"] + 2):
         system.non_bonded_inter[i, j].soft_sphere.set_params(
             a=0.0, n=1, cutoff=ml_cutoff, offset=0.0)
 
-if args.model:
-    print("[INFO] Activating ML Potential...")
-    espressomd.painn.activate_painn_potential(
-        model_path=args.model,
-        num_species=nn_config["num_species"],
-        hidden_channels=nn_config["hidden_channels"],
-        n_layers=nn_config["n_layers"],
-        num_rbf=nn_config["num_rbf"],
-        cutoff=nn_config["cutoff"],
-        toxvaerd_alpha=args.toxvaerd_alpha,
-        device=args.device
-    )
-else:
-    print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")
 
-if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+chk = np.load(args.checkpoint)
+pos = chk["pos"]
+vel = chk["v"]
+omega = chk.get("omega", None)
 
-import sys
-import espressomd.io.writer.vtf
-print(f"[INFO] Running {args.steps} integration steps...")
-with open("energy.csv", "w") as f_out:
-    f_out.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
-vtf_filename = "cg_trajectory.vtf"
-with open(vtf_filename, "w") as vtf_file:
-    espressomd.io.writer.vtf.writevsf(system, vtf_file)
-    
-    # Inject fake visual bonds connecting COM to its Virtual Sites
-    # This allows VMD `pbc unwrap` to treat the whole nucleotide as a single fragment
-    for mol_idx, com_id in mol_com_parts.items():
-        for (m_idx, s_idx), vs_id in mol_vs_parts.items():
-            if m_idx == mol_idx:
-                vtf_file.write(f"bond {com_id}:{vs_id}\n")
-    
-    # Ensure we get exactly 100 data points for any simulation length
-    chunk_size = max(1, args.steps // 400)
-    num_chunks = args.steps // chunk_size
-    for step in range(num_chunks):
-        system.integrator.run(chunk_size)
-        energies = system.analysis.energy()
+for i in range(len(system.part)):
+    p = system.part.by_id(i)
+    if not p.is_virtual:
+        p.v = vel[i]
+        if omega is not None:
+            p.omega_body = omega[i]
+
+# Compute exactly
+e_kin = 0.0
+dofs = 0
+for p in system.part:
+    if p.mass > 1e-4:
+        v_sq = sum(v**2 for v in p.v)
+        e_kin += 0.5 * p.mass * v_sq
+        dofs += 3
         
+        w_sq = sum(w**2 for w in p.omega_body)
+        e_kin += 0.5 * sum(I * w**2 for I, w in zip(p.rinertia, p.omega_body))
+        dofs += 3
 
-        e_tot = energies["total"]
-        if args.model:
-            e_tot += espressomd.painn.get_painn_energy()
-        e_kin = energies["kinetic"]
-        
-        # Calculate E_kin explicitly for COM
-        e_kin_trans = 0.0
-        e_kin_rot = 0.0
-        e_kin_vs = 0.0
-        for p in system.part:
-            v_sq = sum(v**2 for v in p.v)
-            omega_sq = sum(w**2 for w in p.omega_body)
-            k_trans = 0.5 * p.mass * v_sq
-            k_rot = 0.5 * sum(I * w**2 for I, w in zip(p.rinertia, p.omega_body))
-            if p.mass < 1e-4:
-                e_kin_vs += k_trans + k_rot
-            else:
-                e_kin_trans += k_trans
-                e_kin_rot += k_rot
-
-        with open("energy.csv", "a") as f_out:
-            f_out.write(f"{step*chunk_size},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
-        
-        max_f = max([sum([f_c**2 for f_c in p.f])**0.5 for p in system.part])
-        max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
-        
-        print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.6f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
-
-
-        vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
-        espressomd.io.writer.vtf.writevcf(system, vtf_file)
-
-print("\n[INFO] Simulation finished successfully.")
-
-# Force immediate exit to bypass PyTorch/MPI teardown crashes on macOS
-import sys
-sys.stdout.flush()
-os._exit(0)
+print("Total E_kin:", e_kin)
+print("Total DOFs:", dofs)
+print("kT =", (2 * e_kin) / dofs)
+print("T =", (2 * e_kin) / dofs / 0.00831446)

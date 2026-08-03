@@ -85,16 +85,19 @@ with open(args.dataset, "rb") as f:
         p_com = system.part.add(
             pos=center, type=DUMMY_COM_TYPE,
             mass=mass, rinertia=inertia,
-            rotation=[True, True, True]
+            rotation=[True, True, True] if num_sites > 1 else [False, False, False],
+            mol_id=mol_idx
         )
         mol_com_parts[mol_idx] = p_com.id
         
         for site_idx, (stype, spos) in enumerate(zip(site_types, site_positions)):
             # Virtual sites must have near-zero mass/inertia to not inflate the total system mass.
             # ESPResSo requires mass > 0, so we use 1e-5.
-            p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5])
+            p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5], mol_id=mol_idx)
             p_vs.virtual = True
             p_vs.vs_auto_relate_to(p_com.id)
+            p_vs.gamma = 0.0
+            p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
 print("[INFO] Setting up WCA exclusions (1-2 and 1-3)...")

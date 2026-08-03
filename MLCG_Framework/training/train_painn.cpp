@@ -311,6 +311,7 @@ int main(int argc, char* argv[]) {
     float weight_decay_val = 0.0f;
     int es_patience = 10;
     int reduce_lr_patience = 5;
+    float torque_weight = 1.0f;
 
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
@@ -343,6 +344,7 @@ int main(int argc, char* argv[]) {
         if (j.contains("lipschitz_lambda")) lipschitz_lambda = j["lipschitz_lambda"];
         if (j.contains("early_stopping_patience")) es_patience = j["early_stopping_patience"];
         if (j.contains("reduce_lr_patience")) reduce_lr_patience = j["reduce_lr_patience"];
+        if (j.contains("torque_weight")) torque_weight = j["torque_weight"];
         std::cout << "[INFO] Caricati iperparametri da " << config_path << "\n";
     } else {
         std::cerr << "[WARNING] Impossibile leggere " << config_path << ". Uso default.\n";
@@ -366,7 +368,6 @@ int main(int argc, char* argv[]) {
 
     // Iperparametri Training 
     float current_lr = initial_lr; 
-    float torque_weight = 0.0f; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(weight_decay_val));
     EarlyStopping early_stopping(es_patience, model_path);
     
@@ -388,8 +389,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::random_device rd;
-    std::mt19937 g(rd());
+    std::mt19937 g(42);
     std::shuffle(full_dataset.begin(), full_dataset.end(), g);
 
     // Divisione 80% Train, 20% Validation

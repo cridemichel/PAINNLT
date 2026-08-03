@@ -11,11 +11,11 @@
 
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
-PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str) 
+PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, bool apply_envelope, bool use_bias, double toxvaerd_alpha, const std::string& device_str) 
     : m_cutoff(cutoff), m_num_species(num_species) {
     
     // Inizializza il modello C++ con i parametri di architettura
-    model = PaiNNModel(num_species, hidden_channels, n_layers, num_rbf, cutoff, toxvaerd_alpha);
+    model = PaiNNModel(num_species, hidden_channels, n_layers, num_rbf, cutoff, apply_envelope, use_bias, toxvaerd_alpha);
     
     // Carica i pesi dal file .pt salvato durante il training
     try {
@@ -51,7 +51,8 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
         
         std::cout << "[PaiNN] Modello C++ inizializzato e pesi caricati da: " << model_path << "\n";
     } catch (const c10::Error& e) {
-        std::cerr << "[PaiNN] Errore nel caricamento del modello: " << e.what() << "\n";
+        std::cerr << "[PaiNN] Model loading failed: " << e.what() << "\n";
+        throw;
     }
 }
 
@@ -150,41 +151,32 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     torch::Tensor t_batch = torch::zeros({total_particles}, torch::kInt64).to(m_device);
 
     // 4. Inferenza del Modello
-    torch::Tensor energy = model->forward_with_rij(t_atomic_numbers, t_r_ij, t_edge_index, t_batch);
+    torch::Tensor energy = model->forward_atom_energies(t_atomic_numbers, t_r_ij, t_edge_index);
     
-    // 5. Capping Termodinamico Conservativo
-    // Applichiamo il soft-clip direttamente sull'ENERGIA PRIMA di prenderne la somma,
-    // in modo da limitare le forze (tramite derivata nulla) senza rompere l'Hamiltoniana.
-    float e_min = -100.0f;
-    float e_max = 500.0f;
-    float beta = 0.1f;
-
-    torch::Tensor shifted_e_min = (energy - e_min) * beta;
-    torch::Tensor e_lower = e_min + (1.0f / beta) * torch::nn::functional::softplus(shifted_e_min);
-
-    torch::Tensor shifted_e_max = (e_max - e_lower) * beta;
-    torch::Tensor e_capped = e_max - (1.0f / beta) * torch::nn::functional::softplus(shifted_e_max);
-
     // CORREZIONE BUG GHOST PARTICLES E CONSERVAZIONE:
-    // Sommiamo solo l'energia CAPPATA calcolata per le particelle *reali* (locali).
-    // Questo è vitale perché ESPResSo stampa questa energia come E_potenziale.
-    // Se passassimo l'energia raw, ESPResSo misurerebbe salti enormi (-500.000) non fisici!
-    m_last_energy = e_capped.slice(0, 0, num_local_ml_particles).sum().item<double>();
+    // Sommiamo solo l'energia calcolata per le particelle *reali* (locali).
+    m_last_energy = energy.slice(0, 0, num_local_ml_particles).sum().item<double>();
     
-    // 6. Calcolo delle Forze (Gradienti)
-    // Gradiente esatto sull'energia limitata (GARANTISCE forze limitate e conservative!)
-    auto grads = torch::autograd::grad({e_capped.sum()}, {t_r_ij}, {torch::ones_like(e_capped.sum())}, false, false);
+    // 5. Calcolo delle Forze (Gradients w.r.t r_ij)
+    // Gradiente esatto sull'energia (GARANTISCE forze conservative!)
+    auto grads = torch::autograd::grad({energy.sum()}, {t_r_ij}, {torch::ones_like(energy.sum())}, false, false);
     torch::Tensor f_r_ij = grads[0].cpu(); // Riportiamo i gradienti su CPU per assegnarli a ESPResSo
 
     // 6. Assegnazione delle Forze alle Particelle ESPResSo
     // Per ogni arco col->row (dove r_ij = r_col - r_row), la forza associata a r_ij è f_r_ij.
     // Forza su col: -f_r_ij
     // Forza su row: +f_r_ij
-    auto f_r_ij_acc = f_r_ij.accessor<float, 2>();
-    
     double f_cap = System::get_system().get_force_cap();
-    bool use_cap = (f_cap > 0.0);
-    double f_cap_sq = f_cap * f_cap;
+    if (f_cap > 0.0) {
+        torch::Tensor norms = torch::norm(f_r_ij, 2, 1, /*keepdim=*/true);
+        int64_t capped_edges = (norms > f_cap).sum().item<int64_t>();
+        if (capped_edges > 0) {
+            std::cerr << "[PaiNN WARNING] ML force cap activated on " << capped_edges << " edges! Forces are no longer conservative with respect to the energy.\n";
+        }
+        f_r_ij = torch::where(norms > f_cap, f_r_ij * (f_cap / norms), f_r_ij);
+    }
+    
+    auto f_r_ij_acc = f_r_ij.accessor<float, 2>();
     
     for (int e = 0; e < num_edges; ++e) {
         int r = edge_rows[e]; // row
@@ -193,16 +185,6 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         float fx = f_r_ij_acc[e][0];
         float fy = f_r_ij_acc[e][1];
         float fz = f_r_ij_acc[e][2];
-        
-        if (use_cap) {
-            float fsq = fx*fx + fy*fy + fz*fz;
-            if (fsq > f_cap_sq) {
-                float scale = f_cap / std::sqrt(fsq);
-                fx *= scale;
-                fy *= scale;
-                fz *= scale;
-            }
-        }
         
         // Assegniamo le forze (ESPResSo gestirà la comunicazione delle forze dei ghost)
         // La forza è la derivata negativa dell'energia rispetto alla posizione.
