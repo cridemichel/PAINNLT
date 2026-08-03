@@ -575,7 +575,7 @@ with open(args.output, "wb") as f:
         
         # [NEW LOGIC] RECONSTRUCT IDEAL SITES FOR PRIOR SUBTRACTION
         # Applichiamo Kabsch per posizionare i siti ideali con l'orientamento istantaneo
-        for mol_idx, (m_type, r_name) in enumerate(mol_resnames):
+        for mol_idx, r_name in enumerate(mol_resnames):
             if r_name in rigid_bodies_info and "sites" in rigid_bodies_info[r_name]:
                 site_names = list(rigid_bodies_info[r_name]["sites"].keys())
                 if len(site_names) < 2: continue

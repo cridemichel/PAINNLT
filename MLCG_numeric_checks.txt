@@ -1,0 +1,73 @@
+MLCG static-audit numerical checks
+==================================
+
+1. Custom cutoff applied once vs twice
+--------------------------------------
+Formula in training/PaiNN_Architecture.hpp:
+    f(r) = x^4 / (x^4 + alpha^4), x = (rc-r)/rc
+with rc=1.0, alpha=0.1.
+
+r       f(r)                  f(r)^2
+0.50    0.9984025559          0.9968076636
+0.80    0.9411764706          0.8858131488
+0.90    0.5000000000          0.2500000000
+0.95    0.0588235294          0.0034602076
+0.99    0.0000999900          0.000000009998
+
+Therefore the accidental second envelope in the ESPResSo constructor path is
+not a small perturbation near the cutoff.
+
+2. IBI target-observable mismatch
+---------------------------------
+For bonds, run_ibi_loop.py divides the target coordinate histogram by r^2,
+then compares it with an uncorrected simulation histogram. These differ by a
+non-constant Jacobian. In a deterministic synthetic test, the ratio between
+the normalized corrected and raw densities ranged from 0.2715 to 32.495 over
+populated bins. The IBI logarithmic update therefore contains a systematic
+coordinate-dependent bias.
+
+3. Periodic dihedral table boundary
+-----------------------------------
+Using the current periodic path on a wrapped normal distribution centered at
+the 0 / 2*pi boundary produced:
+
+Initial DBI endpoint difference:
+    V[-1] - V[0] = 9.0502e-4
+    F[-1] - F[0] = 1.25132
+
+After one synthetic IBI update:
+    V[-1] - V[0] = -3.47071e-2
+    F[-1] - F[0] = 6.97478e-1
+
+The use of wrapped smoothing alone does not enforce a periodic force table.
+
+4. Dihedral-force finite difference
+------------------------------------
+For U(phi)=K*(1-cos(n*phi-phi0)) with K=2.3, n=3, phi0=0.4 and one generic
+four-particle geometry, preprocessing/build_cg_dataset.py::dihedral_forces
+differed from central finite differences by:
+
+    max absolute component error = 4.2975152791
+
+The analytical implementation preserves zero net force, but has incorrect
+signs/combinations for individual particle forces.
+
+5. Bundled dataset and model identity
+-------------------------------------
+The two archive trees contain byte-identical bundled artifacts:
+
+cg_dataset.bin SHA256:
+    50f6d2d64be8217765f6b3bae2179a434b1e88c77c2f5ccfe04dcfa68737ae12
+best_cg_model.pt SHA256:
+    e157e60a372fd40c225bca5f9f164294253b2c6ce5b05defe3bb2a5bd97e77e2
+
+First frame of the bundled dataset:
+    frames      = 1001
+    molecules   = 221
+    sites       = 221
+    sites/mol   = 1 for every molecule
+    box         = (2.0, 2.0, 2.0) nm
+    site types  = {0}
+
+The bundled data therefore do not exercise the multi-site rigid-body path
+used by the TEL22 IBI tutorial.

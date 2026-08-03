@@ -1,0 +1,1 @@
+zip -r mlcg.zip MLCG_Framework*/ibi/ MLCG_Framework*/ibi_priors MLCG_Framework*/preprocessing MLCG_Framework*/training MLCG_Framework*/simulation MLCG_Framework/tutorials/tel22_IBI/*sh MLCG_Framework/tutorials/tel22_IBI/tel22_topology.json MLCG_Framework_v2/tutorials/tel22/*sh MLCG_Framework_v2/tutorials/tel22/tel22_topology.json

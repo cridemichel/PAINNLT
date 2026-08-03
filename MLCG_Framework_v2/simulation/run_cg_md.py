@@ -44,7 +44,7 @@ system.time_step = args.dt
 system.cell_system.skin = 0.4
 # system.force_cap = 10000.0 # Rimosso! Limitava il WCA permettendo compenetrazioni. Abbiamo limitato le forze ML in C++.
 if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
+    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 else:
     system.thermostat.turn_off()
 
@@ -68,9 +68,7 @@ with open(args.dataset, "rb") as f:
     num_total_sites = struct.unpack("i", f.read(4))[0]
     box_dim = struct.unpack("3f", f.read(12))
     
-    # Ensure box is large enough for cutoff=5.0 + skin=0.4
-    min_box = 11.0
-    system.box_l = [max(b, min_box) for b in box_dim]
+    system.box_l = [b for b in box_dim]
     
     for mol_idx in range(num_molecules):
         mol_id = struct.unpack("i", f.read(4))[0]
@@ -305,8 +303,9 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
 print("[INFO] Setting up dummy interactions for Verlet lists...")
 for i in range(nn_config["num_species"] + 2):
     for j in range(i, nn_config["num_species"] + 2):
+        ml_cutoff = nn_config["cutoff"] if "cutoff" in nn_config else 5.0
         system.non_bonded_inter[i, j].soft_sphere.set_params(
-            a=0.0, n=1, cutoff=5.0, offset=0.0)
+            a=0.0, n=1, cutoff=ml_cutoff, offset=0.0)
 
 if args.model:
     print("[INFO] Activating ML Potential...")
@@ -324,7 +323,7 @@ else:
     print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")
 
 if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
+    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
 import sys
 import espressomd.io.writer.vtf
