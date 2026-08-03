@@ -343,11 +343,7 @@ print(flush=True)
 system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
-print("[INFO] Warm-up terminato. Azzeramento delle velocità residue prima del salvataggio...")
-for p in system.part:
-    if p.mass > 1e-4:
-        p.v = [0.0, 0.0, 0.0]
-        p.omega_body = [0.0, 0.0, 0.0]
+print("[INFO] Warm-up terminato. Preparazione del salvataggio...")
 
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
 pos = []

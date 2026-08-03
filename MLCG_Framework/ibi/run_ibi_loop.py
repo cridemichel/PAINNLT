@@ -461,7 +461,7 @@ def main():
     parser.add_argument("--priors", required=True, help="Path to cg_priors.json")
     parser.add_argument("--iterations", type=int, default=5, help="Number of IBI iterations")
     parser.add_argument("--outdir", default="ibi_priors", help="Output directory for potentials")
-    parser.add_argument("--pypresso", type=str, default="/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/espresso/build/pypresso")
+    parser.add_argument("--pypresso", type=str, default="/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/espresso/build/pypresso")
     args = parser.parse_args()
     
     print("[INFO] =========================================")
@@ -507,7 +507,7 @@ def main():
         bins = np.linspace(0.0, 5.0, 300)
         r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, jacobian_type='bond')
         filename = f"{args.outdir}/bond_tabulated_{name}.dat"
-        save_tabulated_potential(filename, r, V_0, F_0, is_angle=False, is_dihedral=False)
+        save_tabulated_potential(filename, r, V_0, F_0)
         if pool["type"] == "ibi":
             ibi_tables["bonds"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
 
@@ -545,7 +545,7 @@ def main():
                 V_0[i] += 0.5 * 5000.0 * dx**2
 
         filename = f"{args.outdir}/angle_tabulated_{name}.dat"
-        save_tabulated_potential(filename, r, V_0, F_0, is_angle=True, is_dihedral=False)
+        save_tabulated_potential(filename, r, V_0, F_0)
         if pool["type"] == "ibi":
             ibi_tables["angles"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
 
@@ -573,7 +573,7 @@ def main():
         target_values = np.where(target_values < 0, target_values + 2 * np.pi, target_values)
         r, V_0, F_0, P_target = calculate_dbi_potential(target_values, bins, jacobian_type='dihedral', periodic=True)
         filename = f"{args.outdir}/dihedral_tabulated_{name}.dat"
-        save_tabulated_potential(filename, r, V_0, F_0, is_angle=False, is_dihedral=True)
+        save_tabulated_potential(filename, r, V_0, F_0)
         if pool["type"] == "ibi":
             ibi_tables["dihedrals"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
 
@@ -588,7 +588,6 @@ def main():
     # Save JSON in DBI-only mode too
     tmp_priors = "cg_priors_tmp_ibi.json"
     with open(tmp_priors, "w") as f:
-        import json
         json.dump(priors_data, f, indent=4)
     with open(args.priors, "w") as f:
         json.dump(priors_data, f, indent=4)
@@ -676,30 +675,38 @@ def main():
         for name, table in ibi_tables.get("bonds", {}).items():
             sim_dists = sim_bond_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+            hist_sim = hist_sim / (table["x"]**2)
+            hist_sim = np.clip(hist_sim, 1e-6, None)
+            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
             V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='bond')
             table["V"] = V_next
             table["F"] = F_next
-            save_tabulated_potential(f"{args.outdir}/bond_tabulated_{name}.dat", table["x"], V_next, F_next, is_angle=False, is_dihedral=False)
+            save_tabulated_potential(f"{args.outdir}/bond_tabulated_{name}.dat", table["x"], V_next, F_next)
 
         # Update tabulated angles
         print("[INFO] Updating tabulated angles...")
         for name, table in ibi_tables.get("angles", {}).items():
             sim_dists = sim_angle_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+            hist_sim = hist_sim / np.clip(np.sin(table["x"]), 1e-6, None)
+            hist_sim = np.clip(hist_sim, 1e-6, None)
+            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
             V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='angle')
             table["V"] = V_next
             table["F"] = F_next
-            save_tabulated_potential(f"{args.outdir}/angle_tabulated_{name}.dat", table["x"], V_next, F_next, is_angle=True, is_dihedral=False)
+            save_tabulated_potential(f"{args.outdir}/angle_tabulated_{name}.dat", table["x"], V_next, F_next)
 
         # Update tabulated dihedrals
         print("[INFO] Updating tabulated dihedrals...")
         for name, table in ibi_tables.get("dihedrals", {}).items():
             sim_dists = sim_dihedral_dists[name]
             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+            hist_sim = np.clip(hist_sim, 1e-6, None)
+            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
             V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=True, target_type='dihedral')
             table["V"] = V_next
             table["F"] = F_next
-            save_tabulated_potential(f"{args.outdir}/dihedral_tabulated_{name}.dat", table["x"], V_next, F_next, is_angle=False, is_dihedral=True)
+            save_tabulated_potential(f"{args.outdir}/dihedral_tabulated_{name}.dat", table["x"], V_next, F_next)
             
     print(f"\n[SUCCESS] IBI Converged after {args.iterations} iterations.")
     
