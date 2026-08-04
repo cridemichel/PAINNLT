@@ -7,7 +7,7 @@ PYTHONUNBUFFERED=1 ../../espresso/build/pypresso ../../simulation/run_cg_md.py \
     --priors ibi_priors/cg_priors_final.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
-    --checkpoint equilibrated.npz \
+    --checkpoint equilibrated_ml.npz \
     --dt 0.0001 \
     --steps 100000 \
     --nve \

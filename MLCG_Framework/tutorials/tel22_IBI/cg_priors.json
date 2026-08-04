@@ -3756,27 +3756,27 @@
         "epsilon": 1.0,
         "overrides": {
             "0": {
-                "sigma": 0.283,
+                "sigma": 0.291,
                 "epsilon": 1.0
             },
             "1": {
-                "sigma": 0.308,
+                "sigma": 0.365,
                 "epsilon": 1.0
             },
             "2": {
-                "sigma": 0.344,
+                "sigma": 0.369,
                 "epsilon": 1.0
             },
             "3": {
-                "sigma": 0.259,
+                "sigma": 0.272,
                 "epsilon": 1.0
             },
             "4": {
-                "sigma": 0.259,
+                "sigma": 0.267,
                 "epsilon": 1.0
             },
             "5": {
-                "sigma": 0.249,
+                "sigma": 0.259,
                 "epsilon": 1.0
             },
             "6": {

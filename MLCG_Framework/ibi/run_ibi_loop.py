@@ -430,7 +430,10 @@ def main():
     parser.add_argument("--rb_info", required=True, help="Path to rigid_bodies_info.json (for run_cg_md)")
     parser.add_argument("--iterations", type=int, default=5, help="Number of IBI iterations")
     parser.add_argument("--outdir", default="ibi_priors", help="Output directory for potentials")
-    parser.add_argument("--pypresso", type=str, default="/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/espresso/build/pypresso")
+    default_pypresso = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "espresso", "build", "pypresso")
+    )
+    parser.add_argument("--pypresso", type=str, default=default_pypresso, help="Path to the ESPResSo pypresso executable")
     args = parser.parse_args()
     
     print("[INFO] =========================================")
@@ -552,13 +555,14 @@ def main():
     with open(tmp_priors, "w") as f:
         json.dump(priors_data, f, indent=4)
         
-    final_out_priors = f"{args.outdir}/cg_priors_final.json"
-    with open(final_out_priors, "w") as f:
-        json.dump(priors_data, f, indent=4)
-
     if args.iterations == 0:
-        print("[INFO] User requested 0 iterations. Stopping at DBI.")
-        sys.exit(0)
+        final_out_priors = f"{args.outdir}/cg_priors_final.json"
+        with open(final_out_priors, "w") as f:
+            json.dump(priors_data, f, indent=4)
+        print(f"[SUCCESS] DBI-only priors saved to {final_out_priors}")
+        if os.path.exists(tmp_priors):
+            os.remove(tmp_priors)
+        return
         
     # ---------------------------------------------------------
     # STEP 2: Iterative Boltzmann Inversion (IBI)

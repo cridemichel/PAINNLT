@@ -587,7 +587,13 @@ int main(int argc, char* argv[]) {
                     train_mae_forces_tot  += mae_f_phys                * current_batch_weight; 
                     
                     if (num_valid_mols > 0) {
-                        train_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>() * current_batch_weight;
+                        torch::Tensor mae_t_raw = torch::l1_loss(
+                            pred_mol_torques, batch.target_mol_torques, torch::Reduction::None
+                        );
+                        float mae_t_masked = (
+                            mae_t_raw * torque_mask.unsqueeze(-1)
+                        ).sum().item<float>() / (num_valid_mols * 3.0f);
+                        train_mae_torques_tot += mae_t_masked * current_batch_weight;
                         train_torque_frames   += train_batch_frames.size();
                     }
 
@@ -692,7 +698,13 @@ int main(int argc, char* argv[]) {
                 val_mae_forces_tot += mae_f_phys          * current_batch_weight;
                 
                 if (num_valid_mols > 0) {
-                    val_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>() * current_batch_weight;
+                    torch::Tensor mae_t_raw = torch::l1_loss(
+                        pred_mol_torques, batch.target_mol_torques, torch::Reduction::None
+                    );
+                    float mae_t_masked = (
+                        mae_t_raw * torque_mask.unsqueeze(-1)
+                    ).sum().item<float>() / (num_valid_mols * 3.0f);
+                    val_mae_torques_tot += mae_t_masked * current_batch_weight;
                     val_torque_frames   += val_batch_frames.size();
                 }
 

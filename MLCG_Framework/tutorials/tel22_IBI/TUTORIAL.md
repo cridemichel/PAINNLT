@@ -53,10 +53,15 @@ Passa il nuovo binario residuo al programma C++. Addestrerà la rete Graph Neura
 Prima di avviare la simulazione, è vitale estrapolare le tabelle IBI! Le tabelle estratte coprono solo il dominio campionato (es. 0.1 nm -> 2.9 nm). Se la rete neurale spinge gli atomi anche solo di poco fuori da questo limite, ESPResSo crasherà lanciando un errore `bond broken`. Seguendo le *best practices* (SOTA, come in VOTCA), esegui `../../../espresso/build/pypresso extrapolate_ibi_tables.py` per estendere artificialmente e in modo sicuro le tabelle fino a distanze grandissime ($5.0$ nm) agganciando una molla lineare per le code. Questo garantisce stabilità incondizionata.
 
 ### 05_equilibrate.sh
-Esegue la *Steepest Descent* e un breve riscaldamento, essenziale affinché il sistema ibrido ML+IBI si assesti prima di far partire la simulazione produttiva, salvando le coordinate in `equilibrated.npz`.
+Genera due checkpoint distinti allo stesso timestep della produzione (`0.0001 ps`):
+- `equilibrated_priors.npz`, equilibrato con i soli prior, per il controllo priors-only;
+- `equilibrated_ml.npz`, ottenuto attivando il modello PaiNN e completando un warmup NVT sotto l'Hamiltoniana finale IBI+ML.
 
 ### 06_run_espresso.sh
-Carica il modello C++ appena addestrato all'interno del motore di ESPResSo e parte dalla configurazione equilibrata. Quando ESPResSo andrà ad applicare i legami, non userà semplici molle di Hooke, ma interpolerà i valori dalle tabelle numeriche `.dat` estrapolate, sommandole in tempo reale alle predizioni ML.
+Carica il modello C++ e parte da `equilibrated_ml.npz`, cioè da una configurazione rilassata sotto la stessa Hamiltoniana usata in produzione. Le tabelle `.dat` e PaiNN vengono sommate in tempo reale.
+
+> [!NOTE]
+> Le colonne energia e forza delle interazioni tabulate sono coerenti ai nodi. ESPResSo le interpola però separatamente tra i nodi; per una conservatività matematica esatta servirebbe un interpolatore condiviso nel core.
 
 ---
 

@@ -20,11 +20,11 @@ for dt in dts:
         "--priors", "ibi_priors/cg_priors_final.json",
         "--rb_info", "rigid_bodies_info.json",
         "--dataset", "tel22_dataset.bin",
-        "--checkpoint", "equilibrated.npz",
+        "--checkpoint", "equilibrated_ml.npz",
         "--nve",
         "--dt", str(dt),
         "--steps", str(steps),
-        "--device", "mps",
+        "--device", "auto",
         "--apply_envelope"
     ]
     

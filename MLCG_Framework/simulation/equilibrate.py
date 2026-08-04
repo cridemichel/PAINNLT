@@ -12,7 +12,8 @@ parser.add_argument("--priors_only", action="store_true", help="Run using only p
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
 parser.add_argument("--priors", type=str, required=True, help="cg_priors.json")
 parser.add_argument("--rb_info", type=str, required=True, help="rigid_bodies_info.json")
-parser.add_argument("--dataset", type=str, required=True, help="Dataset to get initial frame from (e.g. cg_dataset.bin)")
+parser.add_argument("--dataset", type=str, required=True, help="Dataset to get topology and the initial frame from (e.g. cg_dataset.bin)")
+parser.add_argument("--checkpoint", type=str, default=None, help="Optional NPZ state used to initialize coordinates, velocities and orientations")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--out_checkpoint", type=str, default="equilibrated.npz", help="Output checkpoint file")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
@@ -24,6 +25,17 @@ parser.add_argument("--apply_envelope", action="store_true", help="Apply cosine 
 parser.add_argument("--use_bias", action="store_true", help="Use biases in filter_mlp")
 parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
 args = parser.parse_args()
+
+if args.priors_only and args.model:
+    parser.error("--priors_only and --model are mutually exclusive")
+if not args.priors_only and not args.model:
+    parser.error("A final-Hamiltonian equilibration requires --model; use --priors_only explicitly for a classical run")
+if args.dt <= 0:
+    parser.error("--dt must be positive")
+for name in ("steps_sd", "steps_md", "steps_uncapped"):
+    if getattr(args, name) < 0:
+        parser.error(f"--{name} must be non-negative")
+
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
     nn_config = json.load(f)
@@ -101,6 +113,35 @@ with open(args.dataset, "rb") as f:
             p_vs.gamma = 0.0
             p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
+
+if args.checkpoint:
+    print(f"[INFO] Loading initial state from checkpoint {args.checkpoint}...")
+    with np.load(args.checkpoint) as chk:
+        required = {"pos", "v"}
+        missing = required.difference(chk.files)
+        if missing:
+            raise ValueError(f"Checkpoint is missing required arrays: {sorted(missing)}")
+        pos = chk["pos"]
+        vel = chk["v"]
+        quat = chk["quat"] if "quat" in chk.files else None
+        omega = chk["omega"] if "omega" in chk.files else None
+
+        if len(pos) != len(system.part) or len(vel) != len(system.part):
+            raise ValueError(
+                f"Checkpoint particle count does not match system: "
+                f"pos={len(pos)}, vel={len(vel)}, system={len(system.part)}"
+            )
+
+        for particle_id in range(len(system.part)):
+            particle = system.part.by_id(particle_id)
+            if particle.is_virtual:
+                continue
+            particle.pos = pos[particle_id]
+            particle.v = vel[particle_id]
+            if quat is not None:
+                particle.quat = quat[particle_id]
+            if omega is not None:
+                particle.omega_body = omega[particle_id]
 
 print("[INFO] Setting up WCA exclusions (Intra-molecular and 1-2, 1-3)...")
 
@@ -283,29 +324,39 @@ for i in range(nn_config["num_species"] + 2):
         system.non_bonded_inter[i, j].soft_sphere.set_params(
             a=0.0, n=1, cutoff=nn_config["cutoff"], offset=0.0)
 
-print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
-system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
-sd_loops = max(1, args.steps_sd // 100)
-for step in range(sd_loops):
-    system.integrator.run(100)
-    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/{args.steps_sd} steps", end="", flush=True)
-print(flush=True)
+if args.steps_sd > 0:
+    print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
+    system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
+    completed = 0
+    while completed < args.steps_sd:
+        chunk = min(100, args.steps_sd - completed)
+        system.integrator.run(chunk)
+        completed += chunk
+        print(f"\r[INFO] Phase 1 Progress: {completed}/{args.steps_sd} steps", end="", flush=True)
+    print(flush=True)
+else:
+    print("[INFO] Phase 1 skipped (--steps_sd 0).")
 
 system.integrator.set_vv()
 
+if args.steps_md > 0:
+    print("[INFO] Phase 2: Classical force-capped rotational warmup...", flush=True)
+    system.force_cap = 500.0
+    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
+    system.time_step = min(args.dt, 0.0001)
 
-
-print("[INFO] Phase 2: Warm-up con force-capping per rilassare i gradi di libertà rotazionali (Classical)...", flush=True)
-system.force_cap = 500.0
-system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
-system.time_step = 0.0001
-
-md_loops = max(1, args.steps_md // 100)
-for warmup_step in range(md_loops):
-    system.integrator.run(100)
-    system.force_cap = 500.0 + warmup_step * 2.5
-    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*100}/{args.steps_md} steps", end="", flush=True)
-print(flush=True)
+    completed = 0
+    warmup_chunk = 0
+    while completed < args.steps_md:
+        chunk = min(100, args.steps_md - completed)
+        system.integrator.run(chunk)
+        completed += chunk
+        system.force_cap = 500.0 + warmup_chunk * 2.5
+        warmup_chunk += 1
+        print(f"\r[INFO] Phase 2 Progress: {completed}/{args.steps_md} steps", end="", flush=True)
+    print(flush=True)
+else:
+    print("[INFO] Phase 2 skipped (--steps_md 0).")
 
 system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
@@ -345,8 +396,6 @@ system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 system.time_step = args.dt
 
-if args.steps_uncapped < 0:
-    raise ValueError("--steps_uncapped must be non-negative")
 if args.steps_uncapped > 0:
     print(f"[INFO] Phase 5: Uncapped NVT validation for {args.steps_uncapped} steps at dt={args.dt} ps...", flush=True)
     completed = 0

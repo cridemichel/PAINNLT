@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import struct
 import os
+from contextlib import nullcontext
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
@@ -16,7 +17,7 @@ parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with 
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
 parser.add_argument("--out_traj", type=str, default=None, help="Save COM and virtual-site coordinates to a NumPy .npz archive")
-parser.add_argument("--no_log", action="store_true", help="Disable wandb logging")
+parser.add_argument("--no_log", action="store_true", help="Disable energy.csv and VTF output; --out_traj remains active")
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
@@ -339,18 +340,20 @@ import sys
 import espressomd.io.writer.vtf
 print(f"[INFO] Running {args.steps} integration steps...")
 
-with open("energy.csv", "w") as f_out:
-    f_out.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
-vtf_filename = "cg_trajectory.vtf"
-with open(vtf_filename, "w") as vtf_file:
-    espressomd.io.writer.vtf.writevsf(system, vtf_file)
-    
-    # Inject fake visual bonds connecting COM to its Virtual Sites
-    # This allows VMD `pbc unwrap` to treat the whole nucleotide as a single fragment
-    for mol_idx, com_id in mol_com_parts.items():
-        for (m_idx, s_idx), vs_id in mol_vs_parts.items():
-            if m_idx == mol_idx:
-                vtf_file.write(f"bond {com_id}:{vs_id}\n")
+if not args.no_log:
+    with open("energy.csv", "w") as f_out:
+        f_out.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
+
+vtf_context = nullcontext(None) if args.no_log else open("cg_trajectory.vtf", "w")
+with vtf_context as vtf_file:
+    if vtf_file is not None:
+        espressomd.io.writer.vtf.writevsf(system, vtf_file)
+
+        # Inject visual bonds connecting each COM to its virtual sites.
+        for mol_idx, com_id in mol_com_parts.items():
+            for (m_idx, _site_idx), vs_id in mol_vs_parts.items():
+                if m_idx == mol_idx:
+                    vtf_file.write(f"bond {com_id}:{vs_id}\n")
     
     # Integrate exactly args.steps, including the final partial chunk.
     chunk_size = max(1, args.log_interval)
@@ -382,15 +385,17 @@ with open(vtf_filename, "w") as vtf_file:
                 e_kin_trans += k_trans
                 e_kin_rot += k_rot
 
-        with open("energy.csv", "a") as f_out:
-            f_out.write(f"{integrated_steps},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
+        if not args.no_log:
+            with open("energy.csv", "a") as f_out:
+                f_out.write(f"{integrated_steps},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
         
         max_f = max([sum([f_c**2 for f_c in p.f])**0.5 for p in system.part])
         max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
         
         print(f"[INFO] Step {integrated_steps}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}", flush=True)
-        vtf_file.write(f"\ntimestep {integrated_steps}\n")
-        espressomd.io.writer.vtf.writevcf(system, vtf_file)
+        if vtf_file is not None:
+            vtf_file.write(f"\ntimestep {integrated_steps}\n")
+            espressomd.io.writer.vtf.writevcf(system, vtf_file)
         
         if args.out_traj:
             if not hasattr(system, "traj_com_positions"):

@@ -364,8 +364,9 @@ int main(int argc, char** argv) {
     std::vector<CGFrame> dataset = read_cg_dataset(dataset_file);
     if (dataset.empty()) return 1;
     
-    // Per avere un campione significativo senza metterci ore
-    // saltiamo parte del dataset di train e prediamo l'intero validation set
+    // Reproduce the exact deterministic split used by train_painn.cpp.
+    std::mt19937 split_rng(42);
+    std::shuffle(dataset.begin(), dataset.end(), split_rng);
     size_t val_size = dataset.size() * 0.2;
     size_t train_size = dataset.size() - val_size;
     std::vector<CGFrame> val_dataset(dataset.begin() + train_size, dataset.end());
@@ -391,7 +392,7 @@ int main(int argc, char** argv) {
     std::ofstream out_csv("parity_forces.csv");
     out_csv << "F_target_x,F_target_y,F_target_z,F_pred_x,F_pred_y,F_pred_z\n";
     
-    size_t batch_size = 5;
+    size_t batch_size = config.value("batch_size", static_cast<size_t>(5));
     std::vector<CGFrame> val_batch_frames;
     
     int progress = 0;
