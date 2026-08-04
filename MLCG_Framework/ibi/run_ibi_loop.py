@@ -213,7 +213,7 @@ def normalize_density(hist, grid):
     grid = np.asarray(grid, dtype=float)
     if hist.shape != grid.shape:
         raise ValueError(f"Histogram/grid shape mismatch: {hist.shape} vs {grid.shape}")
-    norm = np.trapz(hist, grid)
+    norm = np.trapezoid(hist, grid)
     if not np.isfinite(norm) or norm <= 0.0:
         raise ValueError("Cannot normalize an empty or non-finite distribution")
     return hist / norm
@@ -309,7 +309,7 @@ def table_from_potential(target_grid, potential, target_type, periodic=False, fo
     if periodic and target_type != "angle":
         # A periodic conservative force has zero integral over one period.
         period = target_grid[-1] - target_grid[0]
-        force -= np.trapz(force, target_grid) / period
+        force -= np.trapezoid(force, target_grid) / period
         force[-1] = force[0]
 
     energy = integrate_tabulated_force(target_grid, force, target_type, potential)
