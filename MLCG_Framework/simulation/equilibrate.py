@@ -61,7 +61,8 @@ with open(args.dataset, "rb") as f:
     box_dim = struct.unpack("3f", f.read(12))
     
     # Ensure box is large enough for cutoff=5.0 + skin=0.4
-    system.box_l = box_dim
+    min_box = 11.0
+    system.box_l = [max(b, min_box) for b in box_dim]
     
     for mol_idx in range(num_molecules):
         mol_id = struct.unpack("i", f.read(4))[0]

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 
 dts = [0.001, 0.002, 0.004, 0.006, 0.008, 0.01, 0.02]
-total_time = 0.5 # 0.5 ps
+total_time = 2.0 # 2.0 ps
 
 std_devs_toxvaerd = []
 
