@@ -9,5 +9,8 @@
     "batch_size": 16,
     "lipschitz_lambda": 0.001,
     "apply_envelope": true,
-    "use_bias": false
+    "use_bias": false,
+    "exclusion_priors": "ibi_priors/cg_priors_final.json",
+    "toxvaerd_alpha": 0.1,
+    "architecture_version": 2
 }

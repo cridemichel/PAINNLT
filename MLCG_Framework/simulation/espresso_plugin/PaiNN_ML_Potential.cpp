@@ -57,6 +57,9 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
 }
 
 void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion) {
+    // Never expose the energy from a previous integration step.
+    m_last_energy = 0.0;
+
     // 1. Mappatura delle particelle attuali a indici contigui per i tensori PyTorch
     std::unordered_map<int, int> pid_to_idx;
     std::vector<Particle*> idx_to_particle;

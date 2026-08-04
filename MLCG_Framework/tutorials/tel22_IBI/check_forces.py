@@ -8,7 +8,7 @@ import dataset
 from model import PaiNN
 
 print("Loading dataset...")
-ds = dataset.CGDataset("tel22_dataset_ibi.bin")
+ds = dataset.CGDataset("tel22_dataset_ibi_v2.bin")
 print(f"Dataset size: {len(ds)}")
 
 with open("tel22_training_config.json") as f:
@@ -21,7 +21,7 @@ model = PaiNN(
     num_rbf=config["num_rbf"],
     cutoff=config["cutoff"]
 )
-model.load_state_dict(torch.load("tel22_model_ibi.pt", map_location="cpu"))
+model.load_state_dict(torch.load("tel22_model_ibi_v2.pt", map_location="cpu"))
 model.eval()
 
 data = ds[0]

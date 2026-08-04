@@ -32,7 +32,10 @@ for dt in dts:
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"-> MD failed with code {result.returncode}")
+        print("Stdout:", result.stdout)
         print("Stderr:", result.stderr)
+        std_devs_toxvaerd.append(np.nan)
+        continue
     
     # Parse output to extract E_tot from energy.csv
     energies = []

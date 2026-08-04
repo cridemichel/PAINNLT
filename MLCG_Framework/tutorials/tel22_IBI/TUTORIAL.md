@@ -44,7 +44,7 @@ Questo è il cuore dell'approccio tabulato. Lo script lancia il motore matematic
 > **Fisica dello Jacobiano**: Quando lo script esegue la statistica DBI iniziale, il framework protegge fisicamente l'inversione applicando il volume dello spazio delle fasi (Jacobiano matematico). Questo si traduce nella divisione dell'istogramma per $r^2$ per i legami e per $\sin(\theta)$ per gli angoli. Questo step previene l'introduzione di bias entropici geometrici e fornisce un *initial guess* termodinamico perfetto.
 
 ### 03_subtract_ibi.sh [LA NOVITÀ]
-Adesso che abbiamo le curve IBI perfette, richiamiamo `build_cg_dataset.py` passandogli il flag `--priors`. Invece di calcolare la statistica (DBI), lo script caricherà i potenziali tabulati esatti e li sottrarrà per generare il VERO dataset residuo: **`tel22_dataset_ibi.bin`**.
+Adesso che abbiamo le curve IBI perfette, richiamiamo `build_cg_dataset.py` passandogli il flag `--priors`. Invece di calcolare la statistica (DBI), lo script caricherà i potenziali tabulati esatti e li sottrarrà per generare il VERO dataset residuo: **`tel22_dataset_ibi_v2.bin`**.
 
 ### 04_train_model.sh
 Passa il nuovo binario residuo al programma C++. Addestrerà la rete Graph Neural Network in C++ (tramite LibTorch). A differenza dell'approccio DBI classico, qui la rete dovrà fare molta meno fatica, dovendo imparare solo il rumore (le forze residue non lineari), mentre i muri sterici sono gestiti matematicamente dalle tabelle IBI.

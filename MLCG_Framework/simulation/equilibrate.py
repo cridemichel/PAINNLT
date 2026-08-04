@@ -19,6 +19,7 @@ parser.add_argument("--device", type=str, default="auto", help="Device for ML (c
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps for Phase 1 Steepest Descent (default 5000)")
 parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 Classical MD Warmup (default 2000)")
+parser.add_argument("--steps_uncapped", type=int, default=2000, help="Final uncapped NVT steps before saving the checkpoint")
 parser.add_argument("--apply_envelope", action="store_true", help="Apply cosine envelope to PaiNN output")
 parser.add_argument("--use_bias", action="store_true", help="Use biases in filter_mlp")
 parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
@@ -169,7 +170,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
         # We model Morse as tabulated to allow large r without breaking FENE limits
         rmin_tab = 0.001
         rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
-        r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
+        r_vals = np.linspace(rmin_tab, rmax_tab, 50000)
         
         diff = r_vals - b["r0"]
         exp_term = np.exp(-b["a"] * diff)
@@ -275,12 +276,12 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
 # WCA was already configured above using the actual zero-based CG site types.
 # Do not configure it a second time with a +1 type offset.
 
-# Add dummy soft_sphere to ensure Verlet lists include all other types
+# Add a zero-strength interaction for every type pair so the neighbor loop
+# is available to the ML plugin. CG site types are zero-based.
 for i in range(nn_config["num_species"] + 2):
     for j in range(i, nn_config["num_species"] + 2):
-        if not (1 <= i <= nn_config["num_species"] and 1 <= j <= nn_config["num_species"]):
-            system.non_bonded_inter[i, j].soft_sphere.set_params(
-                a=0.0, n=1, cutoff=nn_config["cutoff"], offset=0.0)
+        system.non_bonded_inter[i, j].soft_sphere.set_params(
+            a=0.0, n=1, cutoff=nn_config["cutoff"], offset=0.0)
 
 print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
 system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
@@ -342,6 +343,19 @@ print(flush=True)
 
 system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+system.time_step = args.dt
+
+if args.steps_uncapped < 0:
+    raise ValueError("--steps_uncapped must be non-negative")
+if args.steps_uncapped > 0:
+    print(f"[INFO] Phase 5: Uncapped NVT validation for {args.steps_uncapped} steps at dt={args.dt} ps...", flush=True)
+    completed = 0
+    while completed < args.steps_uncapped:
+        chunk = min(100, args.steps_uncapped - completed)
+        system.integrator.run(chunk)
+        completed += chunk
+        print(f"\r[INFO] Phase 5 Progress: {completed}/{args.steps_uncapped} steps", end="", flush=True)
+    print(flush=True)
 
 print("[INFO] Warm-up terminato. Preparazione del salvataggio...")
 

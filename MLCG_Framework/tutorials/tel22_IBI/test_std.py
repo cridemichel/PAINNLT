@@ -30,6 +30,6 @@ def get_std(filename):
 
 if __name__ == "__main__":
     std_orig = get_std("tel22_dataset.bin")
-    std_ibi = get_std("tel22_dataset_ibi.bin")
+    std_ibi = get_std("tel22_dataset_ibi_v2.bin")
     print(f"Original Force STD: {std_orig}")
     print(f"Residual Force STD: {std_ibi}")

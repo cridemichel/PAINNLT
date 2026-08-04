@@ -352,11 +352,13 @@ with open(vtf_filename, "w") as vtf_file:
             if m_idx == mol_idx:
                 vtf_file.write(f"bond {com_id}:{vs_id}\n")
     
-    # Calculate chunks based on log_interval
+    # Integrate exactly args.steps, including the final partial chunk.
     chunk_size = max(1, args.log_interval)
-    num_chunks = args.steps // chunk_size
-    for step in range(num_chunks):
-        system.integrator.run(chunk_size)
+    integrated_steps = 0
+    while integrated_steps < args.steps:
+        current_chunk = min(chunk_size, args.steps - integrated_steps)
+        system.integrator.run(current_chunk)
+        integrated_steps += current_chunk
         energies = system.analysis.energy()
         
 
@@ -381,13 +383,13 @@ with open(vtf_filename, "w") as vtf_file:
                 e_kin_rot += k_rot
 
         with open("energy.csv", "a") as f_out:
-            f_out.write(f"{step*chunk_size},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
+            f_out.write(f"{integrated_steps},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
         
         max_f = max([sum([f_c**2 for f_c in p.f])**0.5 for p in system.part])
         max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
         
-        print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}", flush=True)
-        vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
+        print(f"[INFO] Step {integrated_steps}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}", flush=True)
+        vtf_file.write(f"\ntimestep {integrated_steps}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
         
         if args.out_traj:

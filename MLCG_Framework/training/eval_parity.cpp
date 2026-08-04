@@ -4,6 +4,9 @@
 #include <string>
 #include <fstream>
 #include <unordered_map>
+#include <unordered_set>
+#include <filesystem>
+#include <cstdint>
 #include <limits>
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
@@ -64,7 +67,47 @@ struct CGBatch {
 // =====================================================================
 // 2. FUNZIONI DI SUPPORTO E BATCHING
 // =====================================================================
-CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::Device device) {
+using MoleculePairSet = std::unordered_set<std::uint64_t>;
+
+std::uint64_t molecule_pair_key(int a, int b) {
+    auto lo = static_cast<std::uint32_t>(std::min(a, b));
+    auto hi = static_cast<std::uint32_t>(std::max(a, b));
+    return (static_cast<std::uint64_t>(lo) << 32) | hi;
+}
+
+std::string resolve_config_relative_path(const std::string& config_path, const std::string& value) {
+    if (value.empty()) return value;
+    std::filesystem::path p(value);
+    if (p.is_absolute()) return p.string();
+    return (std::filesystem::path(config_path).parent_path() / p).lexically_normal().string();
+}
+
+MoleculePairSet load_excluded_molecule_pairs(const std::string& priors_path) {
+    MoleculePairSet result;
+    if (priors_path.empty()) return result;
+
+    std::ifstream input(priors_path);
+    if (!input.is_open()) {
+        throw std::runtime_error("Cannot open exclusion priors: " + priors_path);
+    }
+    json priors;
+    input >> priors;
+
+    for (const auto& bond : priors.value("bonds", json::array())) {
+        int a = bond.at("mol_i").get<int>();
+        int b = bond.at("mol_j").get<int>();
+        if (a != b) result.insert(molecule_pair_key(a, b));
+    }
+    for (const auto& angle : priors.value("angles", json::array())) {
+        int a = angle.at("mol_i").get<int>();
+        int b = angle.at("mol_k").get<int>();
+        if (a != b) result.insert(molecule_pair_key(a, b));
+    }
+    return result;
+}
+
+CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::Device device,
+                      const MoleculePairSet& excluded_molecule_pairs) {
     CGBatch batch;
     std::vector<int64_t> site_types_vec, batch_indices_vec, mol_indices_vec;
     std::vector<float> coords_vec, centers_vec, forces_vec, torques_vec;
@@ -113,8 +156,12 @@ CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::D
         int num_sites_in_frame = frame_sites.size();
         for (int i = 0; i < num_sites_in_frame; ++i) {
             for (int j = i + 1; j < num_sites_in_frame; ++j) {
-                // REGOLA: Se appartengono alla stessa molecola, NON interagiscono
-                if (frame_sites[i].molecule_id == frame_sites[j].molecule_id) continue;
+                // Match the ESPResSo graph exactly: exclude intra-molecular,
+                // bonded 1-2, and angular 1-3 molecule pairs.
+                const int mol_i = frame_sites[i].molecule_id;
+                const int mol_j = frame_sites[j].molecule_id;
+                if (mol_i == mol_j) continue;
+                if (excluded_molecule_pairs.count(molecule_pair_key(mol_i, mol_j)) != 0) continue;
                 
                 // 1. Distanza cartesiana iniziale
                 float dx = frame_sites[i].x - frame_sites[j].x;
@@ -301,6 +348,18 @@ int main(int argc, char** argv) {
     json config;
     cfg_in >> config;
     float cutoff = config.value("cutoff", 1.2f);
+    const std::string exclusion_priors_path = resolve_config_relative_path(
+        config_file, config.value("exclusion_priors", std::string())
+    );
+    MoleculePairSet excluded_molecule_pairs;
+    try {
+        excluded_molecule_pairs = load_excluded_molecule_pairs(exclusion_priors_path);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] " << e.what() << "\n";
+        return 1;
+    }
+    std::cout << "Excluded 1-2/1-3 molecule pairs: "
+              << excluded_molecule_pairs.size() << "\n";
     
     std::vector<CGFrame> dataset = read_cg_dataset(dataset_file);
     if (dataset.empty()) return 1;
@@ -339,7 +398,7 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < val_dataset.size(); ++i) {
         val_batch_frames.push_back(val_dataset[i]);
         if (val_batch_frames.size() == batch_size || i == val_dataset.size() - 1) {
-            CGBatch batch = collate_batch(val_batch_frames, cutoff, device);
+            CGBatch batch = collate_batch(val_batch_frames, cutoff, device, excluded_molecule_pairs);
             auto row = batch.edge_index[0];
             auto col = batch.edge_index[1];
             torch::Tensor pos_row = batch.coordinates.index_select(0, row);

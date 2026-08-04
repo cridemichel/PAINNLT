@@ -11,7 +11,7 @@ uv run ../../ibi/run_ibi_loop.py \
     --pypresso ../../espresso/build/pypresso \
     --iterations 3 \
     --outdir ibi_priors
-echo "[SUCCESS] IBI completata. cg_priors.json e le tabelle sono state aggiornate."
+echo "[SUCCESS] IBI completata. Creato ibi_priors/cg_priors_final.json con le tabelle aggiornate."
 
 echo "[INFO] Capping and extrapolation is now handled robustly inside run_ibi_loop.py using CubicSplines!"
 # uv run python extrapolate_ibi_tables.py

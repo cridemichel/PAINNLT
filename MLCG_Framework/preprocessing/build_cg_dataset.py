@@ -33,6 +33,33 @@ class EspressoTabulatedForce:
         
         return f0 + dx * self.invstepsize * (f1 - f0)
 
+MORSE_TABLE_MIN = 0.001
+MORSE_TABLE_MAX = 15.0
+MORSE_TABLE_POINTS = 50000
+
+def molecule_pair(mol_i, mol_j):
+    return (min(int(mol_i), int(mol_j)), max(int(mol_i), int(mol_j)))
+
+def build_wca_exclusions(priors):
+    """Return the exact 1-2/1-3 molecule exclusions used by ESPResSo."""
+    exclusions = set()
+    for bond in priors.get("bonds", []):
+        pair = molecule_pair(bond["mol_i"], bond["mol_j"])
+        if pair[0] != pair[1]:
+            exclusions.add(pair)
+    for angle in priors.get("angles", []):
+        pair = molecule_pair(angle["mol_i"], angle["mol_k"])
+        if pair[0] != pair[1]:
+            exclusions.add(pair)
+    return exclusions
+
+def build_morse_force_table(D, a, r0):
+    """Build the same force table used by equilibrate.py and run_cg_md.py."""
+    grid = np.linspace(MORSE_TABLE_MIN, MORSE_TABLE_MAX, MORSE_TABLE_POINTS)
+    exp_term = np.exp(-float(a) * (grid - float(r0)))
+    force = -2.0 * float(a) * float(D) * (1.0 - exp_term) * exp_term
+    return EspressoTabulatedForce(MORSE_TABLE_MIN, MORSE_TABLE_MAX, force)
+
 # =====================================================================
 # 1. PARSING ARGOMENTI E CARICAMENTO TOPOLOGIA
 # =====================================================================
@@ -112,6 +139,7 @@ def extrapolate_force(r, force, r_min, r_max):
 
 ANGLES = config_data.get("angles", [])
 DIHEDRALS = config_data.get("dihedrals", [])
+CONFIG_WCA_EXCLUSIONS = build_wca_exclusions({"bonds": BONDS, "angles": ANGLES})
 
 print(f"[INFO] Caricamento MDAnalysis: {args.topology}, {args.trajectory}...")
 u = mda.Universe(args.topology, args.trajectory)
@@ -479,10 +507,16 @@ for ts_idx, ts in enumerate(u.trajectory):
             # Compute full pairwise distance matrix (very fast for ~1000 particles)
             dist_matrix = cdist(flat_pos, flat_pos)
             
-            # Mask out particles in the same molecule
+            # Match the production Hamiltonian: no WCA for intra-molecular,
+            # bonded 1-2, or angular 1-3 molecule pairs.
             same_mol_mask = flat_mols[:, None] == flat_mols[None, :]
             dist_matrix[same_mol_mask] = np.inf
-            
+            for mol_i, mol_j in CONFIG_WCA_EXCLUSIONS:
+                mask_i = flat_mols == mol_i
+                mask_j = flat_mols == mol_j
+                dist_matrix[np.ix_(mask_i, mask_j)] = np.inf
+                dist_matrix[np.ix_(mask_j, mask_i)] = np.inf
+
             # Vectorized minimum distance computation
             i_idx, j_idx = np.tril_indices(len(flat_types), k=-1)
             dist_flat = dist_matrix[i_idx, j_idx]
@@ -743,6 +777,10 @@ if derived_priors is None:
         json.dump(derived_priors, pf, indent=4)
     print("[INFO] Salvato file cg_priors.json (da passare poi a run_cg_md.py)")
 
+# The same exclusion set is consumed by preprocessing, training and ESPResSo.
+WCA_EXCLUSIONS = build_wca_exclusions(derived_priors)
+print(f"[INFO] WCA/PaiNN exclusions: {len(WCA_EXCLUSIONS)} molecule pairs (1-2 and 1-3).")
+
 # =====================================================================
 # 3. PASS 2: SOTTRAZIONE PRIOR E SCRITTURA BINARIO
 # =====================================================================
@@ -843,9 +881,16 @@ with open(args.output, "wb") as f:
                 eps_ij = np.sqrt(epsilons[:, np.newaxis] * epsilons[np.newaxis, :])
                 r_cut_sq = (sigma_ij * (2.0**(1.0/6.0)))**2
                 
-                # Only distinct molecules (intra-molecular forces cancel out in rigid bodies)
+                # Match ESPResSo exclusions exactly: distinct molecules, except
+                # bonded 1-2 and angular 1-3 pairs.
                 idx_i, idx_j = np.where((dist_sq > 1e-6) & (dist_sq < r_cut_sq))
-                valid = (idx_i < idx_j) & (flat_mol[idx_i] != flat_mol[idx_j])
+                distinct = flat_mol[idx_i] != flat_mol[idx_j]
+                allowed = np.fromiter(
+                    (molecule_pair(flat_mol[i], flat_mol[j]) not in WCA_EXCLUSIONS
+                     for i, j in zip(idx_i, idx_j)),
+                    dtype=bool, count=len(idx_i)
+                )
+                valid = (idx_i < idx_j) & distinct & allowed
                 idx_i = idx_i[valid]
                 idx_j = idx_j[valid]
                 
@@ -906,10 +951,12 @@ with open(args.output, "wb") as f:
                     f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
 
             elif b_type == "morse":
-                D, a, r0 = b["D"], b["a"], b["r0"]
-                diff = r - r0
-                exp_term = np.exp(-a * diff)
-                f_scalar = - 2.0 * a * D * (1.0 - exp_term) * exp_term
+                morse_key = ("morse", float(b["D"]), float(b["a"]), float(b["r0"]))
+                if morse_key not in cached_tables:
+                    cached_tables[morse_key] = build_morse_force_table(
+                        b["D"], b["a"], b["r0"]
+                    )
+                f_scalar = cached_tables[morse_key](r)
 
             elif b_type == "tabulated":
                 table_file = b["file"]
@@ -921,10 +968,10 @@ with open(args.output, "wb") as f:
                 
                 f_scalar = cached_tables[table_file](r)
 
-            # Safety clamp: prevents a single badly-sampled bin from injecting
-            # enormous forces into the residual dataset and crashing training.
-            F_MAX_BOND = 10000.0  # kJ/mol/nm
-            f_scalar = float(np.clip(f_scalar, -F_MAX_BOND, F_MAX_BOND))
+            if not np.isfinite(f_scalar):
+                raise FloatingPointError(
+                    f"Non-finite bond prior force for bond {i}-{j} at r={r:.8g} nm"
+                )
 
             f_vec = - f_scalar * r_hat
 
@@ -983,22 +1030,18 @@ with open(args.output, "wb") as f:
             else:
                 dV_dtheta = 0.0
                 
-            if abs(dV_dtheta) > 1000.0:
-                dV_dtheta = np.sign(dV_dtheta) * 1000.0
+            if not np.isfinite(dV_dtheta):
+                raise FloatingPointError(
+                    f"Non-finite angle prior derivative for angle {i}-{j}-{k_idx} "
+                    f"at theta={theta:.8g} rad"
+                )
 
             grad_i_cos = r_jk / (d_ji * d_jk) - cos_theta * r_ji / (d_ji**2)
             grad_k_cos = r_ji / (d_ji * d_jk) - cos_theta * r_jk / (d_jk**2)
             
             scalar_force = dV_dtheta / sin_theta
-            if abs(scalar_force) > 1000.0:
-                scalar_force = np.sign(scalar_force) * 1000.0
-                
             f_i = scalar_force * grad_i_cos
             f_k = scalar_force * grad_k_cos
-            
-            # Explicit vector clip to prevent gradient magnitude explosion
-            f_i = np.clip(f_i, -1000.0, 1000.0)
-            f_k = np.clip(f_k, -1000.0, 1000.0)
             f_j = -(f_i + f_k)
             
             res_forces[i] -= f_i
@@ -1062,8 +1105,11 @@ with open(args.output, "wb") as f:
             else:
                 dV_dphi = 0.0
                 
-            if abs(dV_dphi) > 1000.0:
-                dV_dphi = np.sign(dV_dphi) * 1000.0
+            if not np.isfinite(dV_dphi):
+                raise FloatingPointError(
+                    f"Non-finite dihedral prior derivative for {i}-{j}-{k_idx}-{l} "
+                    f"at phi={phi:.8g} rad"
+                )
                 
             f_i = (b2_norm / n1_norm2) * dV_dphi * n1
             f_l = -(b2_norm / n2_norm2) * dV_dphi * n2
@@ -1076,11 +1122,10 @@ with open(args.output, "wb") as f:
             f_j = -f_i + term1 - term2
             f_k = -f_l - term1 + term2
             
-            # Explicit vector clip to prevent any component from exceeding the safety threshold
-            f_i = np.clip(f_i, -1000.0, 1000.0)
-            f_l = np.clip(f_l, -1000.0, 1000.0)
-            f_j = np.clip(f_j, -1000.0, 1000.0)
-            f_k = np.clip(f_k, -1000.0, 1000.0)
+            if not all(np.all(np.isfinite(force)) for force in (f_i, f_j, f_k, f_l)):
+                raise FloatingPointError(
+                    f"Non-finite dihedral force for {i}-{j}-{k_idx}-{l} at phi={phi:.8g} rad"
+                )
             
             res_forces[i] -= f_i
             res_forces[j] -= f_j

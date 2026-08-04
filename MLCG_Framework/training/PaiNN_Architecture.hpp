@@ -83,19 +83,24 @@ struct PaiNNModelImpl : torch::nn::Module {
         ));
     }
 
-    // Espansione RBF con Toxvaerd Cutoff (C3 smooth energy)
-    torch::Tensor expansion_rbf(torch::Tensor d_ij) {
-        double r_c = cutoff_radius; 
-        
-        auto x = (r_c - d_ij) / r_c;
+    torch::Tensor cutoff_envelope(torch::Tensor d_ij) {
+        const double r_c = cutoff_radius;
+        if (toxvaerd_alpha <= 0.0) {
+            return torch::where(d_ij < r_c, torch::ones_like(d_ij), torch::zeros_like(d_ij));
+        }
+        auto x = torch::clamp_min((r_c - d_ij) / r_c, 0.0);
         auto x_n = torch::pow(x, 4);
-        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
-        tox_cutoff = torch::where(d_ij > r_c, torch::zeros_like(tox_cutoff), tox_cutoff);
+        auto envelope = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
+        return torch::where(d_ij >= r_c, torch::zeros_like(envelope), envelope);
+    }
 
+    // Raw Gaussian RBF. The smooth cutoff is applied exactly once by PaiNNMessage.
+    torch::Tensor expansion_rbf(torch::Tensor d_ij) {
+        const double r_c = cutoff_radius;
         auto centers = torch::linspace(0.0, r_c, num_radial_basis, d_ij.options());
         double sigma = r_c / num_radial_basis;
-        auto rbf = torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) / torch::pow(torch::full_like(centers, sigma), 2));
-        return rbf * tox_cutoff.unsqueeze(1);
+        return torch::exp(-torch::pow(d_ij.unsqueeze(1) - centers, 2) /
+                          torch::pow(torch::full_like(centers, sigma), 2));
     }
     
     // --- FORWARD COMPATIBILE CON PAINN.CPP (TRAINING) ---
@@ -111,10 +116,7 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
         
-        auto x = (cutoff_radius - d_ij) / cutoff_radius;
-        auto x_n = torch::pow(x, 4);
-        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
-        tox_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(tox_cutoff), tox_cutoff);
+        auto tox_cutoff = cutoff_envelope(d_ij);
 
         for (int i = 0; i < num_layers; ++i) {
             auto msg_out = messages[i]->forward(s, v, batch.edge_index, rbf, r_ij_norm, tox_cutoff);
@@ -144,10 +146,7 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
         
-        auto x = (cutoff_radius - d_ij) / cutoff_radius;
-        auto x_n = torch::pow(x, 4);
-        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
-        tox_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(tox_cutoff), tox_cutoff);
+        auto tox_cutoff = cutoff_envelope(d_ij);
 
         for (int i = 0; i < num_layers; ++i) {
             auto msg_out = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm, tox_cutoff);
@@ -178,10 +177,7 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
         
-        auto x = (cutoff_radius - d_ij) / cutoff_radius;
-        auto x_n = torch::pow(x, 4);
-        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
-        tox_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(tox_cutoff), tox_cutoff);
+        auto tox_cutoff = cutoff_envelope(d_ij);
 
         for (int i = 0; i < num_layers; ++i) {
             auto msg_out = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm, tox_cutoff);

@@ -10,7 +10,7 @@ cd ../../tutorials/tel22_IBI
 echo ""
 echo "[2/3] Estrazione delle Forze dal Validation Set..."
 # Lanciamo l'estrattore usando il dataset e il modello appena allenati
-../../training/build/eval_parity --dataset tel22_dataset_ibi.bin --model tel22_model_ibi.pt --config tel22_training_config.json
+../../training/build/eval_parity --dataset tel22_dataset_ibi_v2.bin --model tel22_model_ibi_v2.pt --config tel22_training_config.json
 
 echo ""
 echo "[3/3] Generazione del Grafico (Parity Plot) e metriche..."

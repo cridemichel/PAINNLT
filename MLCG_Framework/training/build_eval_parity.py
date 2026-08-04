@@ -33,6 +33,18 @@ main_func = """int main(int argc, char** argv) {
     json config;
     cfg_in >> config;
     float cutoff = config.value("cutoff", 1.2f);
+    const std::string exclusion_priors_path = resolve_config_relative_path(
+        config_file, config.value("exclusion_priors", std::string())
+    );
+    MoleculePairSet excluded_molecule_pairs;
+    try {
+        excluded_molecule_pairs = load_excluded_molecule_pairs(exclusion_priors_path);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] " << e.what() << "\\n";
+        return 1;
+    }
+    std::cout << "Excluded 1-2/1-3 molecule pairs: "
+              << excluded_molecule_pairs.size() << "\\n";
     
     std::vector<CGFrame> dataset = read_cg_dataset(dataset_file);
     if (dataset.empty()) return 1;
@@ -71,7 +83,7 @@ main_func = """int main(int argc, char** argv) {
     for (size_t i = 0; i < val_dataset.size(); ++i) {
         val_batch_frames.push_back(val_dataset[i]);
         if (val_batch_frames.size() == batch_size || i == val_dataset.size() - 1) {
-            CGBatch batch = collate_batch(val_batch_frames, cutoff, device);
+            CGBatch batch = collate_batch(val_batch_frames, cutoff, device, excluded_molecule_pairs);
             auto row = batch.edge_index[0];
             auto col = batch.edge_index[1];
             torch::Tensor pos_row = batch.coordinates.index_select(0, row);
