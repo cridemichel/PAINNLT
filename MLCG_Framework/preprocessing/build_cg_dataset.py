@@ -973,12 +973,11 @@ with open(args.output, "wb") as f:
                     table_file = a["file"]
                     if table_file not in cached_tables:
                         table_data = np.loadtxt(table_file)
-                        rmin_tab = float(a["min"])
-                        rmax_tab = float(a["max"])
+                        rmin_tab = float(table_data[0, 0])
+                        rmax_tab = float(table_data[-1, 0])
                         cached_tables[table_file] = EspressoTabulatedForce(rmin_tab, rmax_tab, table_data[:, 2])
                     
-                    dV_dtheta = cached_tables[table_file](theta) # Espresso evaluator
-                    dV_dtheta = -dV_dtheta # since espresso uses Force = -dV/dtheta, we need dV/dtheta for our math
+                    dV_dtheta = cached_tables[table_file](theta)
                 except:
                     dV_dtheta = 0.0
             else:

@@ -6,6 +6,7 @@ import json
 import struct
 import subprocess
 from scipy.ndimage import gaussian_filter1d
+from scipy.interpolate import CubicSpline
 
 # /// script
 # requires-python = ">=3.10, <3.13"
@@ -202,6 +203,9 @@ def enforce_consistency_and_cap(x, V_orig, F_orig, force_max=100.0):
     return V_new, F_capped
 
 def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type=None):
+    if jacobian_type == 'dihedral':
+        values = np.mod(values, 2.0 * np.pi)
+        
     hist, bin_edges = np.histogram(values, bins=bins, density=True)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     
@@ -220,18 +224,43 @@ def calculate_dbi_potential(values, bins, kT=2.49, periodic=False, jacobian_type
     mode = 'wrap' if periodic else 'reflect'
     potential_smooth = gaussian_filter1d(potential, sigma=2.0, mode=mode)
     
-    dx = bin_centers[1] - bin_centers[0]
+    if not periodic:
+        potential_smooth, _ = extrapolate_potential_and_force(bin_centers, potential_smooth, np.zeros_like(potential_smooth), raw_hist, target_type=jacobian_type)
+        
+    bc_type = 'periodic' if periodic else 'not-a-knot'
+    spline = CubicSpline(bin_centers, potential_smooth, bc_type=bc_type)
+    force_deriv = spline(bin_centers, 1)
     
-    if periodic:
-        force = -np.gradient(potential_smooth, dx)
+    if jacobian_type == 'angle':
+        F_0 = force_deriv
     else:
-        force = -np.gradient(potential_smooth, dx)
-        potential_smooth, force = extrapolate_potential_and_force(bin_centers, potential_smooth, force, raw_hist, target_type=jacobian_type)
+        F_0 = -force_deriv
         
-    F_0 = -np.gradient(potential_smooth, bin_centers)
-    potential_smooth, F_0 = enforce_consistency_and_cap(bin_centers, potential_smooth, F_0, force_max=150.0)
-        
-    return bin_centers, potential_smooth, F_0, hist
+    F_0 = np.clip(F_0, -150.0, 150.0)
+    
+    # Reintegrate capped forces for perfect consistency
+    min_idx = np.argmin(potential_smooth)
+    V_new = np.zeros_like(potential_smooth)
+    V_new[min_idx] = potential_smooth[min_idx]
+    
+    for i in range(min_idx, len(bin_centers) - 1):
+        dx = bin_centers[i+1] - bin_centers[i]
+        avg_F = 0.5 * (F_0[i] + F_0[i+1])
+        if jacobian_type == 'angle':
+            V_new[i+1] = V_new[i] + avg_F * dx
+        else:
+            V_new[i+1] = V_new[i] - avg_F * dx
+            
+    for i in range(min_idx, 0, -1):
+        dx = bin_centers[i] - bin_centers[i-1]
+        avg_F = 0.5 * (F_0[i] + F_0[i-1])
+        if jacobian_type == 'angle':
+            V_new[i-1] = V_new[i] - avg_F * dx
+        else:
+            V_new[i-1] = V_new[i] + avg_F * dx
+            
+    V_new -= np.min(V_new)
+    return bin_centers, V_new, F_0, hist
 
 def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, periodic=False, target_type='bond'):
     P_i = np.clip(P_i, 1e-6, None)
@@ -244,214 +273,50 @@ def update_ibi_potential(V_i, P_i, P_target, bin_centers, kT=2.49, alpha=0.5, pe
     mode = 'wrap' if periodic else 'reflect'
     V_next_smooth = gaussian_filter1d(V_next, sigma=2.0, mode=mode)
     
-    dx = bin_centers[1] - bin_centers[0]
-    force = -np.gradient(V_next_smooth, dx)
-    
     if not periodic:
-        V_next_smooth, force = extrapolate_potential_and_force(bin_centers, V_next_smooth, force, P_target, target_type=target_type)
+        V_next_smooth, _ = extrapolate_potential_and_force(bin_centers, V_next_smooth, np.zeros_like(V_next_smooth), P_target, target_type=target_type)
         
-    force = gaussian_filter1d(force, sigma=2.0, mode=mode)
-    V_next_smooth, force = enforce_consistency_and_cap(bin_centers, V_next_smooth, force, force_max=150.0)
+    bc_type = 'periodic' if periodic else 'not-a-knot'
+    spline = CubicSpline(bin_centers, V_next_smooth, bc_type=bc_type)
+    force_deriv = spline(bin_centers, 1)
+    
+    if target_type == 'angle':
+        F_0 = force_deriv
+    else:
+        F_0 = -force_deriv
         
-    return V_next_smooth, force
+    F_0 = np.clip(F_0, -150.0, 150.0)
+    
+    min_idx = np.argmin(V_next_smooth)
+    V_new = np.zeros_like(V_next_smooth)
+    V_new[min_idx] = V_next_smooth[min_idx]
+    
+    for i in range(min_idx, len(bin_centers) - 1):
+        dx = bin_centers[i+1] - bin_centers[i]
+        avg_F = 0.5 * (F_0[i] + F_0[i+1])
+        if target_type == 'angle':
+            V_new[i+1] = V_new[i] + avg_F * dx
+        else:
+            V_new[i+1] = V_new[i] - avg_F * dx
+            
+    for i in range(min_idx, 0, -1):
+        dx = bin_centers[i] - bin_centers[i-1]
+        avg_F = 0.5 * (F_0[i] + F_0[i-1])
+        if target_type == 'angle':
+            V_new[i-1] = V_new[i] - avg_F * dx
+        else:
+            V_new[i-1] = V_new[i] + avg_F * dx
+            
+    V_new -= np.min(V_new)
+    return V_new, F_0
 
 def save_tabulated_potential(filename, x, energy, force):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     
-    x = list(x)
-    energy = list(energy)
-    force = list(force)
-    
-    # Pad lower bound with 0.0 for bonds/angles
-    if x[0] > 0.0 and x[0] < 0.1:
-        dx = x[0] - 0.0
-        energy.insert(0, energy[0] + force[0] * dx)
-        force.insert(0, force[0])
-        x.insert(0, 0.0)
-        
-    # Pad upper bounds for ESPResSo strict limits
-    if 3.1 < x[-1] < np.pi:
-        dx = np.pi - x[-1]
-        energy.append(energy[-1] - force[-1] * dx)
-        force.append(force[-1])
-        x.append(np.pi)
-    elif 6.2 < x[-1] < 2 * np.pi:
-        dx = 2 * np.pi - x[-1]
-        energy.append(energy[-1] - force[-1] * dx)
-        force.append(force[-1])
-        x.append(2 * np.pi)
-    elif 4.5 < x[-1] < 5.0:
-        dx = 5.0 - x[-1]
-        energy.append(energy[-1] - force[-1] * dx)
-        force.append(force[-1])
-        x.append(5.0)
-
     data = np.column_stack((x, energy, force))
     np.savetxt(filename, data, fmt="%.6f", header="x energy force")
 
-def write_espresso_runner(script_name, priors_file, output_traj, initial_pos_file, types):
-    """
-    Writes a temporary Python script that runs ESPResSo MD using only priors.
-    """
-    with open(script_name, "w") as f:
-        f.write(f"""import espressomd
-import espressomd.interactions
-import json
-import numpy as np
 
-# Load priors
-with open('{priors_file}', 'r') as f:
-    priors = json.load(f)
-
-# Set up system
-system = espressomd.System(box_l=[10.0, 10.0, 10.0]) # Generic box for isolated molecule
-system.time_step = 0.002
-system.cell_system.skin = 0.4
-
-# Load initial positions
-initial_pos = np.load('{initial_pos_file}')
-num_particles = len(initial_pos)
-types = {repr(types.tolist())}
-
-# Setup particles with realistic initial coordinates
-for i in range(num_particles):
-    system.part.add(id=i, pos=initial_pos[i], type=int(types[i]))
-
-# WCA Exclusions (1-2 and 1-3)
-wca_exclusions = set()
-for b in priors.get("bonds", []):
-    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
-    wca_exclusions.add((m1, m2))
-for a in priors.get("angles", []):
-    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
-    wca_exclusions.add((m1, m2))
-for (m1, m2) in wca_exclusions:
-    system.part.by_id(m1).add_exclusion(m2)
-
-# WCA Non-Bonded interactions
-wca = priors.get("wca", {{}})
-has_wca = wca.get("sigma", 0.0) > 0 or len(wca.get("overrides", {{}})) > 0
-if wca.get("epsilon", 0.0) > 0 and has_wca:
-    wca_sigma = wca.get("sigma", 0.3)
-    wca_eps = wca.get("epsilon", 1.0)
-    overrides = wca.get("overrides", {{}})
-    unique_types = set(int(t) for t in types)
-    for t_i in unique_types:
-        sigma_i = overrides.get(str(t_i), {{}}).get("sigma", wca_sigma)
-        eps_i = overrides.get(str(t_i), {{}}).get("epsilon", wca_eps)
-        for t_j in unique_types:
-            sigma_j = overrides.get(str(t_j), {{}}).get("sigma", wca_sigma)
-            eps_j = overrides.get(str(t_j), {{}}).get("epsilon", wca_eps)
-            
-            sig = 0.5 * (sigma_i + sigma_j)
-            eps = np.sqrt(eps_i * eps_j)
-            system.non_bonded_inter[t_i, t_j].lennard_jones.set_params(
-                epsilon=eps, sigma=sig,
-                cutoff=sig * (2.0**(1/6)), shift="auto"
-            )
-
-# Apply interactions
-system.force_cap = 2000.0
-
-for b in priors.get("bonds", []):
-    if b["type"] == "tabulated":
-        data = np.loadtxt(b["file"])
-        tb = espressomd.interactions.TabulatedDistance(
-            min=data[0, 0], max=data[-1, 0], 
-            energy=data[:, 1], force=data[:, 2]
-        )
-        system.bonded_inter.add(tb)
-        system.part.by_id(b["mol_i"]).add_bond((tb, b["mol_j"]))
-    elif b["type"] == "harmonic":
-        hb = espressomd.interactions.HarmonicBond(k=b["k"], r_0=b["r0"])
-        system.bonded_inter.add(hb)
-        system.part.by_id(b["mol_i"]).add_bond((hb, b["mol_j"]))
-
-for a in priors.get("angles", []):
-    if a.get("type", "harmonic") == "harmonic":
-        ha = espressomd.interactions.AngleHarmonic(bend=a["k"], phi0=a["theta0"])
-        system.bonded_inter.add(ha)
-        system.part.by_id(a["mol_j"]).add_bond((ha, a["mol_i"], a["mol_k"]))
-    elif a.get("type") == "tabulated":
-        data = np.loadtxt(a["file"])
-        ta = espressomd.interactions.TabulatedAngle(
-            energy=data[:, 1], force=data[:, 2]
-        )
-        system.bonded_inter.add(ta)
-        system.part.by_id(a["mol_j"]).add_bond((ta, a["mol_i"], a["mol_k"]))
-
-for d in priors.get("dihedrals", []):
-    if d.get("type", "cosine") == "cosine":
-        cd = espressomd.interactions.Dihedral(bend=d["k"], mult=d.get("n", 1), phase=d["phi0"])
-        system.bonded_inter.add(cd)
-        system.part.by_id(d["mol_j"]).add_bond((cd, d["mol_i"], d["mol_k"], d["mol_l"]))
-    elif d.get("type") == "tabulated":
-        data = np.loadtxt(d["file"])
-        td = espressomd.interactions.TabulatedDihedral(
-            energy=data[:, 1], force=data[:, 2]
-        )
-        system.bonded_inter.add(td)
-        system.part.by_id(d["mol_j"]).add_bond((td, d["mol_i"], d["mol_k"], d["mol_l"]))
-
-# Debug prints
-print("Distance 164-165 START:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos))
-
-# Check initial forces
-system.integrator.run(0)
-print("--- INITIAL ENERGY ---")
-print(system.analysis.energy())
-forces = system.part.all().f
-print("--- INITIAL FORCES (BEFORE SD) ---")
-for i, f in enumerate(forces):
-    if np.linalg.norm(f) > 500:
-        print(f"HIGH FORCE START: Particle {{i}} f={{f}} mag={{np.linalg.norm(f):.2f}}")
-
-# Minimize energy / Burn-in
-print("Gentle MD burn-in (Steepest Descent)...")
-system.integrator.set_steepest_descent(f_max=1000.0, gamma=50.0, max_displacement=0.001)
-system.integrator.run(3000)
-
-print("--- FORCES AFTER SD ---")
-forces = system.part.all().f
-for i, f in enumerate(forces):
-    if np.linalg.norm(f) > 500:
-        print(f"HIGH FORCE AFTER SD: Particle {{i}} f={{f}} mag={{np.linalg.norm(f):.2f}}")
-
-print("Phase 2: Warm-up MD with small timestep and high friction...")
-system.integrator.set_vv()
-system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
-system.force_cap = 0.0
-system.time_step = 0.0001
-
-for _ in range(50):
-    system.integrator.run(100)
-
-print("Phase 3: Production MD...")
-system.force_cap = 0.0
-system.thermostat.set_langevin(kT=2.49, gamma=50.0, seed=42)
-system.time_step = 0.002
-system.time_step = 0.002
-
-system.integrator.run(100000)
-
-print("Distance 164-165 AFTER SD:", np.linalg.norm(system.part.by_id(164).pos - system.part.by_id(165).pos), flush=True)
-
-# Run MD and save trajectory
-import builtins
-print("Running MD...")
-# system.force_cap = 0  # Leave it capped just in case
-
-
-positions = []
-for _ in range(5000):
-    system.integrator.run(10)
-    pos = []
-    for p in system.part:
-        pos.append(p.pos)
-    positions.append(pos)
-
-np.save('{output_traj}', np.array(positions))
-""")
 
 
 
@@ -459,6 +324,8 @@ def main():
     parser = argparse.ArgumentParser(description="Run IBI loop using exact tabulated targets.")
     parser.add_argument("--dataset", required=True, help="Path to the binary dataset file")
     parser.add_argument("--priors", required=True, help="Path to cg_priors.json")
+    parser.add_argument("--config", required=True, help="Path to config.json (for run_cg_md)")
+    parser.add_argument("--rb_info", required=True, help="Path to rigid_bodies_info.json (for run_cg_md)")
     parser.add_argument("--iterations", type=int, default=5, help="Number of IBI iterations")
     parser.add_argument("--outdir", default="ibi_priors", help="Output directory for potentials")
     parser.add_argument("--pypresso", type=str, default="/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/espresso/build/pypresso")
@@ -516,8 +383,8 @@ def main():
             name = b.get("name", f"idx_{idx}")
             b["type"] = "tabulated"
             b["file"] = f"{args.outdir}/bond_tabulated_{name}.dat"
-            b["min"] = 0.01
-            b["max"] = 3.0
+            b["min"] = 0.0
+            b["max"] = 5.0
 
     # Process Angles
     pooled_angles = {}
@@ -589,9 +456,11 @@ def main():
     tmp_priors = "cg_priors_tmp_ibi.json"
     with open(tmp_priors, "w") as f:
         json.dump(priors_data, f, indent=4)
-    with open(args.priors, "w") as f:
-        json.dump(priors_data, f, indent=4)
         
+    final_out_priors = f"{args.outdir}/cg_priors_final.json"
+    with open(final_out_priors, "w") as f:
+        json.dump(priors_data, f, indent=4)
+
     if args.iterations == 0:
         print("[INFO] User requested 0 iterations. Stopping at DBI.")
         sys.exit(0)
@@ -607,10 +476,49 @@ def main():
     for it in range(1, args.iterations + 1):
         print(f"\n[INFO] --- IBI Iteration {it}/{args.iterations} ---")
         
-        write_espresso_runner(script_name, tmp_priors, traj_name, initial_pos_file, types)
+        # Use subprocess to run run_cg_md.py
+        # Since we are not providing --model, it acts as a priors-only MD.
+        run_cg_md_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "simulation", "run_cg_md.py")
         
-        print(f"[INFO] Running ESPResSo MD simulation...")
-        res = subprocess.run([args.pypresso, script_name], capture_output=True, text=True)
+        # Run equilibrate.py to generate a valid starting configuration for MD
+        equilibrate_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "simulation", "equilibrate.py")
+        chk_name = "_tmp_equilibrated.npz"
+        
+        cmd_equil = [
+            args.pypresso, equilibrate_script,
+            "--priors_only",
+            "--config", args.config,
+            "--priors", tmp_priors,
+            "--rb_info", args.rb_info,
+            "--dataset", args.dataset,
+            "--out_checkpoint", chk_name,
+            "--steps_sd", "5000",
+            "--steps_md", "2000"
+        ]
+        
+        print(f"[INFO] Running equilibration via equilibrate.py...")
+        res = subprocess.run(cmd_equil, capture_output=True, text=True)
+        if res.returncode != 0:
+            print("[ERROR] ESPResSo equilibration failed!")
+            print(res.stdout)
+            print(res.stderr)
+            sys.exit(1)
+        
+        cmd = [
+            args.pypresso, run_cg_md_script,
+            "--config", args.config,
+            "--priors", tmp_priors,
+            "--rb_info", args.rb_info,
+            "--dataset", args.dataset,
+            "--checkpoint", chk_name,
+            "--steps", "10000",
+            "--log_interval", "10",
+            "--out_traj", traj_name,
+            "--no_log"
+        ]
+        
+        print(f"[INFO] Running ESPResSo MD simulation via run_cg_md.py...")
+        res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             print("[ERROR] ESPResSo simulation failed!")
             print(res.stdout)

@@ -15,6 +15,7 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
+parser.add_argument("--out_traj", type=str, default=None, help="Save coordinates to a .npy file")
 parser.add_argument("--no_log", action="store_true", help="Disable wandb logging")
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
@@ -69,10 +70,8 @@ with open(args.dataset, "rb") as f:
     num_total_sites = struct.unpack("i", f.read(4))[0]
     box_dim = struct.unpack("3f", f.read(12))
     
-    # Ensure box is large enough for cutoff=5.0 + skin=0.4
-    min_box = 11.0
-    system.box_l = [max(b, min_box) for b in box_dim]
-    
+    system.box_l = box_dim
+    system.cell_system.set_n_square(use_verlet_lists=False)
     for mol_idx in range(num_molecules):
         mol_id = struct.unpack("i", f.read(4))[0]
         num_sites = struct.unpack("i", f.read(4))[0]
@@ -200,9 +199,9 @@ for idx, b in enumerate(priors.get("bonds", [])):
         )
     elif b_type == "tabulated":
         data = np.loadtxt(b["file"])
-        rmin_tab = float(b["min"])
-        rmax_tab = float(b["max"])
         r_vals = data[:, 0]
+        rmin_tab = float(r_vals[0])
+        rmax_tab = float(r_vals[-1])
         energy = data[:, 1]
         force = data[:, 2]
         
@@ -234,8 +233,9 @@ for idx, a in enumerate(priors.get("angles", [])):
     elif a_type == "tabulated":
         import numpy as np
         data = np.loadtxt(a["file"])
-        min_tab = float(a["min"]) # Typically 0.0 radians
-        max_tab = float(a["max"]) # Typically pi radians
+        x_vals = data[:, 0]
+        min_tab = float(x_vals[0])
+        max_tab = float(x_vals[-1])
         angle = espressomd.interactions.TabulatedAngle(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
         )
@@ -370,6 +370,21 @@ with open(vtf_filename, "w") as vtf_file:
         print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.2f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}", flush=True)
         vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
+        
+        if args.out_traj:
+            if not hasattr(system, 'traj_positions'):
+                system.traj_positions = []
+            
+            # Save only COM coordinates (which are the physical particles in our dataset for the generic CG)
+            com_pos = []
+            # mol_com_parts is dictionary mapping mol_idx to part_id
+            for mol_idx, p_id in sorted(mol_com_parts.items()):
+                com_pos.append(system.part.by_id(p_id).pos)
+            system.traj_positions.append(com_pos)
+
+if args.out_traj and hasattr(system, 'traj_positions'):
+    np.save(args.out_traj, np.array(system.traj_positions))
+    print(f"[INFO] Trajectory saved to {args.out_traj}")
 
 print("\n[INFO] Simulation finished successfully.")
 

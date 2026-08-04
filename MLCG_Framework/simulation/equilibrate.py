@@ -7,7 +7,8 @@ import struct
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, required=True, help="Trained ML potential (.pt)")
+parser.add_argument("--model", type=str, required=False, help="Trained ML potential (.pt)")
+parser.add_argument("--priors_only", action="store_true", help="Run using only priors (no ML potential)")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
 parser.add_argument("--priors", type=str, required=True, help="cg_priors.json")
 parser.add_argument("--rb_info", type=str, required=True, help="rigid_bodies_info.json")
@@ -310,19 +311,21 @@ print(flush=True)
 system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
-print("[INFO] Activating ML Potential now that the system is physically relaxed...")
-espressomd.painn.activate_painn_potential(
-    model_path=args.model,
-    num_species=nn_config["num_species"],
-    hidden_channels=nn_config["hidden_channels"],
-    n_layers=nn_config["n_layers"],
-    num_rbf=nn_config["num_rbf"],
-    cutoff=nn_config["cutoff"],
-    apply_envelope=False,
-    use_bias=False,
-    toxvaerd_alpha=args.toxvaerd_alpha,
-    device=args.device
-)
+if not args.priors_only:
+    print("[INFO] Activating ML Potential now that the system is physically relaxed...")
+    espressomd.painn.activate_painn_potential(
+        model_path=args.model,
+        num_species=nn_config["num_species"],
+        hidden_channels=nn_config["hidden_channels"],
+        n_layers=nn_config["n_layers"],
+        num_rbf=nn_config["num_rbf"],
+        r_cut=nn_config["cutoff"],
+        device=args.device,
+        apply_envelope=args.apply_envelope,
+        use_bias=args.use_bias
+    )
+else:
+    print("[INFO] Running with priors only. Not activating ML potential.")
 
 # Skip Steepest Descent with ML potential to avoid unphysical rigid body rotations
 system.integrator.set_vv()
