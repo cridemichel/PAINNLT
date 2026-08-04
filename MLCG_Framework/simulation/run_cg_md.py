@@ -15,7 +15,7 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
-parser.add_argument("--out_traj", type=str, default=None, help="Save coordinates to a .npy file")
+parser.add_argument("--out_traj", type=str, default=None, help="Save COM and virtual-site coordinates to a NumPy .npz archive")
 parser.add_argument("--no_log", action="store_true", help="Disable wandb logging")
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
@@ -391,20 +391,35 @@ with open(vtf_filename, "w") as vtf_file:
         espressomd.io.writer.vtf.writevcf(system, vtf_file)
         
         if args.out_traj:
-            if not hasattr(system, 'traj_positions'):
-                system.traj_positions = []
-            
-            # Save only COM coordinates (which are the physical particles in our dataset for the generic CG)
-            com_pos = []
-            # mol_com_parts is dictionary mapping mol_idx to part_id
-            for mol_idx in sorted(mol_com_parts.keys()):
-                p_id = mol_vs_parts[(mol_idx, 0)]
-                com_pos.append(system.part.by_id(p_id).pos)
-            system.traj_positions.append(com_pos)
+            if not hasattr(system, "traj_com_positions"):
+                system.traj_com_positions = []
+                system.traj_site_positions = []
 
-if args.out_traj and hasattr(system, 'traj_positions'):
-    np.save(args.out_traj, np.array(system.traj_positions))
-    print(f"[INFO] Trajectory saved to {args.out_traj}")
+            com_pos = [
+                np.asarray(system.part.by_id(mol_com_parts[mol_idx]).pos, dtype=float)
+                for mol_idx in sorted(mol_com_parts)
+            ]
+            site_keys = sorted(mol_vs_parts)
+            site_pos = [
+                np.asarray(system.part.by_id(mol_vs_parts[key]).pos, dtype=float)
+                for key in site_keys
+            ]
+            system.traj_com_positions.append(com_pos)
+            system.traj_site_positions.append(site_pos)
+
+if args.out_traj and hasattr(system, "traj_com_positions"):
+    site_keys = sorted(mol_vs_parts)
+    # Open the requested path explicitly so NumPy does not append another suffix.
+    with open(args.out_traj, "wb") as trajectory_file:
+        np.savez(
+            trajectory_file,
+            com=np.asarray(system.traj_com_positions, dtype=float),
+            sites=np.asarray(system.traj_site_positions, dtype=float),
+            site_molecule=np.asarray([key[0] for key in site_keys], dtype=np.int64),
+            site_index=np.asarray([key[1] for key in site_keys], dtype=np.int64),
+            box=np.asarray(system.box_l, dtype=float),
+        )
+    print(f"[INFO] Site-aware trajectory saved to {args.out_traj}")
 
 print("\n[INFO] Simulation finished successfully.")
 

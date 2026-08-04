@@ -272,28 +272,8 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
-print("[INFO] Setting up WCA non-bonded interactions to prevent particle collapse...")
-import math
-wca = priors.get("wca", {})
-wca_sigma = wca.get("sigma", 0.3)
-wca_eps = wca.get("epsilon", 1.0)
-overrides = wca.get("overrides", {})
-
-has_wca = wca_sigma > 0 or len(overrides) > 0
-if wca_eps > 0 and has_wca:
-    for i in range(nn_config["num_species"]):
-        sigma_i = overrides.get(str(i), {}).get("sigma", wca_sigma)
-        eps_i = overrides.get(str(i), {}).get("epsilon", wca_eps)
-        for j in range(i, nn_config["num_species"]):
-            sigma_j = overrides.get(str(j), {}).get("sigma", wca_sigma)
-            eps_j = overrides.get(str(j), {}).get("epsilon", wca_eps)
-            sigma_mix = (sigma_i + sigma_j) / 2.0
-            eps_mix = math.sqrt(eps_i * eps_j)
-            
-            system.non_bonded_inter[1+i, 1+j].lennard_jones.set_params(
-                epsilon=eps_mix, sigma=sigma_mix,
-                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
-            )
+# WCA was already configured above using the actual zero-based CG site types.
+# Do not configure it a second time with a +1 type offset.
 
 # Add dummy soft_sphere to ensure Verlet lists include all other types
 for i in range(nn_config["num_species"] + 2):
