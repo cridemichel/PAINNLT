@@ -70,3 +70,26 @@ Una volta conclusa la simulazione, verrà generato un file di traiettoria Coarse
 Per visualizzarlo o analizzarne lo stacking e la stabilità, puoi utilizzare esattamente gli stessi identici script di analisi termodinamica descritti nel tutorial base `tel22`:
 - **`vtf_to_pymol.py`** per l'animazione PDB
 - **`analyze_unfolding_exact.py`** per valutare le distanze di raggio di girazione.
+
+
+## IBI tail extrapolation for TEL22
+
+The IBI loop uses `ibi_extrapolation_config.json`.  Histogram bins with too few
+samples are excluded from the update, short internal gaps are bridged, and the
+IBI correction is tapered smoothly to zero at the reliable interval edges.
+Unsupported bond tails are rebuilt after DBI and after every IBI iteration with
+C1-continuous exponential curvature.  The left tail is repulsive and the right
+tail is restoring.  The ESPResSo bond table domain is extended to 5.0 nm, while
+a restoring guard force is already imposed at 2.6 nm.  Angles keep their exact
+physical domain `[0, pi]` and conservative endpoint walls; dihedrals remain
+periodic.
+
+Do not run `extrapolate_ibi_tables.py` or another postprocessor on the generated
+tables: extrapolation is part of the IBI update and postprocessing would destroy
+the energy/force consistency.
+
+Run the synthetic regression test with:
+
+```bash
+uv run python test_ibi_extrapolation.py
+```
