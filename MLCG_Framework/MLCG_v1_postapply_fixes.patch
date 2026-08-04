@@ -1,5 +1,5 @@
 diff --git a/ibi/run_ibi_loop.py b/ibi/run_ibi_loop.py
-index c5ffdbc..79138da 100755
+index 6ff7066..79138da 100755
 --- a/ibi/run_ibi_loop.py
 +++ b/ibi/run_ibi_loop.py
 @@ -79,15 +79,18 @@ def read_dataset_distributions(bin_file, priors):
@@ -352,13 +352,14 @@ index c5ffdbc..79138da 100755
  
  
  
-@@ -375,13 +473,13 @@ def main():
+@@ -375,14 +473,13 @@ def main():
              
      for name, pool in pooled_bonds.items():
          if len(pool["dists"]) == 0: continue
--        bins = np.linspace(0.0, 5.0, 300)
 +        bins = np.linspace(0.01, 3.0, 300)
          target_grid = np.linspace(0.01, 3.0, 2001)
+-        dx = target_grid[1] - target_grid[0]
+-        bins = np.linspace(target_grid[0] - dx/2, target_grid[-1] + dx/2, len(target_grid) + 1)
 -        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, target_grid, jacobian_type='bond')
 +        r, V_0, F_0, P_target, hist_x = calculate_dbi_potential(pool["dists"], bins, target_grid, jacobian_type="bond")
          filename = f"{args.outdir}/bond_tabulated_{name}.dat"
@@ -369,10 +370,14 @@ index c5ffdbc..79138da 100755
  
      for idx, b in enumerate(priors_data.get("bonds", [])):
          if b.get("type") in ["ibi", "dbi"]:
-@@ -404,23 +502,13 @@ def main():
+@@ -403,26 +500,15 @@ def main():
+             
+     for name, pool in pooled_angles.items():
          if len(pool["dists"]) == 0: continue
-         bins = np.linspace(0.0, np.pi, 300)
++        bins = np.linspace(0.0, np.pi, 300)
          target_grid = np.linspace(0.0, np.pi, 2001)
+-        dx = target_grid[1] - target_grid[0]
+-        bins = np.linspace(target_grid[0] - dx/2, target_grid[-1] + dx/2, len(target_grid) + 1)
 -        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, target_grid, jacobian_type='angle', periodic=False)
 -        
 -        # Protective walls to prevent angles from reaching exactly 0 or pi
@@ -396,7 +401,7 @@ index c5ffdbc..79138da 100755
  
      for idx, a in enumerate(priors_data.get("angles", [])):
          if a.get("type") in ["ibi", "dbi"]:
-@@ -444,20 +532,20 @@ def main():
+@@ -446,20 +532,20 @@ def main():
          bins = np.linspace(0.0, 2 * np.pi, 300)
          target_values = np.array(pool["dists"])
          target_values = np.where(target_values < 0, target_values + 2 * np.pi, target_values)
@@ -422,7 +427,7 @@ index c5ffdbc..79138da 100755
              
      # Save JSON in DBI-only mode too
      tmp_priors = "cg_priors_tmp_ibi.json"
-@@ -478,7 +566,7 @@ def main():
+@@ -480,7 +566,7 @@ def main():
      # Initial modified priors are already saved above
          
      script_name = "_tmp_ibi_md.py"
@@ -431,7 +436,7 @@ index c5ffdbc..79138da 100755
      
      for it in range(1, args.iterations + 1):
          print(f"\n[INFO] --- IBI Iteration {it}/{args.iterations} ---")
-@@ -534,14 +622,29 @@ def main():
+@@ -536,14 +622,29 @@ def main():
              
          print("[INFO] MD completed. Analyzing trajectory...")
          try:
@@ -467,7 +472,7 @@ index c5ffdbc..79138da 100755
          def dihedral_angle(p0, p1, p2, p3):
              b0 = -1.0 * mic_vector(p0, p1, box_dim)
              b1 = mic_vector(p1, p2, box_dim)
-@@ -557,13 +660,16 @@ def main():
+@@ -559,13 +660,16 @@ def main():
          sim_angle_dists = {name: [] for name in ibi_tables.get("angles", {}).keys()}
          sim_dihedral_dists = {name: [] for name in ibi_tables.get("dihedrals", {}).keys()}
          
@@ -486,7 +491,7 @@ index c5ffdbc..79138da 100755
                      sim_bond_dists[name].append(r)
              
              # Angles
-@@ -571,8 +677,14 @@ def main():
+@@ -573,8 +677,14 @@ def main():
                  name = a.get("name", f"idx_{idx}")
                  if name in sim_angle_dists:
                      i, j, k = a["mol_i"], a["mol_j"], a["mol_k"]
@@ -503,7 +508,7 @@ index c5ffdbc..79138da 100755
                      n1, n2 = np.linalg.norm(v1), np.linalg.norm(v2)
                      if n1 > 1e-6 and n2 > 1e-6:
                          cos_theta = np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)
-@@ -583,17 +695,23 @@ def main():
+@@ -585,17 +695,23 @@ def main():
                  name = d.get("name", f"idx_{idx}")
                  if name in sim_dihedral_dists:
                      i, j, k, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
@@ -523,7 +528,7 @@ index c5ffdbc..79138da 100755
 -            hist_sim = hist_sim / (table["x"]**2)
 -            hist_sim = np.clip(hist_sim, 1e-6, None)
 -            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
--            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='bond')
+-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], table["x"], periodic=False, target_type='bond')
 +            hist_sim = normalize_density(hist_sim, table["hist_x"])
 +            _, V_next, F_next = update_ibi_potential(
 +                table["V"], hist_sim, table["P"], table["hist_x"], table["x"],
@@ -532,14 +537,14 @@ index c5ffdbc..79138da 100755
              table["V"] = V_next
              table["F"] = F_next
              save_tabulated_potential(f"{args.outdir}/bond_tabulated_{name}.dat", table["x"], V_next, F_next)
-@@ -603,10 +721,11 @@ def main():
+@@ -605,10 +721,11 @@ def main():
          for name, table in ibi_tables.get("angles", {}).items():
              sim_dists = sim_angle_dists[name]
              hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
 -            hist_sim = hist_sim / np.clip(np.sin(table["x"]), 1e-6, None)
 -            hist_sim = np.clip(hist_sim, 1e-6, None)
 -            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
--            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='angle')
+-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], table["x"], periodic=False, target_type='angle')
 +            hist_sim = normalize_density(hist_sim, table["hist_x"])
 +            _, V_next, F_next = update_ibi_potential(
 +                table["V"], hist_sim, table["P"], table["hist_x"], table["x"],
@@ -548,7 +553,7 @@ index c5ffdbc..79138da 100755
              table["V"] = V_next
              table["F"] = F_next
              save_tabulated_potential(f"{args.outdir}/angle_tabulated_{name}.dat", table["x"], V_next, F_next)
-@@ -615,10 +734,13 @@ def main():
+@@ -617,10 +734,13 @@ def main():
          print("[INFO] Updating tabulated dihedrals...")
          for name, table in ibi_tables.get("dihedrals", {}).items():
              sim_dists = sim_dihedral_dists[name]
@@ -556,7 +561,7 @@ index c5ffdbc..79138da 100755
              hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
 -            hist_sim = np.clip(hist_sim, 1e-6, None)
 -            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
--            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=True, target_type='dihedral')
+-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], table["x"], periodic=True, target_type='dihedral')
 +            hist_sim = normalize_density(hist_sim, table["hist_x"])
 +            _, V_next, F_next = update_ibi_potential(
 +                table["V"], hist_sim, table["P"], table["hist_x"], table["x"],
