@@ -70,6 +70,9 @@ if os.path.exists(model_path):
         n_layers=int(nn_config.get('n_layers', 3)), 
         num_rbf=int(nn_config.get('num_rbf', 20)), 
         cutoff=float(nn_config.get('cutoff', 5.0)), 
+        apply_envelope=nn_config.get("apply_envelope", False),
+        use_bias=nn_config.get("use_bias", False),
+        toxvaerd_alpha=nn_config.get("toxvaerd_alpha", 0.0),
         device="cpu"
     )
 else:

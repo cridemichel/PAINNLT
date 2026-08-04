@@ -978,8 +978,8 @@ with open(args.output, "wb") as f:
                         cached_tables[table_file] = EspressoTabulatedForce(rmin_tab, rmax_tab, table_data[:, 2])
                     
                     dV_dtheta = cached_tables[table_file](theta)
-                except:
-                    dV_dtheta = 0.0
+                except Exception as exc:
+                    raise RuntimeError(f"Cannot load angle table {table_file}") from exc
             else:
                 dV_dtheta = 0.0
                 
@@ -1057,8 +1057,8 @@ with open(args.output, "wb") as f:
                         
                     dV_dphi = cached_tables[table_file](phi) # Espresso evaluator
                     dV_dphi = -dV_dphi
-                except:
-                    dV_dphi = 0.0
+                except Exception as exc:
+                    raise RuntimeError(f"Cannot load dihedral table {table_file}") from exc
             else:
                 dV_dphi = 0.0
                 

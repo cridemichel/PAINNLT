@@ -1,0 +1,714 @@
+diff --git a/ibi/run_ibi_loop.py b/ibi/run_ibi_loop.py
+index c5ffdbc..79138da 100755
+--- a/ibi/run_ibi_loop.py
++++ b/ibi/run_ibi_loop.py
+@@ -79,15 +79,18 @@ def read_dataset_distributions(bin_file, priors):
+                 torque = struct.unpack("3f", f.read(12))
+                 
+                 sites = []
++                first_site_type = None
+                 for _ in range(num_sites):
+                     site_type = struct.unpack("i", f.read(4))[0]
++                    if first_site_type is None:
++                        first_site_type = site_type
+                     site_pos = np.array(struct.unpack("3f", f.read(12)))
+                     sites.append(site_pos)
+                 
+                 frame_centers.append(center)
+                 frame_sites.append(sites)
+-                # In our generic dataset, the CG bead type corresponds to the first site type
+-                frame_types.append(site_type if num_sites > 0 else 0)
++                # In our generic dataset, the CG bead type corresponds to the first site type.
++                frame_types.append(first_site_type if first_site_type is not None else 0)
+                 
+             if frame_idx == 0:
+                 first_frame_centers = frame_centers
+@@ -204,123 +207,218 @@ def enforce_consistency_and_cap(x, V_orig, F_orig, force_max=100.0):
+     V_new -= np.min(V_new)
+     return V_new, F_capped
+ 
+-def calculate_dbi_potential(values, bins, target_grid, kT=2.49, periodic=False, jacobian_type=None):
+-    if jacobian_type == 'dihedral':
+-        values = np.mod(values, 2.0 * np.pi)
+-        
+-    hist, bin_edges = np.histogram(values, bins=bins, density=True)
+-    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+-    
+-    raw_hist = hist.copy()
+-    if jacobian_type == 'bond':
+-        hist = hist / (bin_centers**2)
+-    elif jacobian_type == 'angle':
+-        hist = hist / np.clip(np.sin(bin_centers), 1e-6, None)
+-    hist = np.clip(hist, 1e-6, None)
+-    
+-    hist /= np.sum(hist) * (bin_centers[1] - bin_centers[0])
+-    
+-    potential = -kT * np.log(hist)
+-    potential -= np.min(potential)
+-    
+-    mode = 'wrap' if periodic else 'reflect'
+-    potential_smooth = gaussian_filter1d(potential, sigma=2.0, mode=mode)
+-    
+-    if not periodic:
+-        potential_smooth, _ = extrapolate_potential_and_force(bin_centers, potential_smooth, np.zeros_like(potential_smooth), raw_hist, target_type=jacobian_type)
+-        
+-    bc_type = 'periodic' if periodic else 'not-a-knot'
+-    spline = CubicSpline(bin_centers, potential_smooth, bc_type=bc_type)
+-    force_deriv = spline(target_grid, 1)
+-    potential_target = spline(target_grid)
+-    
+-    if jacobian_type == 'angle':
+-        F_0 = force_deriv
++def normalize_density(hist, grid):
++    """Return a clipped probability density normalized on *grid*."""
++    hist = np.clip(np.asarray(hist, dtype=float), 1e-12, None)
++    grid = np.asarray(grid, dtype=float)
++    if hist.shape != grid.shape:
++        raise ValueError(f"Histogram/grid shape mismatch: {hist.shape} vs {grid.shape}")
++    norm = np.trapz(hist, grid)
++    if not np.isfinite(norm) or norm <= 0.0:
++        raise ValueError("Cannot normalize an empty or non-finite distribution")
++    return hist / norm
++
++
++def make_spline(x, y, periodic=False):
++    """Build a cubic spline, closing the last interval for periodic data."""
++    x = np.asarray(x, dtype=float)
++    y = np.asarray(y, dtype=float)
++    if x.ndim != 1 or y.ndim != 1 or x.shape != y.shape:
++        raise ValueError("Spline data must be one-dimensional and have matching shapes")
++    if periodic:
++        dx = x[1] - x[0]
++        period = (x[-1] - x[0]) + dx
++        x_ext = np.concatenate((x, [x[0] + period]))
++        y_ext = np.concatenate((y, [y[0]]))
++        return CubicSpline(x_ext, y_ext, bc_type="periodic")
++    return CubicSpline(x, y, bc_type="not-a-knot")
++
++
++def integrate_tabulated_force(x, force, target_type, reference_energy=None):
++    """Integrate the exact force convention expected by ESPResSo tables.
++
++    Distance/dihedral tables store -dU/dq; angle tables store +dU/dtheta.
++    """
++    x = np.asarray(x, dtype=float)
++    force = np.asarray(force, dtype=float)
++    if x.shape != force.shape:
++        raise ValueError("Force and table grid must have matching shapes")
++
++    if reference_energy is None:
++        anchor = 0
++        anchor_value = 0.0
+     else:
+-        F_0 = -force_deriv
+-        
+-    F_0 = np.clip(F_0, -150.0, 150.0)
+-    
+-    # Reintegrate capped forces for perfect consistency
+-    min_idx = np.argmin(potential_target)
+-    V_new = np.zeros_like(potential_target)
+-    V_new[min_idx] = potential_target[min_idx]
+-    
+-    for i in range(min_idx, len(target_grid) - 1):
+-        dx = target_grid[i+1] - target_grid[i]
+-        avg_F = 0.5 * (F_0[i] + F_0[i+1])
+-        if jacobian_type == 'angle':
+-            V_new[i+1] = V_new[i] + avg_F * dx
+-        else:
+-            V_new[i+1] = V_new[i] - avg_F * dx
+-            
+-    for i in range(min_idx, 0, -1):
+-        dx = target_grid[i] - target_grid[i-1]
+-        avg_F = 0.5 * (F_0[i] + F_0[i-1])
+-        if jacobian_type == 'angle':
+-            V_new[i-1] = V_new[i] - avg_F * dx
+-        else:
+-            V_new[i-1] = V_new[i] + avg_F * dx
+-            
+-    V_new -= np.min(V_new)
+-    return target_grid, V_new, F_0, hist
++        reference_energy = np.asarray(reference_energy, dtype=float)
++        anchor = int(np.argmin(reference_energy))
++        anchor_value = float(reference_energy[anchor])
+ 
+-def update_ibi_potential(V_i, P_i, P_target, bin_centers, target_grid, kT=2.49, alpha=0.5, periodic=False, target_type='bond'):
+-    P_i = np.clip(P_i, 1e-6, None)
+-    P_target = np.clip(P_target, 1e-6, None)
+-    
+-    update = alpha * kT * np.log(P_i / P_target)
+-    V_next = V_i + update
+-    V_next -= np.min(V_next)
+-    
+-    mode = 'wrap' if periodic else 'reflect'
+-    V_next_smooth = gaussian_filter1d(V_next, sigma=2.0, mode=mode)
+-    
+-    if not periodic:
+-        V_next_smooth, _ = extrapolate_potential_and_force(bin_centers, V_next_smooth, np.zeros_like(V_next_smooth), P_target, target_type=target_type)
+-        
+-    bc_type = 'periodic' if periodic else 'not-a-knot'
+-    spline = CubicSpline(bin_centers, V_next_smooth, bc_type=bc_type)
+-    force_deriv = spline(target_grid, 1)
+-    V_target = spline(target_grid)
+-    
+-    if target_type == 'angle':
+-        F_0 = force_deriv
++    energy = np.zeros_like(force)
++    energy[anchor] = anchor_value
++    sign = 1.0 if target_type == "angle" else -1.0
++
++    for i in range(anchor, len(x) - 1):
++        dx = x[i + 1] - x[i]
++        energy[i + 1] = energy[i] + sign * 0.5 * (force[i] + force[i + 1]) * dx
++    for i in range(anchor, 0, -1):
++        dx = x[i] - x[i - 1]
++        energy[i - 1] = energy[i] - sign * 0.5 * (force[i] + force[i - 1]) * dx
++
++    energy -= np.min(energy)
++    return energy
++
++
++def add_angle_walls(x, energy, espresso_gradient, wall_width=0.1, wall_k=5000.0):
++    """Add conservative walls using the TabulatedAngle +dU/dtheta convention."""
++    x = np.asarray(x, dtype=float)
++    energy = np.asarray(energy, dtype=float).copy()
++    espresso_gradient = np.asarray(espresso_gradient, dtype=float).copy()
++
++    left = x < wall_width
++    dx_left = wall_width - x[left]
++    energy[left] += 0.5 * wall_k * dx_left**2
++    espresso_gradient[left] -= wall_k * dx_left
++
++    right_edge = np.pi - wall_width
++    right = x > right_edge
++    dx_right = x[right] - right_edge
++    energy[right] += 0.5 * wall_k * dx_right**2
++    espresso_gradient[right] += wall_k * dx_right
++
++    energy -= np.min(energy)
++    return energy, espresso_gradient
++
++
++def table_from_potential(target_grid, potential, target_type, periodic=False, force_max=150.0):
++    """Create a table whose node energies are consistent with its capped forces."""
++    target_grid = np.asarray(target_grid, dtype=float)
++    potential = np.asarray(potential, dtype=float)
++    if target_grid.shape != potential.shape:
++        raise ValueError("Potential and target grid must have matching shapes")
++
++    if periodic:
++        potential = potential.copy()
++        potential[-1] = potential[0]
++        spline = CubicSpline(target_grid, potential, bc_type="periodic")
+     else:
+-        F_0 = -force_deriv
+-        
+-    F_0 = np.clip(F_0, -150.0, 150.0)
+-    
+-    min_idx = np.argmin(V_target)
+-    V_new = np.zeros_like(V_target)
+-    V_new[min_idx] = V_target[min_idx]
+-    
+-    for i in range(min_idx, len(target_grid) - 1):
+-        dx = target_grid[i+1] - target_grid[i]
+-        avg_F = 0.5 * (F_0[i] + F_0[i+1])
+-        if target_type == 'angle':
+-            V_new[i+1] = V_new[i] + avg_F * dx
+-        else:
+-            V_new[i+1] = V_new[i] - avg_F * dx
+-            
+-    for i in range(min_idx, 0, -1):
+-        dx = target_grid[i] - target_grid[i-1]
+-        avg_F = 0.5 * (F_0[i] + F_0[i-1])
+-        if target_type == 'angle':
+-            V_new[i-1] = V_new[i] - avg_F * dx
+-        else:
+-            V_new[i-1] = V_new[i] + avg_F * dx
+-            
+-    V_new -= np.min(V_new)
+-    return target_grid, V_new, F_0
++        spline = CubicSpline(target_grid, potential, bc_type="not-a-knot")
++
++    derivative = spline(target_grid, 1)
++    force = derivative if target_type == "angle" else -derivative
++    force = np.clip(force, -force_max, force_max)
++
++    if periodic and target_type != "angle":
++        # A periodic conservative force has zero integral over one period.
++        period = target_grid[-1] - target_grid[0]
++        force -= np.trapz(force, target_grid) / period
++        force[-1] = force[0]
++
++    energy = integrate_tabulated_force(target_grid, force, target_type, potential)
++    if target_type == "angle":
++        energy, force = add_angle_walls(target_grid, energy, force)
++    elif periodic:
++        energy[-1] = energy[0]
++        force[-1] = force[0]
++    return energy, force
++
++
++def calculate_dbi_potential(values, bins, target_grid, kT=2.49, periodic=False, jacobian_type=None):
++    values = np.asarray(values, dtype=float)
++    if jacobian_type == "dihedral":
++        values = np.mod(values, 2.0 * np.pi)
++
++    raw_hist, bin_edges = np.histogram(values, bins=bins, density=True)
++    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
++    target_hist = normalize_density(raw_hist, bin_centers)
++
++    # Jacobians enter only the initial PMF. IBI updates compare the same raw
++    # observable in target and simulated ensembles, so the Jacobian cancels.
++    pmf_hist = target_hist.copy()
++    if jacobian_type == "bond":
++        pmf_hist /= np.clip(bin_centers**2, 1e-12, None)
++    elif jacobian_type == "angle":
++        pmf_hist /= np.clip(np.sin(bin_centers), 1e-6, None)
++    pmf_hist = normalize_density(pmf_hist, bin_centers)
++
++    potential_hist = -kT * np.log(np.clip(pmf_hist, 1e-12, None))
++    potential_hist -= np.min(potential_hist)
++    potential_hist = gaussian_filter1d(
++        potential_hist,
++        sigma=2.0,
++        mode="wrap" if periodic else "reflect",
++    )
++
++    spline = make_spline(bin_centers, potential_hist, periodic=periodic)
++    potential_grid = spline(target_grid)
++    energy, force = table_from_potential(
++        target_grid,
++        potential_grid,
++        target_type=jacobian_type,
++        periodic=periodic,
++    )
++    return target_grid, energy, force, target_hist, bin_centers
++
++
++def update_ibi_potential(
++    V_i,
++    P_i,
++    P_target,
++    bin_centers,
++    target_grid,
++    kT=2.49,
++    alpha=0.5,
++    periodic=False,
++    target_type="bond",
++):
++    """Apply an IBI update on the histogram grid, then project it to the table grid."""
++    V_i = np.asarray(V_i, dtype=float)
++    target_grid = np.asarray(target_grid, dtype=float)
++    bin_centers = np.asarray(bin_centers, dtype=float)
++    if V_i.shape != target_grid.shape:
++        raise ValueError(f"V_i/target_grid mismatch: {V_i.shape} vs {target_grid.shape}")
++
++    P_i = normalize_density(P_i, bin_centers)
++    P_target = normalize_density(P_target, bin_centers)
++    delta_hist = alpha * kT * np.log(
++        np.clip(P_i, 1e-12, None) / np.clip(P_target, 1e-12, None)
++    )
++    delta_hist = gaussian_filter1d(
++        delta_hist,
++        sigma=2.0,
++        mode="wrap" if periodic else "reflect",
++    )
++
++    delta_spline = make_spline(bin_centers, delta_hist, periodic=periodic)
++    potential_grid = V_i + delta_spline(target_grid)
++    potential_grid -= np.min(potential_grid)
++    potential_grid = gaussian_filter1d(
++        potential_grid,
++        sigma=2.0,
++        mode="wrap" if periodic else "reflect",
++    )
++    if periodic:
++        potential_grid[-1] = potential_grid[0]
++
++    energy, force = table_from_potential(
++        target_grid,
++        potential_grid,
++        target_type=target_type,
++        periodic=periodic,
++    )
++    return target_grid, energy, force
++
+ 
+ def save_tabulated_potential(filename, x, energy, force):
+     os.makedirs(os.path.dirname(filename), exist_ok=True)
+-    
++    x = np.asarray(x, dtype=float)
++    energy = np.asarray(energy, dtype=float)
++    force = np.asarray(force, dtype=float)
++    if x.shape != energy.shape or x.shape != force.shape:
++        raise ValueError("Table columns must have identical shapes")
++    spacing = np.diff(x)
++    if not np.allclose(spacing, spacing[0], rtol=1e-10, atol=1e-12):
++        raise ValueError(f"ESPResSo requires a uniform table grid: {filename}")
+     data = np.column_stack((x, energy, force))
+-    np.savetxt(filename, data, fmt="%.6f", header="x energy force")
+-
+-
++    np.savetxt(filename, data, fmt="%.16e", header="x energy force")
+ 
+ 
+ 
+@@ -375,13 +473,13 @@ def main():
+             
+     for name, pool in pooled_bonds.items():
+         if len(pool["dists"]) == 0: continue
+-        bins = np.linspace(0.0, 5.0, 300)
++        bins = np.linspace(0.01, 3.0, 300)
+         target_grid = np.linspace(0.01, 3.0, 2001)
+-        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, target_grid, jacobian_type='bond')
++        r, V_0, F_0, P_target, hist_x = calculate_dbi_potential(pool["dists"], bins, target_grid, jacobian_type="bond")
+         filename = f"{args.outdir}/bond_tabulated_{name}.dat"
+         save_tabulated_potential(filename, r, V_0, F_0)
+         if pool["type"] == "ibi":
+-            ibi_tables["bonds"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
++            ibi_tables["bonds"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "hist_x": hist_x, "bins": bins}
+ 
+     for idx, b in enumerate(priors_data.get("bonds", [])):
+         if b.get("type") in ["ibi", "dbi"]:
+@@ -404,23 +502,13 @@ def main():
+         if len(pool["dists"]) == 0: continue
+         bins = np.linspace(0.0, np.pi, 300)
+         target_grid = np.linspace(0.0, np.pi, 2001)
+-        r, V_0, F_0, P_target = calculate_dbi_potential(pool["dists"], bins, target_grid, jacobian_type='angle', periodic=False)
+-        
+-        # Protective walls to prevent angles from reaching exactly 0 or pi
+-        for i in range(len(r)):
+-            if r[i] < 0.1:
+-                dx = 0.1 - r[i]
+-                F_0[i] -= 5000.0 * dx
+-                V_0[i] += 0.5 * 5000.0 * dx**2
+-            elif r[i] > np.pi - 0.1:
+-                dx = r[i] - (np.pi - 0.1)
+-                F_0[i] += 5000.0 * dx
+-                V_0[i] += 0.5 * 5000.0 * dx**2
++        r, V_0, F_0, P_target, hist_x = calculate_dbi_potential(pool["dists"], bins, target_grid, jacobian_type="angle", periodic=False)
++
+ 
+         filename = f"{args.outdir}/angle_tabulated_{name}.dat"
+         save_tabulated_potential(filename, r, V_0, F_0)
+         if pool["type"] == "ibi":
+-            ibi_tables["angles"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
++            ibi_tables["angles"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "hist_x": hist_x, "bins": bins}
+ 
+     for idx, a in enumerate(priors_data.get("angles", [])):
+         if a.get("type") in ["ibi", "dbi"]:
+@@ -444,20 +532,20 @@ def main():
+         bins = np.linspace(0.0, 2 * np.pi, 300)
+         target_values = np.array(pool["dists"])
+         target_values = np.where(target_values < 0, target_values + 2 * np.pi, target_values)
+-        target_grid = np.linspace(-np.pi, np.pi, 2001)
+-        r, V_0, F_0, P_target = calculate_dbi_potential(target_values, bins, target_grid, jacobian_type='dihedral', periodic=True)
++        target_grid = np.linspace(0.0, 2.0 * np.pi, 2001)
++        r, V_0, F_0, P_target, hist_x = calculate_dbi_potential(target_values, bins, target_grid, jacobian_type="dihedral", periodic=True)
+         filename = f"{args.outdir}/dihedral_tabulated_{name}.dat"
+         save_tabulated_potential(filename, r, V_0, F_0)
+         if pool["type"] == "ibi":
+-            ibi_tables["dihedrals"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "bins": bins}
++            ibi_tables["dihedrals"][name] = {"x": r, "V": V_0, "F": F_0, "P": P_target, "hist_x": hist_x, "bins": bins}
+ 
+     for idx, d in enumerate(priors_data.get("dihedrals", [])):
+         if d.get("type") in ["ibi", "dbi"]:
+             name = d.get("name", f"idx_{idx}")
+             d["type"] = "tabulated"
+             d["file"] = f"{args.outdir}/dihedral_tabulated_{name}.dat"
+-            d["min"] = -np.pi
+-            d["max"] = np.pi
++            d["min"] = 0.0
++            d["max"] = 2.0 * np.pi
+             
+     # Save JSON in DBI-only mode too
+     tmp_priors = "cg_priors_tmp_ibi.json"
+@@ -478,7 +566,7 @@ def main():
+     # Initial modified priors are already saved above
+         
+     script_name = "_tmp_ibi_md.py"
+-    traj_name = "_tmp_traj.npy"
++    traj_name = "_tmp_traj.npz"
+     
+     for it in range(1, args.iterations + 1):
+         print(f"\n[INFO] --- IBI Iteration {it}/{args.iterations} ---")
+@@ -534,14 +622,29 @@ def main():
+             
+         print("[INFO] MD completed. Analyzing trajectory...")
+         try:
+-            positions = np.load(traj_name)
++            trajectory = np.load(traj_name)
++            com_positions = trajectory["com"]
++            site_positions = trajectory["sites"]
++            site_molecule = trajectory["site_molecule"].astype(int)
++            site_index = trajectory["site_index"].astype(int)
++            box_dim = np.asarray(trajectory["box"], dtype=float)
+         except Exception as e:
+-            print(f"[ERROR] Could not load trajectory: {e}")
++            print(f"[ERROR] Could not load site-aware trajectory: {e}")
+             sys.exit(1)
+-            
+-        # For simplicity, extract bond distances from MD trajectory
+-        box_dim = target_box_dim
+-        import math
++
++        site_lookup = {
++            (int(mol), int(site)): idx
++            for idx, (mol, site) in enumerate(zip(site_molecule, site_index))
++        }
++
++        def coordinate(frame_idx, mol_idx, requested_site):
++            if requested_site == -1:
++                return com_positions[frame_idx, mol_idx]
++            key = (int(mol_idx), int(requested_site))
++            if key not in site_lookup:
++                raise KeyError(f"Missing virtual site {key} in IBI trajectory")
++            return site_positions[frame_idx, site_lookup[key]]
++
+         def dihedral_angle(p0, p1, p2, p3):
+             b0 = -1.0 * mic_vector(p0, p1, box_dim)
+             b1 = mic_vector(p1, p2, box_dim)
+@@ -557,13 +660,16 @@ def main():
+         sim_angle_dists = {name: [] for name in ibi_tables.get("angles", {}).keys()}
+         sim_dihedral_dists = {name: [] for name in ibi_tables.get("dihedrals", {}).keys()}
+         
+-        for frame in positions:
++        for frame_idx in range(com_positions.shape[0]):
+             # Bonds
+             for idx, b in enumerate(priors_data.get("bonds", [])):
+                 name = b.get("name", f"idx_{idx}")
+                 if name in sim_bond_dists:
+                     i, j = b["mol_i"], b["mol_j"]
+-                    r = np.linalg.norm(mic_vector(frame[i], frame[j], box_dim))
++                    site_i, site_j = b.get("site_i", -1), b.get("site_j", -1)
++                    pos_i = coordinate(frame_idx, i, site_i)
++                    pos_j = coordinate(frame_idx, j, site_j)
++                    r = np.linalg.norm(mic_vector(pos_i, pos_j, box_dim))
+                     sim_bond_dists[name].append(r)
+             
+             # Angles
+@@ -571,8 +677,14 @@ def main():
+                 name = a.get("name", f"idx_{idx}")
+                 if name in sim_angle_dists:
+                     i, j, k = a["mol_i"], a["mol_j"], a["mol_k"]
+-                    v1 = mic_vector(frame[j], frame[i], box_dim)
+-                    v2 = mic_vector(frame[j], frame[k], box_dim)
++                    site_i = a.get("site_i", -1)
++                    site_j = a.get("site_j", -1)
++                    site_k = a.get("site_k", -1)
++                    pos_i = coordinate(frame_idx, i, site_i)
++                    pos_j = coordinate(frame_idx, j, site_j)
++                    pos_k = coordinate(frame_idx, k, site_k)
++                    v1 = mic_vector(pos_j, pos_i, box_dim)
++                    v2 = mic_vector(pos_j, pos_k, box_dim)
+                     n1, n2 = np.linalg.norm(v1), np.linalg.norm(v2)
+                     if n1 > 1e-6 and n2 > 1e-6:
+                         cos_theta = np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)
+@@ -583,17 +695,23 @@ def main():
+                 name = d.get("name", f"idx_{idx}")
+                 if name in sim_dihedral_dists:
+                     i, j, k, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
+-                    sim_dihedral_dists[name].append(dihedral_angle(frame[i], frame[j], frame[k], frame[l]))
++                    pos_i = coordinate(frame_idx, i, d.get("site_i", -1))
++                    pos_j = coordinate(frame_idx, j, d.get("site_j", -1))
++                    pos_k = coordinate(frame_idx, k, d.get("site_k", -1))
++                    pos_l = coordinate(frame_idx, l, d.get("site_l", -1))
++                    phi = dihedral_angle(pos_i, pos_j, pos_k, pos_l)
++                    sim_dihedral_dists[name].append(np.mod(phi, 2.0 * np.pi))
+                 
+         # Update tabulated bonds
+         print("[INFO] Updating tabulated bonds...")
+         for name, table in ibi_tables.get("bonds", {}).items():
+             sim_dists = sim_bond_dists[name]
+             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+-            hist_sim = hist_sim / (table["x"]**2)
+-            hist_sim = np.clip(hist_sim, 1e-6, None)
+-            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
+-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='bond')
++            hist_sim = normalize_density(hist_sim, table["hist_x"])
++            _, V_next, F_next = update_ibi_potential(
++                table["V"], hist_sim, table["P"], table["hist_x"], table["x"],
++                periodic=False, target_type="bond"
++            )
+             table["V"] = V_next
+             table["F"] = F_next
+             save_tabulated_potential(f"{args.outdir}/bond_tabulated_{name}.dat", table["x"], V_next, F_next)
+@@ -603,10 +721,11 @@ def main():
+         for name, table in ibi_tables.get("angles", {}).items():
+             sim_dists = sim_angle_dists[name]
+             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+-            hist_sim = hist_sim / np.clip(np.sin(table["x"]), 1e-6, None)
+-            hist_sim = np.clip(hist_sim, 1e-6, None)
+-            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
+-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=False, target_type='angle')
++            hist_sim = normalize_density(hist_sim, table["hist_x"])
++            _, V_next, F_next = update_ibi_potential(
++                table["V"], hist_sim, table["P"], table["hist_x"], table["x"],
++                periodic=False, target_type="angle"
++            )
+             table["V"] = V_next
+             table["F"] = F_next
+             save_tabulated_potential(f"{args.outdir}/angle_tabulated_{name}.dat", table["x"], V_next, F_next)
+@@ -615,10 +734,13 @@ def main():
+         print("[INFO] Updating tabulated dihedrals...")
+         for name, table in ibi_tables.get("dihedrals", {}).items():
+             sim_dists = sim_dihedral_dists[name]
++            sim_dists = np.mod(np.asarray(sim_dists), 2.0 * np.pi)
+             hist_sim, _ = np.histogram(sim_dists, bins=table["bins"], density=True)
+-            hist_sim = np.clip(hist_sim, 1e-6, None)
+-            hist_sim /= np.sum(hist_sim) * (table["x"][1] - table["x"][0])
+-            V_next, F_next = update_ibi_potential(table["V"], hist_sim, table["P"], table["x"], periodic=True, target_type='dihedral')
++            hist_sim = normalize_density(hist_sim, table["hist_x"])
++            _, V_next, F_next = update_ibi_potential(
++                table["V"], hist_sim, table["P"], table["hist_x"], table["x"],
++                periodic=True, target_type="dihedral"
++            )
+             table["V"] = V_next
+             table["F"] = F_next
+             save_tabulated_potential(f"{args.outdir}/dihedral_tabulated_{name}.dat", table["x"], V_next, F_next)
+diff --git a/simulation/equilibrate.py b/simulation/equilibrate.py
+index b960e4e..a6ede0d 100644
+--- a/simulation/equilibrate.py
++++ b/simulation/equilibrate.py
+@@ -272,28 +272,8 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
+     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
+     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
+ 
+-print("[INFO] Setting up WCA non-bonded interactions to prevent particle collapse...")
+-import math
+-wca = priors.get("wca", {})
+-wca_sigma = wca.get("sigma", 0.3)
+-wca_eps = wca.get("epsilon", 1.0)
+-overrides = wca.get("overrides", {})
+-
+-has_wca = wca_sigma > 0 or len(overrides) > 0
+-if wca_eps > 0 and has_wca:
+-    for i in range(nn_config["num_species"]):
+-        sigma_i = overrides.get(str(i), {}).get("sigma", wca_sigma)
+-        eps_i = overrides.get(str(i), {}).get("epsilon", wca_eps)
+-        for j in range(i, nn_config["num_species"]):
+-            sigma_j = overrides.get(str(j), {}).get("sigma", wca_sigma)
+-            eps_j = overrides.get(str(j), {}).get("epsilon", wca_eps)
+-            sigma_mix = (sigma_i + sigma_j) / 2.0
+-            eps_mix = math.sqrt(eps_i * eps_j)
+-            
+-            system.non_bonded_inter[1+i, 1+j].lennard_jones.set_params(
+-                epsilon=eps_mix, sigma=sigma_mix,
+-                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
+-            )
++# WCA was already configured above using the actual zero-based CG site types.
++# Do not configure it a second time with a +1 type offset.
+ 
+ # Add dummy soft_sphere to ensure Verlet lists include all other types
+ for i in range(nn_config["num_species"] + 2):
+diff --git a/simulation/run_cg_md.py b/simulation/run_cg_md.py
+index d5267f6..a2bd14a 100644
+--- a/simulation/run_cg_md.py
++++ b/simulation/run_cg_md.py
+@@ -15,7 +15,7 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
+ parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
+ parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
+ parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
+-parser.add_argument("--out_traj", type=str, default=None, help="Save coordinates to a .npy file")
++parser.add_argument("--out_traj", type=str, default=None, help="Save COM and virtual-site coordinates to a NumPy .npz archive")
+ parser.add_argument("--no_log", action="store_true", help="Disable wandb logging")
+ parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
+ parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
+@@ -391,20 +391,35 @@ with open(vtf_filename, "w") as vtf_file:
+         espressomd.io.writer.vtf.writevcf(system, vtf_file)
+         
+         if args.out_traj:
+-            if not hasattr(system, 'traj_positions'):
+-                system.traj_positions = []
+-            
+-            # Save only COM coordinates (which are the physical particles in our dataset for the generic CG)
+-            com_pos = []
+-            # mol_com_parts is dictionary mapping mol_idx to part_id
+-            for mol_idx in sorted(mol_com_parts.keys()):
+-                p_id = mol_vs_parts[(mol_idx, 0)]
+-                com_pos.append(system.part.by_id(p_id).pos)
+-            system.traj_positions.append(com_pos)
+-
+-if args.out_traj and hasattr(system, 'traj_positions'):
+-    np.save(args.out_traj, np.array(system.traj_positions))
+-    print(f"[INFO] Trajectory saved to {args.out_traj}")
++            if not hasattr(system, "traj_com_positions"):
++                system.traj_com_positions = []
++                system.traj_site_positions = []
++
++            com_pos = [
++                np.asarray(system.part.by_id(mol_com_parts[mol_idx]).pos, dtype=float)
++                for mol_idx in sorted(mol_com_parts)
++            ]
++            site_keys = sorted(mol_vs_parts)
++            site_pos = [
++                np.asarray(system.part.by_id(mol_vs_parts[key]).pos, dtype=float)
++                for key in site_keys
++            ]
++            system.traj_com_positions.append(com_pos)
++            system.traj_site_positions.append(site_pos)
++
++if args.out_traj and hasattr(system, "traj_com_positions"):
++    site_keys = sorted(mol_vs_parts)
++    # Open the requested path explicitly so NumPy does not append another suffix.
++    with open(args.out_traj, "wb") as trajectory_file:
++        np.savez(
++            trajectory_file,
++            com=np.asarray(system.traj_com_positions, dtype=float),
++            sites=np.asarray(system.traj_site_positions, dtype=float),
++            site_molecule=np.asarray([key[0] for key in site_keys], dtype=np.int64),
++            site_index=np.asarray([key[1] for key in site_keys], dtype=np.int64),
++            box=np.asarray(system.box_l, dtype=float),
++        )
++    print(f"[INFO] Site-aware trajectory saved to {args.out_traj}")
+ 
+ print("\n[INFO] Simulation finished successfully.")
+ 
+diff --git a/tutorials/tel22_IBI/06_run_espresso.sh b/tutorials/tel22_IBI/06_run_espresso.sh
+index 2d9de0e..3bec5e8 100755
+--- a/tutorials/tel22_IBI/06_run_espresso.sh
++++ b/tutorials/tel22_IBI/06_run_espresso.sh
+@@ -4,7 +4,7 @@ echo "[6/6] Simulazione in ESPResSo con IBI + ML"
+ PYTHONUNBUFFERED=1 ../../espresso/build/pypresso ../../simulation/run_cg_md.py \
+     --model tel22_model_ibi.pt \
+     --config tel22_training_config.json \
+-    --priors cg_priors.json \
++    --priors ibi_priors/cg_priors_final.json \
+     --rb_info rigid_bodies_info.json \
+     --dataset tel22_dataset.bin \
+     --checkpoint equilibrated.npz \
+diff --git a/tutorials/tel22_IBI/run_ibi_scaling.py b/tutorials/tel22_IBI/run_ibi_scaling.py
+index de96d1a..1b2f446 100644
+--- a/tutorials/tel22_IBI/run_ibi_scaling.py
++++ b/tutorials/tel22_IBI/run_ibi_scaling.py
+@@ -17,7 +17,7 @@ for dt in dts:
+         "../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
+         "--model", "tel22_model_ibi.pt",
+         "--config", "tel22_training_config.json",
+-        "--priors", "cg_priors.json",
++        "--priors", "ibi_priors/cg_priors_final.json",
+         "--rb_info", "rigid_bodies_info.json",
+         "--dataset", "tel22_dataset.bin",
+         "--checkpoint", "equilibrated.npz",
+@@ -28,10 +28,19 @@ for dt in dts:
+         "--apply_envelope"
+     ]
+     
+-    # Capture output
++    # Never reuse an energy file from a failed or previous run.
++    if os.path.exists("energy.csv"):
++        os.remove("energy.csv")
++
+     result = subprocess.run(cmd, capture_output=True, text=True)
+-    
+-    # Parse output to extract E_tot from energy.csv
++    if result.returncode != 0:
++        print("-> Simulation failed")
++        print("Stdout:", result.stdout)
++        print("Stderr:", result.stderr)
++        std_devs_toxvaerd.append(np.nan)
++        continue
++
++    # Parse output to extract E_tot from the file generated by this run.
+     energies = []
+     if os.path.exists("energy.csv"):
+         with open("energy.csv", "r") as f:

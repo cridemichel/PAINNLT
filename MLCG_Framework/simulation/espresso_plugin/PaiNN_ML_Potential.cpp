@@ -157,9 +157,9 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     // Sommiamo solo l'energia calcolata per le particelle *reali* (locali).
     m_last_energy = energy.slice(0, 0, num_local_ml_particles).sum().item<double>();
     
-    // 5. Calcolo delle Forze (Gradients w.r.t r_ij)
-    // Gradiente esatto sull'energia (GARANTISCE forze conservative!)
-    auto grads = torch::autograd::grad({energy.sum()}, {t_r_ij}, {torch::ones_like(energy.sum())}, false, false);
+    // Gradiente esatto sull'energia LOCALE (GARANTISCE forze conservative in MPI!)
+    auto local_energy = energy.slice(0, 0, num_local_ml_particles).sum();
+    auto grads = torch::autograd::grad({local_energy}, {t_r_ij}, {torch::ones_like(local_energy)}, false, false);
     torch::Tensor f_r_ij = grads[0].cpu(); // Riportiamo i gradienti su CPU per assegnarli a ESPResSo
 
     // 6. Assegnazione delle Forze alle Particelle ESPResSo

@@ -1,0 +1,5795 @@
+{
+    "bonds": [
+        {
+            "mol_i": 0,
+            "mol_j": 1,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 1,
+            "mol_j": 2,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 2,
+            "mol_j": 3,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 3,
+            "mol_j": 4,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 4,
+            "mol_j": 5,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 5,
+            "mol_j": 6,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 6,
+            "mol_j": 7,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 7,
+            "mol_j": 8,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 8,
+            "mol_j": 9,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 9,
+            "mol_j": 10,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 10,
+            "mol_j": 11,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 11,
+            "mol_j": 12,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 12,
+            "mol_j": 13,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 13,
+            "mol_j": 14,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 14,
+            "mol_j": 15,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 15,
+            "mol_j": 16,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 16,
+            "mol_j": 17,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 17,
+            "mol_j": 18,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 18,
+            "mol_j": 19,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 19,
+            "mol_j": 20,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 20,
+            "mol_j": 21,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 22,
+            "mol_j": 23,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 23,
+            "mol_j": 24,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 24,
+            "mol_j": 25,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 25,
+            "mol_j": 26,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 26,
+            "mol_j": 27,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 27,
+            "mol_j": 28,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 28,
+            "mol_j": 29,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 29,
+            "mol_j": 30,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 30,
+            "mol_j": 31,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 31,
+            "mol_j": 32,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 32,
+            "mol_j": 33,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 33,
+            "mol_j": 34,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 34,
+            "mol_j": 35,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 35,
+            "mol_j": 36,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 36,
+            "mol_j": 37,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 37,
+            "mol_j": 38,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 38,
+            "mol_j": 39,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 39,
+            "mol_j": 40,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 40,
+            "mol_j": 41,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 41,
+            "mol_j": 42,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 42,
+            "mol_j": 43,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 44,
+            "mol_j": 45,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 45,
+            "mol_j": 46,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 46,
+            "mol_j": 47,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 47,
+            "mol_j": 48,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 48,
+            "mol_j": 49,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 49,
+            "mol_j": 50,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 50,
+            "mol_j": 51,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 51,
+            "mol_j": 52,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 52,
+            "mol_j": 53,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 53,
+            "mol_j": 54,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 54,
+            "mol_j": 55,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 55,
+            "mol_j": 56,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 56,
+            "mol_j": 57,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 57,
+            "mol_j": 58,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 58,
+            "mol_j": 59,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 59,
+            "mol_j": 60,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 60,
+            "mol_j": 61,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 61,
+            "mol_j": 62,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 62,
+            "mol_j": 63,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 63,
+            "mol_j": 64,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 64,
+            "mol_j": 65,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 66,
+            "mol_j": 67,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 67,
+            "mol_j": 68,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 68,
+            "mol_j": 69,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 69,
+            "mol_j": 70,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 70,
+            "mol_j": 71,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 71,
+            "mol_j": 72,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 72,
+            "mol_j": 73,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 73,
+            "mol_j": 74,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 74,
+            "mol_j": 75,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 75,
+            "mol_j": 76,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 76,
+            "mol_j": 77,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 77,
+            "mol_j": 78,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 78,
+            "mol_j": 79,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 79,
+            "mol_j": 80,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 80,
+            "mol_j": 81,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 81,
+            "mol_j": 82,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 82,
+            "mol_j": 83,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 83,
+            "mol_j": 84,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 84,
+            "mol_j": 85,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 85,
+            "mol_j": 86,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 86,
+            "mol_j": 87,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 88,
+            "mol_j": 89,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 89,
+            "mol_j": 90,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 90,
+            "mol_j": 91,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 91,
+            "mol_j": 92,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 92,
+            "mol_j": 93,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 93,
+            "mol_j": 94,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 94,
+            "mol_j": 95,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 95,
+            "mol_j": 96,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 96,
+            "mol_j": 97,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 97,
+            "mol_j": 98,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 98,
+            "mol_j": 99,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 99,
+            "mol_j": 100,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 100,
+            "mol_j": 101,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 101,
+            "mol_j": 102,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 102,
+            "mol_j": 103,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 103,
+            "mol_j": 104,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 104,
+            "mol_j": 105,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 105,
+            "mol_j": 106,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 106,
+            "mol_j": 107,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 107,
+            "mol_j": 108,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 108,
+            "mol_j": 109,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 110,
+            "mol_j": 111,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 111,
+            "mol_j": 112,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 112,
+            "mol_j": 113,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 113,
+            "mol_j": 114,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 114,
+            "mol_j": 115,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 115,
+            "mol_j": 116,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 116,
+            "mol_j": 117,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 117,
+            "mol_j": 118,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 118,
+            "mol_j": 119,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 119,
+            "mol_j": 120,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 120,
+            "mol_j": 121,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 121,
+            "mol_j": 122,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 122,
+            "mol_j": 123,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 123,
+            "mol_j": 124,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 124,
+            "mol_j": 125,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 125,
+            "mol_j": 126,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 126,
+            "mol_j": 127,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 127,
+            "mol_j": 128,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 128,
+            "mol_j": 129,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 129,
+            "mol_j": 130,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 130,
+            "mol_j": 131,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 132,
+            "mol_j": 133,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 133,
+            "mol_j": 134,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 134,
+            "mol_j": 135,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 135,
+            "mol_j": 136,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 136,
+            "mol_j": 137,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 137,
+            "mol_j": 138,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 138,
+            "mol_j": 139,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 139,
+            "mol_j": 140,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 140,
+            "mol_j": 141,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 141,
+            "mol_j": 142,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 142,
+            "mol_j": 143,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 143,
+            "mol_j": 144,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 144,
+            "mol_j": 145,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 145,
+            "mol_j": 146,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 146,
+            "mol_j": 147,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 147,
+            "mol_j": 148,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 148,
+            "mol_j": 149,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 149,
+            "mol_j": 150,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 150,
+            "mol_j": 151,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 151,
+            "mol_j": 152,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 152,
+            "mol_j": 153,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 154,
+            "mol_j": 155,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 155,
+            "mol_j": 156,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 156,
+            "mol_j": 157,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 157,
+            "mol_j": 158,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 158,
+            "mol_j": 159,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 159,
+            "mol_j": 160,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 160,
+            "mol_j": 161,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 161,
+            "mol_j": 162,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 162,
+            "mol_j": 163,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 163,
+            "mol_j": 164,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 164,
+            "mol_j": 165,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 165,
+            "mol_j": 166,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 166,
+            "mol_j": 167,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 167,
+            "mol_j": 168,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 168,
+            "mol_j": 169,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 169,
+            "mol_j": 170,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 170,
+            "mol_j": 171,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 171,
+            "mol_j": 172,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 172,
+            "mol_j": 173,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 173,
+            "mol_j": 174,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 174,
+            "mol_j": 175,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 176,
+            "mol_j": 177,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 177,
+            "mol_j": 178,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 178,
+            "mol_j": 179,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 179,
+            "mol_j": 180,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 180,
+            "mol_j": 181,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 181,
+            "mol_j": 182,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 182,
+            "mol_j": 183,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 183,
+            "mol_j": 184,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 184,
+            "mol_j": 185,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 185,
+            "mol_j": 186,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 186,
+            "mol_j": 187,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 187,
+            "mol_j": 188,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 188,
+            "mol_j": 189,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 189,
+            "mol_j": 190,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 190,
+            "mol_j": 191,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 191,
+            "mol_j": 192,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 192,
+            "mol_j": 193,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 193,
+            "mol_j": 194,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 194,
+            "mol_j": 195,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 195,
+            "mol_j": 196,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 196,
+            "mol_j": 197,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 198,
+            "mol_j": 199,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 199,
+            "mol_j": 200,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 200,
+            "mol_j": 201,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 201,
+            "mol_j": 202,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 202,
+            "mol_j": 203,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 203,
+            "mol_j": 204,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 204,
+            "mol_j": 205,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 205,
+            "mol_j": 206,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 206,
+            "mol_j": 207,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 207,
+            "mol_j": 208,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 208,
+            "mol_j": 209,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 209,
+            "mol_j": 210,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 210,
+            "mol_j": 211,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 211,
+            "mol_j": 212,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 212,
+            "mol_j": 213,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 213,
+            "mol_j": 214,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_T",
+            "file": "ibi_priors/bond_tabulated_bb_G_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 214,
+            "mol_j": 215,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_T",
+            "file": "ibi_priors/bond_tabulated_bb_T_T.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 215,
+            "mol_j": 216,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_T_A",
+            "file": "ibi_priors/bond_tabulated_bb_T_A.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 216,
+            "mol_j": 217,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_A_G",
+            "file": "ibi_priors/bond_tabulated_bb_A_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 217,
+            "mol_j": 218,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 218,
+            "mol_j": 219,
+            "site_i": 0,
+            "site_j": 0,
+            "type": "ibi",
+            "name": "bb_G_G",
+            "file": "ibi_priors/bond_tabulated_bb_G_G.dat",
+            "min": 0.01,
+            "max": 3.0
+        },
+        {
+            "mol_i": 1,
+            "mol_j": 7,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5748742931065052
+        },
+        {
+            "mol_i": 7,
+            "mol_j": 13,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5407415968677376
+        },
+        {
+            "mol_i": 13,
+            "mol_j": 19,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1711201559774038
+        },
+        {
+            "mol_i": 19,
+            "mol_j": 1,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.8379700521990276
+        },
+        {
+            "mol_i": 1,
+            "mol_j": 13,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0483833660234625
+        },
+        {
+            "mol_i": 7,
+            "mol_j": 19,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1181035044134753
+        },
+        {
+            "mol_i": 2,
+            "mol_j": 8,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3118791203691886
+        },
+        {
+            "mol_i": 8,
+            "mol_j": 14,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.498127091748807
+        },
+        {
+            "mol_i": 14,
+            "mol_j": 20,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0580904235024398
+        },
+        {
+            "mol_i": 20,
+            "mol_j": 2,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7440040638849499
+        },
+        {
+            "mol_i": 2,
+            "mol_j": 14,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1281805995772194
+        },
+        {
+            "mol_i": 8,
+            "mol_j": 20,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1238517122701928
+        },
+        {
+            "mol_i": 3,
+            "mol_j": 9,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4951851649093542
+        },
+        {
+            "mol_i": 9,
+            "mol_j": 15,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.9263749065782225
+        },
+        {
+            "mol_i": 15,
+            "mol_j": 21,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5181152992636748
+        },
+        {
+            "mol_i": 21,
+            "mol_j": 3,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7042252209153983
+        },
+        {
+            "mol_i": 3,
+            "mol_j": 15,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.103355527038127
+        },
+        {
+            "mol_i": 9,
+            "mol_j": 21,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.033882997460437
+        },
+        {
+            "mol_i": 23,
+            "mol_j": 29,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4914516773366602
+        },
+        {
+            "mol_i": 29,
+            "mol_j": 35,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3844585378903504
+        },
+        {
+            "mol_i": 35,
+            "mol_j": 41,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9529660525653494
+        },
+        {
+            "mol_i": 41,
+            "mol_j": 23,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5179510283238717
+        },
+        {
+            "mol_i": 23,
+            "mol_j": 35,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0031018032350092
+        },
+        {
+            "mol_i": 29,
+            "mol_j": 41,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1131297560449724
+        },
+        {
+            "mol_i": 24,
+            "mol_j": 30,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3228603048137437
+        },
+        {
+            "mol_i": 30,
+            "mol_j": 36,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4954386665826995
+        },
+        {
+            "mol_i": 36,
+            "mol_j": 42,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9840640645304978
+        },
+        {
+            "mol_i": 42,
+            "mol_j": 24,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6454610073563622
+        },
+        {
+            "mol_i": 24,
+            "mol_j": 36,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0458372082864518
+        },
+        {
+            "mol_i": 30,
+            "mol_j": 42,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1536018264290924
+        },
+        {
+            "mol_i": 25,
+            "mol_j": 31,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4489020112082858
+        },
+        {
+            "mol_i": 31,
+            "mol_j": 37,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.926631078186647
+        },
+        {
+            "mol_i": 37,
+            "mol_j": 43,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7024818506349835
+        },
+        {
+            "mol_i": 43,
+            "mol_j": 25,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.8179451238222861
+        },
+        {
+            "mol_i": 25,
+            "mol_j": 37,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1297788497382266
+        },
+        {
+            "mol_i": 31,
+            "mol_j": 43,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0987271292566587
+        },
+        {
+            "mol_i": 45,
+            "mol_j": 51,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.562572375728372
+        },
+        {
+            "mol_i": 51,
+            "mol_j": 57,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3921288381293397
+        },
+        {
+            "mol_i": 57,
+            "mol_j": 63,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9701031841372058
+        },
+        {
+            "mol_i": 63,
+            "mol_j": 45,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6848076871327087
+        },
+        {
+            "mol_i": 45,
+            "mol_j": 57,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0197209226590855
+        },
+        {
+            "mol_i": 51,
+            "mol_j": 63,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1350281983439594
+        },
+        {
+            "mol_i": 46,
+            "mol_j": 52,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3322975210468067
+        },
+        {
+            "mol_i": 52,
+            "mol_j": 58,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.494204994214924
+        },
+        {
+            "mol_i": 58,
+            "mol_j": 64,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9579068720034123
+        },
+        {
+            "mol_i": 64,
+            "mol_j": 46,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6799922362479656
+        },
+        {
+            "mol_i": 46,
+            "mol_j": 58,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0741421756684844
+        },
+        {
+            "mol_i": 52,
+            "mol_j": 64,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1772020919730826
+        },
+        {
+            "mol_i": 47,
+            "mol_j": 53,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4399463672995632
+        },
+        {
+            "mol_i": 53,
+            "mol_j": 59,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.9403131890404814
+        },
+        {
+            "mol_i": 59,
+            "mol_j": 65,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6368830125653557
+        },
+        {
+            "mol_i": 65,
+            "mol_j": 47,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.740216563177423
+        },
+        {
+            "mol_i": 47,
+            "mol_j": 59,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0685514610563556
+        },
+        {
+            "mol_i": 53,
+            "mol_j": 65,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0878257446266153
+        },
+        {
+            "mol_i": 67,
+            "mol_j": 73,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5149209437292386
+        },
+        {
+            "mol_i": 73,
+            "mol_j": 79,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.431845104109637
+        },
+        {
+            "mol_i": 79,
+            "mol_j": 85,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9583690648051979
+        },
+        {
+            "mol_i": 85,
+            "mol_j": 67,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6130852312721837
+        },
+        {
+            "mol_i": 67,
+            "mol_j": 79,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0570088977906096
+        },
+        {
+            "mol_i": 73,
+            "mol_j": 85,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.088616802229378
+        },
+        {
+            "mol_i": 68,
+            "mol_j": 74,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.345410935249903
+        },
+        {
+            "mol_i": 74,
+            "mol_j": 80,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5905303445233376
+        },
+        {
+            "mol_i": 80,
+            "mol_j": 86,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.988052104590895
+        },
+        {
+            "mol_i": 86,
+            "mol_j": 68,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6396878516406368
+        },
+        {
+            "mol_i": 68,
+            "mol_j": 80,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1525507805831472
+        },
+        {
+            "mol_i": 74,
+            "mol_j": 86,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1254403110809277
+        },
+        {
+            "mol_i": 69,
+            "mol_j": 75,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.454243579468973
+        },
+        {
+            "mol_i": 75,
+            "mol_j": 81,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 2.041793440602275
+        },
+        {
+            "mol_i": 81,
+            "mol_j": 87,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6730488643539525
+        },
+        {
+            "mol_i": 87,
+            "mol_j": 69,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.744602749151114
+        },
+        {
+            "mol_i": 69,
+            "mol_j": 81,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2207232825490997
+        },
+        {
+            "mol_i": 75,
+            "mol_j": 87,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0468485994351968
+        },
+        {
+            "mol_i": 89,
+            "mol_j": 95,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.474267329785237
+        },
+        {
+            "mol_i": 95,
+            "mol_j": 101,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.347661938536196
+        },
+        {
+            "mol_i": 101,
+            "mol_j": 107,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9720441472240152
+        },
+        {
+            "mol_i": 107,
+            "mol_j": 89,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7046242138740013
+        },
+        {
+            "mol_i": 89,
+            "mol_j": 101,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0714977077868475
+        },
+        {
+            "mol_i": 95,
+            "mol_j": 107,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1261789378675713
+        },
+        {
+            "mol_i": 90,
+            "mol_j": 96,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2250576749843964
+        },
+        {
+            "mol_i": 96,
+            "mol_j": 102,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5267553131364244
+        },
+        {
+            "mol_i": 102,
+            "mol_j": 108,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9407468875759699
+        },
+        {
+            "mol_i": 108,
+            "mol_j": 90,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6048114897744836
+        },
+        {
+            "mol_i": 90,
+            "mol_j": 102,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.123159064993111
+        },
+        {
+            "mol_i": 96,
+            "mol_j": 108,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1641495917904847
+        },
+        {
+            "mol_i": 91,
+            "mol_j": 97,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5289341302980803
+        },
+        {
+            "mol_i": 97,
+            "mol_j": 103,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 2.0555468812384516
+        },
+        {
+            "mol_i": 103,
+            "mol_j": 109,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7137253241017945
+        },
+        {
+            "mol_i": 109,
+            "mol_j": 91,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.769143586618025
+        },
+        {
+            "mol_i": 91,
+            "mol_j": 103,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1234126003501226
+        },
+        {
+            "mol_i": 97,
+            "mol_j": 109,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0684621286551041
+        },
+        {
+            "mol_i": 111,
+            "mol_j": 117,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.569447028340346
+        },
+        {
+            "mol_i": 117,
+            "mol_j": 123,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4442912667383216
+        },
+        {
+            "mol_i": 123,
+            "mol_j": 129,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9374885012624776
+        },
+        {
+            "mol_i": 129,
+            "mol_j": 111,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6526660449104205
+        },
+        {
+            "mol_i": 111,
+            "mol_j": 123,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.126301410965336
+        },
+        {
+            "mol_i": 117,
+            "mol_j": 129,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0962037629782209
+        },
+        {
+            "mol_i": 112,
+            "mol_j": 118,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.229755293402691
+        },
+        {
+            "mol_i": 118,
+            "mol_j": 124,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5773553700867853
+        },
+        {
+            "mol_i": 124,
+            "mol_j": 130,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9042439892464026
+        },
+        {
+            "mol_i": 130,
+            "mol_j": 112,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6916894247183527
+        },
+        {
+            "mol_i": 112,
+            "mol_j": 124,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3684370942025472
+        },
+        {
+            "mol_i": 118,
+            "mol_j": 130,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1432518845258424
+        },
+        {
+            "mol_i": 113,
+            "mol_j": 119,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3181802556621203
+        },
+        {
+            "mol_i": 119,
+            "mol_j": 125,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.9164275203799004
+        },
+        {
+            "mol_i": 125,
+            "mol_j": 131,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6037718854445062
+        },
+        {
+            "mol_i": 131,
+            "mol_j": 113,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7081624034845413
+        },
+        {
+            "mol_i": 113,
+            "mol_j": 125,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2919188665684167
+        },
+        {
+            "mol_i": 119,
+            "mol_j": 131,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.02364041399364
+        },
+        {
+            "mol_i": 133,
+            "mol_j": 139,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5138231797711916
+        },
+        {
+            "mol_i": 139,
+            "mol_j": 145,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.494294849271823
+        },
+        {
+            "mol_i": 145,
+            "mol_j": 151,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9655628096435865
+        },
+        {
+            "mol_i": 151,
+            "mol_j": 133,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4692014610791044
+        },
+        {
+            "mol_i": 133,
+            "mol_j": 145,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0598156293667855
+        },
+        {
+            "mol_i": 139,
+            "mol_j": 151,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0885568527400293
+        },
+        {
+            "mol_i": 134,
+            "mol_j": 140,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.270358803996851
+        },
+        {
+            "mol_i": 140,
+            "mol_j": 146,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5688920531509285
+        },
+        {
+            "mol_i": 146,
+            "mol_j": 152,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9346248997180368
+        },
+        {
+            "mol_i": 152,
+            "mol_j": 134,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.590213136265843
+        },
+        {
+            "mol_i": 134,
+            "mol_j": 146,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1477927350835906
+        },
+        {
+            "mol_i": 140,
+            "mol_j": 152,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.150124687188234
+        },
+        {
+            "mol_i": 135,
+            "mol_j": 141,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3507434773474438
+        },
+        {
+            "mol_i": 141,
+            "mol_j": 147,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.8995898053020075
+        },
+        {
+            "mol_i": 147,
+            "mol_j": 153,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.68280952946839
+        },
+        {
+            "mol_i": 153,
+            "mol_j": 135,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.8265548201456965
+        },
+        {
+            "mol_i": 135,
+            "mol_j": 147,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2540130446677822
+        },
+        {
+            "mol_i": 141,
+            "mol_j": 153,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0542856671172496
+        },
+        {
+            "mol_i": 155,
+            "mol_j": 161,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5124126447239519
+        },
+        {
+            "mol_i": 161,
+            "mol_j": 167,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3690940902584066
+        },
+        {
+            "mol_i": 167,
+            "mol_j": 173,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9237426160066897
+        },
+        {
+            "mol_i": 173,
+            "mol_j": 155,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.706095283935373
+        },
+        {
+            "mol_i": 155,
+            "mol_j": 167,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1392846606051654
+        },
+        {
+            "mol_i": 161,
+            "mol_j": 173,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1126756880888802
+        },
+        {
+            "mol_i": 156,
+            "mol_j": 162,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2375716618674208
+        },
+        {
+            "mol_i": 162,
+            "mol_j": 168,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.544636752389881
+        },
+        {
+            "mol_i": 168,
+            "mol_j": 174,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.9677090313346127
+        },
+        {
+            "mol_i": 174,
+            "mol_j": 156,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6111532317220696
+        },
+        {
+            "mol_i": 156,
+            "mol_j": 168,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1345026944878722
+        },
+        {
+            "mol_i": 162,
+            "mol_j": 174,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1521162510885001
+        },
+        {
+            "mol_i": 157,
+            "mol_j": 163,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4892951854169623
+        },
+        {
+            "mol_i": 163,
+            "mol_j": 169,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 2.0161106949283907
+        },
+        {
+            "mol_i": 169,
+            "mol_j": 175,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6671176483133474
+        },
+        {
+            "mol_i": 175,
+            "mol_j": 157,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7341769823168958
+        },
+        {
+            "mol_i": 157,
+            "mol_j": 169,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1446219736982208
+        },
+        {
+            "mol_i": 163,
+            "mol_j": 175,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0374213883544536
+        },
+        {
+            "mol_i": 177,
+            "mol_j": 183,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.4846880654094543
+        },
+        {
+            "mol_i": 183,
+            "mol_j": 189,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.3704693100760539
+        },
+        {
+            "mol_i": 189,
+            "mol_j": 195,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.009475380928579
+        },
+        {
+            "mol_i": 195,
+            "mol_j": 177,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.733121218051029
+        },
+        {
+            "mol_i": 177,
+            "mol_j": 189,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0674602926768808
+        },
+        {
+            "mol_i": 183,
+            "mol_j": 195,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1159916466337403
+        },
+        {
+            "mol_i": 178,
+            "mol_j": 184,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.219957859861598
+        },
+        {
+            "mol_i": 184,
+            "mol_j": 190,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5182095271504377
+        },
+        {
+            "mol_i": 190,
+            "mol_j": 196,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 0.992288735059218
+        },
+        {
+            "mol_i": 196,
+            "mol_j": 178,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6256844473701353
+        },
+        {
+            "mol_i": 178,
+            "mol_j": 190,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.115221491449359
+        },
+        {
+            "mol_i": 184,
+            "mol_j": 196,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1540804747799966
+        },
+        {
+            "mol_i": 179,
+            "mol_j": 185,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5121646593204705
+        },
+        {
+            "mol_i": 185,
+            "mol_j": 191,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 2.047174430638022
+        },
+        {
+            "mol_i": 191,
+            "mol_j": 197,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6830634202006585
+        },
+        {
+            "mol_i": 197,
+            "mol_j": 179,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7574123947080629
+        },
+        {
+            "mol_i": 179,
+            "mol_j": 191,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2086621638882764
+        },
+        {
+            "mol_i": 185,
+            "mol_j": 197,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.052241442150659
+        },
+        {
+            "mol_i": 199,
+            "mol_j": 205,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.540196756577786
+        },
+        {
+            "mol_i": 205,
+            "mol_j": 211,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.439650766364416
+        },
+        {
+            "mol_i": 211,
+            "mol_j": 217,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.015975735075608
+        },
+        {
+            "mol_i": 217,
+            "mol_j": 199,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7985943551427888
+        },
+        {
+            "mol_i": 199,
+            "mol_j": 211,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.117372965406729
+        },
+        {
+            "mol_i": 205,
+            "mol_j": 217,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1534417703442004
+        },
+        {
+            "mol_i": 200,
+            "mol_j": 206,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2361112211500542
+        },
+        {
+            "mol_i": 206,
+            "mol_j": 212,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.520714656704128
+        },
+        {
+            "mol_i": 212,
+            "mol_j": 218,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0425175008445438
+        },
+        {
+            "mol_i": 218,
+            "mol_j": 200,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.6873904490655425
+        },
+        {
+            "mol_i": 200,
+            "mol_j": 212,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1219322159679799
+        },
+        {
+            "mol_i": 206,
+            "mol_j": 218,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.1632961424964074
+        },
+        {
+            "mol_i": 201,
+            "mol_j": 207,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.426862546794262
+        },
+        {
+            "mol_i": 207,
+            "mol_j": 213,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.9560615410723943
+        },
+        {
+            "mol_i": 213,
+            "mol_j": 219,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.5934385496669563
+        },
+        {
+            "mol_i": 219,
+            "mol_j": 201,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.7590640031172464
+        },
+        {
+            "mol_i": 201,
+            "mol_j": 213,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.2390246183373805
+        },
+        {
+            "mol_i": 207,
+            "mol_j": 219,
+            "type": "morse",
+            "D": 50.0,
+            "a": 0.3,
+            "r0": 1.0528329855323395
+        }
+    ],
+    "wca": {
+        "sigma": 0.25,
+        "epsilon": 1.0,
+        "overrides": {
+            "0": {
+                "sigma": 0.283,
+                "epsilon": 1.0
+            },
+            "1": {
+                "sigma": 0.308,
+                "epsilon": 1.0
+            },
+            "2": {
+                "sigma": 0.344,
+                "epsilon": 1.0
+            },
+            "3": {
+                "sigma": 0.259,
+                "epsilon": 1.0
+            },
+            "4": {
+                "sigma": 0.259,
+                "epsilon": 1.0
+            },
+            "5": {
+                "sigma": 0.249,
+                "epsilon": 1.0
+            },
+            "6": {
+                "sigma": 0.248,
+                "epsilon": 1.0
+            },
+            "7": {
+                "sigma": 0.248,
+                "epsilon": 1.0
+            }
+        }
+    },
+    "angles": [
+        {
+            "mol_i": 0,
+            "mol_j": 1,
+            "mol_k": 2,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 1,
+            "mol_j": 2,
+            "mol_k": 3,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 2,
+            "mol_j": 3,
+            "mol_k": 4,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 3,
+            "mol_j": 4,
+            "mol_k": 5,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 4,
+            "mol_j": 5,
+            "mol_k": 6,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 5,
+            "mol_j": 6,
+            "mol_k": 7,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 6,
+            "mol_j": 7,
+            "mol_k": 8,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 7,
+            "mol_j": 8,
+            "mol_k": 9,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 8,
+            "mol_j": 9,
+            "mol_k": 10,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 9,
+            "mol_j": 10,
+            "mol_k": 11,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 10,
+            "mol_j": 11,
+            "mol_k": 12,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 11,
+            "mol_j": 12,
+            "mol_k": 13,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 12,
+            "mol_j": 13,
+            "mol_k": 14,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 13,
+            "mol_j": 14,
+            "mol_k": 15,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 14,
+            "mol_j": 15,
+            "mol_k": 16,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 15,
+            "mol_j": 16,
+            "mol_k": 17,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 16,
+            "mol_j": 17,
+            "mol_k": 18,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 17,
+            "mol_j": 18,
+            "mol_k": 19,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 18,
+            "mol_j": 19,
+            "mol_k": 20,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 19,
+            "mol_j": 20,
+            "mol_k": 21,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 22,
+            "mol_j": 23,
+            "mol_k": 24,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 23,
+            "mol_j": 24,
+            "mol_k": 25,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 24,
+            "mol_j": 25,
+            "mol_k": 26,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 25,
+            "mol_j": 26,
+            "mol_k": 27,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 26,
+            "mol_j": 27,
+            "mol_k": 28,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 27,
+            "mol_j": 28,
+            "mol_k": 29,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 28,
+            "mol_j": 29,
+            "mol_k": 30,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 29,
+            "mol_j": 30,
+            "mol_k": 31,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 30,
+            "mol_j": 31,
+            "mol_k": 32,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 31,
+            "mol_j": 32,
+            "mol_k": 33,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 32,
+            "mol_j": 33,
+            "mol_k": 34,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 33,
+            "mol_j": 34,
+            "mol_k": 35,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 34,
+            "mol_j": 35,
+            "mol_k": 36,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 35,
+            "mol_j": 36,
+            "mol_k": 37,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 36,
+            "mol_j": 37,
+            "mol_k": 38,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 37,
+            "mol_j": 38,
+            "mol_k": 39,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 38,
+            "mol_j": 39,
+            "mol_k": 40,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 39,
+            "mol_j": 40,
+            "mol_k": 41,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 40,
+            "mol_j": 41,
+            "mol_k": 42,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 41,
+            "mol_j": 42,
+            "mol_k": 43,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 44,
+            "mol_j": 45,
+            "mol_k": 46,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 45,
+            "mol_j": 46,
+            "mol_k": 47,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 46,
+            "mol_j": 47,
+            "mol_k": 48,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 47,
+            "mol_j": 48,
+            "mol_k": 49,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 48,
+            "mol_j": 49,
+            "mol_k": 50,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 49,
+            "mol_j": 50,
+            "mol_k": 51,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 50,
+            "mol_j": 51,
+            "mol_k": 52,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 51,
+            "mol_j": 52,
+            "mol_k": 53,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 52,
+            "mol_j": 53,
+            "mol_k": 54,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 53,
+            "mol_j": 54,
+            "mol_k": 55,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 54,
+            "mol_j": 55,
+            "mol_k": 56,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 55,
+            "mol_j": 56,
+            "mol_k": 57,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 56,
+            "mol_j": 57,
+            "mol_k": 58,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 57,
+            "mol_j": 58,
+            "mol_k": 59,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 58,
+            "mol_j": 59,
+            "mol_k": 60,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 59,
+            "mol_j": 60,
+            "mol_k": 61,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 60,
+            "mol_j": 61,
+            "mol_k": 62,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 61,
+            "mol_j": 62,
+            "mol_k": 63,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 62,
+            "mol_j": 63,
+            "mol_k": 64,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 63,
+            "mol_j": 64,
+            "mol_k": 65,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 66,
+            "mol_j": 67,
+            "mol_k": 68,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 67,
+            "mol_j": 68,
+            "mol_k": 69,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 68,
+            "mol_j": 69,
+            "mol_k": 70,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 69,
+            "mol_j": 70,
+            "mol_k": 71,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 70,
+            "mol_j": 71,
+            "mol_k": 72,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 71,
+            "mol_j": 72,
+            "mol_k": 73,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 72,
+            "mol_j": 73,
+            "mol_k": 74,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 73,
+            "mol_j": 74,
+            "mol_k": 75,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 74,
+            "mol_j": 75,
+            "mol_k": 76,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 75,
+            "mol_j": 76,
+            "mol_k": 77,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 76,
+            "mol_j": 77,
+            "mol_k": 78,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 77,
+            "mol_j": 78,
+            "mol_k": 79,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 78,
+            "mol_j": 79,
+            "mol_k": 80,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 79,
+            "mol_j": 80,
+            "mol_k": 81,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 80,
+            "mol_j": 81,
+            "mol_k": 82,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 81,
+            "mol_j": 82,
+            "mol_k": 83,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 82,
+            "mol_j": 83,
+            "mol_k": 84,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 83,
+            "mol_j": 84,
+            "mol_k": 85,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 84,
+            "mol_j": 85,
+            "mol_k": 86,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 85,
+            "mol_j": 86,
+            "mol_k": 87,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 88,
+            "mol_j": 89,
+            "mol_k": 90,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 89,
+            "mol_j": 90,
+            "mol_k": 91,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 90,
+            "mol_j": 91,
+            "mol_k": 92,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 91,
+            "mol_j": 92,
+            "mol_k": 93,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 92,
+            "mol_j": 93,
+            "mol_k": 94,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 93,
+            "mol_j": 94,
+            "mol_k": 95,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 94,
+            "mol_j": 95,
+            "mol_k": 96,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 95,
+            "mol_j": 96,
+            "mol_k": 97,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 96,
+            "mol_j": 97,
+            "mol_k": 98,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 97,
+            "mol_j": 98,
+            "mol_k": 99,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 98,
+            "mol_j": 99,
+            "mol_k": 100,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 99,
+            "mol_j": 100,
+            "mol_k": 101,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 100,
+            "mol_j": 101,
+            "mol_k": 102,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 101,
+            "mol_j": 102,
+            "mol_k": 103,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 102,
+            "mol_j": 103,
+            "mol_k": 104,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 103,
+            "mol_j": 104,
+            "mol_k": 105,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 104,
+            "mol_j": 105,
+            "mol_k": 106,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 105,
+            "mol_j": 106,
+            "mol_k": 107,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 106,
+            "mol_j": 107,
+            "mol_k": 108,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 107,
+            "mol_j": 108,
+            "mol_k": 109,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 110,
+            "mol_j": 111,
+            "mol_k": 112,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 111,
+            "mol_j": 112,
+            "mol_k": 113,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 112,
+            "mol_j": 113,
+            "mol_k": 114,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 113,
+            "mol_j": 114,
+            "mol_k": 115,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 114,
+            "mol_j": 115,
+            "mol_k": 116,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 115,
+            "mol_j": 116,
+            "mol_k": 117,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 116,
+            "mol_j": 117,
+            "mol_k": 118,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 117,
+            "mol_j": 118,
+            "mol_k": 119,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 118,
+            "mol_j": 119,
+            "mol_k": 120,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 119,
+            "mol_j": 120,
+            "mol_k": 121,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 120,
+            "mol_j": 121,
+            "mol_k": 122,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 121,
+            "mol_j": 122,
+            "mol_k": 123,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 122,
+            "mol_j": 123,
+            "mol_k": 124,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 123,
+            "mol_j": 124,
+            "mol_k": 125,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 124,
+            "mol_j": 125,
+            "mol_k": 126,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 125,
+            "mol_j": 126,
+            "mol_k": 127,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 126,
+            "mol_j": 127,
+            "mol_k": 128,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 127,
+            "mol_j": 128,
+            "mol_k": 129,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 128,
+            "mol_j": 129,
+            "mol_k": 130,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 129,
+            "mol_j": 130,
+            "mol_k": 131,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 132,
+            "mol_j": 133,
+            "mol_k": 134,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 133,
+            "mol_j": 134,
+            "mol_k": 135,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 134,
+            "mol_j": 135,
+            "mol_k": 136,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 135,
+            "mol_j": 136,
+            "mol_k": 137,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 136,
+            "mol_j": 137,
+            "mol_k": 138,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 137,
+            "mol_j": 138,
+            "mol_k": 139,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 138,
+            "mol_j": 139,
+            "mol_k": 140,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 139,
+            "mol_j": 140,
+            "mol_k": 141,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 140,
+            "mol_j": 141,
+            "mol_k": 142,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 141,
+            "mol_j": 142,
+            "mol_k": 143,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 142,
+            "mol_j": 143,
+            "mol_k": 144,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 143,
+            "mol_j": 144,
+            "mol_k": 145,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 144,
+            "mol_j": 145,
+            "mol_k": 146,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 145,
+            "mol_j": 146,
+            "mol_k": 147,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 146,
+            "mol_j": 147,
+            "mol_k": 148,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 147,
+            "mol_j": 148,
+            "mol_k": 149,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 148,
+            "mol_j": 149,
+            "mol_k": 150,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 149,
+            "mol_j": 150,
+            "mol_k": 151,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 150,
+            "mol_j": 151,
+            "mol_k": 152,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 151,
+            "mol_j": 152,
+            "mol_k": 153,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 154,
+            "mol_j": 155,
+            "mol_k": 156,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 155,
+            "mol_j": 156,
+            "mol_k": 157,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 156,
+            "mol_j": 157,
+            "mol_k": 158,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 157,
+            "mol_j": 158,
+            "mol_k": 159,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 158,
+            "mol_j": 159,
+            "mol_k": 160,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 159,
+            "mol_j": 160,
+            "mol_k": 161,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 160,
+            "mol_j": 161,
+            "mol_k": 162,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 161,
+            "mol_j": 162,
+            "mol_k": 163,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 162,
+            "mol_j": 163,
+            "mol_k": 164,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 163,
+            "mol_j": 164,
+            "mol_k": 165,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 164,
+            "mol_j": 165,
+            "mol_k": 166,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 165,
+            "mol_j": 166,
+            "mol_k": 167,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 166,
+            "mol_j": 167,
+            "mol_k": 168,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 167,
+            "mol_j": 168,
+            "mol_k": 169,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 168,
+            "mol_j": 169,
+            "mol_k": 170,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 169,
+            "mol_j": 170,
+            "mol_k": 171,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 170,
+            "mol_j": 171,
+            "mol_k": 172,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 171,
+            "mol_j": 172,
+            "mol_k": 173,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 172,
+            "mol_j": 173,
+            "mol_k": 174,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 173,
+            "mol_j": 174,
+            "mol_k": 175,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 176,
+            "mol_j": 177,
+            "mol_k": 178,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 177,
+            "mol_j": 178,
+            "mol_k": 179,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 178,
+            "mol_j": 179,
+            "mol_k": 180,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 179,
+            "mol_j": 180,
+            "mol_k": 181,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 180,
+            "mol_j": 181,
+            "mol_k": 182,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 181,
+            "mol_j": 182,
+            "mol_k": 183,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 182,
+            "mol_j": 183,
+            "mol_k": 184,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 183,
+            "mol_j": 184,
+            "mol_k": 185,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 184,
+            "mol_j": 185,
+            "mol_k": 186,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 185,
+            "mol_j": 186,
+            "mol_k": 187,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 186,
+            "mol_j": 187,
+            "mol_k": 188,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 187,
+            "mol_j": 188,
+            "mol_k": 189,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 188,
+            "mol_j": 189,
+            "mol_k": 190,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 189,
+            "mol_j": 190,
+            "mol_k": 191,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 190,
+            "mol_j": 191,
+            "mol_k": 192,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 191,
+            "mol_j": 192,
+            "mol_k": 193,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 192,
+            "mol_j": 193,
+            "mol_k": 194,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 193,
+            "mol_j": 194,
+            "mol_k": 195,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 194,
+            "mol_j": 195,
+            "mol_k": 196,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 195,
+            "mol_j": 196,
+            "mol_k": 197,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 198,
+            "mol_j": 199,
+            "mol_k": 200,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 199,
+            "mol_j": 200,
+            "mol_k": 201,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 200,
+            "mol_j": 201,
+            "mol_k": 202,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 201,
+            "mol_j": 202,
+            "mol_k": 203,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 202,
+            "mol_j": 203,
+            "mol_k": 204,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 203,
+            "mol_j": 204,
+            "mol_k": 205,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 204,
+            "mol_j": 205,
+            "mol_k": 206,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 205,
+            "mol_j": 206,
+            "mol_k": 207,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 206,
+            "mol_j": 207,
+            "mol_k": 208,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 207,
+            "mol_j": 208,
+            "mol_k": 209,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 208,
+            "mol_j": 209,
+            "mol_k": 210,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 209,
+            "mol_j": 210,
+            "mol_k": 211,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 210,
+            "mol_j": 211,
+            "mol_k": 212,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 211,
+            "mol_j": 212,
+            "mol_k": 213,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 212,
+            "mol_j": 213,
+            "mol_k": 214,
+            "type": "ibi",
+            "name": "ang_G_G_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 213,
+            "mol_j": 214,
+            "mol_k": 215,
+            "type": "ibi",
+            "name": "ang_G_T_T",
+            "file": "ibi_priors/angle_tabulated_ang_G_T_T.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 214,
+            "mol_j": 215,
+            "mol_k": 216,
+            "type": "ibi",
+            "name": "ang_T_T_A",
+            "file": "ibi_priors/angle_tabulated_ang_T_T_A.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 215,
+            "mol_j": 216,
+            "mol_k": 217,
+            "type": "ibi",
+            "name": "ang_T_A_G",
+            "file": "ibi_priors/angle_tabulated_ang_T_A_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 216,
+            "mol_j": 217,
+            "mol_k": 218,
+            "type": "ibi",
+            "name": "ang_A_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_A_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        },
+        {
+            "mol_i": 217,
+            "mol_j": 218,
+            "mol_k": 219,
+            "type": "ibi",
+            "name": "ang_G_G_G",
+            "file": "ibi_priors/angle_tabulated_ang_G_G_G.dat",
+            "min": 0.0,
+            "max": 3.141592653589793
+        }
+    ],
+    "dihedrals": []
+}

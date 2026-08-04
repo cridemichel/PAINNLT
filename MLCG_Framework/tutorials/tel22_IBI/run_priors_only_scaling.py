@@ -1,0 +1,90 @@
+import subprocess
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+dts = [0.001, 0.002, 0.004, 0.006, 0.008, 0.01, 0.02]
+total_time = 2.0 # 2.0 ps
+
+std_devs_toxvaerd = []
+
+for dt in dts:
+    steps = int(total_time / dt)
+    print(f"\n--- Running NVE for dt = {dt} ps, steps = {steps} ---")
+    
+    # Run the MD simulation with the current settings (IBI tables extrapolated)
+    cmd = [
+        "../../espresso/build/pypresso", "../../simulation/run_cg_md.py",
+        "--config", "tel22_training_config.json",
+        "--priors", "ibi_priors/cg_priors_final.json",
+        "--rb_info", "rigid_bodies_info.json",
+        "--dataset", "tel22_dataset.bin",
+        "--checkpoint", "equilibrated.npz",
+        "--nve",
+        "--dt", str(dt),
+        "--steps", str(steps)
+    ]
+    
+    if os.path.exists("energy.csv"):
+        os.remove("energy.csv")
+        
+    # Capture output
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"-> MD failed with code {result.returncode}")
+        print("Stderr:", result.stderr)
+    
+    # Parse output to extract E_tot from energy.csv
+    energies = []
+    if os.path.exists("energy.csv"):
+        with open("energy.csv", "r") as f:
+            lines = f.readlines()[1:] # skip header
+            for line in lines:
+                parts = line.strip().split(",")
+                if len(parts) >= 2:
+                    energies.append(float(parts[1]))
+    
+    if len(energies) > 0:
+        std_e = np.std(energies)
+        std_devs_toxvaerd.append(std_e)
+        print(f"-> Std(E) = {std_e:.5e} kJ/mol")
+    else:
+        print("-> Error: could not parse energies!")
+        print("Stdout:", result.stdout)
+        print("Stderr:", result.stderr)
+        std_devs_toxvaerd.append(np.nan)
+
+dts_bias0 = [0.002, 0.004, 0.006, 0.008, 0.01]
+std_devs_bias_0 = [np.nan, 6.0967e-03, 1.3857e-02, 2.4842e-02, 3.9022e-02]
+
+plt.figure(figsize=(9, 7))
+
+log_dts = np.log10(dts)
+log_stds_tox = np.log10(std_devs_toxvaerd)
+log_dts_bias0 = np.log10(dts_bias0)
+log_stds_bias0 = np.log10(std_devs_bias_0)
+
+plt.scatter(log_dts, log_stds_tox, color='purple', s=100, zorder=5, label='Current (Delta ML + IBI)')
+plt.scatter(log_dts_bias0, log_stds_bias0, color='green', marker='^', s=100, zorder=5, label='Reference (Pure ML)')
+
+# Theoretical slope 2 line
+x_line = np.linspace(min(log_dts)-0.1, max(log_dts)+0.1, 100)
+if ~np.isnan(log_stds_tox[0]):
+    y_line_ideal = 2.0 * (x_line - log_dts[0]) + log_stds_tox[0]
+    plt.plot(x_line, y_line_ideal, color='red', linestyle='--', linewidth=2, label=r'Ideal Verlet Scaling ($\mathcal{O}(dt^2)$)')
+
+# Fit a line for Toxvaerd (bias=1, env=1)
+valid_tox = ~np.isnan(log_stds_tox)
+if np.sum(valid_tox) > 1:
+    slope_tox, intercept_tox = np.polyfit(log_dts[valid_tox], log_stds_tox[valid_tox], 1)
+    y_fit_tox = slope_tox * x_line + intercept_tox
+    plt.plot(x_line, y_fit_tox, color='purple', linestyle=':', alpha=0.7, label=f'Fit Delta ML (slope = {slope_tox:.2f})')
+
+plt.xlabel('log10(dt) [ps]')
+plt.ylabel('log10(Std(E_tot)) [kJ/mol]')
+plt.title('Energy Conservation Scaling (Verlet Integrator) - Priors Only')
+plt.grid(True, linestyle=':', alpha=0.7)
+plt.legend()
+plt.tight_layout()
+plt.savefig('energy_conservation_priors_only.png', dpi=300)
+print("\n[INFO] Plot saved to energy_conservation_priors_only.png")

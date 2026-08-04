@@ -61,9 +61,8 @@ with open(args.dataset, "rb") as f:
     num_total_sites = struct.unpack("i", f.read(4))[0]
     box_dim = struct.unpack("3f", f.read(12))
     
-    # Ensure box is large enough for cutoff=5.0 + skin=0.4
-    min_box = 11.0
-    system.box_l = [max(b, min_box) for b in box_dim]
+    # Keep the same box size as the dataset
+    system.box_l = box_dim
     
     for mol_idx in range(num_molecules):
         mol_id = struct.unpack("i", f.read(4))[0]
@@ -102,18 +101,37 @@ with open(args.dataset, "rb") as f:
             p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
-print("[INFO] Setting up WCA exclusions (1-2 and 1-3)...")
+print("[INFO] Setting up WCA exclusions (Intra-molecular and 1-2, 1-3)...")
+
+# 1. Intra-molecular exclusions
+mol_to_vs = {}
+for (m_idx, s_idx), pid in mol_vs_parts.items():
+    if isinstance(m_idx, int):
+        if m_idx not in mol_to_vs:
+            mol_to_vs[m_idx] = []
+        mol_to_vs[m_idx].append(pid)
+
+for m_idx, pids in mol_to_vs.items():
+    for i in range(len(pids)):
+        for j in range(i + 1, len(pids)):
+            p1 = system.part.by_id(pids[i])
+            p2 = system.part.by_id(pids[j])
+            p1.add_exclusion(p2)
+
+# 2. 1-2 and 1-3 exclusions
 wca_exclusions = set()
 for b in priors.get("bonds", []):
     m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
-    wca_exclusions.add((m1, m2))
+    if m1 != m2:
+        wca_exclusions.add((m1, m2))
 for a in priors.get("angles", []):
     m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
-    wca_exclusions.add((m1, m2))
+    if m1 != m2:
+        wca_exclusions.add((m1, m2))
 
 for (m1, m2) in wca_exclusions:
-    m1_parts = [mol_com_parts[m1]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m1]
-    m2_parts = [mol_com_parts[m2]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m2]
+    m1_parts = [mol_com_parts[m1]] + mol_to_vs.get(m1, [])
+    m2_parts = [mol_com_parts[m2]] + mol_to_vs.get(m2, [])
     for p1 in m1_parts:
         for p2 in m2_parts:
             system.part.by_id(p1).add_exclusion(p2)
@@ -282,7 +300,7 @@ for i in range(nn_config["num_species"] + 2):
     for j in range(i, nn_config["num_species"] + 2):
         if not (1 <= i <= nn_config["num_species"] and 1 <= j <= nn_config["num_species"]):
             system.non_bonded_inter[i, j].soft_sphere.set_params(
-                a=0.0, n=1, cutoff=5.0, offset=0.0)
+                a=0.0, n=1, cutoff=nn_config["cutoff"], offset=0.0)
 
 print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
 system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
@@ -319,10 +337,11 @@ if not args.priors_only:
         hidden_channels=nn_config["hidden_channels"],
         n_layers=nn_config["n_layers"],
         num_rbf=nn_config["num_rbf"],
-        r_cut=nn_config["cutoff"],
+        cutoff=nn_config["cutoff"],
         device=args.device,
-        apply_envelope=args.apply_envelope,
-        use_bias=args.use_bias
+        apply_envelope=nn_config.get("apply_envelope", args.apply_envelope),
+        use_bias=nn_config.get("use_bias", args.use_bias),
+        toxvaerd_alpha=nn_config.get("toxvaerd_alpha", args.toxvaerd_alpha)
     )
 else:
     print("[INFO] Running with priors only. Not activating ML potential.")

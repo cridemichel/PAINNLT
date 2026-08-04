@@ -114,7 +114,7 @@ print("[INFO] Setting up WCA exclusions (Intra-molecular and 1-2, 1-3)...")
 # 1. Intra-molecular exclusions
 mol_to_vs = {}
 for (m_idx, s_idx), pid in mol_vs_parts.items():
-    if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
+    if isinstance(m_idx, int):
         if m_idx not in mol_to_vs:
             mol_to_vs[m_idx] = []
         mol_to_vs[m_idx].append(pid)
@@ -125,6 +125,24 @@ for m_idx, pids in mol_to_vs.items():
             p1 = system.part.by_id(pids[i])
             p2 = system.part.by_id(pids[j])
             p1.add_exclusion(p2)
+
+# 2. 1-2 and 1-3 exclusions
+wca_exclusions = set()
+for b in priors.get("bonds", []):
+    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
+    if m1 != m2:
+        wca_exclusions.add((m1, m2))
+for a in priors.get("angles", []):
+    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
+    if m1 != m2:
+        wca_exclusions.add((m1, m2))
+
+for (m1, m2) in wca_exclusions:
+    m1_parts = [mol_com_parts[m1]] + mol_to_vs.get(m1, [])
+    m2_parts = [mol_com_parts[m2]] + mol_to_vs.get(m2, [])
+    for p1 in m1_parts:
+        for p2 in m2_parts:
+            system.part.by_id(p1).add_exclusion(p2)
 
 
 
@@ -184,9 +202,10 @@ for idx, b in enumerate(priors.get("bonds", [])):
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
     elif b_type == "morse":
         # We model Morse as tabulated to allow large r without breaking FENE limits
+        # Increased to 50000 points to push the ESPResSo linear interpolation error floor down
         rmin_tab = 0.001
         rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
-        r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
+        r_vals = np.linspace(rmin_tab, rmax_tab, 50000)
         
         diff = r_vals - b["r0"]
         exp_term = np.exp(-b["a"] * diff)
@@ -294,7 +313,7 @@ print("[INFO] Setting up dummy interactions for Verlet lists...")
 for i in range(nn_config["num_species"] + 2):
     for j in range(i, nn_config["num_species"] + 2):
         system.non_bonded_inter[i, j].soft_sphere.set_params(
-            a=0.0, n=1, cutoff=5.0, offset=0.0)
+            a=0.0, n=1, cutoff=nn_config["cutoff"], offset=0.0)
 
 if args.model:
     print("[INFO] Activating ML Potential...")
@@ -305,9 +324,9 @@ if args.model:
         n_layers=nn_config["n_layers"],
         num_rbf=nn_config["num_rbf"],
         cutoff=nn_config["cutoff"],
-        apply_envelope=False,
-        use_bias=False,
-        toxvaerd_alpha=args.toxvaerd_alpha,
+        apply_envelope=nn_config.get("apply_envelope", args.apply_envelope),
+        use_bias=nn_config.get("use_bias", args.use_bias),
+        toxvaerd_alpha=nn_config.get("toxvaerd_alpha", args.toxvaerd_alpha),
         device=args.device
     )
 else:
@@ -378,7 +397,8 @@ with open(vtf_filename, "w") as vtf_file:
             # Save only COM coordinates (which are the physical particles in our dataset for the generic CG)
             com_pos = []
             # mol_com_parts is dictionary mapping mol_idx to part_id
-            for mol_idx, p_id in sorted(mol_com_parts.items()):
+            for mol_idx in sorted(mol_com_parts.keys()):
+                p_id = mol_vs_parts[(mol_idx, 0)]
                 com_pos.append(system.part.by_id(p_id).pos)
             system.traj_positions.append(com_pos)
 
