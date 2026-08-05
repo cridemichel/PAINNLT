@@ -123,18 +123,18 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         }
 
         // Directed edge p1 -> p2: row receives messages from col and
-        // r_ij = r_col - r_row.  d.vec21 is r2-r1, hence the signs below.
+        // r_ij = r_row - r_col.  d.vec21 is r2-r1, hence the signs below.
         edge_rows.push_back(idx2);
         edge_cols.push_back(idx1);
-        r_ij_data.push_back(static_cast<float>(-d.vec21[0]));
-        r_ij_data.push_back(static_cast<float>(-d.vec21[1]));
-        r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
-
-        edge_rows.push_back(idx1);
-        edge_cols.push_back(idx2);
         r_ij_data.push_back(static_cast<float>(d.vec21[0]));
         r_ij_data.push_back(static_cast<float>(d.vec21[1]));
         r_ij_data.push_back(static_cast<float>(d.vec21[2]));
+
+        edge_rows.push_back(idx1);
+        edge_cols.push_back(idx2);
+        r_ij_data.push_back(static_cast<float>(-d.vec21[0]));
+        r_ij_data.push_back(static_cast<float>(-d.vec21[1]));
+        r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
     };
 
     cell_structure.non_bonded_loop(painn_kernel, verlet_criterion);
@@ -187,7 +187,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     m_last_energy = total_energy.item<double>();
     auto grads = torch::autograd::grad(
         {total_energy}, {t_r_ij}, {torch::ones_like(total_energy)}, false, false);
-    const torch::Tensor f_r_ij = grads[0].cpu();
+    const torch::Tensor f_r_ij = -grads[0].cpu();
     auto f_r_ij_acc = f_r_ij.accessor<float, 2>();
 
     for (int e = 0; e < num_edges; ++e) {
@@ -197,12 +197,12 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         const float fy = f_r_ij_acc[e][1];
         const float fz = f_r_ij_acc[e][2];
 
-        idx_to_particle[row]->force()[0] -= fx;
-        idx_to_particle[row]->force()[1] -= fy;
-        idx_to_particle[row]->force()[2] -= fz;
+        idx_to_particle[row]->force()[0] += fx;
+        idx_to_particle[row]->force()[1] += fy;
+        idx_to_particle[row]->force()[2] += fz;
 
-        idx_to_particle[col]->force()[0] += fx;
-        idx_to_particle[col]->force()[1] += fy;
-        idx_to_particle[col]->force()[2] += fz;
+        idx_to_particle[col]->force()[0] -= fx;
+        idx_to_particle[col]->force()[1] -= fy;
+        idx_to_particle[col]->force()[2] -= fz;
     }
 }
