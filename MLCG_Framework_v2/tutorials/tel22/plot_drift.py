@@ -2,8 +2,9 @@ import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
 
-dt = 0.004
+dt = 0.002
 total_time = 10.0 # 10 ps
 steps = int(total_time / dt)
 
@@ -24,14 +25,16 @@ cmd = [
     "--device", "cpu"
 ]
 
-result = subprocess.run(cmd, capture_output=True, text=True)
+process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
 times = []
 e_tots = []
 e_kins = []
 e_pots = []
 
-for line in result.stdout.split('\n'):
+for line in process.stdout:
+    sys.stdout.write(line)
+    sys.stdout.flush()
     if "[INFO] Step " in line and "E_tot:" in line:
         try:
             step_str = line.split("|")[0].split("Step")[1].strip()
@@ -50,9 +53,10 @@ for line in result.stdout.split('\n'):
         except Exception as e:
             pass
 
+process.wait()
+
 if not times:
     print("Error: could not parse energies!")
-    print(result.stderr)
     exit(1)
 
 times = np.array(times)
@@ -64,7 +68,7 @@ e_pots = np.array(e_pots)
 slope, intercept = np.polyfit(times, e_tots, 1)
 drift_rate = slope # kJ/(mol*ps)
 
-print(f"Mean E_tot: {np.mean(e_tots):.2f} kJ/mol")
+print(f"\nMean E_tot: {np.mean(e_tots):.2f} kJ/mol")
 print(f"Energy Drift Rate: {drift_rate:.5e} kJ/(mol*ps)")
 print(f"Total Drift over {total_time} ps: {drift_rate * total_time:.5e} kJ/mol")
 
