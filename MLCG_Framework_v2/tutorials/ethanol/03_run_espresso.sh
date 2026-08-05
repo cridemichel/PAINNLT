@@ -30,6 +30,12 @@ echo "======================================================"
 echo " 03. ESPRESSO EQUILIBRATION AND NVE SCALING (ETHANOL) "
 echo "======================================================"
 
+echo "[INFO] Running PaiNN periodic-boundary and zero-edge regression..."
+"$PYPRESSO" ../../tests/run_painn_plugin_pbc_regression.py \
+  --model my_ethanol_model.pt \
+  --config fast_training_config.json \
+  --device "$DEVICE"
+
 "$PYPRESSO" ../../simulation/equilibrate.py \
   --model my_ethanol_model.pt \
   --config fast_training_config.json \
@@ -46,4 +52,5 @@ echo "======================================================"
 
 uv run python run_energy_scaling.py \
   --pypresso "$PYPRESSO" \
-  --device "$DEVICE"
+  --device "$DEVICE" \
+  --strict
