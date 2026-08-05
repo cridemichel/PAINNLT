@@ -46,15 +46,17 @@ Optional device selection:
 PYPRESSO=/path/to/pypresso DEVICE=cpu ./03_run_espresso.sh
 ```
 
-The script first creates `equilibrated_ethanol.npz` under the final
-analytic-prior + PaiNN Hamiltonian.  It then launches NVE runs with several
+The script first runs a periodic-boundary/zero-edge regression against the
+compiled PaiNN plugin. It then creates `equilibrated_ethanol.npz` under the
+final analytic-prior + PaiNN Hamiltonian and launches NVE runs with several
 values of `dt`, always starting from that same checkpoint.
 
 Outputs:
 
 - one preserved `energy_dt_*.csv` series per timestep;
 - `energy_scaling.csv` with drift, detrended fluctuations and block lengths;
-- `energy_scaling_fit.json` with slope, 95% bootstrap interval and $R^2$;
+- `energy_scaling_fit.json` with slope, 95% bootstrap interval, $R^2$, drift,
+  adjacent timestep ratios and the individual certification checks;
 - `scaling_plot.png`.
 
 The default experiment uses the same checkpoint for 5 ps at each timestep,
@@ -62,8 +64,10 @@ discards the initial fraction, detrends each energy series, estimates an
 autocorrelation-aware block length and computes moving-block bootstrap
 intervals. For velocity-Verlet in a smooth conservative system, the fitted
 slope should approach two and halving the timestep should reduce the
-fluctuation scale by about four. Add `--strict` to `run_energy_scaling.py` when
-you want a non-zero exit status outside the interval [1.8, 2.2].
+fluctuation scale by about four. The tutorial enables strict mode by default:
+it fails unless the point slope, confidence interval, $R^2$, drift and adjacent
+timestep-ratio criteria all pass. Thresholds are explicit command-line options
+of `run_energy_scaling.py`.
 
 
 ## Compatibility after the consistency patch

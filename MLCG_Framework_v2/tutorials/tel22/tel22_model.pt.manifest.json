@@ -1,0 +1,36 @@
+{
+  "architecture": {
+    "cutoff": 1.2616,
+    "hidden_channels": 64,
+    "n_layers": 2,
+    "num_rbf": 32,
+    "num_species": 8,
+    "toxvaerd_alpha": 0.1
+  },
+  "config_file_size_bytes": 208,
+  "config_path": "tel22_training_config.json",
+  "config_sha256": "94889151cc989deda9b57013ac93af89fa1b5413bbcea7f6ec98f761aa5b2750",
+  "dataset_file_size_bytes": 22842824,
+  "dataset_path": "tel22_dataset.bin",
+  "dataset_sha256": "65d8cfe823bd443715a9227a6f30ac57045835cbd88fda56180a9c4d08b851b0",
+  "effective_config": {
+    "batch_size": 16,
+    "cutoff": 1.2616,
+    "epochs": 50,
+    "hidden_channels": 64,
+    "learning_rate": 0.001,
+    "n_layers": 2,
+    "num_rbf": 32,
+    "num_species": 8,
+    "toxvaerd_alpha": 0.1
+  },
+  "force_units": "kJ mol^-1 nm^-1",
+  "framework": "MLCG_Framework_v2",
+  "model_file_size_bytes": 417254,
+  "model_path": "tel22_model.pt",
+  "model_sha256": "eee329554d89d2ba3b97c910a0cdd86badbb4e52c377df5b8627846f77efc813",
+  "schema_version": 1,
+  "split_seed": 42,
+  "torque_units": "kJ mol^-1",
+  "validation_fraction": 0.2
+}

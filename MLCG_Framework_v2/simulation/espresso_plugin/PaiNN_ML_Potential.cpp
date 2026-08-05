@@ -4,8 +4,10 @@
 #include "exclusions.hpp"
 
 #include <iostream>
-#include <vector>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
@@ -58,62 +60,76 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     // Never expose an energy value from a previous integration step.
     m_last_energy = 0.0;
 
-    // 1. Mappatura delle particelle attuali a indici contigui per i tensori PyTorch
+    // The production path is deliberately single-rank.  Each physical ML site
+    // is represented exactly once, by its local particle.  Periodic ghost
+    // copies are only aliases used by ESPResSo's neighbour loop and must never
+    // become independent PaiNN nodes or independent atomic-energy terms.
     std::unordered_map<int, int> pid_to_idx;
     std::vector<Particle*> idx_to_particle;
     std::vector<int64_t> atomic_numbers;
-    
-    int current_idx = 0;
-    
-    // Raccogliamo tutte le particelle locali che appartengono al modello ML
+
     auto local_particles = cell_structure.local_particles();
     for (auto& p : local_particles) {
-        if (p.type() >= m_num_species) continue;
-        pid_to_idx[p.id()] = current_idx++;
-        idx_to_particle.push_back(&p);
-        atomic_numbers.push_back(p.type()); // Assumiamo che il 'type' di ESPResSo sia l'atomic number
-    }
-    
-    int num_local_ml_particles = current_idx;
-    
-    // Raccogliamo anche le particelle ghost per le interazioni di bordo (PBC)
-    auto ghost_particles = cell_structure.ghost_particles();
-    for (auto& p : ghost_particles) {
-        if (p.type() >= m_num_species) continue;
-        pid_to_idx[p.id()] = current_idx++;
+        if (p.type() >= m_num_species) {
+            continue;
+        }
+        const int index = static_cast<int>(idx_to_particle.size());
+        const auto inserted = pid_to_idx.emplace(p.id(), index);
+        if (!inserted.second) {
+            throw std::runtime_error(
+                "PaiNN found duplicate local particle id " + std::to_string(p.id()));
+        }
         idx_to_particle.push_back(&p);
         atomic_numbers.push_back(p.type());
     }
-    
-    int total_particles = current_idx;
-    if (total_particles == 0) return;
 
-    // 2. Costruzione del grafo usando le liste di vicini (cell_system) di ESPResSo
+    const int num_particles = static_cast<int>(idx_to_particle.size());
+    if (num_particles == 0) {
+        return;
+    }
+
     std::vector<int64_t> edge_rows;
     std::vector<int64_t> edge_cols;
     std::vector<float> r_ij_data;
-    
-    auto painn_kernel = [&](Particle const &p1, Particle const &p2, Distance const &d) {
-        if (p1.type() >= m_num_species || p2.type() >= m_num_species) return; // Filtro particelle non ML
-        if (d.dist2 > m_cutoff * m_cutoff) return; // Filtro cutoff
-        
-        // Skip se appartengono alla stessa molecola
-        if (p1.mol_id() == p2.mol_id()) return;
-        
-        // Nota: non_bonded_loop salta AUTOMATICAMENTE le coppie nella exclusion list di ESPResSo,
-        // quindi i legami 1-2 e 1-3 che abbiamo escluso in Python saranno ignorati automaticamente!
-        
-        int idx1 = pid_to_idx[p1.id()];
-        int idx2 = pid_to_idx[p2.id()];
-        
-        // Arco p1 -> p2 (col=p1, row=p2)
+
+    auto painn_kernel = [&](Particle const& p1, Particle const& p2, Distance const& d) {
+        if (p1.type() >= m_num_species || p2.type() >= m_num_species) {
+            return;
+        }
+        if (d.dist2 > m_cutoff * m_cutoff) {
+            return;
+        }
+        if (p1.mol_id() == p2.mol_id()) {
+            return;
+        }
+
+        // In a one-rank run, a periodic ghost has the same physical particle
+        // id as a local site.  Reuse that local node while retaining d.vec21,
+        // which already contains ESPResSo's minimum-image displacement.
+        const auto found1 = pid_to_idx.find(p1.id());
+        const auto found2 = pid_to_idx.find(p2.id());
+        if (found1 == pid_to_idx.end() || found2 == pid_to_idx.end()) {
+            throw std::runtime_error(
+                "PaiNN encountered a neighbour without a local physical node. "
+                "This indicates the uncertified multi-rank/halo path; run with one MPI rank.");
+        }
+
+        const int idx1 = found1->second;
+        const int idx2 = found2->second;
+        if (idx1 == idx2) {
+            throw std::runtime_error(
+                "PaiNN encountered a periodic self-image inside the cutoff. "
+                "Increase the box or reduce cutoff+skin.");
+        }
+
+        // Directed edge p1 -> p2: row receives messages from col and
+        // r_ij = r_col - r_row.  d.vec21 is r2-r1, hence the signs below.
         edge_rows.push_back(idx2);
         edge_cols.push_back(idx1);
         r_ij_data.push_back(static_cast<float>(-d.vec21[0]));
         r_ij_data.push_back(static_cast<float>(-d.vec21[1]));
         r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
-        
-        // Arco p2 -> p1 (col=p2, row=p1)
+
         edge_rows.push_back(idx1);
         edge_cols.push_back(idx2);
         r_ij_data.push_back(static_cast<float>(d.vec21[0]));
@@ -121,63 +137,72 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         r_ij_data.push_back(static_cast<float>(d.vec21[2]));
     };
 
-    // Esegue il loop di ESPResSo sfruttando la suddivisione spaziale (O(N)) e le liste Verlet
     cell_structure.non_bonded_loop(painn_kernel, verlet_criterion);
-    
-    int num_edges = edge_rows.size();
-    if (num_edges == 0) return; // Nessuna interazione
 
-    // 3. Creazione dei Tensori
-    torch::Tensor t_atomic_numbers = torch::tensor(atomic_numbers, torch::kInt64).to(m_device);
-    
+    const int num_edges = static_cast<int>(edge_rows.size());
+    torch::Tensor t_atomic_numbers =
+        torch::tensor(atomic_numbers, torch::TensorOptions().dtype(torch::kInt64))
+            .to(m_device);
+
+    torch::Tensor t_edge_index;
+    torch::Tensor t_r_ij;
+    if (num_edges == 0) {
+        t_edge_index = torch::empty(
+            {2, 0}, torch::TensorOptions().dtype(torch::kInt64).device(m_device));
+        t_r_ij = torch::empty(
+            {0, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(m_device));
+
+        // Isolated-site readout energies are part of the trained Hamiltonian.
+        // They are position-independent, so forces are exactly zero, but the
+        // energy must still be reported instead of being reset to zero.
+        const torch::Tensor atom_energies =
+            model->forward_atom_energies(t_atomic_numbers, t_r_ij, t_edge_index)
+                .squeeze(-1);
+        m_last_energy = atom_energies.sum().item<double>();
+        return;
+    }
+
     std::vector<int64_t> flat_edges;
+    flat_edges.reserve(static_cast<std::size_t>(2 * num_edges));
     flat_edges.insert(flat_edges.end(), edge_rows.begin(), edge_rows.end());
     flat_edges.insert(flat_edges.end(), edge_cols.begin(), edge_cols.end());
-    torch::Tensor t_edge_index = torch::tensor(flat_edges, torch::kInt64).reshape({2, num_edges}).to(m_device);
-    
-    torch::Tensor t_r_ij = torch::tensor(r_ij_data, torch::kFloat32).reshape({num_edges, 3}).to(m_device);
-    t_r_ij.set_requires_grad(true); // Fondamentale: calcoliamo i gradienti rispetto ai vettori distanza!
+    t_edge_index =
+        torch::tensor(flat_edges, torch::TensorOptions().dtype(torch::kInt64))
+            .reshape({2, num_edges})
+            .to(m_device);
 
-    torch::Tensor t_batch = torch::zeros({total_particles}, torch::kInt64).to(m_device);
+    t_r_ij =
+        torch::tensor(r_ij_data, torch::TensorOptions().dtype(torch::kFloat32))
+            .reshape({num_edges, 3})
+            .to(m_device);
+    t_r_ij.set_requires_grad(true);
 
-    // 4. Inferenza del Modello.  Work with per-site energies so that the
-    // diagnostic energy can exclude ghost sites.  The force is always the
-    // exact gradient of the same (unclipped) model energy.
-    torch::Tensor atom_energies = model->forward_atom_energies(
-        t_atomic_numbers, t_r_ij, t_edge_index).squeeze(-1);
-    m_last_energy = atom_energies.slice(0, 0, num_local_ml_particles)
-                                  .sum().item<double>();
+    const torch::Tensor atom_energies =
+        model->forward_atom_energies(t_atomic_numbers, t_r_ij, t_edge_index)
+            .squeeze(-1);
+    const torch::Tensor total_energy = atom_energies.sum();
 
-    // 5. Calcolo delle Forze (Gradients w.r.t r_ij)
-    torch::Tensor total_energy = atom_energies.sum();
+    // Energy and forces are derived from exactly the same scalar Hamiltonian.
+    // There are no ghost atom-energy terms in this single-rank graph.
+    m_last_energy = total_energy.item<double>();
     auto grads = torch::autograd::grad(
         {total_energy}, {t_r_ij}, {torch::ones_like(total_energy)}, false, false);
-    torch::Tensor f_r_ij = grads[0].cpu();
-
-    // 6. Assegnazione delle Forze alle Particelle ESPResSo
-    // Per ogni arco col->row (dove r_ij = r_col - r_row), la forza associata a r_ij è f_r_ij.
-    // Forza su col: -f_r_ij
-    // Forza su row: +f_r_ij
+    const torch::Tensor f_r_ij = grads[0].cpu();
     auto f_r_ij_acc = f_r_ij.accessor<float, 2>();
-    
+
     for (int e = 0; e < num_edges; ++e) {
-        int r = edge_rows[e]; // row
-        int c = edge_cols[e]; // col
-        
-        float fx = f_r_ij_acc[e][0];
-        float fy = f_r_ij_acc[e][1];
-        float fz = f_r_ij_acc[e][2];
-        
-        // Assegniamo le forze (ESPResSo gestirà la comunicazione delle forze dei ghost)
-        // La forza è la derivata negativa dell'energia rispetto alla posizione.
-        // F_row = - dE / d(pos_row) = - dE / dr_ij = -f_r_ij
-        // F_col = - dE / d(pos_col) = + dE / dr_ij = +f_r_ij
-        idx_to_particle[r]->force()[0] -= fx;
-        idx_to_particle[r]->force()[1] -= fy;
-        idx_to_particle[r]->force()[2] -= fz;
-        
-        idx_to_particle[c]->force()[0] += fx;
-        idx_to_particle[c]->force()[1] += fy;
-        idx_to_particle[c]->force()[2] += fz;
+        const int row = static_cast<int>(edge_rows[e]);
+        const int col = static_cast<int>(edge_cols[e]);
+        const float fx = f_r_ij_acc[e][0];
+        const float fy = f_r_ij_acc[e][1];
+        const float fz = f_r_ij_acc[e][2];
+
+        idx_to_particle[row]->force()[0] -= fx;
+        idx_to_particle[row]->force()[1] -= fy;
+        idx_to_particle[row]->force()[2] -= fz;
+
+        idx_to_particle[col]->force()[0] += fx;
+        idx_to_particle[col]->force()[1] += fy;
+        idx_to_particle[col]->force()[2] += fz;
     }
 }

@@ -38,5 +38,33 @@ class EnergyScalingAnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(r_squared, 1.0, places=12)
 
 
+    def test_full_certification_uses_ci_r2_drift_and_ratios(self):
+        rows = [
+            {"dt": dt, "detrended_std": 3.0 * dt**2, "drift_to_std_over_run": 0.1}
+            for dt in [0.004, 0.002, 0.001, 0.0005]
+        ]
+        thresholds = {
+            "slope_target": 2.0,
+            "slope_min": 1.8,
+            "slope_max": 2.2,
+            "slope_ci_min": 1.6,
+            "slope_ci_max": 2.4,
+            "max_slope_ci_width": 0.6,
+            "min_r2": 0.98,
+            "max_drift_to_std": 1.0,
+            "ratio_relative_tolerance": 0.5,
+            "min_ratio_pairs": 2,
+        }
+        result = SCALING.evaluate_certification(2.0, [1.9, 2.1], 0.999, rows, thresholds)
+        self.assertTrue(result["passed"])
+        self.assertAlmostEqual(result["median_normalized_ratio"], 1.0)
+        self.assertEqual(len(result["ratios"]), 3)
+
+        rows[0]["drift_to_std_over_run"] = 1.5
+        failed = SCALING.evaluate_certification(2.0, [1.9, 2.1], 0.999, rows, thresholds)
+        self.assertFalse(failed["passed"])
+        self.assertFalse(failed["checks"]["drift"])
+
+
 if __name__ == "__main__":
     unittest.main()

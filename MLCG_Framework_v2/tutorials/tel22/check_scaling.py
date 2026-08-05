@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dts = [0.002, 0.0032, 0.0054, 0.0076, 0.0098, 0.012]
+dts = [0.002, 0.004, 0.006, 0.008, 0.010, 0.012]
 total_time = 2.0 # 2.0 ps
 
 std_devs = []
@@ -22,6 +22,7 @@ for dt in dts:
         "--dataset", "tel22_dataset.bin",
         "--checkpoint", "equilibrated.npz",
         "--nve",
+        "--allow_nonconservative_tables",
         "--dt", str(dt),
         "--steps", str(steps),
         "--device", "cpu"
