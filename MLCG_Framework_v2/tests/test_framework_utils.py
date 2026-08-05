@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "simulation"))
+
+from framework_utils import (  # noqa: E402
+    input_hashes,
+    nonconservative_prior_entries,
+    rigid_body_quaternion,
+    save_checkpoint,
+    sha256_file,
+    validate_checkpoint,
+    validate_model_manifest,
+)
+
+
+class FakeParticle:
+    def __init__(self, pid, ptype, mol_id, is_virtual):
+        self.id = pid
+        self.type = ptype
+        self.mol_id = mol_id
+        self.is_virtual = is_virtual
+
+
+class FakeParticleList:
+    def __init__(self, particles):
+        self._particles = particles
+
+    def __len__(self):
+        return len(self._particles)
+
+    def by_id(self, pid):
+        return self._particles[pid]
+
+
+class FakeSystem:
+    def __init__(self):
+        self.box_l = np.asarray([4.0, 5.0, 6.0])
+        self.part = FakeParticleList([
+            FakeParticle(0, 4, 0, False),
+            FakeParticle(1, 0, 0, True),
+            FakeParticle(2, 4, 1, False),
+            FakeParticle(3, 0, 1, True),
+        ])
+
+
+def quat_to_body_to_space_matrix(q):
+    w, x, y, z = np.asarray(q, dtype=float)
+    return np.array([
+        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    ])
+
+
+class FrameworkUtilsTests(unittest.TestCase):
+    def test_principal_frame_orientation_roundtrip(self):
+        body = np.asarray([
+            [0.20, 0.00, 0.00],
+            [-0.10, 0.15, 0.00],
+            [-0.05, -0.08, 0.12],
+        ])
+        angle = 0.73
+        axis = np.asarray([1.0, 2.0, -0.5])
+        axis /= np.linalg.norm(axis)
+        cross = np.array([
+            [0.0, -axis[2], axis[1]],
+            [axis[2], 0.0, -axis[0]],
+            [-axis[1], axis[0], 0.0],
+        ])
+        rotation = np.eye(3) + np.sin(angle) * cross + (1 - np.cos(angle)) * (cross @ cross)
+        center = np.asarray([3.9, 0.1, 5.8])
+        box = np.asarray([4.0, 5.0, 6.0])
+        sites = center + (rotation @ body.T).T
+        sites %= box
+        rb_data = {
+            "body_frame": "principal_axes",
+            "sites": {
+                "a": {"type": 0, "relative_pos_nm": body[0].tolist()},
+                "b": {"type": 1, "relative_pos_nm": body[1].tolist()},
+                "c": {"type": 2, "relative_pos_nm": body[2].tolist()},
+            },
+        }
+        quat = rigid_body_quaternion(center, sites, box, rb_data)
+        recovered_body_to_space = quat_to_body_to_space_matrix(quat)
+        self.assertTrue(np.allclose(recovered_body_to_space, rotation, atol=1e-7))
+
+    def test_manifest_and_checkpoint_roundtrip(self):
+        config = {
+            "num_species": 3,
+            "hidden_channels": 16,
+            "n_layers": 2,
+            "num_rbf": 12,
+            "cutoff": 0.8,
+            "toxvaerd_alpha": 0.1,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            model = directory / "model.pt"
+            dataset = directory / "dataset.bin"
+            config_path = directory / "config.json"
+            priors = directory / "priors.json"
+            rb_info = directory / "rb.json"
+            model.write_bytes(b"model")
+            dataset.write_bytes(b"dataset")
+            config_path.write_text(json.dumps(config))
+            priors.write_text("{}")
+            rb_info.write_text("{}")
+            manifest = {
+                "schema_version": 1,
+                "framework": "MLCG_Framework_v2",
+                "architecture": config,
+                "model_file_size_bytes": model.stat().st_size,
+                "model_sha256": sha256_file(model),
+            }
+            Path(f"{model}.manifest.json").write_text(json.dumps(manifest))
+            validate_model_manifest(model, config)
+
+            hashes = input_hashes(
+                dataset=dataset, config=config_path, priors=priors, rb_info=rb_info, model=model
+            )
+            system = FakeSystem()
+            checkpoint_path = directory / "checkpoint.npz"
+            n = len(system.part)
+            save_checkpoint(
+                checkpoint_path,
+                system=system,
+                pos=np.zeros((n, 3)),
+                vel=np.zeros((n, 3)),
+                quat=np.tile([1.0, 0.0, 0.0, 0.0], (n, 1)),
+                omega=np.zeros((n, 3)),
+                hashes=hashes,
+                config=config,
+                dt=0.001,
+                kT=2.49,
+            )
+            with np.load(checkpoint_path, allow_pickle=False) as checkpoint:
+                validate_checkpoint(
+                    checkpoint,
+                    system=system,
+                    expected_hashes=hashes,
+                    expected_config=config,
+                )
+
+    def test_tabulated_nve_guard_classification(self):
+        priors = {
+            "bonds": [{"type": "harmonic"}, {"type": "morse"}],
+            "angles": [{"type": "tabulated"}],
+            "dihedrals": [{"type": "cosine"}],
+        }
+        self.assertEqual(
+            nonconservative_prior_entries(priors),
+            ["bond[1]=morse", "angle[0]=tabulated"],
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

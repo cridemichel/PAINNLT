@@ -28,8 +28,9 @@ The preprocessing step writes:
 ./02_train_model.sh
 ```
 
-The second command writes `my_ethanol_model.pt` and
-`fast_training_config.json`.
+The second command writes `my_ethanol_model.pt`,
+`my_ethanol_model.pt.manifest.json`, and `fast_training_config.json`. The
+manifest binds the weights to the effective architecture, dataset and config.
 
 ## ESPResSo equilibration and NVE scaling
 
@@ -51,12 +52,26 @@ values of `dt`, always starting from that same checkpoint.
 
 Outputs:
 
-- `energy_scaling.csv`
-- `scaling_plot.png`
+- one preserved `energy_dt_*.csv` series per timestep;
+- `energy_scaling.csv` with drift, detrended fluctuations and block lengths;
+- `energy_scaling_fit.json` with slope, 95% bootstrap interval and $R^2$;
+- `scaling_plot.png`.
 
-For velocity-Verlet in a smooth conservative system, the standard deviation
-of the total energy should approach a slope of two on the log-log plot as the
-timestep enters the asymptotic regime.
+The default experiment uses the same checkpoint for 5 ps at each timestep,
+discards the initial fraction, detrends each energy series, estimates an
+autocorrelation-aware block length and computes moving-block bootstrap
+intervals. For velocity-Verlet in a smooth conservative system, the fitted
+slope should approach two and halving the timestep should reduce the
+fluctuation scale by about four. Add `--strict` to `run_energy_scaling.py` when
+you want a non-zero exit status outside the interval [1.8, 2.2].
+
+
+## Compatibility after the consistency patch
+
+Regenerate all generated artifacts. In particular, old `rigid_bodies_info.json`
+files do not contain principal-axis site coordinates, old model files have no
+validated manifest, and old `.npz` checkpoints have no provenance metadata.
+Do not use the legacy overrides for the final NVE scaling certificate.
 
 ## Complete pipeline
 

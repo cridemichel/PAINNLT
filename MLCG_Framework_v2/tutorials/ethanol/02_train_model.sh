@@ -28,9 +28,15 @@ cat << 'JSON' > fast_training_config.json
 JSON
 
 echo "Avvio l'addestramento C++ (3 epoche per test)..."
+rm -f my_ethanol_model.pt my_ethanol_model.pt.manifest.json
 ../../training/build/train_painn \
     my_ethanol_dataset.bin \
     my_ethanol_model.pt \
     fast_training_config.json
 
-echo "Addestramento completato e modello salvato in my_ethanol_model.pt!"
+python3 ../../training/create_model_manifest.py \
+    --model my_ethanol_model.pt \
+    --config fast_training_config.json \
+    --dataset my_ethanol_dataset.bin
+
+echo "Addestramento completato; modello e manifest salvati."

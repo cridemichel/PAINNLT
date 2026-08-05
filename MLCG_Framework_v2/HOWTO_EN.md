@@ -17,7 +17,7 @@ To ensure maximum reproducibility, it is highly recommended to create a dedicate
 
 ```bash
 # Enter the framework folder
-cd MLCG_Framework
+cd MLCG_Framework_v2
 
 # Create a virtual environment named "mlcg_venv"
 python3 -m venv mlcg_venv
@@ -115,25 +115,31 @@ The configuration file controls temperatures, WCA potentials, spring bonds (prio
 > 
 > If you prefer to manually provide the perfect ideal coordinates (e.g. from a PDB) and don't want the script to overwrite them with the trajectory average, set `"auto_align_sites": false`. The script will exactly use the `relative_pos_nm` you typed in the JSON!
 
-#### 1.2 Thermodynamic Architecture (Analytical Priors + End-to-End ML)
+> [!WARNING]
+> **Regeneration required after this patch**
+> Legacy `rigid_bodies_info.json` files do not declare the principal-axis frame, and legacy checkpoints contain no provenance. Regenerate the dataset/rigid-body metadata, model/manifest and checkpoint in that order. Legacy overrides are for controlled diagnostics, not NVE certification.
 
-The v2 framework exclusively uses the **Analytical Priors + End-to-End Neural Network** hybrid approach.
-The PyTorch neural network learns **all** the anharmonicity and multi-body effects (via training on forces and, optionally, frames derived from Force-Matching or End-to-End), while the MD engine integrates basic analytical functions to guarantee topological stability:
-- The analytical functions (Harmonic, FENE, Morse, WCA) are smooth and unbounded.
-- Any thermal fluctuation or predictive error of the Neural Network will be softly contained by the spring (or repelled by the excluded volume), guaranteeing absolute topological stability to the simulation and preventing the "bond broken" errors typical of old IBI tables.
-- The extra energy introduced by the neural network noise ("Noise Heating") is safely dissipated by the Langevin thermostat in NVT, or asymptotically limited by the Conservative Thermodynamic Capping integrated in the C++ plugin for NVE simulations.
+#### 1.2 Thermodynamic architecture (analytical priors + residual ML)
 
-#### Advanced Physics: Virtual Sites, Mass Scaling, and WCA Mixing
-The framework introduces a rigid-body structure to accurately map complex molecules.
-- **Mass Scaling for Virtual Sites**: The primary Center of Mass (COM) retains the true mass and inertia of the rigid body. Virtual sites have their mass and inertia artificially scaled by $10^{-5}$ to prevent them from absorbing kinetic energy from the ESPResSo Langevin thermostat, preserving exact thermodynamic temperature.
-- **Lorentz-Berthelot WCA**: WCA interactions between distinct sites are blended using arithmetic mean for $\sigma_{ij} = (\sigma_i + \sigma_j)/2$ and geometric mean for $\epsilon_{ij} = \sqrt{\epsilon_i \epsilon_j}$.
-- **WCA Overrides**: You can define specific LJ properties for peripheral sites (e.g. bulky bases like Guanine) using the `wca_overrides` array.
+The v2 framework uses an explicit Hamiltonian decomposition:
 
-#### Advanced Physics: NVE Thermodynamic Stability and Toxvaerd Cutoff
-Graph Neural Networks (GNNs) like PaiNN can introduce numerical instabilities (energy drift) during NVE simulations due to mathematical discontinuities at the edges of the cutoff radius. The framework solves this problem natively by guaranteeing $\mathcal{C}^3$ order continuity to preserve the exact $\mathcal{O}(dt^2)$ scaling of the Velocity-Verlet integrator.
-- **Toxvaerd Smoothing**: Traditional envelope functions (like cosine) have been replaced by a Toxvaerd rational polynomial ($n=4$), which gently brings energy, force, and curvature to zero analytically.
-- **Bias Parameterization**: You can train the model by configuring `"use_bias": false` in `tel22_training_config.json`. This removes force "steps" at their source.
-- **Optional Envelope**: If you use models with active biases (`"use_bias": true`), you can enable `"apply_envelope": true` to force $\mathcal{C}^3$ decay downstream, protecting the simulation. Both parameters can be dimensionlessly modulated with `"toxvaerd_alpha": 0.1`.
+```text
+U_tot = U_priors + U_PaiNN
+```
+
+Prior forces are subtracted from the targets during preprocessing and the same priors are recreated in ESPResSo. The PaiNN plugin applies the exact gradient of the network energy, without hidden energy or force clipping. `toxvaerd_alpha` is part of the architecture and must match between training and runtime.
+
+#### Rigid bodies and principal frame
+
+`rigid_bodies_info.json` stores principal moments and virtual-site coordinates in the same principal-axis frame. At startup the COM quaternion is reconstructed by aligning the body-frame template to the initial configuration. Numerical virtual-site masses are `1e-5`; physical mass and inertia remain on the COM.
+
+#### WCA and PBC
+
+WCA mixing uses Lorentz-Berthelot. When `wca_sigma` is `"auto"`, minimum distances use the minimum-image convention, including contacts across periodic faces.
+
+#### PaiNN cutoff
+
+The radial basis uses the Toxvaerd cutoff implemented in `PaiNN_Architecture.hpp`. There are no runtime `use_bias` or `apply_envelope` switches: training, parity and plugin share the same header and parametrization.
 
 #### Advanced Physics: Site-Dependent Priors
 By default, Harmonic bonds, Angles, and Dihedrals act on the Centers of Mass. However, you can map them to specific Virtual Sites using the `site_i`, `site_j`, `site_k`, `site_l` parameters (0-indexed referring to the molecule's mapping definition).
@@ -146,8 +152,8 @@ When applied to Virtual Sites, the forces are geometrically exact, and the frame
 > For explicit bonds (FENE, Morse, etc.), if you omit the numerical parameter and set `"r0": "auto"`, the script will automatically extract the exact mean distance for that pair of atoms directly from the molecular trajectory! This prevents thermodynamic explosions and elegantly resolves scale mismatches between all-atom and coarse-grained representations.
 
 > [!NOTE]
-> **Morse Potential and Force Capping**
-> In ESPResSo, explicit Morse bonds are injected under the hood as `TabulatedDistance` (extended beyond the box size). The framework automatically applies a **Force Capping** (hard limit) to prevent integration explosions caused by the exponentially steep repulsive wall when monomers get too close, ensuring a perfect balance between bond breakability and thermodynamic stability.
+> **Morse and tabulated bonds in NVE**
+> Explicit Morse bonds are represented as `TabulatedDistance`. Production applies no automatic force cap. Because separately interpolated energy and force tables are not accepted as a conservative NVE certificate, `run_cg_md.py --nve` rejects Morse/tabulated priors by default; the override is diagnostic only.
 
 Examples of explicit definition:
 ```json
@@ -193,11 +199,8 @@ make -j4
 In the `training/` folder you will find the `cg_model_config.json` file. This file acts as the **control hub** for the network: before starting the training, you can modify parameters such as `hidden_channels`, `n_layers`, `cutoff`, `learning_rate`, and `epochs` here. The C++ code will read this file at runtime without any need to recompile!
 
 > [!TIP]
-> **Toxvaerd C4 Smoothing and Verlet Stability (The Bias vs Envelope Trade-off)**
-> Graph Neural Networks equipped with *bias* parameters generate discontinuous jumps in force derivatives at the cutoff radius, destroying the quadratic scalability of the Verlet integrator. The framework solves this problem by using the continuous and mathematically rigorous **Toxvaerd C4** cutoff. There are two configurable approaches in `cg_model_config.json`:
-> 
-> 1. **Rigorous Approach (Recommended / Default):** `"use_bias": false` and `"apply_envelope": false`. By eradicating the bias parameters, the network's signal decays to zero smoothly and naturally following the RBF filters. This guarantees perfect theoretical scaling ($\approx 1.99$). However, without biases, the network has fewer free parameters and struggles slightly more to fit short-range energies.
-> 2. **Thermodynamic Approach (Lower Absolute Error):** `"use_bias": true` and `"apply_envelope": true`. The network retains its biases (higher expressive power and significantly lower absolute error), but the forces are "forcibly" zeroed out at the cutoff by an external envelope function. Since the network is trained with the active envelope, it learns to compensate for this damping. The theoretical scaling is slightly more nervous ($\approx 1.89$), but absolute energy fluctuations are much smaller.
+> **Model manifest**
+> `train_painn` writes `<model>.manifest.json` with the effective architecture, split and input sizes. To add SHA-256 values for model, dataset and config, run `python3 training/create_model_manifest.py --model MODEL.pt --config CONFIG.json --dataset DATASET.bin`. Equilibration, production and parity validate the manifest before loading weights.
 
 > [!TIP]
 > **Lipschitz Regularization**
@@ -210,9 +213,11 @@ cd training
 ./train_painn
 ```
 *Note: You can pass custom paths via command-line arguments:*
-`./train_painn <dataset.bin> <output_model.pt> <config.json>`
+`./train_painn <dataset.bin> <output_model.pt> <config.json> [--resume]`
 
-The training will save the compiled PyTorch JIT model optimized for ESPResSo.
+Training saves a LibTorch archive of the PaiNN weights, loaded by the same C++ architecture used in the ESPResSo plugin.
+
+The trainer never resumes an existing output implicitly: choose a new path or remove the old model for a clean run. `--resume` is explicit and requires a compatible manifest; rerun `create_model_manifest.py` after every training run to refresh hashes.
 
 ---
 
@@ -237,7 +242,7 @@ In the case of G-Quadruplexes (TEL22), planar stacking between guanines is essen
 In this setup:
 - `D` at `50.0` kJ/mol ensures the structure remains stably folded at physiological temperatures (300K). Lower values (e.g., `20.0`) would facilitate visible thermal unfolding.
 - `"r0": "auto"` allows the framework to read the exact stacking distance directly from the atomistic trajectory (preventing thermodynamic explosions caused by a manually entered `r0` that misaligns with CG dimensions).
-- ESPResSo will automatically apply "Force Capping" on these tabulated bonds to prevent integration explosions if monomers suffer severe thermal collisions at very short distances.
+- Morse is implemented as a tabulated bond and receives no automatic production force cap. `run_cg_md.py --nve` rejects it by default; use the override only for diagnostics, not for an energy-conservation certificate.
 
 ## Phase 3: Integration and Simulation in ESPResSo
 
@@ -265,10 +270,10 @@ make -j4
 Before starting the production simulation, it is essential to relax the system to remove any steric clashes (overlaps between atoms/beads) originating from the initial topology, especially when using hard repulsive potentials.
 
 For equilibration, use the `equilibrate.py` script. The script performs a multi-phase procedure:
-1. **Steepest Descent (Classical)**: Relaxation using only classical potentials (WCA and bonds).
-2. **Langevin Warm-up (Classical)**: Classical dynamics with "force capping" to relax rotational degrees of freedom without blowing up the system.
-3. **Steepest Descent (ML)**: Final relaxation including the neural network.
-4. **Warm-up (ML)**: Brief dynamics with the active neural network and decreasing force capping.
+1. **Classical steepest descent** with WCA and analytic priors.
+2. **Capped classical NVT** Langevin warm-up.
+3. **Capped ML NVT** after activating PaiNN.
+4. **Uncapped ML NVT** under exactly the production Hamiltonian; this final phase defines the saved checkpoint.
 
 ```bash
 python equilibrate.py \
@@ -286,11 +291,16 @@ python equilibrate.py \
 ```
 **Options supported by `equilibrate.py`:**
 - `--model`, `--config`, `--priors`, `--rb_info`, `--dataset`: Required input files.
-- `--out_checkpoint`: Output checkpoint file name (default: `equilibrated.npz`). Will contain the relaxed positions and velocities.
+- `--out_checkpoint`: Versioned checkpoint containing dynamic state, box, particle identity and SHA-256 provenance for all inputs.
 - `--dt`: Time-step for the MD phase (default: 0.002 ps).
 - `--kT`: Temperature in kJ/mol (default: 2.49 for 300K).
 - `--steps_sd`: Number of steps for Phase 1 Steepest Descent (default: 5000).
-- `--steps_md`: Number of steps for Phase 2 Classical MD Warmup (default: 2000).
+- `--steps_md`: Number of capped classical NVT steps.
+- `--steps_ml_capped`: Number of capped PaiNN NVT steps.
+- `--steps_ml_uncapped`: Final uncapped NVT steps used to define the production checkpoint.
+- `--warmup_chunk`: Progress-reporting interval.
+- `--allow_missing_model_manifest`: Explicit legacy-model override.
+- `--allow_unsafe_mpi`: Enables uncertified MPI experiments only.
 - `--device`: PyTorch device (`cpu`, `cuda`, `mps`, `auto`).
 
 ### 3.3 Running the Production Dynamics
@@ -320,11 +330,14 @@ python run_cg_md.py \
 - `--kT`: Temperature in kJ/mol (default: 2.49).
 - `--device`: PyTorch device.
 - `--nve`: Runs the simulation in the NVE ensemble (no thermostat).
-- `--apply_envelope`: Multiplies the forces predicted by the PaiNN network by a cosine function (envelope) at the cutoff radius to smoothly zero them out, solving NVE stability issues caused by linear Biases. (Optional: automatically loaded from the training JSON!)
+- `--allow_missing_model_manifest`: explicit override for legacy models without a manifest.
+- `--allow_legacy_checkpoint` / `--allow_checkpoint_mismatch`: explicit overrides for legacy or inconsistent checkpoints.
+- `--allow_unsafe_mpi`: enables experimental multi-rank tests only; PaiNN MPI is not certified.
+- `--allow_nonconservative_tables`: allows Morse/tables in NVE for diagnostics only.
 
 > [!TIP]
-> **NVE Stability and Neural Network Bias**
-> By default, the framework trains models with `"use_bias": false` and `"apply_envelope": false`, guaranteeing $\mathcal{O}(dt^2)$ scaling natively. However, if you explicitly choose to train a model with biases (the "Thermodynamic Approach" for lower absolute errors), it is highly recommended to enable `"apply_envelope": true` in the training config. The simulation scripts (`equilibrate.py` and `run_cg_md.py`) will **automatically read** the `use_bias` and `apply_envelope` parameters from your `training_config.json`, ensuring absolute consistency between training and ESPResSo simulation. You no longer need to remember manual CLI flags!
+> **Checkpoint provenance**
+> Patched checkpoints contain SHA-256 values for dataset, model, configuration, priors and rigid-body information, plus box and particle identity. A mismatch stops the run before integration unless explicitly overridden.
 
 ### 3.4 Rigid Body Dynamics and Particle Filtering
 In the framework, simulating multi-site molecules (Multi-Bead) leverages ESPResSo's **Virtual Sites**:
@@ -353,20 +366,9 @@ If you wish to make the Center of Mass particle interact:
 > * Example: `system.part.add(pos=..., type=100, virtual=False)` creates the real particle. Newton will move it, but the neural network (stopping at types < 100) will ignore it.
 > * Example: `system.part.add(pos=..., type=0, virtual=True)` creates a ghost site attached to the rigid body. The Neural Network will see it, apply force to it, and ESPResSo will leverage it, transferring force and torque to the real rigid body it is bound to.
 
-### 3.5 Conservative Thermodynamic Capping and Ghost Management (C++ Plugin)
-The native integration of ML into ESPResSo must deal with periodic boundaries and extremely high energy states. Our C++ plugin (`PaiNN_ML_Potential.cpp`) includes two fundamental physical mechanisms "under-the-hood" to maintain stability and energy conservation:
+### 3.5 Conservativity and C++ plugin limits
 
-**1. Conservative Thermodynamic Capping (Soft-Clip)**
-ML potentials can produce extreme gradients in the case of atomic overlaps ($r \to 0$), causing simulations to crash or explode in energy.
-Traditional "force capping" (e.g., brutally truncating the force at 500 kJ/mol/nm) introduces non-conservative work: integrating a truncated force that is not the exact gradient of the potential breaks the Hamiltonian, causing the temperature to diverge in NVE/NVT ensembles.
-To solve this, **in the plugin we apply a differentiable function (*softplus*) directly to the raw potential ENERGY**, creating a smooth horizontal asymptote for values $< -100$ and $> 500$ kJ/mol. In this way:
-* When particles collide, the energy saturates smoothly and its derivative (the attractive/repulsive force of the network) goes towards zero.
-* The force applied to the system remains *exactly* the analytical gradient of the capped energy ($F = -\nabla E_{capped}$).
-* This preserves the thermodynamics of the system and the Hamiltonian conservation at 100%: the calculation falls back onto the classical WCA branches, preventing thermal and energy explosions.
-
-**2. Authoritative Synchronization of ESPResSo "Ghosts"**
-ESPResSo temporarily duplicates particles (called *ghosts*) to calculate interactions at the boundaries of the periodic simulation box. Often, attributes like the `mol_id` are not consistently synchronized on the ghosts.
-To prevent the ML from calculating intra-molecular interactions (ignored by default) between a ghost and a real particle due to a mismatch in the molecular ID, the C++ plugin creates an **authoritative local map `id_to_mol_id`** at the beginning of the step, built only from real particles. During the construction of the spatial graph tensor, the molecular identities of the ghosts are strictly derived from this local map. This prevents catastrophic force spikes caused by erroneously evaluated bond distances across the box.
+The plugin applies no hidden clipping: PaiNN forces are the gradient of the same reported energy. PyTorch checkpoint loading is fail-fast. The validated path is single-rank; scripts reject multi-rank PaiNN runs by default because many-body halo communication and MPI energy accounting still require a dedicated 1/2/4-rank parity test.
 
 ### 4. Energy Validation (Quadratic Scaling)
 To ensure that the integration of PyTorch and the Priors within ESPResSo conserves energy (symplectic NVE simulation), you can use the dedicated test script:
@@ -374,4 +376,4 @@ To ensure that the integration of PyTorch and the Priors within ESPResSo conserv
 cd simulation
 /path/to/espresso/build/pypresso verify_energy_scaling.py
 ```
-The script will iteratively reduce the time-step `dt` and calculate the standard deviation of the total energy ($E_{kin} + E_{bonded} + E_{ML}$). Since the integration algorithm is *Velocity Verlet*, the error must scale with $O(dt^2)$, which means that halving the time-step will reduce the fluctuation exactly by a factor of $\sim 0.25$!
+The tutorial script preserves every energy series, removes linear drift, estimates autocorrelation, applies a moving-block bootstrap and reports the slope, confidence interval, $R^2$, drift and successive timestep ratios. Velocity-Verlet should give a slope close to 2 and approximately four times smaller deviations when `dt` is halved.

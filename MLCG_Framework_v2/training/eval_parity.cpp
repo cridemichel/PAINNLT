@@ -8,6 +8,8 @@
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
 #include <stdexcept>
+#include <filesystem>
+#include <cmath>
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -286,12 +288,14 @@ int main(int argc, char** argv) {
     std::string dataset_file = "cg_dataset.bin";
     std::string model_file = "cg_model.pt";
     std::string config_file = "cg_model_config.json";
+    bool allow_missing_manifest = false;
     
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--dataset" && i + 1 < argc) dataset_file = argv[++i];
         if (arg == "--model" && i + 1 < argc) model_file = argv[++i];
         if (arg == "--config" && i + 1 < argc) config_file = argv[++i];
+        if (arg == "--allow-missing-model-manifest") allow_missing_manifest = true;
     }
     
     std::ifstream cfg_in(config_file);
@@ -302,6 +306,53 @@ int main(int argc, char** argv) {
     json config;
     cfg_in >> config;
     float cutoff = config.value("cutoff", 1.2f);
+
+    const std::string manifest_file = model_file + ".manifest.json";
+    std::ifstream manifest_in(manifest_file);
+    if (!manifest_in.is_open()) {
+        if (!allow_missing_manifest) {
+            throw std::runtime_error(
+                "Missing model manifest " + manifest_file +
+                ". Retrain with the patched trainer or pass --allow-missing-model-manifest.");
+        }
+        std::cerr << "[WARNING] Missing model manifest: " << manifest_file << "\n";
+    } else {
+        json manifest;
+        manifest_in >> manifest;
+        if (manifest.value("schema_version", -1) != 1 ||
+            manifest.value("framework", std::string()) != "MLCG_Framework_v2") {
+            throw std::runtime_error("Unsupported model manifest: " + manifest_file);
+        }
+        const auto& architecture = manifest.at("architecture");
+        const std::vector<std::string> integer_keys = {
+            "num_species", "hidden_channels", "n_layers", "num_rbf"};
+        for (const auto& key : integer_keys) {
+            if (architecture.at(key).get<int>() != config.at(key).get<int>()) {
+                throw std::runtime_error("Model manifest mismatch for " + key);
+            }
+        }
+        const double manifest_cutoff = architecture.at("cutoff").get<double>();
+        const double manifest_alpha = architecture.at("toxvaerd_alpha").get<double>();
+        if (std::abs(manifest_cutoff - config.at("cutoff").get<double>()) > 1e-12 ||
+            std::abs(manifest_alpha - config.value("toxvaerd_alpha", 0.1)) > 1e-12) {
+            throw std::runtime_error("Model manifest mismatch for cutoff or toxvaerd_alpha");
+        }
+        const auto validate_file_size = [&manifest](
+            const std::string& manifest_key,
+            const std::string& path,
+            const std::string& label) {
+            if (!manifest.contains(manifest_key)) return;
+            std::error_code ec;
+            auto current_size = std::filesystem::file_size(path, ec);
+            if (ec || current_size != manifest.at(manifest_key).get<std::uintmax_t>()) {
+                throw std::runtime_error(label + " file size differs from the training manifest");
+            }
+        };
+        validate_file_size("model_file_size_bytes", model_file, "Model");
+        validate_file_size("dataset_file_size_bytes", dataset_file, "Dataset");
+        validate_file_size("config_file_size_bytes", config_file, "Config");
+        std::cout << "[INFO] Model manifest validated: " << manifest_file << "\n";
+    }
     
     std::vector<CGFrame> dataset = read_cg_dataset(dataset_file);
     if (dataset.empty()) return 1;
