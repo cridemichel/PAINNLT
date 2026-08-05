@@ -10,6 +10,7 @@ DEVICE="${DEVICE:-auto}"
 for file in \
   my_ethanol_dataset.bin \
   my_ethanol_model.pt \
+  my_ethanol_model.pt.manifest.json \
   fast_training_config.json \
   cg_priors.json \
   rigid_bodies_info.json; do

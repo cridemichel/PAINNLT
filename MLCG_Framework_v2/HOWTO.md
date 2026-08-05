@@ -17,7 +17,7 @@ Per garantire la massima riproducibilità, è consigliato creare un ambiente vir
 
 ```bash
 # Entra nella cartella del framework
-cd MLCG_Framework
+cd MLCG_Framework_v2
 
 # Crea un ambiente virtuale chiamato "mlcg_venv"
 python3 -m venv mlcg_venv
@@ -115,25 +115,32 @@ Il file di configurazione controlla temperature, potenziali WCA, legami a molla 
 > 
 > Se preferisci fornire manualmente le coordinate ideali perfette (es. da un PDB) e non vuoi che lo script le sovrascriva con la media della traiettoria, imposta `"auto_align_sites": false`. Lo script utilizzerà esattamente le `relative_pos_nm` che hai digitato nel JSON!
 
-### 1.2 Architettura Termodinamica (Prior Analitici + ML End-to-End)
 
-Il framework v2 utilizza esclusivamente l'approccio ibrido **Prior Analitici + Rete Neurale End-to-End**.
-La rete neurale PyTorch impara **tutta** l'anarmonicità e gli effetti multi-corpo (tramite un addestramento su forze e, opzionalmente, frame derivati dal Force-Matching o End-to-End), mentre il motore MD integra delle funzioni analitiche di base per garantire la stabilità topologica:
-- Le funzioni analitiche (Harmonic, FENE, Morse, WCA) sono lisce e illimitate.
-- Qualsiasi fluttuazione termica o errore predittivo della Rete Neurale verrà contenuto dolcemente dalla molla (o respinto dal volume escluso), garantendo assoluta stabilità topologica alla simulazione e prevenendo gli errori "bond broken" tipici delle vecchie tabelle IBI.
-- L'energia extra introdotta dal rumore della rete neurale ("Noise Heating") viene dissipata in modo sicuro dal termostato di Langevin in NVT, o limitata asintoticamente dal Capping Termodinamico Conservativo integrato nel plugin C++ per le simulazioni NVE.
+> [!WARNING]
+> **Rigenerazione obbligatoria dopo questa patch**
+> I vecchi `rigid_bodies_info.json` non dichiarano il frame degli assi principali e i vecchi checkpoint non contengono provenienza. Rigenera nell'ordine dataset, `rigid_bodies_info.json`, modello/manifest e checkpoint. Gli override legacy servono solo a diagnosi controllate, non alla certificazione NVE.
 
-#### Fisica Avanzata: Virtual Sites, Mass Scaling e Mixing WCA
-Il framework introduce una struttura a corpi rigidi per mappare accuratamente molecole complesse.
-- **Mass Scaling per i Virtual Sites**: Il Centro di Massa (COM) principale conserva la massa e l'inerzia reali del corpo rigido. I siti virtuali hanno la loro massa e inerzia scalate artificialmente di $10^{-5}$ per impedire loro di assorbire energia cinetica dal termostato di Langevin di ESPResSo, preservando la temperatura termodinamica esatta.
-- **Lorentz-Berthelot WCA**: Le interazioni WCA tra siti distinti vengono miscelate usando la media aritmetica per $\sigma_{ij} = (\sigma_i + \sigma_j)/2$ e la media geometrica per $\epsilon_{ij} = \sqrt{\epsilon_i \epsilon_j}$.
-- **WCA Overrides**: Puoi definire proprietà LJ specifiche per siti periferici (es. basi ingombranti come la Guanina) usando l'array `wca_overrides`.
+### 1.2 Architettura termodinamica (prior analitici + ML residuale)
 
-#### Fisica Avanzata: Stabilità Termodinamica NVE e Toxvaerd Cutoff
-Le Reti Neurali a Grafo (GNN) come PaiNN possono introdurre instabilità numeriche (deriva energetica) durante le simulazioni NVE a causa di discontinuità matematiche ai bordi del raggio di cutoff. Il framework risolve questo problema nativamente garantendo una continuità di ordine $\mathcal{C}^3$ per preservare lo scaling esatto $\mathcal{O}(dt^2)$ dell'integratore Velocity-Verlet.
-- **Toxvaerd Smoothing**: Le funzioni di inviluppo tradizionali (come il coseno) sono state sostituite da un polinomio razionale di Toxvaerd ($n=4$), che porta dolcemente a zero energia, forza e curvatura in modo analitico.
-- **Parametrizzazione Bias**: Puoi addestrare il modello configurando `"use_bias": false` in `tel22_training_config.json`. Questo rimuove gli "scalini" di forza alla fonte.
-- **Envelope Opzionale**: Se utilizzi modelli con bias attivi (`"use_bias": true`), puoi abilitare `"apply_envelope": true` per forzare il decadimento $\mathcal{C}^3$ a valle, proteggendo la simulazione. Entrambi i parametri possono essere modulati adimesionalmente con `"toxvaerd_alpha": 0.1`.
+Il framework v2 usa una decomposizione esplicita dell'Hamiltoniana:
+
+```text
+U_tot = U_priors + U_PaiNN
+```
+
+Le forze dei prior vengono sottratte dai target durante il preprocessing e gli stessi prior vengono ricreati in ESPResSo. Il plugin PaiNN applica il gradiente esatto dell'energia della rete, senza clipping nascosto di energia o forza. `toxvaerd_alpha` fa parte dell'architettura e deve coincidere tra training e runtime.
+
+#### Corpi rigidi e frame principale
+
+`rigid_bodies_info.json` salva i momenti principali d'inerzia e le coordinate dei virtual site nello stesso frame degli assi principali. All'avvio, lo script ricostruisce la quaternion del COM allineando la geometria body-frame alla configurazione iniziale. I virtual site hanno massa numerica `1e-5`, mentre massa e inerzia fisiche restano sul COM.
+
+#### WCA e PBC
+
+Il mixing WCA usa Lorentz-Berthelot. Quando `wca_sigma` è `"auto"`, le distanze minime vengono calcolate con la minimum-image convention, inclusi i contatti attraverso le facce periodiche.
+
+#### Cutoff PaiNN
+
+La base radiale usa il cutoff Toxvaerd implementato in `PaiNN_Architecture.hpp`. Non esistono opzioni runtime `use_bias` o `apply_envelope`: training, parity e plugin condividono lo stesso header e la stessa parametrizzazione.
 
 #### Fisica Avanzata: Priors Site-Dependent
 Di default, i legami Armonici, Angoli e Diedri agiscono sui Centri di Massa. Tuttavia, puoi applicarli a Virtual Sites specifici usando i parametri `site_i`, `site_j`, `site_k`, `site_l` (0-indexed rispetto alla definizione del mapping della molecola).
@@ -146,8 +153,8 @@ Quando applicate ai Virtual Sites, le forze sono geometricamente esatte e il fra
 > Per i legami espliciti (FENE, Morse, ecc.), se ometti il parametro numerico e imposti `"r0": "auto"`, lo script estrarrà automaticamente la distanza media esatta per quella coppia di atomi direttamente dalla traiettoria molecolare! Questo previene esplosioni termodinamiche e risolve elegantemente i mismatch di scala tra all-atom e coarse-grained.
 
 > [!NOTE]
-> **Potenziale di Morse e Force Capping**
-> In ESPResSo, i legami di Morse espliciti sono iniettati sotto il cofano come `TabulatedDistance` (estesi oltre la dimensione del box). Il framework applica automaticamente un **Force Capping** (limite rigido) per prevenire le esplosioni di integrazione causate dal muro repulsivo esponenzialmente ripido quando i monomeri si avvicinano troppo, garantendo il perfetto equilibrio tra la frangibilità del legame e la stabilità termodinamica.
+> **Morse e tabelle in NVE**
+> Morse viene ancora rappresentato come `TabulatedDistance`. Poiché ESPResSo interpola separatamente energia e forza, `run_cg_md.py --nve` rifiuta Morse e altri prior tabulati per default. L'override `--allow_nonconservative_tables` è destinato esclusivamente a test diagnostici e non certifica lo scaling energetico.
 
 Esempi di definizione esplicita:
 ```json
@@ -194,11 +201,8 @@ make -j4
 Nella cartella `training/` troverai il file `cg_model_config.json`. Questo file è la **centralina di controllo** della rete: prima di lanciare l'addestramento, puoi modificare qui dentro parametri come `hidden_channels`, `n_layers`, `cutoff`, `learning_rate` e le `epochs`. Il codice C++ leggerà questo file in tempo reale senza bisogno di ricompilare!
 
 > [!TIP]
-> **Toxvaerd C4 Smoothing e Stabilità di Verlet (Il Trade-off tra Bias ed Envelope)**
-> Le Reti Neurali a Grafo con parametri di *bias* generano salti discontinui delle derivate di forza al raggio di cutoff, distruggendo la scalabilità quadratica dell'integratore Verlet. Il framework risolve il problema usando il cutoff continuo e matematicamente rigoroso di **Toxvaerd C4**. Esistono due approcci configurabili in `cg_model_config.json`:
-> 
-> 1. **Approccio Rigoroso (Raccomandato / Default):** `"use_bias": false` e `"apply_envelope": false`. Rimuovendo alla radice i parametri di bias, il segnale della rete decade a zero in modo dolcissimo e naturale seguendo i filtri RBF. Questo garantisce uno scaling teorico perfetto ($\approx 1.99$). Tuttavia, rimuovendo i bias, la rete ha meno parametri liberi e fatica leggermente di più a fittare l'energia a corto raggio.
-> 2. **Approccio Termodinamico (Errore Minore):** `"use_bias": true` e `"apply_envelope": true`. La rete mantiene i bias (elevata potenza espressiva ed errore assoluto nettamente inferiore), ma le forze vengono "forzatamente" azzerate al cutoff da una funzione di inviluppo esterna. Poiché la rete viene addestrata con l'envelope attivo, impara a compensare la strozzatura. Lo scaling teorico è leggermente più nervoso ($\approx 1.89$) ma le fluttuazioni energetiche assolute sono molto più contenute.
+> **Manifest del modello**
+> `train_painn` scrive `<modello>.manifest.json` con architettura effettiva, split e dimensioni degli input. Per aggiungere anche SHA-256 di modello, dataset e config, esegui `python3 training/create_model_manifest.py --model MODEL.pt --config CONFIG.json --dataset DATASET.bin`. Equilibrazione, produzione e parity validano il manifest prima di caricare i pesi.
 
 > [!TIP]
 > **Regolarizzazione di Lipschitz**
@@ -211,9 +215,11 @@ cd training
 ./train_painn
 ```
 *Nota: Puoi passare percorsi personalizzati da riga di comando:*
-`./train_painn <dataset.bin> <output_model.pt> <config.json>`
+`./train_painn <dataset.bin> <output_model.pt> <config.json> [--resume]`
 
-Il training salverà il modello PyTorch JIT compilato e ottimizzato per ESPResSo.
+Il training salva un archivio LibTorch dei pesi PaiNN, caricato dalla stessa architettura C++ usata dal plugin ESPResSo.
+
+Il trainer non riprende implicitamente un file esistente: usa un nuovo percorso o elimina il vecchio modello per un training pulito. `--resume` è esplicito e richiede un manifest compatibile; dopo ogni training esegui nuovamente `create_model_manifest.py` per aggiornare gli hash.
 
 ## Uso del Potenziale di Morse per le Interazioni di Stacking (Esempio TEL22)
 Le reti neurali grafiche a volte faticano a modellare forze non lineari e "fragili" a lungo raggio come l'impilamento (stacking) dei tetrad di Guanina o le forze di Van der Waals intra-catena in modo nativo, specialmente con pochi dati di training. Un modo elegante e veloce per risolvere questo problema è introdurre un **Potenziale di Morse** esplicito come prior.
@@ -236,7 +242,7 @@ Nel caso dei G-Quadruplex (TEL22), lo stacking planare tra le guanine è essenzi
 In questo setup:
 - `D` a `50.0` kJ/mol garantisce che la struttura rimanga stabilmente foldata a temperature fisiologiche (300K). Valori più bassi (es. `20.0`) faciliterebbero un unfolding termico visibile.
 - `"r0": "auto"` permette al framework di leggere l'esatta distanza di stacking direttamente dalla traiettoria atomistica (evitando esplosioni termodinamiche causate da un `r0` immesso manualmente e non perfettamente allineato con le dimensioni del CG).
-- ESPResSo applicherà automaticamente un "Force Capping" su questi legami tabulati per impedire esplosioni di integrazione qualora i monomeri subiscano urti termici severi a brevissima distanza.
+- Il Morse è realizzato come legame tabulato e non riceve alcun force cap automatico in produzione. `run_cg_md.py --nve` lo rifiuta per default perché energia e forza tabulate non costituiscono una certificazione conservativa; l'override è solo diagnostico.
 
 ## 4. Esecuzione della Simulazione (ESPResSo)
 
@@ -263,10 +269,10 @@ make -j4
 Prima di avviare la simulazione di produzione, è fondamentale rilassare il sistema per rimuovere eventuali "clash" sterici (compenetrazioni tra atomi/bead) derivanti dalla topologia iniziale, specialmente quando si usano potenziali repulsivi rigidi.
 
 Per l'equilibrazione, usa lo script `equilibrate.py`. Lo script esegue una procedura in più fasi:
-1. **Steepest Descent (Classico)**: Rilassamento con solo i potenziali classici (WCA e legami).
-2. **Langevin Warm-up (Classico)**: Dinamica classica con "force capping" per rilassare i gradi di libertà rotazionali senza far esplodere il sistema.
-3. **Steepest Descent (ML)**: Rilassamento finale includendo la rete neurale.
-4. **Warm-up (ML)**: Breve dinamica con rete neurale attiva e force capping decrescente.
+1. **Steepest Descent classico**: rilassamento con WCA e prior analitici.
+2. **NVT classica capped**: warm-up Langevin con force cap globale progressivo.
+3. **NVT ML capped**: attivazione PaiNN con force cap globale progressivo.
+4. **NVT ML uncapped**: equilibration finale con esattamente l'Hamiltoniana di produzione e force cap disattivato.
 
 ```bash
 python equilibrate.py \
@@ -284,11 +290,16 @@ python equilibrate.py \
 ```
 **Opzioni supportate da `equilibrate.py`:**
 - `--model`, `--config`, `--priors`, `--rb_info`, `--dataset`: File di input richiesti.
-- `--out_checkpoint`: Nome del file di output (default: `equilibrated.npz`). Conterrà le posizioni e velocità rilassate.
+- `--out_checkpoint`: checkpoint versionato con stato dinamico, box, identità delle particelle e hash SHA-256 degli input.
 - `--dt`: Time-step per la fase di MD (default: 0.002 ps).
 - `--kT`: Temperatura in kJ/mol (default: 2.49 per 300K).
 - `--steps_sd`: Numero di passi per la fase 1 di Steepest Descent (default: 5000).
-- `--steps_md`: Numero di passi per la fase 2 di Warmup Classico (default: 2000).
+- `--steps_md`: Numero di passi per la fase 2 di warm-up classico capped.
+- `--steps_ml_capped`: Passi NVT con PaiNN e force cap globale.
+- `--steps_ml_uncapped`: Passi NVT finali senza force cap; questi definiscono il checkpoint produttivo.
+- `--warmup_chunk`: Intervallo dei messaggi di avanzamento.
+- `--allow_missing_model_manifest`: override esplicito per modelli legacy.
+- `--allow_unsafe_mpi`: abilita soltanto esperimenti MPI non certificati.
 - `--device`: Dispositivo per PyTorch (`cpu`, `cuda`, `mps`, `auto`).
 
 ### 3.3 Esecuzione della Dinamica di Produzione
@@ -320,11 +331,14 @@ python run_cg_md.py \
 - `--kT`: Temperatura in kJ/mol (default: 2.49).
 - `--device`: Dispositivo per PyTorch.
 - `--nve`: Esegue la simulazione nell'ensemble NVE (nessun termostato).
-- `--apply_envelope`: Moltiplica le forze predette dalla rete PaiNN per una funzione coseno (envelope) al raggio di cutoff per azzerarle gradualmente, risolvendo i problemi di stabilità NVE causati dai Bias lineari. (Opzionale: viene caricato in automatico dal JSON di training!)
+- `--allow_missing_model_manifest`: override esplicito per modelli legacy senza manifest.
+- `--allow_legacy_checkpoint` / `--allow_checkpoint_mismatch`: override espliciti per checkpoint legacy o non coerenti.
+- `--allow_unsafe_mpi`: abilita soltanto test sperimentali multi-rank; il percorso PaiNN MPI non è certificato.
+- `--allow_nonconservative_tables`: consente Morse/tabelle in NVE solo come diagnostica.
 
 > [!TIP]
-> **Stabilità NVE e Bias della Rete Neurale**
-> Di default, il framework addestra i modelli con `"use_bias": false` e `"apply_envelope": false`, garantendo uno scaling $\mathcal{O}(dt^2)$ nativo. Tuttavia, se decidi intenzionalmente di addestrare un modello con i bias (l'approccio termodinamico per ridurre l'errore assoluto), è caldamente consigliato abilitare `"apply_envelope": true` nel config di addestramento. Gli script di simulazione (`equilibrate.py` e `run_cg_md.py`) **leggeranno automaticamente** i parametri `use_bias` e `apply_envelope` dal tuo `training_config.json`, garantendoti una coerenza assoluta tra la fase di addestramento e la simulazione in ESPResSo. Non dovrai più ricordarti di aggiungere flag manuali!
+> **Provenienza del checkpoint**
+> I checkpoint patchati contengono hash SHA-256 di dataset, modello, configurazione, prior e rigid-body info, oltre a box e identità delle particelle. Un mismatch interrompe il run prima dell'integrazione, salvo override esplicito.
 
 ### 3.4 Dinamica dei Corpi Rigidi e Filtro delle Particelle
 Nel framework, la simulazione di molecole a più siti (Multi-Bead) sfrutta i **Virtual Sites** di ESPResSo:
@@ -353,20 +367,9 @@ Se si desidera far interagire la particella del Centro di Massa:
 > * Esempio: `system.part.add(pos=..., type=100, virtual=False)` crea la particella reale. Newton la muoverà, ma la rete neurale (fermandosi ai tipi < 100) la ignorerà.
 > * Esempio: `system.part.add(pos=..., type=0, virtual=True)` crea un sito fantasma attaccato al corpo rigido. La Rete Neurale lo vedrà, applicherà la forza su di esso, ed ESPResSo farà leva trasferendo forza e momento torcente al corpo rigido reale a cui è legato.
 
-### 3.5 Capping Termodinamico Conservativo e Gestione dei Ghost (Plugin C++)
-L'integrazione nativa del ML in ESPResSo deve fare i conti con i bordi periodici e gli stati ad altissima energia. Il nostro plugin in C++ (`PaiNN_ML_Potential.cpp`) include due fondamentali meccanismi fisici "under-the-hood" per mantenere la stabilità e la conservazione dell'energia:
+### 3.5 Conservatività e limiti del plugin C++
 
-**1. Il Capping Termodinamico Conservativo (Soft-Clip)**
-I potenziali ML possono produrre gradienti estremi in caso di compenetrazioni atomiche ($r \to 0$), portando le simulazioni a crash o ad esplosioni di energia. 
-Il "force capping" tradizionale (es. troncare brutalmente la forza a 500 kJ/mol/nm) introduce lavoro non conservativo: integrare una forza troncata che non è l'esatto gradiente della potenziale rompe l'Hamiltoniana, causando la divergenza della temperatura nel sistema NVE/NVT.
-Per risolvere questo, **nel plugin applichiamo una funzione differenziabile (*softplus*) direttamente all'ENERGIA potenziale grezza**, creando un asintoto orizzontale dolce per valori $< -100$ e $> 500$ kJ/mol. In questo modo:
-* Quando le particelle collidono, l'energia si satura dolcemente e la sua derivata (la forza attrattiva/repulsiva della rete) va verso zero.
-* La forza applicata al sistema rimane *esattamente* il gradiente analitico dell'energia limitata ($F = -\nabla E_{capped}$).
-* Questo preserva al 100% la termodinamica del sistema e la conservazione Hamiltoniana: il calcolo ricade sui rami classici WCA, evitando esplosioni termiche ed energetiche.
-
-**2. Sincronizzazione Autorevole dei "Ghost" ESPResSo**
-ESPResSo duplica temporaneamente le particelle (chiamate *ghost*) per calcolare le interazioni ai bordi della scatola di simulazione periodica. Spesso, attributi come il `mol_id` non vengono sincronizzati coerentemente sui ghost.
-Per evitare che il ML calcoli interazioni intra-molecolari (ignorate di default) tra un ghost e una particella reale a causa di un disallineamento dell'ID molecolare, il plugin C++ crea una **mappa locale autorevole `id_to_mol_id`** all'inizio dello step, costruita solo dalle particelle reali. Durante la costruzione del tensore del grafo spaziale, le identità molecolari dei ghost vengono rigorosamente ricavate da questa mappa locale. Questo impedisce catastrofici picchi di forza causati da distanze di legame erroneamente valutate attraverso il box.
+Il plugin non applica clipping nascosto: la forza PaiNN è il gradiente della stessa energia riportata. Il caricamento del checkpoint PyTorch è fail-fast. Il percorso validato è single-rank; gli script rifiutano per default esecuzioni PaiNN multi-rank perché la comunicazione many-body dell'halo e la contabilizzazione energetica MPI richiedono ancora una parity dedicata 1/2/4 rank.
 
 ### 4. Validazione dell'Energia (Scaling Quadratico)
 Per assicurarti che l'integrazione di PyTorch e dei Prior all'interno di ESPResSo conservi l'energia (simulazione NVE simplettica), puoi usare lo script di test dedicato:
@@ -374,4 +377,4 @@ Per assicurarti che l'integrazione di PyTorch e dei Prior all'interno di ESPResS
 cd simulation
 /path/to/espresso/build/pypresso verify_energy_scaling.py
 ```
-Lo script ridurrà iterativamente il time-step `dt` e calcolerà la deviazione standard dell'energia totale ($E_{kin} + E_{bonded} + E_{ML}$). Dato che l'algoritmo di integrazione è *Velocity Verlet*, l'errore deve scalare con $O(dt^2)$, il che significa che dimezzando il time-step la fluttuazione si ridurrà esattamente di un fattore $\sim 0.25$!
+Lo script del tutorial salva ogni serie energetica, rimuove il drift lineare, stima l'autocorrelazione, usa un moving-block bootstrap e riporta pendenza, intervallo di confidenza, $R^2$, drift e rapporti tra timestep successivi. Per Velocity-Verlet ci si attende una pendenza prossima a 2 e, dimezzando `dt`, una deviazione circa quattro volte più piccola.

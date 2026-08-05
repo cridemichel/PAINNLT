@@ -7,6 +7,16 @@ import struct
 import os
 from contextlib import ExitStack
 
+from framework_utils import (
+    ensure_single_rank,
+    get_rb_data_by_sites,
+    input_hashes,
+    nonconservative_prior_entries,
+    rigid_body_quaternion,
+    validate_checkpoint,
+    validate_model_manifest,
+)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
@@ -24,6 +34,11 @@ parser.add_argument("--init_kT", type=float, default=None, help="Initialize velo
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
 
 parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
+parser.add_argument("--allow_missing_model_manifest", action="store_true", help="Allow legacy .pt files without the patched training manifest")
+parser.add_argument("--allow_legacy_checkpoint", action="store_true", help="Allow checkpoints without provenance metadata")
+parser.add_argument("--allow_checkpoint_mismatch", action="store_true", help="Continue despite checkpoint hash or particle-identity mismatches")
+parser.add_argument("--allow_unsafe_mpi", action="store_true", help="Allow the uncertified multi-rank PaiNN path")
+parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow Morse/tabulated priors during NVE despite separate energy/force interpolation")
 args = parser.parse_args()
 
 print("[INFO] Loading configurations...")
@@ -36,6 +51,23 @@ with open(args.rb_info, "r") as f:
 
 if args.toxvaerd_alpha is None:
     args.toxvaerd_alpha = float(nn_config.get("toxvaerd_alpha", 0.1))
+runtime_nn_config = dict(nn_config)
+runtime_nn_config["toxvaerd_alpha"] = float(args.toxvaerd_alpha)
+if args.model:
+    validate_model_manifest(
+        args.model,
+        runtime_nn_config,
+        allow_missing=args.allow_missing_model_manifest,
+    )
+
+unsafe_tables = nonconservative_prior_entries(priors)
+if args.nve and unsafe_tables and not args.allow_nonconservative_tables:
+    raise RuntimeError(
+        "NVE certification is disabled for Morse/tabulated priors because ESPResSo "
+        "interpolates energy and force separately. Offending entries: " + ", ".join(unsafe_tables)
+        + ". Pass --allow_nonconservative_tables only for a deliberate diagnostic run."
+    )
+
 if args.dt <= 0:
     raise ValueError("--dt must be positive")
 if args.steps < 0:
@@ -48,12 +80,13 @@ DUMMY_COM_TYPE = nn_config["num_species"] + 1
 
 # Setup ESPResSo System
 print("[INFO] Initializing ESPResSo system...")
-# For a real run, box_l should be read from the first frame of the dataset or config.
-# Here we just set a large box and will resize it if needed.
+# ESPResSo requires an initial box; it is replaced immediately by the dataset box.
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
-# system.force_cap = 10000.0 # Rimosso! Limitava il WCA permettendo compenetrazioni. Abbiamo limitato le forze ML in C++.
+if args.model:
+    ensure_single_rank(system, allow_unsafe_mpi=args.allow_unsafe_mpi)
+# Production uses no global force cap; PaiNN forces remain the exact energy gradient.
 if not args.nve:
     system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 else:
@@ -61,13 +94,6 @@ else:
 
 
 print(f"[INFO] Running {args.steps} integration steps...")
-
-def get_rb_data_by_sites(site_types, rb_info):
-    for resname, data in rb_info.items():
-        expected_types = [site["type"] for site in data["sites"].values()]
-        if sorted(expected_types) == sorted(site_types):
-            return data
-    raise ValueError(f"Unknown site types {site_types}")
 
 print("[INFO] Reading initial frame from dataset...")
 mol_com_parts = {}
@@ -96,13 +122,14 @@ with open(args.dataset, "rb") as f:
             site_types.append(stype)
             site_positions.append(spos)
             
-        rb_data = get_rb_data_by_sites(site_types, rb_info)
+        resname, rb_data = get_rb_data_by_sites(site_types, rb_info)
         mass = rb_data["mass_amu"]
         inertia = rb_data["inertia_amu_nm2"]
+        body_quat = rigid_body_quaternion(center, site_positions, box_dim, rb_data)
         
         p_com = system.part.add(
             pos=center, type=DUMMY_COM_TYPE,
-            mass=mass, rinertia=inertia,
+            mass=mass, rinertia=inertia, quat=body_quat,
             rotation=[True, True, True] if num_sites > 1 else [False, False, False],
             mol_id=mol_idx
         )
@@ -121,11 +148,26 @@ with open(args.dataset, "rb") as f:
 
 if args.checkpoint:
     print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")
-    chk = np.load(args.checkpoint)
-    pos = chk["pos"]
-    vel = chk["v"]
-    quat = chk.get("quat", None)
-    omega = chk.get("omega", None)
+    expected_hashes = input_hashes(
+        dataset=args.dataset,
+        config=args.config,
+        priors=args.priors,
+        rb_info=args.rb_info,
+        model=args.model,
+    )
+    with np.load(args.checkpoint, allow_pickle=False) as chk:
+        validate_checkpoint(
+            chk,
+            system=system,
+            expected_hashes=expected_hashes,
+            expected_config=runtime_nn_config,
+            allow_legacy=args.allow_legacy_checkpoint,
+            allow_mismatch=args.allow_checkpoint_mismatch,
+        )
+        pos = np.asarray(chk["pos"], dtype=float)
+        vel = np.asarray(chk["v"], dtype=float)
+        quat = np.asarray(chk["quat"], dtype=float) if "quat" in chk.files else None
+        omega = np.asarray(chk["omega"], dtype=float) if "omega" in chk.files else None
     
     if len(pos) != len(system.part):
         raise ValueError(f"Checkpoint particle count ({len(pos)}) does not match system ({len(system.part)})")
@@ -207,9 +249,8 @@ if wca.get("epsilon", 0.0) > 0 and has_wca:
                 cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
             )
 
-# [RIMOSSO] Add safety hard-core WCA between all COMs to prevent collapse
-# Ora che le forze ML sono limitate a 500 nel C++, il normale WCA sui siti virtuali 
-# è più che sufficiente a impedire la compenetrazione!
+# No additional COM-COM hard core is added: runtime interactions must match
+# the priors subtracted during preprocessing.
 # system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
 #     epsilon=1.0, sigma=0.35,
 #     cutoff=0.35 * (2.0**(1/6)), shift="auto"

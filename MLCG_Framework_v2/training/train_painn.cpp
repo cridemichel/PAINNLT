@@ -8,6 +8,8 @@
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
 #include <stdexcept>
+#include <filesystem>
+#include <cmath>
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -275,6 +277,99 @@ void progress_bar(double progresso)
         std::cout << "\n";
 }
  
+static std::uintmax_t file_size_or_zero(const std::string& path) {
+    std::error_code ec;
+    auto size = std::filesystem::file_size(path, ec);
+    return ec ? 0 : size;
+}
+
+static void validate_resume_manifest(
+    const std::string& model_path,
+    const std::string& dataset_path,
+    const std::string& config_path,
+    const json& effective_config) {
+    const std::string manifest_path = model_path + ".manifest.json";
+    std::ifstream input(manifest_path);
+    if (!input.is_open()) {
+        throw std::runtime_error(
+            "Existing model has no manifest: " + manifest_path +
+            ". Delete/rename the model to start fresh, or create a valid manifest first.");
+    }
+    json manifest;
+    input >> manifest;
+    if (manifest.value("schema_version", -1) != 1 ||
+        manifest.value("framework", std::string()) != "MLCG_Framework_v2") {
+        throw std::runtime_error("Unsupported model manifest: " + manifest_path);
+    }
+    const auto& architecture = manifest.at("architecture");
+    const std::vector<std::string> integer_keys = {
+        "num_species", "hidden_channels", "n_layers", "num_rbf"};
+    for (const auto& key : integer_keys) {
+        if (architecture.at(key).get<int>() != effective_config.at(key).get<int>()) {
+            throw std::runtime_error("Cannot resume: model manifest mismatch for " + key);
+        }
+    }
+    for (const auto& key : {std::string("cutoff"), std::string("toxvaerd_alpha")}) {
+        if (std::abs(architecture.at(key).get<double>() -
+                     effective_config.at(key).get<double>()) > 1e-12) {
+            throw std::runtime_error("Cannot resume: model manifest mismatch for " + key);
+        }
+    }
+    if (manifest.contains("model_file_size_bytes") &&
+        manifest.at("model_file_size_bytes").get<std::uintmax_t>() != file_size_or_zero(model_path)) {
+        throw std::runtime_error("Cannot resume: model size differs from its manifest");
+    }
+    if (manifest.contains("dataset_file_size_bytes") &&
+        manifest.at("dataset_file_size_bytes").get<std::uintmax_t>() != file_size_or_zero(dataset_path)) {
+        throw std::runtime_error("Cannot resume: dataset size differs from the model manifest");
+    }
+    if (manifest.contains("config_file_size_bytes") &&
+        manifest.at("config_file_size_bytes").get<std::uintmax_t>() != file_size_or_zero(config_path)) {
+        throw std::runtime_error("Cannot resume: config size differs from the model manifest");
+    }
+}
+
+static void write_model_manifest(
+    const std::string& model_path,
+    const std::string& dataset_path,
+    const std::string& config_path,
+    const json& effective_config,
+    float best_validation_loss) {
+    json architecture = {
+        {"num_species", effective_config.at("num_species")},
+        {"hidden_channels", effective_config.at("hidden_channels")},
+        {"n_layers", effective_config.at("n_layers")},
+        {"num_rbf", effective_config.at("num_rbf")},
+        {"cutoff", effective_config.at("cutoff")},
+        {"toxvaerd_alpha", effective_config.at("toxvaerd_alpha")},
+    };
+    json manifest = {
+        {"schema_version", 1},
+        {"framework", "MLCG_Framework_v2"},
+        {"architecture", architecture},
+        {"effective_config", effective_config},
+        {"model_path", model_path},
+        {"model_file_size_bytes", file_size_or_zero(model_path)},
+        {"dataset_path", dataset_path},
+        {"dataset_file_size_bytes", file_size_or_zero(dataset_path)},
+        {"config_path", config_path},
+        {"config_file_size_bytes", file_size_or_zero(config_path)},
+        {"split_seed", 42},
+        {"validation_fraction", 0.2},
+        {"best_validation_loss", best_validation_loss},
+        {"force_units", "kJ mol^-1 nm^-1"},
+        {"torque_units", "kJ mol^-1"},
+    };
+
+    const std::string manifest_path = model_path + ".manifest.json";
+    std::ofstream output(manifest_path);
+    if (!output.is_open()) {
+        throw std::runtime_error("Cannot write model manifest: " + manifest_path);
+    }
+    output << manifest.dump(2) << "\n";
+    std::cout << "[INFO] Model manifest written to: " << manifest_path << "\n";
+}
+
 #ifdef __APPLE__
 extern "C" {
     void* objc_autoreleasePoolPush(void);
@@ -317,56 +412,98 @@ int main(int argc, char* argv[]) {
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
     std::string config_path = "cg_model_config.json";
+    bool resume_training = false;
     
     if (argc >= 2) dataset_path = argv[1];
     if (argc >= 3) model_path = argv[2];
     if (argc >= 4) config_path = argv[3];
+    for (int i = 4; i < argc; ++i) {
+        const std::string option = argv[i];
+        if (option == "--resume") {
+            resume_training = true;
+        } else {
+            std::cerr << "[ERROR] Unknown training option: " << option << "\n";
+            return 2;
+        }
+    }
 
 
     double toxvaerd_alpha = 0.1;
     float torque_weight = 0.0f;
+    json loaded_config = json::object();
 
     // Lettura JSON
     std::ifstream config_file(config_path);
     if (config_file.is_open()) {
-        json j;
-        config_file >> j;
-        if (j.contains("num_species")) num_species = j["num_species"];
-        if (j.contains("hidden_channels")) dim = j["hidden_channels"];
-        if (j.contains("n_layers")) layers = j["n_layers"];
-        if (j.contains("num_rbf")) num_rbf = j["num_rbf"];
-        if (j.contains("cutoff")) cutoff = j["cutoff"];
+        config_file >> loaded_config;
+        if (loaded_config.contains("num_species")) num_species = loaded_config["num_species"];
+        if (loaded_config.contains("hidden_channels")) dim = loaded_config["hidden_channels"];
+        if (loaded_config.contains("n_layers")) layers = loaded_config["n_layers"];
+        if (loaded_config.contains("num_rbf")) num_rbf = loaded_config["num_rbf"];
+        if (loaded_config.contains("cutoff")) cutoff = loaded_config["cutoff"];
 
-        if (j.contains("toxvaerd_alpha")) toxvaerd_alpha = j["toxvaerd_alpha"];
-        if (j.contains("epochs")) max_epochs = j["epochs"];
-        if (j.contains("learning_rate")) initial_lr = j["learning_rate"];
-        if (j.contains("weight_decay")) weight_decay_val = j["weight_decay"];
-        if (j.contains("lipschitz_lambda")) lipschitz_lambda = j["lipschitz_lambda"];
-        if (j.contains("early_stopping_patience")) es_patience = j["early_stopping_patience"];
-        if (j.contains("reduce_lr_patience")) reduce_lr_patience = j["reduce_lr_patience"];
-        if (j.contains("torque_weight")) torque_weight = j["torque_weight"];
-        if (j.contains("batch_size")) batch_size = j["batch_size"];
+        if (loaded_config.contains("toxvaerd_alpha")) toxvaerd_alpha = loaded_config["toxvaerd_alpha"];
+        if (loaded_config.contains("epochs")) max_epochs = loaded_config["epochs"];
+        if (loaded_config.contains("learning_rate")) initial_lr = loaded_config["learning_rate"];
+        if (loaded_config.contains("weight_decay")) weight_decay_val = loaded_config["weight_decay"];
+        if (loaded_config.contains("lipschitz_lambda")) lipschitz_lambda = loaded_config["lipschitz_lambda"];
+        if (loaded_config.contains("early_stopping_patience")) es_patience = loaded_config["early_stopping_patience"];
+        if (loaded_config.contains("reduce_lr_patience")) reduce_lr_patience = loaded_config["reduce_lr_patience"];
+        if (loaded_config.contains("torque_weight")) torque_weight = loaded_config["torque_weight"];
+        if (loaded_config.contains("batch_size")) batch_size = loaded_config["batch_size"];
         if (batch_size <= 0) {
             throw std::runtime_error("batch_size must be positive");
         }
         std::cout << "[INFO] Caricati iperparametri da " << config_path << "\n";
     } else {
-        std::cerr << "[WARNING] Impossibile leggere " << config_path << ". Uso default.\n";
+        std::cerr << "[ERROR] Cannot read required training config: " << config_path << "\n";
+        return 2;
     }
+
+    json effective_config = loaded_config;
+    effective_config["num_species"] = num_species;
+    effective_config["hidden_channels"] = dim;
+    effective_config["n_layers"] = layers;
+    effective_config["num_rbf"] = num_rbf;
+    effective_config["cutoff"] = cutoff;
+    effective_config["toxvaerd_alpha"] = toxvaerd_alpha;
+    effective_config["epochs"] = max_epochs;
+    effective_config["learning_rate"] = initial_lr;
+    effective_config["weight_decay"] = weight_decay_val;
+    effective_config["lipschitz_lambda"] = lipschitz_lambda;
+    effective_config["early_stopping_patience"] = es_patience;
+    effective_config["reduce_lr_patience"] = reduce_lr_patience;
+    effective_config["torque_weight"] = torque_weight;
+    effective_config["batch_size"] = batch_size;
 
     // Inizializza il Modello
     PaiNNModel model(num_species, dim, layers, num_rbf, cutoff, toxvaerd_alpha);
     std::ifstream f(model_path.c_str());
     if (f.good()) {
+        if (!resume_training) {
+            std::cerr << "[ERROR] Output model already exists: " << model_path
+                      << ". Refusing an implicit resume. Use a new output path, delete the old "
+                         "artifact, or pass --resume deliberately.\n";
+            return 2;
+        }
         try {
+            validate_resume_manifest(model_path, dataset_path, config_path, effective_config);
             torch::load(model, model_path);
-            std::cout << "[INFO] Modello esistente caricato da: " << model_path << "\n";
+            std::cout << "[INFO] Modello esistente e manifest coerente caricati da: "
+                      << model_path << "\n";
         } catch (const std::exception& e) {
-            std::cerr << "[WARNING] Impossibile caricare il modello " << model_path << ": " << e.what() << "\n";
-            std::cerr << "Inizio da zero.\n";
+            std::cerr << "[ERROR] Existing model cannot be resumed safely: "
+                      << e.what() << "\n";
+            return 2;
         }
     } else {
-        std::cout << "[INFO] Nessun modello esistente trovato in " << model_path << ". Inizio training da zero.\n";
+        if (resume_training) {
+            std::cerr << "[ERROR] --resume requested but model does not exist: "
+                      << model_path << "\n";
+            return 2;
+        }
+        std::cout << "[INFO] Nessun modello esistente trovato in " << model_path
+                  << ". Inizio training da zero.\n";
     }
     model->to(device);
 
@@ -698,6 +835,12 @@ int main(int argc, char* argv[]) {
             break;
         }
     }
+
+    if (!std::filesystem::exists(model_path)) {
+        throw std::runtime_error("Training ended without producing model file: " + model_path);
+    }
+    write_model_manifest(
+        model_path, dataset_path, config_path, effective_config, early_stopping.best_loss);
 
     return 0;
 }

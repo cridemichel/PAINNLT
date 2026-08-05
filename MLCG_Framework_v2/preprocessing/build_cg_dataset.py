@@ -1,12 +1,13 @@
 import MDAnalysis as mda
 import numpy as np
+
+from geometry_utils import diagonalize_inertia_tensor, minimum_image_distance_matrix
 import struct
 import json
 import argparse
 import sys
 import os
 from scipy.ndimage import gaussian_filter1d
-from scipy.spatial.distance import cdist
 
 
 
@@ -49,6 +50,7 @@ BONDS = config_data.get("bonds", [])
 WCA_SIGMA = config_data.get("wca_sigma", 0.0)
 WCA_EPSILON = config_data.get("wca_epsilon", 0.0)
 WCA_OVERRIDES = config_data.get("wca_overrides", {})
+RIGID_BODIES_CONFIG = config_data.get("rigid_bodies", {})
 
 
 
@@ -87,6 +89,7 @@ def compute_inertia_tensor(positions, masses, center):
     for r, m in zip(rel_pos, masses):
         I += m * (np.dot(r, r) * np.eye(3) - np.outer(r, r))
     return I
+
 
 def kabsch_align(P, Q):
     """Finds rotation matrix R that aligns P to Q using SVD"""
@@ -201,6 +204,7 @@ for b_idx, b in enumerate(BONDS):
 angle_values = {f"dict_{idx}": [] for idx in range(len(ANGLES))}
 dihedral_values = {f"dict_{idx}": [] for idx in range(len(DIHEDRALS))}
 rigid_bodies_info = {}
+principal_axes_lab_by_resname = {}
 
 min_pairwise_distances = {} # Per auto-WCA: (type_i, type_j) -> min_distance
 
@@ -254,16 +258,20 @@ for ts_idx, ts in enumerate(u.trajectory):
         r_vec = unwrapped_pos - center
         total_torque = np.sum(np.cross(r_vec, forces_nm), axis=0)
         
-        if ts_idx == 0:
+        if ts_idx == 0 and resname not in rigid_bodies_info:
             total_mass = float(np.sum(masses))
             I_tensor = compute_inertia_tensor(unwrapped_pos, masses, center)
-            eigvals = np.linalg.eigvalsh(I_tensor)
-            if resname not in rigid_bodies_info:
-                rigid_bodies_info[resname] = {
-                    "mass_amu": round(total_mass, 4),
-                    "inertia_amu_nm2": [round(v, 4) for v in eigvals],
-                    "sites": {}
-                }
+            eigvals, principal_axes = diagonalize_inertia_tensor(I_tensor)
+            principal_axes_lab_by_resname[resname] = principal_axes
+            rb_config = RIGID_BODIES_CONFIG.get(resname, {})
+            rigid_bodies_info[resname] = {
+                "schema_version": 2,
+                "body_frame": "principal_axes",
+                "auto_align_sites": bool(rb_config.get("auto_align_sites", True)),
+                "mass_amu": float(total_mass),
+                "inertia_amu_nm2": [float(v) for v in eigvals],
+                "sites": {}
+            }
         
         frame_centers.append(center)
         frame_forces.append(total_force)
@@ -303,7 +311,8 @@ for ts_idx, ts in enumerate(u.trajectory):
                 if resname in rigid_bodies_info and site_name not in rigid_bodies_info[resname].get("sites", {}):
                     relative_pos_nm = site_pos - center
                     rigid_bodies_info[resname]["sites"][site_name] = {
-                        "type": site_type, "relative_pos_nm": [round(v, 4) for v in relative_pos_nm]
+                        "type": int(site_type),
+                        "relative_pos_nm": [float(v) for v in relative_pos_nm],
                     }
             sites_for_mol.append((site_type, site_pos))
             
@@ -371,8 +380,10 @@ for ts_idx, ts in enumerate(u.trajectory):
             flat_types = np.array(flat_types)
             flat_mols = np.array(flat_mols)
             
-            # Compute full pairwise distance matrix (very fast for ~1000 particles)
-            dist_matrix = cdist(flat_pos, flat_pos)
+            # Pairwise distances with the same minimum-image convention used
+            # during force subtraction, training and runtime.  scipy.cdist on
+            # wrapped coordinates would miss contacts across periodic faces.
+            dist_matrix = minimum_image_distance_matrix(flat_pos, box_dim)
             
             # Mask out particles in the same molecule
             same_mol_mask = flat_mols[:, None] == flat_mols[None, :]
@@ -401,10 +412,6 @@ for ts_idx, ts in enumerate(u.trajectory):
 
 print("\n[INFO] Esecuzione allineamento Kabsch per mediare le geometrie dei corpi rigidi...")
 for resname, info in rigid_bodies_info.items():
-    if not info.get("auto_align_sites", True):
-        print(f"[INFO] {resname}: auto_align_sites=False. Salto la media di Kabsch e uso le posizioni manuali.")
-        continue
-        
     if "sites" not in info or len(info["sites"]) < 2:
         continue
         
@@ -426,19 +433,46 @@ for resname, info in rigid_bodies_info.items():
     snapshots = np.array(snapshots)
     if len(snapshots) == 0: continue
     
-    # Allineamento iterativo (3 iterazioni)
-    ref = snapshots[0].copy()
-    for iteration in range(3):
-        aligned_snapshots = []
-        for snap in snapshots:
-            R = kabsch_align(snap, ref)
-            aligned_snapshots.append((R @ snap.T).T)
-        ref = np.mean(aligned_snapshots, axis=0)
+    if info.get("auto_align_sites", True):
+        # Iterative Kabsch average, anchored to the first observed orientation.
+        ref = snapshots[0].copy()
+        for iteration in range(3):
+            aligned_snapshots = []
+            for snap in snapshots:
+                R = kabsch_align(snap, ref)
+                aligned_snapshots.append((R @ snap.T).T)
+            ref = np.mean(aligned_snapshots, axis=0)
+        source_description = f"mediati {len(snapshots)} snapshot"
+    else:
+        rb_config = RIGID_BODIES_CONFIG.get(resname, {})
+        configured_sites = rb_config.get("sites", {})
+        missing = [name for name in site_names if name not in configured_sites]
+        if missing:
+            raise ValueError(
+                f"Rigid body {resname} has auto_align_sites=False but is missing manual sites: {missing}"
+            )
+        manual = np.asarray(
+            [configured_sites[name]["relative_pos_nm"] for name in site_names], dtype=float
+        )
+        if manual.shape != snapshots[0].shape:
+            raise ValueError(f"Invalid manual rigid-body geometry for {resname}: {manual.shape}")
+        manual_to_lab = kabsch_align(manual, snapshots[0])
+        ref = (manual_to_lab @ manual.T).T
+        source_description = "usata geometria manuale"
         
-    # Aggiorna il JSON con le posizioni medie ideali
+    # Express the ideal geometry in the principal-axis body frame.
+    # ESPResSo stores rinertia as three principal moments, so the virtual-site
+    # offsets must use the same body-fixed axes.
+    principal_axes = principal_axes_lab_by_resname.get(resname)
+    if principal_axes is None:
+        raise RuntimeError(f"Missing principal axes for rigid body {resname}")
+    ref_body = (principal_axes.T @ ref.T).T
     for i, sname in enumerate(site_names):
-        info["sites"][sname]["relative_pos_nm"] = [round(v, 4) for v in ref[i]]
-    print(f"  -> {resname}: mediati {len(snapshots)} snapshot per ottenere la geometria ideale.")
+        info["sites"][sname]["relative_pos_nm"] = [float(v) for v in ref_body[i]]
+    print(
+        f"  -> {resname}: {source_description}; "
+        "siti salvati nel frame degli assi principali."
+    )
 
 print("\n[INFO] Pass 1 completato. Calcolo parametri Harmonic Priors...")
 

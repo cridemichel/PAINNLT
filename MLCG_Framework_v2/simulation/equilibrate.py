@@ -6,6 +6,15 @@ import numpy as np
 import struct
 import os
 
+from framework_utils import (
+    ensure_single_rank,
+    get_rb_data_by_sites,
+    input_hashes,
+    rigid_body_quaternion,
+    save_checkpoint,
+    validate_model_manifest,
+)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=True, help="Trained ML potential (.pt)")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
@@ -23,6 +32,8 @@ parser.add_argument("--steps_ml_uncapped", type=int, default=2000, help="Final N
 parser.add_argument("--warmup_chunk", type=int, default=100, help="Progress-reporting chunk size")
 
 parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
+parser.add_argument("--allow_missing_model_manifest", action="store_true", help="Allow legacy .pt files without the patched training manifest")
+parser.add_argument("--allow_unsafe_mpi", action="store_true", help="Allow the uncertified multi-rank PaiNN path")
 args = parser.parse_args()
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
@@ -34,6 +45,13 @@ with open(args.rb_info, "r") as f:
 
 if args.toxvaerd_alpha is None:
     args.toxvaerd_alpha = float(nn_config.get("toxvaerd_alpha", 0.1))
+runtime_nn_config = dict(nn_config)
+runtime_nn_config["toxvaerd_alpha"] = float(args.toxvaerd_alpha)
+validate_model_manifest(
+    args.model,
+    runtime_nn_config,
+    allow_missing=args.allow_missing_model_manifest,
+)
 
 if args.dt <= 0:
     raise ValueError("--dt must be positive")
@@ -47,20 +65,13 @@ DUMMY_COM_TYPE = nn_config["num_species"] + 1
 
 # Setup ESPResSo System
 print("[INFO] Initializing ESPResSo system...")
-# For a real run, box_l should be read from the first frame of the dataset or config.
-# Here we just set a large box and will resize it if needed.
+# ESPResSo requires an initial box; it is replaced immediately by the dataset box.
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
 system.cell_system.skin = 0.4
+ensure_single_rank(system, allow_unsafe_mpi=args.allow_unsafe_mpi)
 # Set temperature using the provided kT argument
 # Thermostat is OFF initially because Steepest Descent does not support it
-
-def get_rb_data_by_sites(site_types, rb_info):
-    for resname, data in rb_info.items():
-        expected_types = [site["type"] for site in data["sites"].values()]
-        if sorted(expected_types) == sorted(site_types):
-            return data
-    raise ValueError(f"Unknown site types {site_types}")
 
 print("[INFO] Reading initial frame from dataset...")
 mol_com_parts = {}
@@ -96,13 +107,14 @@ with open(args.dataset, "rb") as f:
             site_types.append(stype)
             site_positions.append(spos)
             
-        rb_data = get_rb_data_by_sites(site_types, rb_info)
+        resname, rb_data = get_rb_data_by_sites(site_types, rb_info)
         mass = rb_data["mass_amu"]
         inertia = rb_data["inertia_amu_nm2"]
+        body_quat = rigid_body_quaternion(center, site_positions, box_dim, rb_data)
         
         p_com = system.part.add(
             pos=center, type=DUMMY_COM_TYPE,
-            mass=mass, rinertia=inertia,
+            mass=mass, rinertia=inertia, quat=body_quat,
             rotation=[True, True, True] if num_sites > 1 else [False, False, False],
             mol_id=mol_idx
         )
@@ -369,6 +381,7 @@ else:
 print("[INFO] Warm-up terminato. Preparazione del salvataggio...")
 
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
+system.integrator.run(0, recalc_forces=True)
 pos = []
 vel = []
 quat = []
@@ -385,7 +398,25 @@ for i in range(len(system.part)):
         omega.append(p.omega_body)
     except:
         omega.append([0.0, 0.0, 0.0])
-np.savez(args.out_checkpoint, pos=np.array(pos), v=np.array(vel), quat=np.array(quat), omega=np.array(omega))
+hashes = input_hashes(
+    dataset=args.dataset,
+    config=args.config,
+    priors=args.priors,
+    rb_info=args.rb_info,
+    model=args.model,
+)
+save_checkpoint(
+    args.out_checkpoint,
+    system=system,
+    pos=np.array(pos),
+    vel=np.array(vel),
+    quat=np.array(quat),
+    omega=np.array(omega),
+    hashes=hashes,
+    config=runtime_nn_config,
+    dt=args.dt,
+    kT=args.kT,
+)
 
 print("[INFO] Equilibration finished successfully.")
 
