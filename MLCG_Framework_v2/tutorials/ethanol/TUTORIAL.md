@@ -1,36 +1,68 @@
-# Tutorial: Ethanol Coarse-Graining Pipeline
+# Ethanol coarse-graining tutorial
 
-Benvenuto in questo tutorial! Qui imparerai come eseguire l'intera pipeline MLCG (Machine Learning Coarse-Graining) per l'Etanolo (Multi-Bead), partendo dai dati All-Atom fino ad arrivare alla simulazione in ESPResSo.
+This tutorial exercises one consistent pipeline:
 
-In questa cartella troverai uno script automatizzato `run_full_pipeline.sh` che esegue tutti i passaggi mostrati qui sotto in sequenza (addestrando la rete per sole 3 epoche per fare in fretta). Puoi eseguirlo direttamente, oppure seguire manualmente i passaggi.
+1. map the atomistic trajectory and subtract the analytic priors;
+2. train PaiNN on `my_ethanol_dataset.bin`;
+3. equilibrate with the same priors, box, exclusions and PaiNN model used in production;
+4. run NVE simulations from the same checkpoint at several timesteps;
+5. fit the scaling of the total-energy fluctuations.
 
----
+## Inputs
 
-## Passo 1: Preprocessing e Inversione di Boltzmann (`01_build_dataset.sh`)
-L'Etanolo ha 3 siti CG (CH3, CH2, OH) e vogliamo calcolare i legami armonici tra di essi.
-Puoi lanciare il primo script:
+`01_build_dataset.sh` expects:
+
+- `../../../GROMACS/ethanol.trr`
+- `../../../GROMACS/ethanol.gro`
+
+The preprocessing step writes:
+
+- `my_ethanol_dataset.bin`
+- `cg_priors.json`
+- `rigid_bodies_info.json`
+
+## Training
 
 ```bash
 ./01_build_dataset.sh
-```
-*Cosa succede:* Lo script usa `build_cg_dataset.py`, converte la traiettoria, calcola il prior armonico (salvato in `cg_priors.json`), sottrae analiticamente queste forze dalle forze All-Atom aggregate, e salva tutto nel file binario `my_ethanol_dataset.bin`. Inoltre, salva `rigid_bodies_info.json`.
-
----
-
-## Passo 2: Addestramento del Modello (`02_train_model.sh`)
-Una volta preparato il dataset e purificate le forze classiche, diamo il binario in pasto alla Rete Neurale.
-
-```bash
 ./02_train_model.sh
 ```
-*Cosa succede:* Il programma C++ instanzia il modello in LibTorch, addestra le previsioni sulle forze e sui torques dei residui, e compila il modello TorchScript esportandolo come `.pt`.
 
----
+The second command writes `my_ethanol_model.pt` and
+`fast_training_config.json`.
 
-## Passo 3: Dinamica Molecolare in ESPResSo (`03_run_espresso.sh`)
-Ora che abbiamo i Priors Classici (`cg_priors.json`) e il Potenziale Neurale (`my_ethanol_model.pt`), possiamo farli interagire nativamente nel motore di ESPResSo.
+## ESPResSo equilibration and NVE scaling
+
+Point `PYPRESSO` to an ESPResSo build containing the PaiNN plugin:
 
 ```bash
-./03_run_espresso.sh
+PYPRESSO=/absolute/path/to/espresso/build/pypresso ./03_run_espresso.sh
 ```
-*Cosa succede:* Lo script Python carica il modello, carica i legami armonici in ESPResSo, e verifica che l'integrazione di Newton (con un integratore Simplettico NVE) conservi l'energia totale ($E = E_{kin} + E_{harmonic} + E_{ML}$). Lo script genera anche un plot per validare che l'errore dell'energia scali esattamente con $O(dt^2)$!
+
+Optional device selection:
+
+```bash
+PYPRESSO=/path/to/pypresso DEVICE=cpu ./03_run_espresso.sh
+```
+
+The script first creates `equilibrated_ethanol.npz` under the final
+analytic-prior + PaiNN Hamiltonian.  It then launches NVE runs with several
+values of `dt`, always starting from that same checkpoint.
+
+Outputs:
+
+- `energy_scaling.csv`
+- `scaling_plot.png`
+
+For velocity-Verlet in a smooth conservative system, the standard deviation
+of the total energy should approach a slope of two on the log-log plot as the
+timestep enters the asymptotic regime.
+
+## Complete pipeline
+
+```bash
+PYPRESSO=/absolute/path/to/pypresso ./run_full_pipeline.sh
+```
+
+The script fails immediately if a required executable or artifact is missing;
+it no longer reports success after merely printing a command.

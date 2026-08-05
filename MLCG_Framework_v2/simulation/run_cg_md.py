@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import struct
 import os
+from contextlib import ExitStack
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
@@ -22,7 +23,7 @@ parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperatu
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
 
-parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
+parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
 args = parser.parse_args()
 
 print("[INFO] Loading configurations...")
@@ -32,6 +33,15 @@ with open(args.priors, "r") as f:
     priors = json.load(f)
 with open(args.rb_info, "r") as f:
     rb_info = json.load(f)
+
+if args.toxvaerd_alpha is None:
+    args.toxvaerd_alpha = float(nn_config.get("toxvaerd_alpha", 0.1))
+if args.dt <= 0:
+    raise ValueError("--dt must be positive")
+if args.steps < 0:
+    raise ValueError("--steps must be non-negative")
+if args.log_interval <= 0:
+    raise ValueError("--log_interval must be positive")
 
 # The dummy particle type for COMs should be higher than the max ML species type
 DUMMY_COM_TYPE = nn_config["num_species"] + 1
@@ -347,58 +357,72 @@ if not args.nve:
 import sys
 import espressomd.io.writer.vtf
 print(f"[INFO] Running {args.steps} integration steps...")
-with open("energy.csv", "w") as f_out:
-    f_out.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
-vtf_filename = "cg_trajectory.vtf"
-with open(vtf_filename, "w") as vtf_file:
-    espressomd.io.writer.vtf.writevsf(system, vtf_file)
-    
-    # Inject fake visual bonds connecting COM to its Virtual Sites
-    # This allows VMD `pbc unwrap` to treat the whole nucleotide as a single fragment
-    for mol_idx, com_id in mol_com_parts.items():
-        for (m_idx, s_idx), vs_id in mol_vs_parts.items():
-            if m_idx == mol_idx:
-                vtf_file.write(f"bond {com_id}:{vs_id}\n")
-    
-    # Ensure we get exactly 100 data points for any simulation length
-    chunk_size = max(1, args.steps // 400)
-    num_chunks = args.steps // chunk_size
-    for step in range(num_chunks):
-        system.integrator.run(chunk_size)
-        energies = system.analysis.energy()
-        
-
-        e_tot = energies["total"]
-        if args.model:
-            e_tot += espressomd.painn.get_painn_energy()
-        e_kin = energies["kinetic"]
-        
-        # Calculate E_kin explicitly for COM
-        e_kin_trans = 0.0
-        e_kin_rot = 0.0
-        e_kin_vs = 0.0
-        for p in system.part:
-            v_sq = sum(v**2 for v in p.v)
-            omega_sq = sum(w**2 for w in p.omega_body)
-            k_trans = 0.5 * p.mass * v_sq
-            k_rot = 0.5 * sum(I * w**2 for I, w in zip(p.rinertia, p.omega_body))
-            if p.mass < 1e-4:
-                e_kin_vs += k_trans + k_rot
-            else:
-                e_kin_trans += k_trans
-                e_kin_rot += k_rot
-
-        with open("energy.csv", "a") as f_out:
-            f_out.write(f"{step*chunk_size},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n")
-        
-        max_f = max([sum([f_c**2 for f_c in p.f])**0.5 for p in system.part])
-        max_t = max([sum([t_c**2 for t_c in p.torque_lab])**0.5 for p in system.part if p.mass > 1e-4])
-        
-        print(f"[INFO] Step {(step+1)*chunk_size}/{args.steps} | E_tot: {e_tot:.6f} | E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}")
 
 
-        vtf_file.write(f"\ntimestep {(step+1)*chunk_size}\n")
-        espressomd.io.writer.vtf.writevcf(system, vtf_file)
+def measure_energies():
+    energies = system.analysis.energy()
+    e_tot = energies["total"]
+    if args.model:
+        e_tot += espressomd.painn.get_painn_energy()
+
+    e_kin = energies["kinetic"]
+    e_kin_trans = 0.0
+    e_kin_rot = 0.0
+    for p in system.part:
+        if p.mass < 1e-4:
+            continue
+        v_sq = sum(v**2 for v in p.v)
+        e_kin_trans += 0.5 * p.mass * v_sq
+        e_kin_rot += 0.5 * sum(
+            I * w**2 for I, w in zip(p.rinertia, p.omega_body)
+        )
+    return e_tot, e_kin, e_kin_trans, e_kin_rot
+
+
+with ExitStack() as stack:
+    energy_file = None
+    vtf_file = None
+    if not args.no_log:
+        energy_file = stack.enter_context(open("energy.csv", "w"))
+        energy_file.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
+        vtf_file = stack.enter_context(open("cg_trajectory.vtf", "w"))
+        espressomd.io.writer.vtf.writevsf(system, vtf_file)
+        for mol_idx, com_id in mol_com_parts.items():
+            for (m_idx, _s_idx), vs_id in mol_vs_parts.items():
+                if m_idx == mol_idx:
+                    vtf_file.write(f"bond {com_id}:{vs_id}\n")
+
+    completed = 0
+    while completed < args.steps:
+        current = min(args.log_interval, args.steps - completed)
+        system.integrator.run(current)
+        completed += current
+
+        e_tot, e_kin, e_kin_trans, e_kin_rot = measure_energies()
+        max_f = max(
+            sum(f_c**2 for f_c in p.f) ** 0.5 for p in system.part
+        )
+        real_particles = [p for p in system.part if p.mass > 1e-4]
+        max_t = max(
+            (sum(t_c**2 for t_c in p.torque_lab) ** 0.5 for p in real_particles),
+            default=0.0,
+        )
+
+        print(
+            f"[INFO] Step {completed}/{args.steps} | E_tot: {e_tot:.6f} | "
+            f"E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, "
+            f"Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}"
+        )
+
+        if energy_file is not None:
+            energy_file.write(
+                f"{completed},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n"
+            )
+            energy_file.flush()
+
+        if vtf_file is not None:
+            vtf_file.write(f"\ntimestep {completed}\n")
+            espressomd.io.writer.vtf.writevcf(system, vtf_file)
 
 print("\n[INFO] Simulation finished successfully.")
 

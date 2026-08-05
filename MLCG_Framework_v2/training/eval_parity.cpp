@@ -7,6 +7,7 @@
 #include <limits>
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
+#include <stdexcept>
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -304,6 +305,10 @@ int main(int argc, char** argv) {
     
     std::vector<CGFrame> dataset = read_cg_dataset(dataset_file);
     if (dataset.empty()) return 1;
+
+    // Reproduce exactly the deterministic split used by train_painn.cpp.
+    std::mt19937 split_rng(42);
+    std::shuffle(dataset.begin(), dataset.end(), split_rng);
     
     // Per avere un campione significativo senza metterci ore
     // saltiamo parte del dataset di train e prediamo l'intero validation set
@@ -313,7 +318,7 @@ int main(int argc, char** argv) {
     
     torch::Device device = torch::kCPU;
 #ifdef __APPLE__
-    device = torch::Device(torch::kMPS);
+    if (torch::mps::is_available()) device = torch::Device(torch::kMPS);
 #elif defined(__linux__)
     if (torch::cuda::is_available()) device = torch::Device(torch::kCUDA);
 #endif
@@ -331,7 +336,10 @@ int main(int argc, char** argv) {
     std::ofstream out_csv("parity_forces.csv");
     out_csv << "F_target_x,F_target_y,F_target_z,F_pred_x,F_pred_y,F_pred_z\n";
     
-    size_t batch_size = 5;
+    size_t batch_size = config.value("batch_size", 16);
+    if (batch_size == 0) {
+        throw std::runtime_error("batch_size must be positive");
+    }
     std::vector<CGFrame> val_batch_frames;
     
     int progress = 0;
