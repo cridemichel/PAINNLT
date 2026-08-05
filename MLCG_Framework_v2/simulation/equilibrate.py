@@ -17,9 +17,12 @@ parser.add_argument("--out_checkpoint", type=str, default="equilibrated.npz", he
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps for Phase 1 Steepest Descent (default 5000)")
-parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 Classical MD Warmup (default 2000)")
+parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 classical MD warmup")
+parser.add_argument("--steps_ml_capped", type=int, default=2000, help="ML warmup steps with an ESPResSo force cap")
+parser.add_argument("--steps_ml_uncapped", type=int, default=2000, help="Final NVT steps with the production Hamiltonian and no force cap")
+parser.add_argument("--warmup_chunk", type=int, default=100, help="Progress-reporting chunk size")
 
-parser.add_argument("--toxvaerd_alpha", type=float, default=0.1, help="Toxvaerd smoothing dimensionless parameter")
+parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
 args = parser.parse_args()
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
@@ -28,6 +31,16 @@ with open(args.priors, "r") as f:
     priors = json.load(f)
 with open(args.rb_info, "r") as f:
     rb_info = json.load(f)
+
+if args.toxvaerd_alpha is None:
+    args.toxvaerd_alpha = float(nn_config.get("toxvaerd_alpha", 0.1))
+
+if args.dt <= 0:
+    raise ValueError("--dt must be positive")
+if min(args.steps_sd, args.steps_md, args.steps_ml_capped, args.steps_ml_uncapped) < 0:
+    raise ValueError("equilibration step counts must be non-negative")
+if args.warmup_chunk <= 0:
+    raise ValueError("--warmup_chunk must be positive")
 
 # The dummy particle type for COMs should be higher than the max ML species type
 DUMMY_COM_TYPE = nn_config["num_species"] + 1
@@ -59,9 +72,14 @@ with open(args.dataset, "rb") as f:
     num_total_sites = struct.unpack("i", f.read(4))[0]
     box_dim = struct.unpack("3f", f.read(12))
     
-    # Ensure box is large enough for cutoff=5.0 + skin=0.4
-    min_box = 11.0
-    system.box_l = [max(b, min_box) for b in box_dim]
+    # Use exactly the same periodic box as preprocessing and production.
+    system.box_l = [float(b) for b in box_dim]
+    required_length = 2.0 * (float(nn_config.get("cutoff", 0.0)) + system.cell_system.skin)
+    if min(system.box_l) <= required_length:
+        raise ValueError(
+            f"Dataset box {list(system.box_l)} is too small for cutoff+skin; "
+            f"each dimension must exceed {required_length:.6g} nm"
+        )
     
     for mol_idx in range(num_molecules):
         mol_id = struct.unpack("i", f.read(4))[0]
@@ -100,21 +118,16 @@ with open(args.dataset, "rb") as f:
             p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
-print("[INFO] Setting up WCA exclusions (1-2 and 1-3)...")
-wca_exclusions = set()
-for b in priors.get("bonds", []):
-    m1, m2 = min(b["mol_i"], b["mol_j"]), max(b["mol_i"], b["mol_j"])
-    wca_exclusions.add((m1, m2))
-for a in priors.get("angles", []):
-    m1, m2 = min(a["mol_i"], a["mol_k"]), max(a["mol_i"], a["mol_k"])
-    wca_exclusions.add((m1, m2))
+print("[INFO] Setting up intra-rigid-body non-bonded exclusions...")
+mol_to_vs = {}
+for (m_idx, _site_idx), pid in mol_vs_parts.items():
+    mol_to_vs.setdefault(m_idx, []).append(pid)
 
-for (m1, m2) in wca_exclusions:
-    m1_parts = [mol_com_parts[m1]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m1]
-    m2_parts = [mol_com_parts[m2]] + [pid for (m, s), pid in mol_vs_parts.items() if m == m2]
-    for p1 in m1_parts:
-        for p2 in m2_parts:
-            system.part.by_id(p1).add_exclusion(p2)
+for pids in mol_to_vs.values():
+    for i in range(len(pids)):
+        for j in range(i + 1, len(pids)):
+            system.part.by_id(pids[i]).add_exclusion(pids[j])
+
 
 print("[INFO] Adding priors...")
 # WCA
@@ -136,12 +149,6 @@ if wca.get("epsilon", 0.0) > 0 and has_wca:
                 epsilon=eps_mix, sigma=sigma_mix,
                 cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
             )
-
-# Add safety hard-core WCA between all COMs to prevent collapse (r < 0.112 nm)
-system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
-    epsilon=100.0, sigma=0.1,
-    cutoff=0.1 * (2.0**(1/6)), shift="auto"
-)
 
 # Bonds (Harmonic, FENE, Morse)
 for idx, b in enumerate(priors.get("bonds", [])):
@@ -257,59 +264,62 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
-print("[INFO] Setting up WCA non-bonded interactions to prevent particle collapse...")
-import math
-wca = priors.get("wca", {})
-wca_sigma = wca.get("sigma", 0.3)
-wca_eps = wca.get("epsilon", 1.0)
-overrides = wca.get("overrides", {})
-
-has_wca = wca_sigma > 0 or len(overrides) > 0
-if wca_eps > 0 and has_wca:
-    for i in range(nn_config["num_species"]):
-        sigma_i = overrides.get(str(i), {}).get("sigma", wca_sigma)
-        eps_i = overrides.get(str(i), {}).get("epsilon", wca_eps)
-        for j in range(i, nn_config["num_species"]):
-            sigma_j = overrides.get(str(j), {}).get("sigma", wca_sigma)
-            eps_j = overrides.get(str(j), {}).get("epsilon", wca_eps)
-            sigma_mix = (sigma_i + sigma_j) / 2.0
-            eps_mix = math.sqrt(eps_i * eps_j)
-            
-            system.non_bonded_inter[1+i, 1+j].lennard_jones.set_params(
-                epsilon=eps_mix, sigma=sigma_mix,
-                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
-            )
-
-# Add dummy soft_sphere to ensure Verlet lists include all other types
+# Zero-strength interactions make the ML cutoff visible to ESPResSo's
+# neighbor-list machinery for every particle-type pair.
+ml_cutoff = float(nn_config.get("cutoff", 5.0))
 for i in range(nn_config["num_species"] + 2):
     for j in range(i, nn_config["num_species"] + 2):
-        if not (1 <= i <= nn_config["num_species"] and 1 <= j <= nn_config["num_species"]):
-            system.non_bonded_inter[i, j].soft_sphere.set_params(
-                a=0.0, n=1, cutoff=5.0, offset=0.0)
+        system.non_bonded_inter[i, j].soft_sphere.set_params(
+            a=0.0, n=1, cutoff=ml_cutoff, offset=0.0
+        )
 
-print("[INFO] Phase 1: Warmup with Steepest Descent (Classical Potentials Only)...")
-system.integrator.set_steepest_descent(f_max=10000.0, gamma=50.0, max_displacement=0.001)
-sd_loops = max(1, args.steps_sd // 100)
-for step in range(sd_loops):
-    system.integrator.run(100)
-    print(f"\r[INFO] Phase 1 Progress: {(step+1)*100}/{args.steps_sd} steps", end="", flush=True)
-print(flush=True)
+
+def run_chunks(total_steps, chunk_size, phase_name, after_chunk=None):
+    completed = 0
+    while completed < total_steps:
+        current = min(chunk_size, total_steps - completed)
+        system.integrator.run(current)
+        completed += current
+        if after_chunk is not None:
+            after_chunk(completed, total_steps)
+        print(
+            f"\r[INFO] {phase_name} Progress: {completed}/{total_steps} steps",
+            end="",
+            flush=True,
+        )
+    if total_steps:
+        print(flush=True)
+
+
+if args.steps_sd > 0:
+    print("[INFO] Phase 1: Steepest Descent with classical potentials...")
+    system.integrator.set_steepest_descent(
+        f_max=10000.0, gamma=50.0, max_displacement=0.001
+    )
+    run_chunks(args.steps_sd, args.warmup_chunk, "Phase 1")
+else:
+    print("[INFO] Phase 1 skipped (--steps_sd 0).")
 
 system.integrator.set_vv()
+system.time_step = args.dt
 
+if args.steps_md > 0:
+    print("[INFO] Phase 2: Classical NVT warmup with force cap...", flush=True)
+    system.force_cap = 500.0
+    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
 
+    def update_classical_cap(completed, total):
+        fraction = completed / max(total, 1)
+        system.force_cap = 500.0 + 500.0 * fraction
 
-print("[INFO] Phase 2: Warm-up con force-capping per rilassare i gradi di libertà rotazionali (Classical)...", flush=True)
-system.force_cap = 500.0
-system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
-system.time_step = 0.0001
-
-md_loops = max(1, args.steps_md // 100)
-for warmup_step in range(md_loops):
-    system.integrator.run(100)
-    system.force_cap = 500.0 + warmup_step * 2.5
-    print(f"\r[INFO] Phase 2 Progress: {(warmup_step+1)*100}/{args.steps_md} steps", end="", flush=True)
-print(flush=True)
+    run_chunks(
+        args.steps_md,
+        args.warmup_chunk,
+        "Phase 2",
+        after_chunk=update_classical_cap,
+    )
+else:
+    print("[INFO] Phase 2 skipped (--steps_md 0).")
 
 system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
@@ -323,25 +333,38 @@ espressomd.painn.activate_painn_potential(
     num_rbf=nn_config["num_rbf"],
     cutoff=nn_config["cutoff"],
     toxvaerd_alpha=args.toxvaerd_alpha,
-    device=args.device
+    device=args.device,
 )
 
-# Skip Steepest Descent with ML potential to avoid unphysical rigid body rotations
 system.integrator.set_vv()
+system.time_step = args.dt
 
-print("[INFO] Phase 4: Final Warm-up with ML Potential to relax orientations...", flush=True)
-system.force_cap = 500.0
-system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
-system.time_step = 0.0001
+if args.steps_ml_capped > 0:
+    print("[INFO] Phase 3: ML NVT warmup with force cap...", flush=True)
+    system.force_cap = 500.0
+    system.thermostat.set_langevin(kT=args.kT, gamma=50.0, gamma_rot=50.0, seed=42)
 
-for warmup_step in range(40):
-    system.integrator.run(50)
-    system.force_cap = 500.0 + warmup_step * 25.0
-    print(f"\r[INFO] Phase 4 Progress: {(warmup_step+1)*50}/2000 steps", end="", flush=True)
-print(flush=True)
+    def update_ml_cap(completed, total):
+        fraction = completed / max(total, 1)
+        system.force_cap = 500.0 + 1000.0 * fraction
+
+    run_chunks(
+        args.steps_ml_capped,
+        args.warmup_chunk,
+        "Phase 3",
+        after_chunk=update_ml_cap,
+    )
+else:
+    print("[INFO] Phase 3 skipped (--steps_ml_capped 0).")
 
 system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+
+if args.steps_ml_uncapped > 0:
+    print("[INFO] Phase 4: Final uncapped ML NVT equilibration...", flush=True)
+    run_chunks(args.steps_ml_uncapped, args.warmup_chunk, "Phase 4")
+else:
+    print("[INFO] Phase 4 skipped (--steps_ml_uncapped 0).")
 
 print("[INFO] Warm-up terminato. Preparazione del salvataggio...")
 

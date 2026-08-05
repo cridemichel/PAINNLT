@@ -50,10 +50,14 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
         std::cout << "[PaiNN] Modello C++ inizializzato e pesi caricati da: " << model_path << "\n";
     } catch (const c10::Error& e) {
         std::cerr << "[PaiNN] Errore nel caricamento del modello: " << e.what() << "\n";
+        throw;
     }
 }
 
 void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion) {
+    // Never expose an energy value from a previous integration step.
+    m_last_energy = 0.0;
+
     // 1. Mappatura delle particelle attuali a indici contigui per i tensori PyTorch
     std::unordered_map<int, int> pid_to_idx;
     std::vector<Particle*> idx_to_particle;
@@ -136,23 +140,19 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
 
     torch::Tensor t_batch = torch::zeros({total_particles}, torch::kInt64).to(m_device);
 
-    // 4. Inferenza del Modello
-    torch::Tensor energy = model->forward_with_rij(t_atomic_numbers, t_r_ij, t_edge_index, t_batch);
-    
-    // CORREZIONE BUG GHOST PARTICLES:
-    // Sommiamo solo l'energia atomica calcolata per le particelle *reali* (locali), ignorando i ghost.
-    m_last_energy = energy.slice(0, 0, num_local_ml_particles).sum().item<double>();
-    
-    // 5. Calcolo delle Forze (Gradients w.r.t r_ij)
-    auto grads = torch::autograd::grad({energy.sum()}, {t_r_ij}, {torch::ones_like(energy.sum())}, false, false);
-    torch::Tensor f_r_ij = grads[0].cpu(); // Riportiamo i gradienti su CPU per assegnarli a ESPResSo
+    // 4. Inferenza del Modello.  Work with per-site energies so that the
+    // diagnostic energy can exclude ghost sites.  The force is always the
+    // exact gradient of the same (unclipped) model energy.
+    torch::Tensor atom_energies = model->forward_atom_energies(
+        t_atomic_numbers, t_r_ij, t_edge_index).squeeze(-1);
+    m_last_energy = atom_energies.slice(0, 0, num_local_ml_particles)
+                                  .sum().item<double>();
 
-    // CORREZIONE CRITICA: Limitiamo esplicitamente SOLTANTO la magnitudo della forza ML.
-    // In questo modo, se la rete neurale impazzisce e predice un'attrazione di 1.000.000 kJ/mol, 
-    // viene troncata (es. a 500 kJ/mol/nm), permettendo al potenziale classico WCA di agire 
-    // come un muro invalicabile di cemento armato (dato che lui NON viene troncato).
-    torch::Tensor norms = torch::norm(f_r_ij, 2, 1, /*keepdim=*/true);
-    f_r_ij = torch::where(norms > 500.0f, f_r_ij * (500.0f / norms), f_r_ij);
+    // 5. Calcolo delle Forze (Gradients w.r.t r_ij)
+    torch::Tensor total_energy = atom_energies.sum();
+    auto grads = torch::autograd::grad(
+        {total_energy}, {t_r_ij}, {torch::ones_like(total_energy)}, false, false);
+    torch::Tensor f_r_ij = grads[0].cpu();
 
     // 6. Assegnazione delle Forze alle Particelle ESPResSo
     // Per ogni arco col->row (dove r_ij = r_col - r_row), la forza associata a r_ij è f_r_ij.

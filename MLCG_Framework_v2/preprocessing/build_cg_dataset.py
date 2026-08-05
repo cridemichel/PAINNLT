@@ -103,6 +103,21 @@ def mic_vector(pos1, pos2, box_dim):
     dvec = pos2 - pos1
     return dvec - box_dim * np.round(dvec / box_dim)
 
+def resolve_site_position(frame_centers, frame_sites, mol_idx, site_idx):
+    """Resolve a prior site reference using the runtime convention.
+
+    site_idx == -1 addresses the rigid-body COM; non-negative values are
+    virtual-site indices, not site-type identifiers.
+    """
+    if site_idx == -1:
+        return frame_centers[mol_idx]
+    if site_idx < 0 or site_idx >= len(frame_sites[mol_idx]):
+        raise IndexError(
+            f"Invalid site index {site_idx} for molecule {mol_idx}; "
+            f"available sites: {len(frame_sites[mol_idx])}"
+        )
+    return frame_sites[mol_idx][site_idx][1]
+
 def get_angle(pos_i, pos_j, pos_k, box_dim):
     r_ji = mic_vector(pos_j, pos_i, box_dim)
     r_jk = mic_vector(pos_j, pos_k, box_dim)
@@ -143,28 +158,37 @@ def get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim):
     sin_phi = np.dot(b2, np.cross(m1, m2)) / (b2_norm * np.sqrt(m1_sq * m2_sq))
     return np.arctan2(sin_phi, cos_phi)
 
+def dihedral_energy(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0):
+    phi = get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim)
+    return K * (1.0 - np.cos(n * phi - phi0))
+
+
 def dihedral_forces(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0):
-    b1 = mic_vector(pos_i, pos_j, box_dim)
-    b2 = mic_vector(pos_j, pos_k, box_dim)
-    b3 = mic_vector(pos_k, pos_l, box_dim)
-    m1 = np.cross(b1, b2)
-    m2 = np.cross(b2, b3)
-    m1_sq = np.dot(m1, m1)
-    m2_sq = np.dot(m2, m2)
-    if m1_sq < 1e-12 or m2_sq < 1e-12:
-        return np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3)
-    b2_norm = np.linalg.norm(b2)
-    cos_phi = np.clip(np.dot(m1, m2) / np.sqrt(m1_sq * m2_sq), -1.0, 1.0)
-    sin_phi = np.dot(b2, np.cross(m1, m2)) / (b2_norm * np.sqrt(m1_sq * m2_sq))
-    phi = np.arctan2(sin_phi, cos_phi)
-    dV_dphi = K * n * np.sin(n * phi - phi0)
-    grad_i = (b2_norm / m1_sq) * m1
-    grad_l = -(b2_norm / m2_sq) * m2
-    dot12 = np.dot(b1, b2)
-    dot23 = np.dot(b2, b3)
-    grad_j = ((dot12 / (b2_norm**2)) - 1.0) * grad_i - (dot23 / (b2_norm**2)) * grad_l
-    grad_k = -(grad_i + grad_j + grad_l)
-    return -dV_dphi * grad_i, -dV_dphi * grad_j, -dV_dphi * grad_k, -dV_dphi * grad_l
+    """Conservative reference forces for the cosine dihedral.
+
+    A central finite difference is deliberately used here.  Preprocessing is
+    offline, and this avoids silently subtracting an analytic expression whose
+    sign/index convention differs from the ESPResSo dihedral definition.
+    """
+    positions = np.array([pos_i, pos_j, pos_k, pos_l], dtype=float)
+    forces = np.zeros_like(positions)
+    eps = 1.0e-6
+
+    def energy(coords):
+        return dihedral_energy(*coords, box_dim, K, n, phi0)
+
+    for atom in range(4):
+        for axis in range(3):
+            plus = positions.copy()
+            minus = positions.copy()
+            plus[atom, axis] += eps
+            minus[atom, axis] -= eps
+            forces[atom, axis] = -(energy(plus) - energy(minus)) / (2.0 * eps)
+
+    # Remove round-off drift while preserving internal forces.
+    forces -= forces.mean(axis=0, keepdims=True)
+    return tuple(forces)
+
 
 # =====================================================================
 # 2. PASS 1: DIRECT BOLTZMANN INVERSION
@@ -253,7 +277,14 @@ for ts_idx, ts in enumerate(u.trajectory):
                 else:
                     sel = "name " + " ".join(atom_names)
                     site_atoms = atoms.select_atoms(sel)
-                    mol_site_indices[mol_id][site_name] = [list(atoms.names).index(n) for n in site_atoms.names]
+                    local_by_global = {
+                        int(global_index): local_index
+                        for local_index, global_index in enumerate(atoms.indices)
+                    }
+                    mol_site_indices[mol_id][site_name] = [
+                        local_by_global[int(global_index)]
+                        for global_index in site_atoms.indices
+                    ]
         
         sites_for_mol = []
         for site_name, atom_names in current_mapping.items():
@@ -299,8 +330,8 @@ for ts_idx, ts in enumerate(u.trajectory):
             continue
             
         if i < len(frame_centers) and j < len(frame_centers):
-            pos_i = frame_centers[i] if site_i == -1 else frame_sites[i][site_i][1]
-            pos_j = frame_centers[j] if site_j == -1 else frame_sites[j][site_j][1]
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
             
             r_vec = mic_vector(pos_i, pos_j, box_dim)
             r = np.linalg.norm(r_vec)
@@ -309,13 +340,18 @@ for ts_idx, ts in enumerate(u.trajectory):
     for idx, a in enumerate(ANGLES):
         i, j, k = a["mol_i"], a["mol_j"], a["mol_k"]
         if i < len(frame_centers) and j < len(frame_centers) and k < len(frame_centers):
-            pos_i, pos_j, pos_k = frame_centers[i], frame_centers[j], frame_centers[k]
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, a.get("site_i", -1))
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, a.get("site_j", -1))
+            pos_k = resolve_site_position(frame_centers, frame_sites, k, a.get("site_k", -1))
             angle_values[f"dict_{idx}"].append(get_angle(pos_i, pos_j, pos_k, box_dim))
             
     for idx, d in enumerate(DIHEDRALS):
         i, j, k, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
         if i < len(frame_centers) and j < len(frame_centers) and k < len(frame_centers) and l < len(frame_centers):
-            pos_i, pos_j, pos_k, pos_l = frame_centers[i], frame_centers[j], frame_centers[k], frame_centers[l]
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, d.get("site_i", -1))
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, d.get("site_j", -1))
+            pos_k = resolve_site_position(frame_centers, frame_sites, k, d.get("site_k", -1))
+            pos_l = resolve_site_position(frame_centers, frame_sites, l, d.get("site_l", -1))
             dihedral_values[f"dict_{idx}"].append(get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim))
             
     if WCA_SIGMA == "auto":
@@ -685,8 +721,8 @@ with open(args.output, "wb") as f:
 
             if i >= num_molecules or j >= num_molecules: continue
 
-            pos_i = frame_centers[i] if site_i == -1 else frame_sites[i][site_i][1]
-            pos_j = frame_centers[j] if site_j == -1 else frame_sites[j][site_j][1]
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
 
             r_vec = mic_vector(pos_i, pos_j, box_dim)
             r = np.linalg.norm(r_vec)
@@ -704,9 +740,11 @@ with open(args.output, "wb") as f:
                 k, r0, r_max = b["k"], b["r0"], b["r_max"]
                 diff = r - r0
                 if abs(diff) >= r_max:
-                    f_scalar = 0.0
-                else:
-                    f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
+                    raise ValueError(
+                        f"FENE bond {i}-{j} is outside its domain: "
+                        f"|r-r0|={abs(diff):.6g} >= r_max={r_max:.6g}"
+                    )
+                f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
 
             elif b_type == "morse":
                 D, a, r0 = b["D"], b["a"], b["r0"]
@@ -714,12 +752,6 @@ with open(args.output, "wb") as f:
                 exp_term = np.exp(-a * diff)
                 f_scalar = - 2.0 * a * D * (1.0 - exp_term) * exp_term
 
-
-
-            # Safety clamp: prevents a single badly-sampled bin from injecting
-            # enormous forces into the residual dataset and crashing training.
-            F_MAX_BOND = 10000.0  # kJ/mol/nm
-            f_scalar = float(np.clip(f_scalar, -F_MAX_BOND, F_MAX_BOND))
 
             f_vec = - f_scalar * r_hat
 
@@ -744,17 +776,9 @@ with open(args.output, "wb") as f:
             if i >= num_molecules or j >= num_molecules or k_idx >= num_molecules: continue
             
             site_i, site_j, site_k = a.get("site_i", -1), a.get("site_j", -1), a.get("site_k", -1)
-            pos_i, pos_j, pos_k = frame_centers[i], frame_centers[j], frame_centers[k_idx]
-            
-            if site_i != -1:
-                for st, sp in frame_sites[i]:
-                    if st == site_i: pos_i = sp; break
-            if site_j != -1:
-                for st, sp in frame_sites[j]:
-                    if st == site_j: pos_j = sp; break
-            if site_k != -1:
-                for st, sp in frame_sites[k_idx]:
-                    if st == site_k: pos_k = sp; break
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
+            pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
             
             r_ji = mic_vector(pos_j, pos_i, box_dim)
             r_jk = mic_vector(pos_j, pos_k, box_dim)
@@ -773,22 +797,12 @@ with open(args.output, "wb") as f:
             else:
                 dV_dtheta = 0.0
                 
-            if abs(dV_dtheta) > 1000.0:
-                dV_dtheta = np.sign(dV_dtheta) * 1000.0
-
             grad_i_cos = r_jk / (d_ji * d_jk) - cos_theta * r_ji / (d_ji**2)
             grad_k_cos = r_ji / (d_ji * d_jk) - cos_theta * r_jk / (d_jk**2)
             
             scalar_force = dV_dtheta / sin_theta
-            if abs(scalar_force) > 1000.0:
-                scalar_force = np.sign(scalar_force) * 1000.0
-                
             f_i = scalar_force * grad_i_cos
             f_k = scalar_force * grad_k_cos
-            
-            # Explicit vector clip to prevent gradient magnitude explosion
-            f_i = np.clip(f_i, -1000.0, 1000.0)
-            f_k = np.clip(f_k, -1000.0, 1000.0)
             f_j = -(f_i + f_k)
             
             res_forces[i] -= f_i
@@ -809,65 +823,25 @@ with open(args.output, "wb") as f:
             if i >= num_molecules or j >= num_molecules or k_idx >= num_molecules or l >= num_molecules: continue
             
             site_i, site_j, site_k, site_l = d.get("site_i", -1), d.get("site_j", -1), d.get("site_k", -1), d.get("site_l", -1)
-            pos_i, pos_j, pos_k, pos_l = frame_centers[i], frame_centers[j], frame_centers[k_idx], frame_centers[l]
-            
-            if site_i != -1:
-                for st, sp in frame_sites[i]:
-                    if st == site_i: pos_i = sp; break
-            if site_j != -1:
-                for st, sp in frame_sites[j]:
-                    if st == site_j: pos_j = sp; break
-            if site_k != -1:
-                for st, sp in frame_sites[k_idx]:
-                    if st == site_k: pos_k = sp; break
-            if site_l != -1:
-                for st, sp in frame_sites[l]:
-                    if st == site_l: pos_l = sp; break
-            b1 = mic_vector(pos_i, pos_j, box_dim)
-            b2 = mic_vector(pos_j, pos_k, box_dim)
-            b3 = mic_vector(pos_k, pos_l, box_dim)
-            
-            n1 = np.cross(b1, b2)
-            n2 = np.cross(b2, b3)
-            n1_norm2 = np.dot(n1, n1)
-            n2_norm2 = np.dot(n2, n2)
-            if n1_norm2 < 1e-8 or n2_norm2 < 1e-8: continue
-            
-            b2_norm = np.linalg.norm(b2)
-            if b2_norm < 1e-6: continue
-            
-            m1 = np.cross(n1, b2) / b2_norm
-            x = np.dot(n1, n2) / np.sqrt(n1_norm2 * n2_norm2)
-            y = np.dot(m1, n2) / np.sqrt(np.dot(m1, m1) * n2_norm2)
-            phi = np.arctan2(y, x)
-            
-            if d_type == "cosine":
-                n_mult = d.get("n", 1)
-                dV_dphi = d["k"] * n_mult * np.sin(n_mult * phi - d["phi0"])
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
+            pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
+            pos_l = resolve_site_position(frame_centers, frame_sites, l, site_l)
 
+            if d_type == "cosine":
+                f_i, f_j, f_k, f_l = dihedral_forces(
+                    pos_i,
+                    pos_j,
+                    pos_k,
+                    pos_l,
+                    box_dim,
+                    d["k"],
+                    d.get("n", 1),
+                    d["phi0"],
+                )
             else:
-                dV_dphi = 0.0
-                
-            if abs(dV_dphi) > 1000.0:
-                dV_dphi = np.sign(dV_dphi) * 1000.0
-                
-            f_i = (b2_norm / n1_norm2) * dV_dphi * n1
-            f_l = -(b2_norm / n2_norm2) * dV_dphi * n2
-            
-            dot12 = np.dot(b1, b2)
-            dot23 = np.dot(b2, b3)
-            term1 = (dot12 / (b2_norm**2)) * f_i
-            term2 = (dot23 / (b2_norm**2)) * f_l
-            
-            f_j = -f_i + term1 - term2
-            f_k = -f_l - term1 + term2
-            
-            # Explicit vector clip to prevent any component from exceeding the safety threshold
-            f_i = np.clip(f_i, -1000.0, 1000.0)
-            f_l = np.clip(f_l, -1000.0, 1000.0)
-            f_j = np.clip(f_j, -1000.0, 1000.0)
-            f_k = np.clip(f_k, -1000.0, 1000.0)
-            
+                continue
+
             res_forces[i] -= f_i
             res_forces[j] -= f_j
             res_forces[k_idx] -= f_k

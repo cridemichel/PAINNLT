@@ -7,6 +7,7 @@
 #include <limits>
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
+#include <stdexcept>
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -311,6 +312,7 @@ int main(int argc, char* argv[]) {
     float weight_decay_val = 0.0f;
     int es_patience = 10;
     int reduce_lr_patience = 5;
+    int batch_size = 16;
 
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
@@ -343,6 +345,10 @@ int main(int argc, char* argv[]) {
         if (j.contains("early_stopping_patience")) es_patience = j["early_stopping_patience"];
         if (j.contains("reduce_lr_patience")) reduce_lr_patience = j["reduce_lr_patience"];
         if (j.contains("torque_weight")) torque_weight = j["torque_weight"];
+        if (j.contains("batch_size")) batch_size = j["batch_size"];
+        if (batch_size <= 0) {
+            throw std::runtime_error("batch_size must be positive");
+        }
         std::cout << "[INFO] Caricati iperparametri da " << config_path << "\n";
     } else {
         std::cerr << "[WARNING] Impossibile leggere " << config_path << ". Uso default.\n";
@@ -417,8 +423,6 @@ int main(int argc, char* argv[]) {
     if (force_std < 1e-6f) force_std = 1.0f;
     std::cout << "[INFO] Force std (train): " << force_std << " kJ/(mol*nm)\n\n";
 
-    int batch_size = 16; 
-    
     for (int epoch = 1; epoch <= max_epochs; ++epoch) {
         model->train();
         float train_loss_tot = 0.0f;
@@ -515,11 +519,16 @@ int main(int argc, char* argv[]) {
 
                     float current_batch_weight = static_cast<float>(train_batch_frames.size());
                     float mae_f_phys = torch::l1_loss(pred_mol_forces_diff, batch.target_mol_forces).item<float>();
-                    train_loss_tot        += loss_f_diff.item<float>() * current_batch_weight;
+                    train_loss_tot        += loss_final.item<float>() * current_batch_weight;
                     train_mae_forces_tot  += mae_f_phys                * current_batch_weight; 
                     
                     if (num_valid_mols > 0) {
-                        train_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>() * current_batch_weight;
+                        torch::Tensor abs_t = torch::abs(
+                            pred_mol_torques - batch.target_mol_torques
+                        ) * torque_mask.unsqueeze(-1);
+                        float masked_mae_t = abs_t.sum().item<float>() /
+                                             (num_valid_mols * 3.0f);
+                        train_mae_torques_tot += masked_mae_t * current_batch_weight;
                         train_torque_frames   += train_batch_frames.size();
                     }
 
@@ -624,7 +633,12 @@ int main(int argc, char* argv[]) {
                 val_mae_forces_tot += mae_f_phys          * current_batch_weight;
                 
                 if (num_valid_mols > 0) {
-                    val_mae_torques_tot += torch::l1_loss(pred_mol_torques, batch.target_mol_torques).item<float>() * current_batch_weight;
+                    torch::Tensor abs_t = torch::abs(
+                        pred_mol_torques - batch.target_mol_torques
+                    ) * torque_mask.unsqueeze(-1);
+                    float masked_mae_t = abs_t.sum().item<float>() /
+                                         (num_valid_mols * 3.0f);
+                    val_mae_torques_tot += masked_mae_t * current_batch_weight;
                     val_torque_frames   += val_batch_frames.size();
                 }
 

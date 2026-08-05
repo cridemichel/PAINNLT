@@ -19,7 +19,11 @@ cat << 'JSON' > fast_training_config.json
     "cutoff": 0.5,
     "learning_rate": 0.001,
     "epochs": 3,
-    "batch_size": 16
+    "batch_size": 16,
+    "toxvaerd_alpha": 0.1,
+    "torque_weight": 1.0,
+    "weight_decay": 0.0,
+    "lipschitz_lambda": 0.0
 }
 JSON
 
