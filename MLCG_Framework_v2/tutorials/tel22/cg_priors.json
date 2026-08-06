@@ -3543,39 +3543,39 @@
     ],
     "wca": {
         "sigma": 0.25,
-        "epsilon": 1.0,
+        "epsilon": 50.0,
         "overrides": {
             "0": {
                 "sigma": 0.283,
-                "epsilon": 1.0
+                "epsilon": 50.0
             },
             "1": {
                 "sigma": 0.308,
-                "epsilon": 1.0
+                "epsilon": 50.0
             },
             "2": {
                 "sigma": 0.344,
-                "epsilon": 1.0
+                "epsilon": 50.0
             },
             "3": {
                 "sigma": 0.259,
-                "epsilon": 1.0
+                "epsilon": 50.0
             },
             "4": {
                 "sigma": 0.259,
-                "epsilon": 1.0
+                "epsilon": 50.0
             },
             "5": {
                 "sigma": 0.249,
-                "epsilon": 1.0
+                "epsilon": 50.0
             },
             "6": {
                 "sigma": 0.248,
-                "epsilon": 1.0
+                "epsilon": 50.0
             },
             "7": {
                 "sigma": 0.248,
-                "epsilon": 1.0
+                "epsilon": 50.0
             }
         }
     },
