@@ -24,12 +24,13 @@
     "num_species": 8,
     "toxvaerd_alpha": 0.1
   },
+  "energy_gauge": "isolated_species_zero_v1",
   "force_units": "kJ mol^-1 nm^-1",
   "framework": "MLCG_Framework_v2",
   "model_file_size_bytes": 417254,
   "model_path": "tel22_model.pt",
   "model_sha256": "eee329554d89d2ba3b97c910a0cdd86badbb4e52c377df5b8627846f77efc813",
-  "schema_version": 1,
+  "schema_version": 2,
   "split_seed": 42,
   "torque_units": "kJ mol^-1",
   "validation_fraction": 0.2

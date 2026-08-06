@@ -116,8 +116,9 @@ class FrameworkUtilsTests(unittest.TestCase):
             priors.write_text("{}")
             rb_info.write_text("{}")
             manifest = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "framework": "MLCG_Framework_v2",
+                "energy_gauge": "isolated_species_zero_v1",
                 "architecture": config,
                 "model_file_size_bytes": model.stat().st_size,
                 "model_sha256": sha256_file(model),

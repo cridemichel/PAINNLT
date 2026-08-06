@@ -18,10 +18,26 @@ class PluginSourceInvariantTests(unittest.TestCase):
         self.assertIn("without a local physical node", self.source)
 
     def test_energy_and_forces_use_same_scalar(self):
-        self.assertIn("const torch::Tensor total_energy = atom_energies.sum();", self.source)
+        self.assertIn(
+            "const torch::Tensor total_energy = sum_atom_energies_for_hamiltonian(atom_energies);",
+            self.source,
+        )
+        self.assertIn("atom_energies.to(torch::kFloat64).sum()", self.source)
+        self.assertIn("if (atom_energies.device().is_cpu())", self.source)
         self.assertIn("m_last_energy = total_energy.item<double>();", self.source)
         self.assertIn("{total_energy}, {t_r_ij}", self.source)
         self.assertNotIn("slice(0, 0, num_local_ml_particles)", self.source)
+
+
+    def test_graph_layout_is_deterministic_and_pairs_are_unique(self):
+        self.assertIn("std::sort(", self.source)
+        self.assertIn("lhs->id() < rhs->id()", self.source)
+        self.assertIn("std::map<PairKey, Displacement> physical_pairs", self.source)
+        self.assertIn("physical_pairs.emplace", self.source)
+
+    def test_energy_gauge_is_reported(self):
+        self.assertIn("isolated_species_zero_v1", self.source)
+        self.assertIn("isolated_species_reference_table", self.source)
 
     def test_zero_edge_energy_is_evaluated(self):
         zero_edge = self.source.index("if (num_edges == 0)")

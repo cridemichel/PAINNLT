@@ -42,8 +42,9 @@ def main() -> None:
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text())
     manifest.update({
-        "schema_version": 1,
+        "schema_version": 2,
         "framework": "MLCG_Framework_v2",
+        "energy_gauge": "isolated_species_zero_v1",
         "architecture": architecture,
         "effective_config": config,
         "model_path": str(args.model),
