@@ -297,9 +297,13 @@ static void validate_resume_manifest(
     }
     json manifest;
     input >> manifest;
-    if (manifest.value("schema_version", -1) != 1 ||
+    if (manifest.value("schema_version", -1) != 2 ||
         manifest.value("framework", std::string()) != "MLCG_Framework_v2") {
         throw std::runtime_error("Unsupported model manifest: " + manifest_path);
+    }
+    if (manifest.value("energy_gauge", std::string()) != "isolated_species_zero_v1") {
+        throw std::runtime_error(
+            "Cannot resume: unsupported or missing energy gauge in " + manifest_path);
     }
     const auto& architecture = manifest.at("architecture");
     const std::vector<std::string> integer_keys = {
@@ -344,8 +348,9 @@ static void write_model_manifest(
         {"toxvaerd_alpha", effective_config.at("toxvaerd_alpha")},
     };
     json manifest = {
-        {"schema_version", 1},
+        {"schema_version", 2},
         {"framework", "MLCG_Framework_v2"},
+        {"energy_gauge", "isolated_species_zero_v1"},
         {"architecture", architecture},
         {"effective_config", effective_config},
         {"model_path", model_path},
@@ -475,6 +480,7 @@ int main(int argc, char* argv[]) {
     effective_config["reduce_lr_patience"] = reduce_lr_patience;
     effective_config["torque_weight"] = torque_weight;
     effective_config["batch_size"] = batch_size;
+    effective_config["energy_gauge"] = "isolated_species_zero_v1";
 
     // Inizializza il Modello
     PaiNNModel model(num_species, dim, layers, num_rbf, cutoff, toxvaerd_alpha);

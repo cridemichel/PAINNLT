@@ -60,12 +60,13 @@ struct PaiNNModelImpl : torch::nn::Module {
     std::vector<PaiNNUpdate> updates;
     torch::nn::Sequential readout{nullptr};
     int num_layers;
+    int num_embeddings;
     double cutoff_radius; 
     int num_radial_basis; 
     double toxvaerd_alpha;
     
     PaiNNModelImpl(int num_embeddings, int dim, int layers, int num_rbf = 20, double cutoff = 5.0, double t_alpha = 0.1) 
-        : num_layers(layers), cutoff_radius(cutoff), num_radial_basis(num_rbf), toxvaerd_alpha(t_alpha) {
+        : num_layers(layers), num_embeddings(num_embeddings), cutoff_radius(cutoff), num_radial_basis(num_rbf), toxvaerd_alpha(t_alpha) {
         
         embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
         for (int i = 0; i < layers; ++i) {
@@ -75,6 +76,27 @@ struct PaiNNModelImpl : torch::nn::Module {
         readout = register_module("readout", torch::nn::Sequential(
             torch::nn::Linear(dim, dim / 2), torch::nn::SiLU(), torch::nn::Linear(dim / 2, 1)
         ));
+    }
+
+
+    // Force-only training leaves the additive energy gauge unconstrained.
+    // We fix it by assigning zero energy to every isolated site type.  The
+    // subtraction depends on model parameters and species, but not on
+    // coordinates, so forces and force-training gradients are unchanged.
+    torch::Tensor isolated_species_reference_table(torch::Tensor atomic_numbers) {
+        auto species = torch::arange(num_embeddings, atomic_numbers.options());
+        torch::Tensor s = embedding->forward(species);
+        torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
+        for (int i = 0; i < num_layers; ++i) {
+            std::tie(s, v) = updates[i]->forward(s, v);
+        }
+        return readout->forward(s);
+    }
+
+    torch::Tensor apply_isolated_species_gauge(
+        torch::Tensor atomic_numbers, torch::Tensor raw_atom_energies) {
+        auto references = isolated_species_reference_table(atomic_numbers);
+        return raw_atom_energies - references.index_select(0, atomic_numbers);
     }
 
     // Espansione RBF con Toxvaerd Cutoff (C3 smooth energy)
@@ -118,7 +140,8 @@ struct PaiNNModelImpl : torch::nn::Module {
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
-        torch::Tensor atom_energies = readout->forward(s); 
+        torch::Tensor atom_energies = apply_isolated_species_gauge(
+            batch.atomic_numbers, readout->forward(s));
         torch::Tensor pred_energy = torch::zeros({batch.energy_true.size(0), 1}, s.options());
         pred_energy.index_add_(0, batch.batch_indices, atom_energies);
         return pred_energy;
@@ -151,7 +174,8 @@ struct PaiNNModelImpl : torch::nn::Module {
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
-        torch::Tensor atom_energies = readout->forward(s); 
+        torch::Tensor atom_energies = apply_isolated_species_gauge(
+            atomic_numbers, readout->forward(s));
         
         int64_t num_molecules = batch_indices.max().cpu().item<int64_t>() + 1;
         torch::Tensor pred_energy = torch::zeros({num_molecules, 1}, s.options());
@@ -181,7 +205,8 @@ struct PaiNNModelImpl : torch::nn::Module {
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
-        return readout->forward(s); 
+        return apply_isolated_species_gauge(
+            atomic_numbers, readout->forward(s));
     }
 };
 TORCH_MODULE(PaiNNModel);

@@ -58,12 +58,38 @@ class EnergyScalingAnalysisTests(unittest.TestCase):
         result = SCALING.evaluate_certification(2.0, [1.9, 2.1], 0.999, rows, thresholds)
         self.assertTrue(result["passed"])
         self.assertAlmostEqual(result["median_normalized_ratio"], 1.0)
+        self.assertAlmostEqual(result["max_normalized_ratio_deviation"], 0.0)
+        self.assertTrue(result["checks"]["ratio_all_pairs"])
         self.assertEqual(len(result["ratios"]), 3)
 
         rows[0]["drift_to_std_over_run"] = 1.5
         failed = SCALING.evaluate_certification(2.0, [1.9, 2.1], 0.999, rows, thresholds)
         self.assertFalse(failed["passed"])
         self.assertFalse(failed["checks"]["drift"])
+
+
+    def test_certification_rejects_outlier_ratios_even_when_median_is_one(self):
+        rows = [
+            {"dt": 0.004, "detrended_std": 0.1, "drift_to_std_over_run": 0.1},
+            {"dt": 0.002, "detrended_std": 0.25, "drift_to_std_over_run": 0.1},
+            {"dt": 0.001, "detrended_std": 0.0625, "drift_to_std_over_run": 0.1},
+            {"dt": 0.0005, "detrended_std": 0.015625, "drift_to_std_over_run": 0.1},
+        ]
+        thresholds = {
+            "slope_target": 2.0,
+            "slope_min": 1.8,
+            "slope_max": 2.2,
+            "slope_ci_min": 1.6,
+            "slope_ci_max": 2.4,
+            "max_slope_ci_width": 0.6,
+            "min_r2": 0.98,
+            "max_drift_to_std": 1.0,
+            "ratio_relative_tolerance": 0.5,
+            "min_ratio_pairs": 2,
+        }
+        result = SCALING.evaluate_certification(2.0, [1.9, 2.1], 0.999, rows, thresholds)
+        self.assertFalse(result["checks"]["ratio_all_pairs"])
+        self.assertFalse(result["passed"])
 
 
 if __name__ == "__main__":

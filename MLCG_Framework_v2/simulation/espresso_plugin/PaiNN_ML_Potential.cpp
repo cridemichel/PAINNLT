@@ -3,13 +3,34 @@
 #include "cells.hpp"
 #include "exclusions.hpp"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
+
+namespace {
+
+torch::Tensor sum_atom_energies_for_hamiltonian(torch::Tensor const &atom_energies) {
+    // CPU supports a float64 accumulator, which substantially reduces loss of
+    // significance.  Apple MPS does not support float64 tensors, so after the
+    // isolated-species gauge has removed the large constant offset we retain
+    // the native float32 scalar there.  Both branches remain part of the same
+    // autograd graph used for forces and reported energy.
+    if (atom_energies.device().is_cpu()) {
+        return atom_energies.to(torch::kFloat64).sum();
+    }
+    return atom_energies.sum();
+}
+
+} // namespace
 
 PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str) 
     : m_cutoff(cutoff), m_num_species(num_species) {
@@ -48,6 +69,27 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
             }
         }
         model->to(m_device);
+
+        // Report the raw, unconstrained isolated-species offsets.  They are
+        // subtracted inside every forward pass by the fixed energy gauge and
+        // therefore never contaminate the logged Hamiltonian.
+        {
+            torch::NoGradGuard no_grad;
+            auto species = torch::arange(
+                m_num_species,
+                torch::TensorOptions().dtype(torch::kInt64).device(m_device));
+            auto references = model->isolated_species_reference_table(species)
+                                  .squeeze(-1)
+                                  .to(torch::kCPU)
+                                  .to(torch::kFloat64);
+            const double min_reference = references.min().item<double>();
+            const double max_reference = references.max().item<double>();
+            const double max_abs_reference = references.abs().max().item<double>();
+            std::cout << "[PaiNN] Energy gauge: isolated_species_zero_v1 "
+                      << "(raw offsets min=" << min_reference
+                      << ", max=" << max_reference
+                      << ", max_abs=" << max_abs_reference << ")\n";
+        }
         
         std::cout << "[PaiNN] Modello C++ inizializzato e pesi caricati da: " << model_path << "\n";
     } catch (const c10::Error& e) {
@@ -68,19 +110,31 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     std::vector<Particle*> idx_to_particle;
     std::vector<int64_t> atomic_numbers;
 
+    // Cell and Verlet traversal order can change after neighbour-list rebuilds.
+    // Assign graph-node indices from particle ids instead, so the same physical
+    // configuration always produces the same tensor layout.
+    std::vector<Particle*> local_ml_particles;
     auto local_particles = cell_structure.local_particles();
     for (auto& p : local_particles) {
-        if (p.type() >= m_num_species) {
-            continue;
+        if (p.type() < m_num_species) {
+            local_ml_particles.push_back(&p);
         }
+    }
+    std::sort(
+        local_ml_particles.begin(), local_ml_particles.end(),
+        [](Particle const* lhs, Particle const* rhs) { return lhs->id() < rhs->id(); });
+
+    idx_to_particle.reserve(local_ml_particles.size());
+    atomic_numbers.reserve(local_ml_particles.size());
+    for (auto* particle : local_ml_particles) {
         const int index = static_cast<int>(idx_to_particle.size());
-        const auto inserted = pid_to_idx.emplace(p.id(), index);
+        const auto inserted = pid_to_idx.emplace(particle->id(), index);
         if (!inserted.second) {
             throw std::runtime_error(
-                "PaiNN found duplicate local particle id " + std::to_string(p.id()));
+                "PaiNN found duplicate local particle id " + std::to_string(particle->id()));
         }
-        idx_to_particle.push_back(&p);
-        atomic_numbers.push_back(p.type());
+        idx_to_particle.push_back(particle);
+        atomic_numbers.push_back(particle->type());
     }
 
     const int num_particles = static_cast<int>(idx_to_particle.size());
@@ -88,9 +142,9 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         return;
     }
 
-    std::vector<int64_t> edge_rows;
-    std::vector<int64_t> edge_cols;
-    std::vector<float> r_ij_data;
+    using PairKey = std::pair<int, int>;
+    using Displacement = std::array<float, 3>;
+    std::map<PairKey, Displacement> physical_pairs;
 
     auto painn_kernel = [&](Particle const& p1, Particle const& p2, Distance const& d) {
         if (p1.type() >= m_num_species || p2.type() >= m_num_species) {
@@ -122,29 +176,65 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
                 "Increase the box or reduce cutoff+skin.");
         }
 
-        // In ESPResSo, Distance::vec21 is calculated as p1.pos() - p2.pos(),
-        // which means d.vec21 is r1 - r2.
-        // For edge idx2 -> idx1: row=idx1, col=idx2.
-        // PyTorch expects r_ij = r_row - r_col
-        
-        // Edge 1: row=idx2, col=idx1
-        // r_ij = r_2 - r_1 = - (r_1 - r_2) = -d.vec21
-        edge_rows.push_back(idx2);
-        edge_cols.push_back(idx1);
-        r_ij_data.push_back(static_cast<float>(-d.vec21[0]));
-        r_ij_data.push_back(static_cast<float>(-d.vec21[1]));
-        r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
+        // Store each physical pair once in a canonical order.  Periodic ghost
+        // aliases may expose the same pair more than once; duplicate traversal
+        // must not duplicate the interaction energy or force.
+        const int low = std::min(idx1, idx2);
+        const int high = std::max(idx1, idx2);
+        Displacement r_low_minus_high{};
+        if (idx1 == low) {
+            r_low_minus_high = {
+                static_cast<float>(d.vec21[0]),
+                static_cast<float>(d.vec21[1]),
+                static_cast<float>(d.vec21[2])};
+        } else {
+            r_low_minus_high = {
+                static_cast<float>(-d.vec21[0]),
+                static_cast<float>(-d.vec21[1]),
+                static_cast<float>(-d.vec21[2])};
+        }
 
-        // Edge 2: row=idx1, col=idx2
-        // r_ij = r_1 - r_2 = d.vec21
-        edge_rows.push_back(idx1);
-        edge_cols.push_back(idx2);
-        r_ij_data.push_back(static_cast<float>(d.vec21[0]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[1]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[2]));
+        const auto [it, inserted] = physical_pairs.emplace(
+            PairKey{low, high}, r_low_minus_high);
+        if (!inserted) {
+            double squared_difference = 0.0;
+            for (int axis = 0; axis < 3; ++axis) {
+                const double difference =
+                    static_cast<double>(it->second[axis]) - r_low_minus_high[axis];
+                squared_difference += difference * difference;
+            }
+            if (squared_difference > 1.0e-12) {
+                throw std::runtime_error(
+                    "PaiNN encountered inconsistent periodic images for the same physical pair. "
+                    "Increase the box or reduce cutoff+skin.");
+            }
+        }
     };
 
     cell_structure.non_bonded_loop(painn_kernel, verlet_criterion);
+
+    std::vector<int64_t> edge_rows;
+    std::vector<int64_t> edge_cols;
+    std::vector<float> r_ij_data;
+    edge_rows.reserve(2 * physical_pairs.size());
+    edge_cols.reserve(2 * physical_pairs.size());
+    r_ij_data.reserve(6 * physical_pairs.size());
+    for (const auto& [pair, r_low_minus_high] : physical_pairs) {
+        const int low = pair.first;
+        const int high = pair.second;
+
+        edge_rows.push_back(low);
+        edge_cols.push_back(high);
+        r_ij_data.insert(
+            r_ij_data.end(),
+            {r_low_minus_high[0], r_low_minus_high[1], r_low_minus_high[2]});
+
+        edge_rows.push_back(high);
+        edge_cols.push_back(low);
+        r_ij_data.insert(
+            r_ij_data.end(),
+            {-r_low_minus_high[0], -r_low_minus_high[1], -r_low_minus_high[2]});
+    }
 
     const int num_edges = static_cast<int>(edge_rows.size());
     torch::Tensor t_atomic_numbers =
@@ -159,13 +249,12 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         t_r_ij = torch::empty(
             {0, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(m_device));
 
-        // Isolated-site readout energies are part of the trained Hamiltonian.
-        // They are position-independent, so forces are exactly zero, but the
-        // energy must still be reported instead of being reset to zero.
+        // The isolated-species gauge makes this energy exactly zero while
+        // retaining a complete forward path and exactly zero forces.
         const torch::Tensor atom_energies =
             model->forward_atom_energies(t_atomic_numbers, t_r_ij, t_edge_index)
                 .squeeze(-1);
-        m_last_energy = atom_energies.sum().item<double>();
+        m_last_energy = sum_atom_energies_for_hamiltonian(atom_energies).item<double>();
         return;
     }
 
@@ -187,7 +276,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     const torch::Tensor atom_energies =
         model->forward_atom_energies(t_atomic_numbers, t_r_ij, t_edge_index)
             .squeeze(-1);
-    const torch::Tensor total_energy = atom_energies.sum();
+    const torch::Tensor total_energy = sum_atom_energies_for_hamiltonian(atom_energies);
 
     // Energy and forces are derived from exactly the same scalar Hamiltonian.
     // There are no ghost atom-energy terms in this single-rank graph.

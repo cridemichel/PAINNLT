@@ -15,8 +15,9 @@ from typing import Any, Iterable
 import numpy as np
 
 
-CHECKPOINT_SCHEMA_VERSION = 2
-MODEL_MANIFEST_SCHEMA_VERSION = 1
+CHECKPOINT_SCHEMA_VERSION = 3
+MODEL_MANIFEST_SCHEMA_VERSION = 2
+ENERGY_GAUGE = "isolated_species_zero_v1"
 
 
 def sha256_file(path: str | Path) -> str:
@@ -79,6 +80,12 @@ def validate_model_manifest(
         )
     if manifest.get("framework") != "MLCG_Framework_v2":
         raise ValueError(f"Unexpected framework identifier in {manifest_path}: {manifest.get('framework')}")
+    if manifest.get("energy_gauge") != ENERGY_GAUGE:
+        raise ValueError(
+            f"Unsupported or missing energy gauge in {manifest_path}: "
+            f"{manifest.get('energy_gauge')!r}; expected {ENERGY_GAUGE!r}. "
+            "Regenerate the manifest with training/create_model_manifest.py."
+        )
 
     expected = _effective_architecture(config)
     recorded = manifest.get("architecture", {})
@@ -161,6 +168,7 @@ def save_checkpoint(
     metadata = {
         "schema_version": CHECKPOINT_SCHEMA_VERSION,
         "framework": "MLCG_Framework_v2",
+        "energy_gauge": ENERGY_GAUGE,
         "input_hashes": hashes,
         "architecture": _effective_architecture(config),
         "created_with_dt_ps": float(dt),
@@ -222,6 +230,10 @@ def validate_checkpoint(
         )
 
     mismatches: list[str] = []
+    if metadata.get("energy_gauge") != ENERGY_GAUGE:
+        mismatches.append(
+            f"energy_gauge: checkpoint={metadata.get('energy_gauge')!r}, runtime={ENERGY_GAUGE!r}"
+        )
     recorded_architecture = metadata.get("architecture", {})
     expected_architecture = _effective_architecture(expected_config)
     for key, expected in expected_architecture.items():

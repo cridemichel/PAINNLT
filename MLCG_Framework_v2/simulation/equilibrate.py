@@ -67,7 +67,7 @@ DUMMY_COM_TYPE = nn_config["num_species"] + 1
 print("[INFO] Initializing ESPResSo system...")
 # ESPResSo requires an initial box; it is replaced immediately by the dataset box.
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
-system.cell_system.skin = 0.8
+system.cell_system.skin = 0.4
 system.time_step = float(args.dt)
 ensure_single_rank(system, allow_unsafe_mpi=args.allow_unsafe_mpi)
 # Set temperature using the provided kT argument

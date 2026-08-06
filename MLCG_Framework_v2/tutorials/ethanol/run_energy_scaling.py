@@ -20,7 +20,7 @@ def parse_args():
         description="Run NVE timestep scaling with drift and block-bootstrap diagnostics."
     )
     parser.add_argument("--pypresso", required=True, type=Path)
-    parser.add_argument("--device", default="auto")
+    parser.add_argument("--device", default="cpu", help="Use CPU by default for deterministic NVE certification")
     parser.add_argument("--physical_time", type=float, default=5.0, help="Physical time per run in ps")
     parser.add_argument(
         "--dts", type=float, nargs="+",
@@ -168,6 +168,9 @@ def evaluate_certification(slope, slope_ci, r2, fit_rows, thresholds):
     ratios = adjacent_scaling_ratios(fit_rows)
     ratio_values = np.asarray([row["normalized_ratio"] for row in ratios], dtype=float)
     ratio_median = float(np.median(ratio_values)) if len(ratio_values) else math.nan
+    max_ratio_deviation = (
+        float(np.max(np.abs(ratio_values - 1.0))) if len(ratio_values) else math.inf
+    )
     max_drift_to_std = max(float(row["drift_to_std_over_run"]) for row in fit_rows)
 
     checks = {
@@ -183,6 +186,10 @@ def evaluate_certification(slope, slope_ci, r2, fit_rows, thresholds):
             math.isfinite(ratio_median)
             and abs(ratio_median - 1.0) <= thresholds["ratio_relative_tolerance"]
         ),
+        "ratio_all_pairs": (
+            len(ratio_values) >= thresholds["min_ratio_pairs"]
+            and bool(np.all(np.abs(ratio_values - 1.0) <= thresholds["ratio_relative_tolerance"]))
+        ),
     }
     return {
         "passed": all(checks.values()),
@@ -190,6 +197,7 @@ def evaluate_certification(slope, slope_ci, r2, fit_rows, thresholds):
         "slope_ci_width": float(ci_width),
         "max_drift_to_std_over_run": float(max_drift_to_std),
         "median_normalized_ratio": ratio_median,
+        "max_normalized_ratio_deviation": max_ratio_deviation,
         "ratios": ratios,
         "thresholds": dict(thresholds),
     }

@@ -23,6 +23,8 @@ def parse_args():
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--rtol", type=float, default=2.0e-5)
     parser.add_argument("--atol", type=float, default=2.0e-6)
+    parser.add_argument("--fd_rtol", type=float, default=1.0e-2)
+    parser.add_argument("--fd_atol", type=float, default=1.0e-3)
     return parser.parse_args()
 
 
@@ -111,6 +113,27 @@ def main():
             f"boundary={pbc_forces}\ninterior={interior_forces}"
         )
 
+    # Direct Hamiltonian check: the force reported by ESPResSo must be the
+    # negative central finite difference of the same PaiNN energy scalar.
+    fd_step = max(1.0e-4, 1.0e-3 * delta)
+    plus_energy, _ = evaluate(
+        [center + fd_step, center, center],
+        [center - delta, center, center],
+    )
+    minus_energy, _ = evaluate(
+        [center - fd_step, center, center],
+        [center - delta, center, center],
+    )
+    finite_difference_force = -(plus_energy - minus_energy) / (2.0 * fd_step)
+    plugin_force = float(interior_forces[0, 0])
+    if not np.isclose(
+        plugin_force, finite_difference_force, rtol=args.fd_rtol, atol=args.fd_atol
+    ):
+        raise AssertionError(
+            "PaiNN force is not the negative derivative of the reported energy: "
+            f"plugin={plugin_force:.16e}, finite_difference={finite_difference_force:.16e}"
+        )
+
     far_energy_1, far_forces_1 = evaluate(
         [0.25 * box_length, center, center],
         [0.75 * box_length, center, center],
@@ -123,6 +146,10 @@ def main():
         raise AssertionError(
             f"Zero-edge baseline energy changed with position: {far_energy_1} vs {far_energy_2}"
         )
+    if not np.isclose(far_energy_1, 0.0, rtol=0.0, atol=args.atol):
+        raise AssertionError(
+            f"Isolated-species gauge did not zero the no-edge energy: {far_energy_1}"
+        )
     force_limit = max(args.atol, 1.0e-6)
     if np.max(np.abs(far_forces_1)) > force_limit or np.max(np.abs(far_forces_2)) > force_limit:
         raise AssertionError(
@@ -130,7 +157,8 @@ def main():
         )
 
     print("[PASS] PaiNN PBC energy/force translation invariance")
-    print("[PASS] PaiNN zero-edge baseline energy and zero forces")
+    print("[PASS] PaiNN force equals the finite-difference energy gradient")
+    print("[PASS] PaiNN isolated-species gauge and zero-edge forces")
     print(f"[INFO] interacting energy: {pbc_energy:.16e}")
     print(f"[INFO] isolated-sites energy: {far_energy_1:.16e}")
 

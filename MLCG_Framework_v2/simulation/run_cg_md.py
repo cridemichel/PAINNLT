@@ -83,7 +83,7 @@ print("[INFO] Initializing ESPResSo system...")
 # ESPResSo requires an initial box; it is replaced immediately by the dataset box.
 system = espressomd.System(box_l=[10.0, 10.0, 10.0])
 system.time_step = args.dt
-system.cell_system.skin = 0.8
+system.cell_system.skin = 0.4
 if args.model:
     ensure_single_rank(system, allow_unsafe_mpi=args.allow_unsafe_mpi)
 # Production uses no global force cap; PaiNN forces remain the exact energy gradient.

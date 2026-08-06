@@ -319,9 +319,13 @@ int main(int argc, char** argv) {
     } else {
         json manifest;
         manifest_in >> manifest;
-        if (manifest.value("schema_version", -1) != 1 ||
+        if (manifest.value("schema_version", -1) != 2 ||
             manifest.value("framework", std::string()) != "MLCG_Framework_v2") {
             throw std::runtime_error("Unsupported model manifest: " + manifest_file);
+        }
+        if (manifest.value("energy_gauge", std::string()) != "isolated_species_zero_v1") {
+            throw std::runtime_error(
+                "Unsupported or missing energy gauge in model manifest: " + manifest_file);
         }
         const auto& architecture = manifest.at("architecture");
         const std::vector<std::string> integer_keys = {

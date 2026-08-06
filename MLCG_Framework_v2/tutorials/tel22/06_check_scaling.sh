@@ -12,6 +12,6 @@ fi
 
 echo "Avvio i test NVE a dt incrementali..."
 export PYTORCH_ENABLE_MPS_FALLBACK=1
-/Users/demichel/PYTHON/bin/python check_scaling.py
+/Users/demichel/PYTHON/bin/python check_scaling.py --device cpu --nve
 
 echo "[SUCCESS] Scaling check completato. Controlla il grafico generato."
