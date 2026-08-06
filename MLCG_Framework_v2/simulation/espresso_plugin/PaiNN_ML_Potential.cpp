@@ -122,19 +122,26 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
                 "Increase the box or reduce cutoff+skin.");
         }
 
-        // Directed edge p1 -> p2: row receives messages from col and
-        // r_ij = r_row - r_col.  d.vec21 is r2-r1, hence the signs below.
+        // In ESPResSo, Distance::vec21 is calculated as p1.pos() - p2.pos(),
+        // which means d.vec21 is r1 - r2.
+        // For edge idx2 -> idx1: row=idx1, col=idx2.
+        // PyTorch expects r_ij = r_row - r_col
+        
+        // Edge 1: row=idx2, col=idx1
+        // r_ij = r_2 - r_1 = - (r_1 - r_2) = -d.vec21
         edge_rows.push_back(idx2);
         edge_cols.push_back(idx1);
-        r_ij_data.push_back(static_cast<float>(d.vec21[0]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[1]));
-        r_ij_data.push_back(static_cast<float>(d.vec21[2]));
-
-        edge_rows.push_back(idx1);
-        edge_cols.push_back(idx2);
         r_ij_data.push_back(static_cast<float>(-d.vec21[0]));
         r_ij_data.push_back(static_cast<float>(-d.vec21[1]));
         r_ij_data.push_back(static_cast<float>(-d.vec21[2]));
+
+        // Edge 2: row=idx1, col=idx2
+        // r_ij = r_1 - r_2 = d.vec21
+        edge_rows.push_back(idx1);
+        edge_cols.push_back(idx2);
+        r_ij_data.push_back(static_cast<float>(d.vec21[0]));
+        r_ij_data.push_back(static_cast<float>(d.vec21[1]));
+        r_ij_data.push_back(static_cast<float>(d.vec21[2]));
     };
 
     cell_structure.non_bonded_loop(painn_kernel, verlet_criterion);
