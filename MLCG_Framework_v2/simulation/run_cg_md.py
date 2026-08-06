@@ -402,9 +402,12 @@ print(f"[INFO] Running {args.steps} integration steps...")
 
 def measure_energies():
     energies = system.analysis.energy()
-    e_tot = energies["total"]
+    e_class = energies["total"]
+    e_ml = 0.0
     if args.model:
-        e_tot += espressomd.painn.get_painn_energy()
+        e_ml = espressomd.painn.get_painn_energy()
+    
+    e_tot = e_class + e_ml
 
     e_kin = energies["kinetic"]
     e_kin_trans = 0.0
@@ -417,7 +420,7 @@ def measure_energies():
         e_kin_rot += 0.5 * sum(
             I * w**2 for I, w in zip(p.rinertia, p.omega_body)
         )
-    return e_tot, e_kin, e_kin_trans, e_kin_rot
+    return e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml
 
 
 with ExitStack() as stack:
@@ -425,7 +428,7 @@ with ExitStack() as stack:
     vtf_file = None
     if not args.no_log:
         energy_file = stack.enter_context(open("energy.csv", "w"))
-        energy_file.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot\n")
+        energy_file.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot,E_class,E_ml\n")
         vtf_file = stack.enter_context(open("cg_trajectory.vtf", "w"))
         espressomd.io.writer.vtf.writevsf(system, vtf_file)
         for mol_idx, com_id in mol_com_parts.items():
@@ -439,7 +442,7 @@ with ExitStack() as stack:
         system.integrator.run(current)
         completed += current
 
-        e_tot, e_kin, e_kin_trans, e_kin_rot = measure_energies()
+        e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml = measure_energies()
         max_f = max(
             sum(f_c**2 for f_c in p.f) ** 0.5 for p in system.part
         )
@@ -451,13 +454,12 @@ with ExitStack() as stack:
 
         print(
             f"[INFO] Step {completed}/{args.steps} | E_tot: {e_tot:.6f} | "
-            f"E_kin: {e_kin:.2f} (Trans: {e_kin_trans:.2f}, "
-            f"Rot: {e_kin_rot:.2f}) | max_f: {max_f:.2f} | max_t: {max_t:.2f}"
+            f"E_kin: {e_kin:.2f} | E_class: {e_class:.2f} | E_ML: {e_ml:.2f} | max_f: {max_f:.2f}"
         )
 
         if energy_file is not None:
             energy_file.write(
-                f"{completed},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot}\n"
+                f"{completed},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot},{e_class},{e_ml}\n"
             )
             energy_file.flush()
 
