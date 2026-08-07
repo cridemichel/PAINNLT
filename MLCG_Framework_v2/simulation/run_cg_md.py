@@ -437,7 +437,7 @@ with ExitStack() as stack:
                     vtf_file.write(f"bond {com_id}:{vs_id}\n")
 
     completed = 0
-    while completed < args.steps:
+    while completed <= args.steps:
         current = min(args.log_interval, args.steps - completed)
         system.integrator.run(current)
         completed += current
