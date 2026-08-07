@@ -1008,7 +1008,117 @@ with open(args.output, "wb") as f:
                 f.write(struct.pack("i", site_type))
                 f.write(struct.pack("3f", *site_pos))
 
-print("\n[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
+# --- DECOY GENERATION ---
+print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
+decoy_frames = []
+import copy
+import random
+
+# Number of decoys per pair
+N_DECOYS_PER_PAIR = 256
+
+# Collect all frames data in memory to easily pick parents for decoys
+# Wait, we already have sites_data_history, forces_history, cg_centers_history, etc.
+# We can just pick random frames from there!
+
+total_decoys_generated = 0
+for pair_key, wca_info in wca_prior_dict.items():
+    t1, t2 = wca_info["type_i"], wca_info["type_j"]
+    r_c = wca_info["cutoff_nm"]
+    r_emp_min = wca_info["empirical_min"]
+    
+    # R_OOD is max of 0.75 r_c and something below r_emp_min
+    r_ood_max = min(0.95 * r_c, r_emp_min - 0.01)
+    r_ood_min = 0.75 * r_c
+    if r_ood_max <= r_ood_min:
+        r_ood_max = r_ood_min + 0.02
+        
+    for _ in range(N_DECOYS_PER_PAIR):
+        frame_idx = random.randint(0, len(sites_data_history) - 1)
+        
+        # Pick two distinct molecules that have t1 and t2
+        mol_ids_t1 = []
+        mol_ids_t2 = []
+        for m_idx, (rname, sites) in enumerate(zip(mol_resnames, sites_data_history[frame_idx])):
+            # Find sites of type t1
+            for (s_name, s_pos, s_type, s_mass) in sites:
+                if s_type == t1: mol_ids_t1.append((m_idx, s_pos))
+                if s_type == t2: mol_ids_t2.append((m_idx, s_pos))
+                
+        if not mol_ids_t1 or not mol_ids_t2: continue
+        
+        # Pick random sites
+        m1_idx, pos1 = random.choice(mol_ids_t1)
+        m2_idx, pos2 = random.choice(mol_ids_t2)
+        
+        if m1_idx == m2_idx: continue # must be different molecules
+        
+        target_r = random.uniform(r_ood_min, r_ood_max)
+        
+        # Current distance vector from 2 to 1
+        vec = pos1 - pos2
+        dist = np.linalg.norm(vec)
+        if dist < 1e-4: vec = np.array([1.0, 0.0, 0.0])
+        else: vec = vec / dist
+        
+        # We want to translate molecule 2 so that pos2 is at pos1 - target_r * vec
+        new_pos2 = pos1 - target_r * vec
+        translation = new_pos2 - pos2
+        
+        # Copy frame data
+        decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
+        decoy_centers = np.copy(cg_centers_history[frame_idx])
+        decoy_forces = np.zeros_like(forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
+        
+        # Apply translation to all sites in mol2
+        for i in range(len(decoy_sites[m2_idx])):
+            s_name, s_pos, s_type, s_mass = decoy_sites[m2_idx][i]
+            decoy_sites[m2_idx][i] = (s_name, s_pos + translation, s_type, s_mass)
+            
+        decoy_centers[m2_idx] += translation
+        
+        decoy_frames.append((decoy_sites, decoy_centers, decoy_forces, box_dim_history[frame_idx]))
+        total_decoys_generated += 1
+
+print(f"[INFO] Generati {total_decoys_generated} decoy frames.")
+
+# Write decoys to dataset
+print("[INFO] Scrittura decoy nel binario...")
+for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
+    # Flatten positions and types for the binary format
+    flat_pos = []
+    flat_forces = []
+    flat_types = []
+    
+    for m_idx, sites in enumerate(d_sites):
+        for (s_name, s_pos, s_type, s_mass) in sites:
+            flat_pos.append(s_pos)
+            flat_types.append(s_type)
+            
+    # Need absolute forces flat array
+    # Wait, d_forces was zeroed, we just need to flatten it
+    idx = 0
+    for m_idx, sites in enumerate(d_sites):
+        for _ in sites:
+            flat_forces.append(d_forces[idx])
+            idx += 1
+            
+    flat_pos = np.array(flat_pos, dtype=np.float32)
+    flat_forces = np.array(flat_forces, dtype=np.float32)
+    flat_types = np.array(flat_types, dtype=np.int32)
+    
+    # Write to bin file
+    n_particles = len(flat_pos)
+    out_f.write(struct.pack('Q', n_particles))
+    out_f.write(struct.pack('3f', float(d_box[0]), float(d_box[1]), float(d_box[2])))
+    out_f.write(flat_types.tobytes())
+    out_f.write(flat_pos.tobytes())
+    out_f.write(flat_forces.tobytes())
+
+print(f"[INFO] Scritti {len(decoy_frames)} decoy nel binario.")
+
+print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
+
 
 with open("rigid_bodies_info.json", "w") as jf:
     json.dump(rigid_bodies_info, jf, indent=4)
