@@ -420,88 +420,112 @@ for ts_idx, ts in enumerate(u.trajectory):
 
 
 if WCA_SIGMA == "auto":
-    print("\n[INFO] Calcolo parametri WCA statistici (percentili e ottimizzazione radii)...")
+    print("\n[INFO] Calcolo parametri WCA geometrici con regolarizzazione gerarchica...")
     import scipy.optimize
     
-    # Calcolo percentili
-    empirical_Q2 = {}
-    empirical_Q05 = {}
+    # Trova tutti i tipi unici
+    all_types = set()
+    for (t1, t2) in all_pairwise_distances.keys():
+        all_types.add(t1)
+        all_types.add(t2)
+    all_types = sorted(list(all_types))
+    n_types = len(all_types)
+    type_to_idx = {t: i for i, t in enumerate(all_types)}
+    
+    empirical_Q1 = {}
+    empirical_min = {}
     pair_counts = {}
     
     for pair, dists in all_pairwise_distances.items():
         if len(dists) > 0:
-            empirical_Q2[pair] = np.percentile(dists, 2.0)
-            empirical_Q05[pair] = np.percentile(dists, 0.5)
+            empirical_Q1[pair] = np.percentile(dists, 1.0)
+            empirical_min[pair] = np.min(dists)
             pair_counts[pair] = len(dists)
             
-    # Trova tutti i tipi unici
-    all_types = set()
-    for (t1, t2) in empirical_Q2.keys():
-        all_types.add(t1)
-        all_types.add(t2)
-    all_types = sorted(list(all_types))
-    type_to_idx = {t: i for i, t in enumerate(all_types)}
-    n_types = len(all_types)
-    
-    # Funzione di costo per ottimizzare R_i
-    def cost_func(R):
+    # Ottimizzazione globale dei raggi di base R_i
+    def cost_func_R(R):
         loss = 0.0
-        for (t1, t2), q2 in empirical_Q2.items():
+        for (t1, t2), q1 in empirical_Q1.items():
             N = pair_counts[(t1, t2)]
-            weight = N / (N + 500.0) # Shrinkage weight come weight dell'errore
+            weight = N / (N + 500.0)
             r_pred = R[type_to_idx[t1]] + R[type_to_idx[t2]]
-            loss += weight * (r_pred - q2)**2
+            loss += weight * (r_pred - q1)**2
         return loss
         
     R_init = np.ones(n_types) * 0.15
-    bounds = [(0.05, 0.5) for _ in range(n_types)]
-    res = scipy.optimize.minimize(cost_func, R_init, bounds=bounds)
-    R_opt = res.x
+    bounds_R = [(0.05, 0.5) for _ in range(n_types)]
+    res_R = scipy.optimize.minimize(cost_func_R, R_init, bounds=bounds_R)
+    R_opt = res_R.x
     
-    print("  Radii ottimizzati:")
+    print("  Raggi base R_i ottimizzati:")
     for t, r in zip(all_types, R_opt):
         print(f"    Tipo {t}: {r:.4f} nm")
         
-    wca_prior_dict = {}
-    N0 = 500.0
     KB_T = 2.494 # kJ/mol at 300K
-    U_target = 10 * KB_T
+    wca_prior_dict = {}
     
-    print("  Parametri WCA per coppia:")
-    for (t1, t2), q2 in empirical_Q2.items():
-        N = pair_counts[(t1, t2)]
-        w = N / (N + N0)
-        
-        R_sum = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
-        
-        # r_on
-        r_on = w * q2 + (1.0 - w) * R_sum
-        
-        # r_guard (uso 0.95 * R_sum come prior per il guard)
-        q05 = empirical_Q05[(t1, t2)]
-        r_guard = w * q05 + (1.0 - w) * (0.95 * R_sum)
-        
-        if r_guard >= r_on:
-            r_guard = r_on * 0.98 # Ensure monotonic
+    for (t1, t2), dists in all_pairwise_distances.items():
+        if len(dists) < 100:
+            # Fallback for poorly sampled pairs
+            r_c = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
+            eps = 5.0
+            sig = r_c / (2.0**(1.0/6.0))
+            wca_prior_dict[f"{t1}_{t2}"] = {
+                "type_i": int(t1), "type_j": int(t2),
+                "sigma_nm": float(sig), "epsilon_kjmol": float(eps),
+                "cutoff_nm": float(r_c), "r_guard_nm": float(r_c * 0.9),
+                "n_samples": len(dists), "empirical_min": float(empirical_min.get((t1, t2), r_c))
+            }
+            continue
             
-        sigma = r_on / (2.0**(1.0/6.0))
+        # Volume correction & histogram
+        r_min, r_max = empirical_min[(t1, t2)], np.percentile(dists, 10.0)
+        hist, bin_edges = np.histogram(dists, bins=50, range=(r_min, r_max))
+        bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
         
-        # Epsilon calculation
-        ratio = r_on / r_guard
-        denom = (ratio**6 - 1.0)**2
-        epsilon = U_target / denom
+        dr = bin_edges[1] - bin_edges[0]
+        # g(r) ~ N(r) / (4 * pi * r^2 * dr)
+        g_r = hist / (4.0 * np.pi * bin_centers**2 * dr)
         
-        # Cap epsilon
-        epsilon = np.clip(epsilon, 0.5, 50.0)
+        valid = g_r > 0
+        r_val = bin_centers[valid]
+        g_r = g_r[valid]
         
+        W_r = -KB_T * np.log(g_r)
+        W_r -= np.min(W_r) # shift to 0 relative to the minimum in this window
+        
+        # We only want to fit the repulsive wall (points where W(r) is decreasing and r < r_min_W)
+        min_W_idx = np.argmin(W_r)
+        r_wall = r_val[:min_W_idx+1]
+        W_wall = W_r[:min_W_idx+1]
+        
+        # If the wall is too short or noisy, fallback to R_i + R_j
+        r_c_prior = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
+        
+        if len(r_wall) < 3:
+            r_c = r_c_prior
+            eps = 5.0
+        else:
+            def cost_wca(params):
+                sig, eps = params
+                U_wca = np.zeros_like(r_wall)
+                mask = r_wall < sig * (2.0**(1.0/6.0))
+                sr6 = (sig / r_wall[mask])**6
+                U_wca[mask] = 4 * eps * (sr6**2 - sr6) + eps
+                
+                loss_fit = np.sum((U_wca - W_wall)**2)
+                loss_reg = 1000.0 * (sig * (2.0**(1.0/6.0)) - r_c_prior)**2
+                return loss_fit + loss_reg
+                
+            res_wca = scipy.optimize.minimize(cost_wca, [r_c_prior/(2.0**(1.0/6.0)), 5.0], bounds=[(0.1, 1.0), (0.5, 50.0)])
+            sig, eps = res_wca.x
+            r_c = sig * (2.0**(1.0/6.0))
+            
         wca_prior_dict[f"{t1}_{t2}"] = {
-            "type_i": int(t1),
-            "type_j": int(t2),
-            "sigma_nm": float(sigma),
-            "epsilon_kjmol": float(epsilon),
-            "cutoff_nm": float(r_on),
-            "r_guard_nm": float(r_guard),
-            "n_samples": int(N)
+            "type_i": int(t1), "type_j": int(t2),
+            "sigma_nm": float(sig), "epsilon_kjmol": float(eps),
+            "cutoff_nm": float(r_c), "r_guard_nm": float(r_c * 0.9),
+            "n_samples": len(dists), "empirical_min": float(empirical_min[(t1, t2)])
         }
         
     with open("wca_priors.json", "w") as f:
@@ -591,29 +615,6 @@ else:
 if derived_priors is None:
     # Calcolo k e r0 statistico (Boltzmann Inversion)
     if WCA_SIGMA == "auto":
-        print("\n[INFO] WCA_SIGMA è 'auto'. Tuning automatico dei diametri (sigma = min_dist / 1.122)...")
-        
-        overrides_dict = {}
-        unique_types = np.unique(flat_types) if 'flat_types' in locals() else []
-        for t in unique_types:
-            min_d_t = np.inf
-            for (t1, t2), min_d in min_pairwise_distances.items():
-                if t1 == t or t2 == t:
-                    if min_d < min_d_t:
-                        min_d_t = min_d
-                        
-            if min_d_t < np.inf:
-                optimal_sigma = min_d_t / (2**(1/6))
-                # Usa np.floor per garantire che il cutoff (sigma * 1.122) sia strettamente MINORE di min_d_t!
-                # In questo modo F_wca = 0 su tutto il dataset di training.
-                optimal_sigma = np.floor(optimal_sigma * 1000) / 1000.0
-                overrides_dict[str(int(t))] = {
-                    "sigma": optimal_sigma,
-                    "epsilon": WCA_EPSILON if WCA_EPSILON > 0 else 1000.0
-                }
-                print(f"  -> Tipo {int(t)}: min_dist = {min_d_t:.4f} nm -> optimal_sigma = {optimal_sigma:.3f} nm")
-                
-        WCA_OVERRIDES = overrides_dict
         WCA_SIGMA_VAL = 0.25 # Valore di fallback sicuro
     else:
         WCA_SIGMA_VAL = float(WCA_SIGMA)
