@@ -232,17 +232,18 @@ for m_idx, pids in mol_to_vs.items():
 
 
 print("[INFO] Adding priors...")
-# WCA from wca_priors.json
+# WCA from cg_priors.json
 import json
 import os
 import math
 
-wca_priors_path = "wca_priors.json"
-if os.path.exists(wca_priors_path):
-    print(f"[INFO] Loading statistical WCA priors from {wca_priors_path}")
-    with open(wca_priors_path, "r") as f:
-        wca_dict = json.load(f)
+cg_priors_path = "cg_priors.json"
+if os.path.exists(cg_priors_path):
+    print(f"[INFO] Loading unified WCA priors from {cg_priors_path}")
+    with open(cg_priors_path, "r") as f:
+        cg_priors = json.load(f)
         
+    wca_dict = cg_priors.get("wca_pairs", {})
     for pair_key, wca_info in wca_dict.items():
         type_i = wca_info["type_i"]
         type_j = wca_info["type_j"]
@@ -255,14 +256,10 @@ if os.path.exists(wca_priors_path):
             cutoff=cut, shift="auto"
         )
 else:
-    print(f"[WARNING] {wca_priors_path} not found! No WCA will be applied.")
+    print(f"[WARNING] {cg_priors_path} not found! No WCA will be applied.")
 
 # No additional COM-COM hard core is added: runtime interactions must match
 # the priors subtracted during preprocessing.
-# system.non_bonded_inter[DUMMY_COM_TYPE, DUMMY_COM_TYPE].lennard_jones.set_params(
-#     epsilon=1.0, sigma=0.35,
-#     cutoff=0.35 * (2.0**(1/6)), shift="auto"
-# )
 
 # Bonds (Harmonic, FENE, Morse)
 for idx, b in enumerate(priors.get("bonds", [])):

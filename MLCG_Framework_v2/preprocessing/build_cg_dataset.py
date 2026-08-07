@@ -323,6 +323,60 @@ for ts_idx, ts in enumerate(u.trajectory):
     cg_torques_history.append(frame_torques)
     sites_data_history.append(frame_sites)
     
+    # --- Estrazione distanze WCA non-bonded ---
+    if WCA_SIGMA == "auto":
+        flat_pos = []
+        flat_types = []
+        flat_mols = []
+        for m_idx, mol_sites in enumerate(frame_sites):
+            for s_type, s_pos in mol_sites:
+                flat_pos.append(s_pos)
+                flat_types.append(int(s_type))
+                flat_mols.append(m_idx)
+                
+        flat_pos = np.array(flat_pos)
+        flat_types = np.array(flat_types)
+        flat_mols = np.array(flat_mols)
+        
+        # Calculate MIC distance matrix
+        dist_matrix = minimum_image_distance_matrix(flat_pos, box_dim)
+        
+        # Mask out intra-molecular distances (same rigid body)
+        same_mol_mask = flat_mols[:, None] == flat_mols[None, :]
+        dist_matrix[same_mol_mask] = np.inf
+        
+        # We only want unique pairs (upper triangle)
+        i_idx, j_idx = np.triu_indices(len(flat_pos), k=1)
+        valid_dist = dist_matrix[i_idx, j_idx]
+        
+        types_i = flat_types[i_idx]
+        types_j = flat_types[j_idx]
+        
+        t1 = np.minimum(types_i, types_j)
+        t2 = np.maximum(types_i, types_j)
+        
+        # We only care about distances < 1.5 nm for WCA parametrization to save memory
+        close_mask = valid_dist < 1.5
+        
+        if np.any(close_mask):
+            valid_dist = valid_dist[close_mask]
+            t1 = t1[close_mask]
+            t2 = t2[close_mask]
+            
+            pair_ids = t1 * 10000 + t2
+            unique_pairs = np.unique(pair_ids)
+            
+            for pid in unique_pairs:
+                dists = valid_dist[pair_ids == pid]
+                pair = (str(int(pid // 10000)), str(int(pid % 10000))) # Must use strings for JSON matching in WCA fit!
+                if pair not in all_pairwise_distances:
+                    all_pairwise_distances[pair] = []
+                # Subsample if too many, to avoid OOM
+                if len(dists) > 1000:
+                    dists = np.random.choice(dists, 1000, replace=False)
+                all_pairwise_distances[pair].extend(dists)
+
+    
     # Collect bond distances for Boltzmann Inversion (only if specified as a pair [i, j] or [i, j, site_i, site_j])
     for b_idx, b in enumerate(BONDS):
         if isinstance(b, list) and len(b) >= 2:
@@ -364,173 +418,98 @@ for ts_idx, ts in enumerate(u.trajectory):
             dihedral_values[f"dict_{idx}"].append(get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim))
             
     if WCA_SIGMA == "auto":
-        flat_pos = []
-        flat_types = []
-        flat_mols = []
-        for mol_idx, sites in enumerate(frame_sites):
-            # The COM might not be in sites, but if it's interacting it should be.
-            # Usually only sites defined in mapping interact via WCA in our model.
-            for stype, spos in sites:
-                flat_pos.append(spos)
-                flat_types.append(stype)
-                flat_mols.append(mol_idx)
+        print("\n[INFO] Calcolo parametri WCA geometrici con regolarizzazione gerarchica...")
+        import scipy.optimize
+        from scipy.ndimage import gaussian_filter1d
+    
+        # Trova tutti i tipi unici
+        all_types = set()
+        for (t1, t2) in all_pairwise_distances.keys():
+            all_types.add(t1)
+            all_types.add(t2)
+        all_types = sorted(list(all_types))
+        n_types = len(all_types)
+        type_to_idx = {t: i for i, t in enumerate(all_types)}
+    
+        empirical_Q1 = {}
+        empirical_min = {}
+        pair_counts = {}
+    
+        for pair, dists in all_pairwise_distances.items():
+            if len(dists) > 0:
+                empirical_Q1[pair] = np.percentile(dists, 1.0)
+                empirical_min[pair] = np.min(dists)
+                pair_counts[pair] = len(dists)
+            
+        # Ottimizzazione globale dei raggi di base R_i
+        def cost_func_R(R):
+            loss = 0.0
+            for (t1, t2), q1 in empirical_Q1.items():
+                N = pair_counts[(t1, t2)]
+                weight = 50.0 / (N + 50.0) # Bug 7: weight = N0 / (N_ij + N0)
+                r_pred = R[type_to_idx[t1]] + R[type_to_idx[t2]]
+                loss += weight * (r_pred - q1)**2
+            return loss
         
-        if len(flat_pos) > 0:
-            flat_pos = np.array(flat_pos)
-            flat_types = np.array(flat_types)
-            flat_mols = np.array(flat_mols)
-            
-            # Pairwise distances with the same minimum-image convention used
-            # during force subtraction, training and runtime.  scipy.cdist on
-            # wrapped coordinates would miss contacts across periodic faces.
-            dist_matrix = minimum_image_distance_matrix(flat_pos, box_dim)
-            
-            # Mask out particles in the same molecule
-            same_mol_mask = flat_mols[:, None] == flat_mols[None, :]
-            dist_matrix[same_mol_mask] = np.inf
-            
-            # Vectorized minimum distance computation
-            i_idx, j_idx = np.tril_indices(len(flat_types), k=-1)
-            dist_flat = dist_matrix[i_idx, j_idx]
-            valid_mask = dist_flat < np.inf
-            
-            if np.any(valid_mask):
-                valid_dist = dist_flat[valid_mask]
-                types_i = flat_types[i_idx[valid_mask]]
-                types_j = flat_types[j_idx[valid_mask]]
-                
-                # Solo distanze < 1.0 nm per non esplodere la memoria
-                close_mask = valid_dist < 1.0
-                if np.any(close_mask):
-                    valid_dist = valid_dist[close_mask]
-                    types_i = types_i[close_mask]
-                    types_j = types_j[close_mask]
-                    
-                    t1 = np.minimum(types_i, types_j)
-                    t2 = np.maximum(types_i, types_j)
-                    pair_ids = t1 * 10000 + t2
-                    
-                    unique_pairs = np.unique(pair_ids)
-                    for pid in unique_pairs:
-                        dists = valid_dist[pair_ids == pid]
-                        pair = (int(pid // 10000), int(pid % 10000))
-                        if pair not in all_pairwise_distances:
-                            all_pairwise_distances[pair] = []
-                        all_pairwise_distances[pair].extend(dists)
-
-
-if WCA_SIGMA == "auto":
-    print("\n[INFO] Calcolo parametri WCA geometrici con regolarizzazione gerarchica...")
-    import scipy.optimize
+        R_init = np.ones(n_types) * 0.15
+        bounds_R = [(0.05, 0.5) for _ in range(n_types)]
+        res_R = scipy.optimize.minimize(cost_func_R, R_init, bounds=bounds_R)
+        R_opt = res_R.x
     
-    # Trova tutti i tipi unici
-    all_types = set()
-    for (t1, t2) in all_pairwise_distances.keys():
-        all_types.add(t1)
-        all_types.add(t2)
-    all_types = sorted(list(all_types))
-    n_types = len(all_types)
-    type_to_idx = {t: i for i, t in enumerate(all_types)}
-    
-    empirical_Q1 = {}
-    empirical_min = {}
-    pair_counts = {}
-    
-    for pair, dists in all_pairwise_distances.items():
-        if len(dists) > 0:
-            empirical_Q1[pair] = np.percentile(dists, 1.0)
-            empirical_min[pair] = np.min(dists)
-            pair_counts[pair] = len(dists)
-            
-    # Ottimizzazione globale dei raggi di base R_i
-    def cost_func_R(R):
-        loss = 0.0
-        for (t1, t2), q1 in empirical_Q1.items():
-            N = pair_counts[(t1, t2)]
-            weight = N / (N + 500.0)
-            r_pred = R[type_to_idx[t1]] + R[type_to_idx[t2]]
-            loss += weight * (r_pred - q1)**2
-        return loss
+        print("  Raggi base R_i ottimizzati:")
+        for t, r in zip(all_types, R_opt):
+            print(f"    Tipo {t}: {r:.4f} nm")
         
-    R_init = np.ones(n_types) * 0.15
-    bounds_R = [(0.05, 0.5) for _ in range(n_types)]
-    res_R = scipy.optimize.minimize(cost_func_R, R_init, bounds=bounds_R)
-    R_opt = res_R.x
+        KB_T = 2.494 # kJ/mol at 300K
+        wca_prior_dict = {}
     
-    print("  Raggi base R_i ottimizzati:")
-    for t, r in zip(all_types, R_opt):
-        print(f"    Tipo {t}: {r:.4f} nm")
-        
-    KB_T = 2.494 # kJ/mol at 300K
-    wca_prior_dict = {}
-    
-    for (t1, t2), dists in all_pairwise_distances.items():
-        if len(dists) < 100:
-            # Fallback for poorly sampled pairs
+        for (t1, t2), dists in all_pairwise_distances.items():
             r_c = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
-            eps = 5.0
             sig = r_c / (2.0**(1.0/6.0))
+            
+            # Bug 8 & 9: Calcolo analitico di epsilon
+            # Vogliamo U_WCA(0.9 * r_c) = 10 * k_B * T
+            r_guard = 0.9 * r_c
+            
+            # U(r) = 4 eps [ (sig/r)^12 - (sig/r)^6 ] + eps
+            # 10 k_B T = eps * ( 4 * [ (sig/r_guard)^12 - (sig/r_guard)^6 ] + 1 )
+            sr = sig / r_guard
+            term = 4.0 * (sr**12 - sr**6) + 1.0
+            eps = (10.0 * KB_T) / term
+            
+            # Bug 10: Use gaussian_filter1d for robust extraction
+            if len(dists) > 0:
+                hist, bin_edges = np.histogram(dists, bins=50)
+                smoothed_hist = gaussian_filter1d(hist, sigma=1.0)
+                valid_idx = np.where(smoothed_hist > 0)[0]
+                if len(valid_idx) > 0:
+                    robust_min = bin_edges[valid_idx[0]]
+                else:
+                    robust_min = r_c
+            else:
+                robust_min = r_c
+                
             wca_prior_dict[f"{t1}_{t2}"] = {
                 "type_i": int(t1), "type_j": int(t2),
                 "sigma_nm": float(sig), "epsilon_kjmol": float(eps),
-                "cutoff_nm": float(r_c), "r_guard_nm": float(r_c * 0.9),
-                "n_samples": len(dists), "empirical_min": float(empirical_min.get((t1, t2), r_c))
+                "cutoff_nm": float(r_c), "r_guard_nm": float(r_guard),
+                "n_samples": len(dists), "empirical_min": float(robust_min)
             }
-            continue
             
-        # Volume correction & histogram
-        r_min, r_max = empirical_min[(t1, t2)], np.percentile(dists, 10.0)
-        hist, bin_edges = np.histogram(dists, bins=50, range=(r_min, r_max))
-        bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-        
-        dr = bin_edges[1] - bin_edges[0]
-        # g(r) ~ N(r) / (4 * pi * r^2 * dr)
-        g_r = hist / (4.0 * np.pi * bin_centers**2 * dr)
-        
-        valid = g_r > 0
-        r_val = bin_centers[valid]
-        g_r = g_r[valid]
-        
-        W_r = -KB_T * np.log(g_r)
-        W_r -= np.min(W_r) # shift to 0 relative to the minimum in this window
-        
-        # We only want to fit the repulsive wall (points where W(r) is decreasing and r < r_min_W)
-        min_W_idx = np.argmin(W_r)
-        r_wall = r_val[:min_W_idx+1]
-        W_wall = W_r[:min_W_idx+1]
-        
-        # If the wall is too short or noisy, fallback to R_i + R_j
-        r_c_prior = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
-        
-        if len(r_wall) < 3:
-            r_c = r_c_prior
-            eps = 5.0
+        # Bug 11: Inject wca_prior_dict into cg_priors.json and DO NOT write wca_priors.json
+        import os
+        import json
+        if os.path.exists("cg_priors.json"):
+            with open("cg_priors.json", "r") as f:
+                cg_priors = json.load(f)
         else:
-            def cost_wca(params):
-                sig, eps = params
-                U_wca = np.zeros_like(r_wall)
-                mask = r_wall < sig * (2.0**(1.0/6.0))
-                sr6 = (sig / r_wall[mask])**6
-                U_wca[mask] = 4 * eps * (sr6**2 - sr6) + eps
-                
-                loss_fit = np.sum((U_wca - W_wall)**2)
-                loss_reg = 1000.0 * (sig * (2.0**(1.0/6.0)) - r_c_prior)**2
-                return loss_fit + loss_reg
-                
-            res_wca = scipy.optimize.minimize(cost_wca, [r_c_prior/(2.0**(1.0/6.0)), 5.0], bounds=[(0.1, 1.0), (0.5, 50.0)])
-            sig, eps = res_wca.x
-            r_c = sig * (2.0**(1.0/6.0))
+            cg_priors = {}
             
-        wca_prior_dict[f"{t1}_{t2}"] = {
-            "type_i": int(t1), "type_j": int(t2),
-            "sigma_nm": float(sig), "epsilon_kjmol": float(eps),
-            "cutoff_nm": float(r_c), "r_guard_nm": float(r_c * 0.9),
-            "n_samples": len(dists), "empirical_min": float(empirical_min[(t1, t2)])
-        }
+        cg_priors["wca_pairs"] = wca_prior_dict
         
-    with open("wca_priors.json", "w") as f:
-        json.dump(wca_prior_dict, f, indent=4)
-    print(f"[INFO] Salvati parametri WCA in wca_priors.json ({len(wca_prior_dict)} coppie)")
+        with open("cg_priors.json", "w") as f:
+            json.dump(cg_priors, f, indent=4)
+        print(f"[INFO] Salvati parametri WCA in cg_priors.json sotto 'wca_pairs' ({len(wca_prior_dict)} coppie)")
 
 print("\n[INFO] Esecuzione allineamento Kabsch per mediare le geometrie dei corpi rigidi...")
 
@@ -641,18 +620,18 @@ if derived_priors is None:
         })
         print(f"  -> Legame (Boltzmann) mol {b[0]} - mol {b[1]}: r0 = {mean_r:.4f} nm, k = {k_stat:.2f} kJ/mol/nm^2")
 
-    # Pool statistics for named groups
-    shared_bond_distances = {}
-    for b_idx, b in enumerate(BONDS):
-        if isinstance(b, dict) and "name" in b:
-            b_name = b["name"]
-            if b_name not in shared_bond_distances: shared_bond_distances[b_name] = []
-            shared_bond_distances[b_name].extend(bond_distances[f"dict_{b_idx}"])
+        # Pool statistics for named groups
+        shared_bond_distances = {}
+        for b_idx, b in enumerate(BONDS):
+            if isinstance(b, dict) and "name" in b:
+                b_name = b["name"]
+                if b_name not in shared_bond_distances: shared_bond_distances[b_name] = []
+                shared_bond_distances[b_name].extend(bond_distances[f"dict_{b_idx}"])
 
-    # Aggiungi eventuali legami espliciti (FENE, Morse, o Harmonic custom) forniti come dizionari
-    for b_idx, b in enumerate(BONDS):
-        if isinstance(b, dict):
-            b_type = b.get("type", "unknown")
+        # Aggiungi eventuali legami espliciti (FENE, Morse, o Harmonic custom) forniti come dizionari
+        for b_idx, b in enumerate(BONDS):
+            if isinstance(b, dict):
+                b_type = b.get("type", "unknown")
             if b.get("r0") == "auto":
                 vals = shared_bond_distances[b["name"]] if "name" in b else bond_distances[f"dict_{b_idx}"]
                 if len(vals) > 0:
@@ -665,76 +644,76 @@ if derived_priors is None:
             derived_priors["bonds"].append(b)
             print(f"  -> Legame esplicito ({b.get('type', b_type)}) aggiunto: {b['mol_i']}-{b['mol_j']}")
 
-    shared_angle_values = {}
-    for idx, a in enumerate(ANGLES):
-        if "name" in a:
-            a_name = a["name"]
-            if a_name not in shared_angle_values: shared_angle_values[a_name] = []
-            shared_angle_values[a_name].extend(angle_values[f"dict_{idx}"])
+        shared_angle_values = {}
+        for idx, a in enumerate(ANGLES):
+            if "name" in a:
+                a_name = a["name"]
+                if a_name not in shared_angle_values: shared_angle_values[a_name] = []
+                shared_angle_values[a_name].extend(angle_values[f"dict_{idx}"])
 
-    derived_priors["angles"] = []
-    for idx, a in enumerate(ANGLES):
-        vals = shared_angle_values[a["name"]] if "name" in a else angle_values[f"dict_{idx}"]
-        a_type = a.get("type", "harmonic")
+        derived_priors["angles"] = []
+        for idx, a in enumerate(ANGLES):
+            vals = shared_angle_values[a["name"]] if "name" in a else angle_values[f"dict_{idx}"]
+            a_type = a.get("type", "harmonic")
+                
+            if len(vals) > 0:
+                if a.get("theta0") == "auto":
+                    a["theta0"] = float(np.mean(vals))
+                if a.get("k") == "auto":
+                    var_theta = np.var(vals)
+                    a["k"] = float(1.0 / (BETA * var_theta)) if var_theta > 1e-12 else 0.0
             
-        if len(vals) > 0:
-            if a.get("theta0") == "auto":
-                a["theta0"] = float(np.mean(vals))
-            if a.get("k") == "auto":
-                var_theta = np.var(vals)
-                a["k"] = float(1.0 / (BETA * var_theta)) if var_theta > 1e-12 else 0.0
-        
-        derived_priors["angles"].append(a)
-        print(f"  -> Angle aggiunto: {a['mol_i']}-{a['mol_j']}-{a['mol_k']} (theta0={a.get('theta0', 0):.4f} rad, k={a.get('k', 0):.2f})")
+            derived_priors["angles"].append(a)
+            print(f"  -> Angle aggiunto: {a['mol_i']}-{a['mol_j']}-{a['mol_k']} (theta0={a.get('theta0', 0):.4f} rad, k={a.get('k', 0):.2f})")
 
-    shared_dihedral_values = {}
-    for idx, d in enumerate(DIHEDRALS):
-        if "name" in d:
-            d_name = d["name"]
-            if d_name not in shared_dihedral_values: shared_dihedral_values[d_name] = []
-            shared_dihedral_values[d_name].extend(dihedral_values[f"dict_{idx}"])
+        shared_dihedral_values = {}
+        for idx, d in enumerate(DIHEDRALS):
+            if "name" in d:
+                d_name = d["name"]
+                if d_name not in shared_dihedral_values: shared_dihedral_values[d_name] = []
+                shared_dihedral_values[d_name].extend(dihedral_values[f"dict_{idx}"])
 
-    derived_priors["dihedrals"] = []
-    for idx, d in enumerate(DIHEDRALS):
-        vals = shared_dihedral_values[d["name"]] if "name" in d else dihedral_values[f"dict_{idx}"]
-        d_type = d.get("type", "cosine")
+        derived_priors["dihedrals"] = []
+        for idx, d in enumerate(DIHEDRALS):
+            vals = shared_dihedral_values[d["name"]] if "name" in d else dihedral_values[f"dict_{idx}"]
+            d_type = d.get("type", "cosine")
+                
+            if len(vals) > 0:
+                if d.get("phi0") == "auto":
+                    sin_vals = np.sin(vals)
+                    cos_vals = np.cos(vals)
+                    d["phi0"] = float(np.arctan2(np.mean(sin_vals), np.mean(cos_vals)))
+                if d.get("k") == "auto":
+                    var_phi = np.var(vals)
+                    d["k"] = float(1.0 / (BETA * var_phi)) if var_phi > 1e-12 else 0.0
             
-        if len(vals) > 0:
-            if d.get("phi0") == "auto":
-                sin_vals = np.sin(vals)
-                cos_vals = np.cos(vals)
-                d["phi0"] = float(np.arctan2(np.mean(sin_vals), np.mean(cos_vals)))
-            if d.get("k") == "auto":
-                var_phi = np.var(vals)
-                d["k"] = float(1.0 / (BETA * var_phi)) if var_phi > 1e-12 else 0.0
+            derived_priors["dihedrals"].append(d)
+            print(f"  -> Dihedral aggiunto: {d['mol_i']}-{d['mol_j']}-{d['mol_k']}-{d['mol_l']} (phi0={d.get('phi0', 0):.4f} rad, k={d.get('k', 0):.2f})")
+
+        # Save priors for simulation
+        with open("cg_priors.json", "w") as pf:
+            json.dump(derived_priors, pf, indent=4)
+        print("[INFO] Salvato file cg_priors.json (da passare poi a run_cg_md.py)")
+
+        # =====================================================================
+        # 3. PASS 2: SOTTRAZIONE PRIOR E SCRITTURA BINARIO
+        # =====================================================================
+        print(f"[INFO] Pass 2: Sottrazione forze prior e generazione dataset {args.output}...")
+
+        out_dir = os.path.dirname(args.output)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
+
+        cached_tables = {}
+        cached_splines = {}
+
+        with open(args.output, "wb") as f:
+            num_frames = len(cg_centers_history)
+            f.write(struct.pack("i", num_frames))
         
-        derived_priors["dihedrals"].append(d)
-        print(f"  -> Dihedral aggiunto: {d['mol_i']}-{d['mol_j']}-{d['mol_k']}-{d['mol_l']} (phi0={d.get('phi0', 0):.4f} rad, k={d.get('k', 0):.2f})")
-
-    # Save priors for simulation
-    with open("cg_priors.json", "w") as pf:
-        json.dump(derived_priors, pf, indent=4)
-    print("[INFO] Salvato file cg_priors.json (da passare poi a run_cg_md.py)")
-
-# =====================================================================
-# 3. PASS 2: SOTTRAZIONE PRIOR E SCRITTURA BINARIO
-# =====================================================================
-print(f"[INFO] Pass 2: Sottrazione forze prior e generazione dataset {args.output}...")
-
-out_dir = os.path.dirname(args.output)
-if out_dir:
-    os.makedirs(out_dir, exist_ok=True)
-
-cached_tables = {}
-cached_splines = {}
-
-with open(args.output, "wb") as f:
-    num_frames = len(cg_centers_history)
-    f.write(struct.pack("i", num_frames))
-    
-    for ts_idx in range(num_frames):
-        if ts_idx % 100 == 0:
-            print(f"\r[INFO] Scrittura binario: Frame {ts_idx}/{num_frames}", end="")
+            for ts_idx in range(num_frames):
+                if ts_idx % 100 == 0:
+                    print(f"\r[INFO] Scrittura binario: Frame {ts_idx}/{num_frames}", end="")
             
         box_dim = box_dim_history[ts_idx]
         frame_centers = cg_centers_history[ts_idx]
@@ -785,10 +764,8 @@ with open(args.output, "wb") as f:
         res_torques = np.copy(frame_torques)
         
         # 3.1 Sottrazione WCA sui siti virtuali
-        has_wca = WCA_SIGMA_VAL > 0 or (isinstance(WCA_OVERRIDES, dict) and len(WCA_OVERRIDES) > 0)
-        has_epsilon = WCA_EPSILON > 0 or (isinstance(WCA_OVERRIDES, dict) and any(o.get("epsilon", 0) > 0 for o in WCA_OVERRIDES.values()))
-        
-        if has_wca and has_epsilon:
+        # 3.1 Sottrazione WCA usando i parametri di wca_priors.json (36 coppie)
+        if WCA_SIGMA == "auto" and 'wca_prior_dict' in locals():
             flat_pos = []
             flat_mol = []
             flat_type = []
@@ -803,18 +780,25 @@ with open(args.output, "wb") as f:
                 flat_mol = np.array(flat_mol)
                 flat_type = np.array(flat_type)
                 
-                # Retrieve parameters with overrides
-                sigmas = np.array([WCA_OVERRIDES.get(str(int(t)), {}).get("sigma", WCA_SIGMA_VAL) for t in flat_type])
-                epsilons = np.array([WCA_OVERRIDES.get(str(int(t)), {}).get("epsilon", WCA_EPSILON) for t in flat_type])
-                
                 diff = flat_pos[:, np.newaxis, :] - flat_pos[np.newaxis, :, :]
                 diff -= box_dim * np.round(diff / box_dim)
                 dist_sq = np.sum(diff**2, axis=-1)
                 
-                # Lorentz-Berthelot mixing
-                sigma_ij = (sigmas[:, np.newaxis] + sigmas[np.newaxis, :]) / 2.0
-                eps_ij = np.sqrt(epsilons[:, np.newaxis] * epsilons[np.newaxis, :])
-                r_cut_sq = (sigma_ij * (2.0**(1.0/6.0)))**2
+                sigma_ij = np.zeros_like(dist_sq)
+                eps_ij = np.zeros_like(dist_sq)
+                r_cut_sq = np.zeros_like(dist_sq)
+                
+                for i in range(len(flat_type)):
+                    for j in range(len(flat_type)):
+                        t_min = min(int(flat_type[i]), int(flat_type[j]))
+                        t_max = max(int(flat_type[i]), int(flat_type[j]))
+                        pair_key = f"{t_min}_{t_max}"
+                        
+                        if pair_key in wca_prior_dict:
+                            w = wca_prior_dict[pair_key]
+                            sigma_ij[i, j] = w["sigma_nm"]
+                            eps_ij[i, j] = w["epsilon_kjmol"]
+                            r_cut_sq[i, j] = w["cutoff_nm"]**2
                 
                 # Only distinct molecules (intra-molecular forces cancel out in rigid bodies)
                 idx_i, idx_j = np.where((dist_sq > 1e-6) & (dist_sq < r_cut_sq))
@@ -1008,119 +992,115 @@ with open(args.output, "wb") as f:
                 f.write(struct.pack("i", site_type))
                 f.write(struct.pack("3f", *site_pos))
 
-# --- DECOY GENERATION ---
-print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
-decoy_frames = []
-import copy
-import random
+        # --- DECOY GENERATION ---
+        print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
+        decoy_frames = []
+        import copy
+        import random
 
-# Number of decoys per pair
-N_DECOYS_PER_PAIR = 256
+        # Number of decoys per pair
+        N_DECOYS_PER_PAIR = 256
 
-# Collect all frames data in memory to easily pick parents for decoys
-# Wait, we already have sites_data_history, forces_history, cg_centers_history, etc.
-# We can just pick random frames from there!
+        # Collect all frames data in memory to easily pick parents for decoys
+        # Wait, we already have sites_data_history, forces_history, cg_centers_history, etc.
+        # We can just pick random frames from there!
 
-total_decoys_generated = 0
-for pair_key, wca_info in wca_prior_dict.items():
-    t1, t2 = wca_info["type_i"], wca_info["type_j"]
-    r_c = wca_info["cutoff_nm"]
-    r_emp_min = wca_info["empirical_min"]
-    
-    # R_OOD is max of 0.75 r_c and something below r_emp_min
-    r_ood_max = min(0.95 * r_c, r_emp_min - 0.01)
-    r_ood_min = 0.75 * r_c
-    if r_ood_max <= r_ood_min:
-        r_ood_max = r_ood_min + 0.02
+        total_decoys_generated = 0
+        for pair_key, wca_info in wca_prior_dict.items():
+            t1, t2 = wca_info["type_i"], wca_info["type_j"]
+            r_c = wca_info["cutoff_nm"]
+            r_emp_min = wca_info["empirical_min"]
         
-    for _ in range(N_DECOYS_PER_PAIR):
-        frame_idx = random.randint(0, len(sites_data_history) - 1)
+            # R_OOD is max of 0.75 r_c and something below r_emp_min
+            r_ood_max = min(0.95 * r_c, r_emp_min - 0.01)
+            r_ood_min = 0.70 * r_c
+            if r_ood_max <= r_ood_min:
+                # No reliable deep-OOD interval exists for this pair
+                print(f"    [Decoy] Skipping pair {t1}-{t2} (rc={r_c:.3f}, r_min={r_emp_min:.3f}) - no valid OOD interval.")
+                continue
         
-        # Pick two distinct molecules that have t1 and t2
-        mol_ids_t1 = []
-        mol_ids_t2 = []
-        for m_idx, (rname, sites) in enumerate(zip(mol_resnames, sites_data_history[frame_idx])):
-            # Find sites of type t1
-            for (s_type, s_pos) in sites:
-                if s_type == t1: mol_ids_t1.append((m_idx, s_pos))
-                if s_type == t2: mol_ids_t2.append((m_idx, s_pos))
+            for _ in range(N_DECOYS_PER_PAIR):
+                frame_idx = random.randint(0, len(sites_data_history) - 1)
                 
-        if not mol_ids_t1 or not mol_ids_t2: continue
-        
-        # Pick random sites
-        m1_idx, pos1 = random.choice(mol_ids_t1)
-        m2_idx, pos2 = random.choice(mol_ids_t2)
-        
-        if m1_idx == m2_idx: continue # must be different molecules
-        
-        target_r = random.uniform(r_ood_min, r_ood_max)
-        
-        # Current distance vector from 2 to 1
-        vec = pos1 - pos2
-        dist = np.linalg.norm(vec)
-        if dist < 1e-4: vec = np.array([1.0, 0.0, 0.0])
-        else: vec = vec / dist
-        
-        # We want to translate molecule 2 so that pos2 is at pos1 - target_r * vec
-        new_pos2 = pos1 - target_r * vec
-        translation = new_pos2 - pos2
-        
-        # Copy frame data
-        decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
-        decoy_centers = np.copy(cg_centers_history[frame_idx])
-        decoy_forces = np.zeros_like(cg_forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
-        
-        # Apply translation to all sites in mol2
-        for i in range(len(decoy_sites[m2_idx])):
-            s_type, s_pos = decoy_sites[m2_idx][i]
-            decoy_sites[m2_idx][i] = (s_type, s_pos + translation)
-            
-        decoy_centers[m2_idx] += translation
-        
-        decoy_frames.append((decoy_sites, decoy_centers, decoy_forces, box_dim_history[frame_idx]))
-        total_decoys_generated += 1
-
-print(f"[INFO] Generati {total_decoys_generated} decoy frames.")
-
-# Write decoys to dataset
-print("[INFO] Scrittura decoy nel binario...")
-with open(args.output, "ab") as f:
-    for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
-        # Flatten positions and types for the binary format
-        flat_pos = []
-        flat_forces = []
-        flat_types = []
-        
-        for m_idx, sites in enumerate(d_sites):
-            for (s_type, s_pos) in sites:
-                flat_pos.append(s_pos)
-                flat_types.append(s_type)
+                # Pick two distinct molecules that have t1 and t2
+                mol_ids_t1 = []
+                mol_ids_t2 = []
+                for m_idx, (rname, sites) in enumerate(zip(mol_resnames, sites_data_history[frame_idx])):
+                    # Find sites of type t1
+                    for (s_type, s_pos) in sites:
+                        if s_type == t1: mol_ids_t1.append((m_idx, s_pos))
+                        if s_type == t2: mol_ids_t2.append((m_idx, s_pos))
+                        
+                if not mol_ids_t1 or not mol_ids_t2: continue
                 
-        # Need absolute forces flat array
-        # Wait, d_forces was zeroed, we just need to flatten it
-        flat_pos = np.array(flat_pos, dtype=np.float32)
-        flat_forces = np.zeros((len(flat_pos), 3), dtype=np.float32)
-        flat_types = np.array(flat_types, dtype=np.int32)
+                # Pick random sites
+                m1_idx, pos1 = random.choice(mol_ids_t1)
+                m2_idx, pos2 = random.choice(mol_ids_t2)
+                
+                if m1_idx == m2_idx: continue # must be different molecules
+                
+                target_r = random.uniform(r_ood_min, r_ood_max)
+                
+                # Current distance vector from 2 to 1
+                vec = pos1 - pos2
+                dist = np.linalg.norm(vec)
+                if dist < 1e-4: vec = np.array([1.0, 0.0, 0.0])
+                else: vec = vec / dist
+                
+                # We want to translate molecule 2 so that pos2 is at pos1 - target_r * vec
+                new_pos2 = pos1 - target_r * vec
+                translation = new_pos2 - pos2
+                
+                # Copy frame data
+                decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
+                decoy_centers = np.copy(cg_centers_history[frame_idx])
+                decoy_forces = np.zeros_like(cg_forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
+                
+                # Apply translation to all sites in mol2
+                for i in range(len(decoy_sites[m2_idx])):
+                    s_type, s_pos = decoy_sites[m2_idx][i]
+                    decoy_sites[m2_idx][i] = (s_type, s_pos + translation)
+                    
+                decoy_centers[m2_idx] += translation
+                
+                decoy_frames.append((decoy_sites, decoy_centers, decoy_forces, box_dim_history[frame_idx]))
+                total_decoys_generated += 1
+
+        print(f"[INFO] Generati {total_decoys_generated} decoy frames.")
+
+        # Write decoys to dataset
+        print("[INFO] Scrittura decoy nel binario...")
+        with open(args.output, "ab") as f:
+            for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
+                num_molecules = len(d_sites)
+                num_total_sites = sum(len(sites) for sites in d_sites)
+                
+                f.write(struct.pack("i", num_molecules))
+                f.write(struct.pack("i", num_total_sites))
+                f.write(struct.pack("3f", float(d_box[0]), float(d_box[1]), float(d_box[2])))
         
-        # Write to bin file
-        n_particles = len(flat_pos)
-        f.write(struct.pack('Q', n_particles))
-        f.write(struct.pack('3f', float(d_box[0]), float(d_box[1]), float(d_box[2])))
-        f.write(flat_types.tobytes())
-        f.write(flat_pos.tobytes())
-        f.write(flat_forces.tobytes())
+        for mol_id in range(num_molecules):
+            num_sites = len(d_sites[mol_id])
+            f.write(struct.pack("i", mol_id))
+            f.write(struct.pack("i", num_sites))
+            f.write(struct.pack("3f", *d_centers[mol_id]))
+            f.write(struct.pack("3f", *d_forces[mol_id]))
+            f.write(struct.pack("3f", 0.0, 0.0, 0.0)) # torques are zero
+            for site_type, site_pos in d_sites[mol_id]:
+                f.write(struct.pack("i", int(site_type)))
+                f.write(struct.pack("3f", *site_pos))
 
-print(f"[INFO] Scritti {len(decoy_frames)} decoy nel binario.")
-with open(args.output, "r+b") as f:
-    f.seek(0)
-    total_frames = len(cg_centers_history) + len(decoy_frames)
-    f.write(struct.pack("i", total_frames))
-print("[INFO] Aggiornato il contatore dei frame totali.")
+        print(f"[INFO] Scritti {len(decoy_frames)} decoy nel binario.")
+        with open(args.output, "r+b") as f:
+            f.seek(0)
+            total_frames = len(cg_centers_history) + len(decoy_frames)
+            f.write(struct.pack("i", total_frames))
+        print("[INFO] Aggiornato il contatore dei frame totali.")
 
 
-print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
+        print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
 
 
-with open("rigid_bodies_info.json", "w") as jf:
-    json.dump(rigid_bodies_info, jf, indent=4)
-print("[INFO] Masse e inerzie salvate in rigid_bodies_info.json!")
+        with open("rigid_bodies_info.json", "w") as jf:
+            json.dump(rigid_bodies_info, jf, indent=4)
+        print("[INFO] Masse e inerzie salvate in rigid_bodies_info.json!")

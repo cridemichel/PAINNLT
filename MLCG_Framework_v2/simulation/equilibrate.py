@@ -142,25 +142,30 @@ for pids in mol_to_vs.values():
 
 
 print("[INFO] Adding priors...")
-# WCA
-import math
-wca = priors.get("wca", {})
-has_wca = wca.get("sigma", 0.0) > 0 or len(wca.get("overrides", {})) > 0
-if wca.get("epsilon", 0.0) > 0 and has_wca:
-    for i in range(nn_config["num_species"]):
-        sigma_i = wca.get("overrides", {}).get(str(i), {}).get("sigma", wca["sigma"])
-        eps_i = wca.get("overrides", {}).get(str(i), {}).get("epsilon", wca["epsilon"])
-        for j in range(i, nn_config["num_species"]):
-            sigma_j = wca.get("overrides", {}).get(str(j), {}).get("sigma", wca["sigma"])
-            eps_j = wca.get("overrides", {}).get(str(j), {}).get("epsilon", wca["epsilon"])
-            
-            sigma_mix = (sigma_i + sigma_j) / 2.0
-            eps_mix = math.sqrt(eps_i * eps_j)
-            
-            system.non_bonded_inter[i, j].lennard_jones.set_params(
-                epsilon=eps_mix, sigma=sigma_mix,
-                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
-            )
+# WCA from cg_priors.json (Unified truth)
+import json
+import os
+
+cg_priors_path = "cg_priors.json"
+if os.path.exists(cg_priors_path):
+    print(f"[INFO] Loading unified WCA priors from {cg_priors_path}")
+    with open(cg_priors_path, "r") as f:
+        cg_priors = json.load(f)
+        
+    wca_dict = cg_priors.get("wca_pairs", {})
+    for pair_key, wca_info in wca_dict.items():
+        type_i = wca_info["type_i"]
+        type_j = wca_info["type_j"]
+        sig = wca_info["sigma_nm"]
+        eps = wca_info["epsilon_kjmol"]
+        cut = wca_info["cutoff_nm"]
+        
+        system.non_bonded_inter[type_i, type_j].lennard_jones.set_params(
+            epsilon=eps, sigma=sig,
+            cutoff=cut, shift="auto"
+        )
+else:
+    print(f"[WARNING] {cg_priors_path} not found! No WCA will be applied.")
 
 # Bonds (Harmonic, FENE, Morse)
 for idx, b in enumerate(priors.get("bonds", [])):
