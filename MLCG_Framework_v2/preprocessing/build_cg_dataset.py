@@ -465,19 +465,8 @@ if WCA_SIGMA == "auto":
     wca_prior_dict = {}
 
     for (t1, t2), dists in all_pairwise_distances.items():
-        r_c = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
-        sig = r_c / (2.0**(1.0/6.0))
-        
-        # Bug 8 & 9: Calcolo analitico di epsilon
-        # Vogliamo U_WCA(0.9 * r_c) = 10 * k_B * T
-        r_guard = 0.9 * r_c
-        
-        # U(r) = 4 eps [ (sig/r)^12 - (sig/r)^6 ] + eps
-        # 10 k_B T = eps * ( 4 * [ (sig/r_guard)^12 - (sig/r_guard)^6 ] + 1 )
-        sr = sig / r_guard
-        term = 4.0 * (sr**12 - sr**6) + 1.0
-        eps = (10.0 * KB_T) / term
-        
+        r_base = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
+
         # Bug 10: Use gaussian_filter1d for robust extraction
         if len(dists) > 0:
             hist, bin_edges = np.histogram(dists, bins=50)
@@ -490,7 +479,7 @@ if WCA_SIGMA == "auto":
         else:
             r_emp_min = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
         
-        q1 = empirical_Q1.get((t1, t2), r_c)
+        q1 = empirical_Q1.get((t1, t2), r_base)
         N_samples = len(dists)
         N0 = 1000.0
         alpha = N_samples / (N_samples + N0)
@@ -827,7 +816,7 @@ with open(args.output, "wb") as f:
     
         # 3.1 Sottrazione WCA sui siti virtuali
         # 3.1 Sottrazione WCA usando i parametri di wca_priors.json (36 coppie)
-        if WCA_SIGMA == "auto" and 'wca_prior_dict' in locals():
+        if wca_prior_dict:
             flat_pos = []
             flat_mol = []
             flat_type = []
