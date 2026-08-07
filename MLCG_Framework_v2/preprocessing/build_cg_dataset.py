@@ -1068,7 +1068,7 @@ for pair_key, wca_info in wca_prior_dict.items():
         # Copy frame data
         decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
         decoy_centers = np.copy(cg_centers_history[frame_idx])
-        decoy_forces = np.zeros_like(forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
+        decoy_forces = np.zeros_like(cg_forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
         
         # Apply translation to all sites in mol2
         for i in range(len(decoy_sites[m2_idx])):
@@ -1084,38 +1084,39 @@ print(f"[INFO] Generati {total_decoys_generated} decoy frames.")
 
 # Write decoys to dataset
 print("[INFO] Scrittura decoy nel binario...")
-for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
-    # Flatten positions and types for the binary format
-    flat_pos = []
-    flat_forces = []
-    flat_types = []
-    
-    for m_idx, sites in enumerate(d_sites):
-        for (s_type, s_pos) in sites:
-            flat_pos.append(s_pos)
-            flat_types.append(s_type)
-            
-    # Need absolute forces flat array
-    # Wait, d_forces was zeroed, we just need to flatten it
-    idx = 0
-    for m_idx, sites in enumerate(d_sites):
-        for _ in sites:
-            flat_forces.append(d_forces[idx])
-            idx += 1
-            
-    flat_pos = np.array(flat_pos, dtype=np.float32)
-    flat_forces = np.array(flat_forces, dtype=np.float32)
-    flat_types = np.array(flat_types, dtype=np.int32)
-    
-    # Write to bin file
-    n_particles = len(flat_pos)
-    out_f.write(struct.pack('Q', n_particles))
-    out_f.write(struct.pack('3f', float(d_box[0]), float(d_box[1]), float(d_box[2])))
-    out_f.write(flat_types.tobytes())
-    out_f.write(flat_pos.tobytes())
-    out_f.write(flat_forces.tobytes())
+with open(args.output, "ab") as f:
+    for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
+        # Flatten positions and types for the binary format
+        flat_pos = []
+        flat_forces = []
+        flat_types = []
+        
+        for m_idx, sites in enumerate(d_sites):
+            for (s_type, s_pos) in sites:
+                flat_pos.append(s_pos)
+                flat_types.append(s_type)
+                
+        # Need absolute forces flat array
+        # Wait, d_forces was zeroed, we just need to flatten it
+        flat_pos = np.array(flat_pos, dtype=np.float32)
+        flat_forces = np.zeros((len(flat_pos), 3), dtype=np.float32)
+        flat_types = np.array(flat_types, dtype=np.int32)
+        
+        # Write to bin file
+        n_particles = len(flat_pos)
+        f.write(struct.pack('Q', n_particles))
+        f.write(struct.pack('3f', float(d_box[0]), float(d_box[1]), float(d_box[2])))
+        f.write(flat_types.tobytes())
+        f.write(flat_pos.tobytes())
+        f.write(flat_forces.tobytes())
 
 print(f"[INFO] Scritti {len(decoy_frames)} decoy nel binario.")
+with open(args.output, "r+b") as f:
+    f.seek(0)
+    total_frames = len(cg_centers_history) + len(decoy_frames)
+    f.write(struct.pack("i", total_frames))
+print("[INFO] Aggiornato il contatore dei frame totali.")
+
 
 print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
 
