@@ -490,8 +490,18 @@ if WCA_SIGMA == "auto":
         else:
             r_emp_min = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
         
-        r_c = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
+        q1 = empirical_Q1.get((t1, t2), r_c)
+        N_samples = len(dists)
+        N0 = 1000.0
+        alpha = N_samples / (N_samples + N0)
         
+        r_base = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
+        r_c = alpha * q1 + (1.0 - alpha) * r_base
+        
+        # Explicit protection: do not exceed Q1% to prevent massive WCA forces at physical limits
+        if r_c > q1:
+            r_c = q1
+            
         # We compute epsilon such that U_wca(0.9 r_c) = 10 kT
         r_guard = 0.9 * r_c
         sigma = r_c / (2.0**(1.0/6.0))
@@ -502,7 +512,6 @@ if WCA_SIGMA == "auto":
         kT = 0.00831446 * 300.0
         epsilon = 10.0 * kT / u_factor
         
-        q1 = empirical_Q1.get((t1, t2), r_c)
         wca_prior_dict[f"{t1}_{t2}"] = {
             "type_i": int(t1),
             "type_j": int(t2),
@@ -738,6 +747,10 @@ if derived_priors is None:
     with open("cg_priors.json", "w") as pf:
         json.dump(derived_priors, pf, indent=4)
     print("[INFO] Salvato file cg_priors.json (da passare poi a run_cg_md.py)")
+
+if args.priors:
+    wca_prior_dict = derived_priors.get("wca_pairs", {})
+
 
     # =====================================================================
     # 3. PASS 2: SOTTRAZIONE PRIOR E SCRITTURA BINARIO
@@ -1085,15 +1098,16 @@ if derived_priors is None:
             
             target_r = random.uniform(r_ood_min, r_ood_max)
             
-            # Current distance vector from 2 to 1
-            vec = pos1 - pos2
-            dist = np.linalg.norm(vec)
-            if dist < 1e-4: vec = np.array([1.0, 0.0, 0.0])
-            else: vec = vec / dist
+            box = np.asarray(box_dim_history[frame_idx])
+            dvec = mic_vector(pos2, pos1, box)
+            dist = np.linalg.norm(dvec)
             
-            # We want to translate molecule 2 so that pos2 is at pos1 - target_r * vec
-            new_pos2 = pos1 - target_r * vec
-            translation = new_pos2 - pos2
+            if dist < 1e-8:
+                u = np.array([1.0, 0.0, 0.0])
+            else:
+                u = dvec / dist
+            
+            translation = dvec - target_r * u
             
             # Copy frame data
             decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
