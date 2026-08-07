@@ -206,7 +206,7 @@ dihedral_values = {f"dict_{idx}": [] for idx in range(len(DIHEDRALS))}
 rigid_bodies_info = {}
 principal_axes_lab_by_resname = {}
 
-min_pairwise_distances = {} # Per auto-WCA: (type_i, type_j) -> min_distance
+all_pairwise_distances = {} # Per statistical WCA: (type_i, type_j) -> list of distances
 
 # Helper to map entire trajectory frames into memory for CG centers
 # Assuming each molecule is a CG site for the non-bonded/bonded priors as per convert_gro2bin
@@ -399,18 +399,117 @@ for ts_idx, ts in enumerate(u.trajectory):
                 types_i = flat_types[i_idx[valid_mask]]
                 types_j = flat_types[j_idx[valid_mask]]
                 
-                t1 = np.minimum(types_i, types_j)
-                t2 = np.maximum(types_i, types_j)
-                pair_ids = t1 * 10000 + t2
-                
-                unique_pairs = np.unique(pair_ids)
-                for pid in unique_pairs:
-                    min_d = np.min(valid_dist[pair_ids == pid])
-                    pair = (int(pid // 10000), int(pid % 10000))
-                    if pair not in min_pairwise_distances or min_d < min_pairwise_distances[pair]:
-                        min_pairwise_distances[pair] = min_d
+                # Solo distanze < 1.0 nm per non esplodere la memoria
+                close_mask = valid_dist < 1.0
+                if np.any(close_mask):
+                    valid_dist = valid_dist[close_mask]
+                    types_i = types_i[close_mask]
+                    types_j = types_j[close_mask]
+                    
+                    t1 = np.minimum(types_i, types_j)
+                    t2 = np.maximum(types_i, types_j)
+                    pair_ids = t1 * 10000 + t2
+                    
+                    unique_pairs = np.unique(pair_ids)
+                    for pid in unique_pairs:
+                        dists = valid_dist[pair_ids == pid]
+                        pair = (int(pid // 10000), int(pid % 10000))
+                        if pair not in all_pairwise_distances:
+                            all_pairwise_distances[pair] = []
+                        all_pairwise_distances[pair].extend(dists)
+
+
+if WCA_SIGMA == "auto":
+    print("\n[INFO] Calcolo parametri WCA statistici (percentili e ottimizzazione radii)...")
+    import scipy.optimize
+    
+    # Calcolo percentili
+    empirical_Q2 = {}
+    empirical_Q05 = {}
+    pair_counts = {}
+    
+    for pair, dists in all_pairwise_distances.items():
+        if len(dists) > 0:
+            empirical_Q2[pair] = np.percentile(dists, 2.0)
+            empirical_Q05[pair] = np.percentile(dists, 0.5)
+            pair_counts[pair] = len(dists)
+            
+    # Trova tutti i tipi unici
+    all_types = set()
+    for (t1, t2) in empirical_Q2.keys():
+        all_types.add(t1)
+        all_types.add(t2)
+    all_types = sorted(list(all_types))
+    type_to_idx = {t: i for i, t in enumerate(all_types)}
+    n_types = len(all_types)
+    
+    # Funzione di costo per ottimizzare R_i
+    def cost_func(R):
+        loss = 0.0
+        for (t1, t2), q2 in empirical_Q2.items():
+            N = pair_counts[(t1, t2)]
+            weight = N / (N + 500.0) # Shrinkage weight come weight dell'errore
+            r_pred = R[type_to_idx[t1]] + R[type_to_idx[t2]]
+            loss += weight * (r_pred - q2)**2
+        return loss
+        
+    R_init = np.ones(n_types) * 0.15
+    bounds = [(0.05, 0.5) for _ in range(n_types)]
+    res = scipy.optimize.minimize(cost_func, R_init, bounds=bounds)
+    R_opt = res.x
+    
+    print("  Radii ottimizzati:")
+    for t, r in zip(all_types, R_opt):
+        print(f"    Tipo {t}: {r:.4f} nm")
+        
+    wca_prior_dict = {}
+    N0 = 500.0
+    KB_T = 2.494 # kJ/mol at 300K
+    U_target = 10 * KB_T
+    
+    print("  Parametri WCA per coppia:")
+    for (t1, t2), q2 in empirical_Q2.items():
+        N = pair_counts[(t1, t2)]
+        w = N / (N + N0)
+        
+        R_sum = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
+        
+        # r_on
+        r_on = w * q2 + (1.0 - w) * R_sum
+        
+        # r_guard (uso 0.95 * R_sum come prior per il guard)
+        q05 = empirical_Q05[(t1, t2)]
+        r_guard = w * q05 + (1.0 - w) * (0.95 * R_sum)
+        
+        if r_guard >= r_on:
+            r_guard = r_on * 0.98 # Ensure monotonic
+            
+        sigma = r_on / (2.0**(1.0/6.0))
+        
+        # Epsilon calculation
+        ratio = r_on / r_guard
+        denom = (ratio**6 - 1.0)**2
+        epsilon = U_target / denom
+        
+        # Cap epsilon
+        epsilon = np.clip(epsilon, 0.5, 50.0)
+        
+        wca_prior_dict[f"{t1}_{t2}"] = {
+            "type_i": int(t1),
+            "type_j": int(t2),
+            "sigma_nm": float(sigma),
+            "epsilon_kjmol": float(epsilon),
+            "cutoff_nm": float(r_on),
+            "r_guard_nm": float(r_guard),
+            "n_samples": int(N)
+        }
+        
+    with open("wca_priors.json", "w") as f:
+        json.dump(wca_prior_dict, f, indent=4)
+    print(f"[INFO] Salvati parametri WCA in wca_priors.json ({len(wca_prior_dict)} coppie)")
 
 print("\n[INFO] Esecuzione allineamento Kabsch per mediare le geometrie dei corpi rigidi...")
+
 for resname, info in rigid_bodies_info.items():
     if "sites" not in info or len(info["sites"]) < 2:
         continue
