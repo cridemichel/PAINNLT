@@ -1,7 +1,7 @@
 {
     "temperature": 300.0,
     "wca_sigma": "auto",
-    "wca_epsilon": 1.0,
+    "wca_epsilon": 50.0,
     "wca_overrides": {},
     "mapping": {
         "mapping_method": "COM",

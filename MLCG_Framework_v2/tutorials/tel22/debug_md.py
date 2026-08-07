@@ -1,11 +1,8 @@
 import espressomd
-import espressomd.interactions
-import espressomd.io.writer.vtf
 import espressomd.painn
 import json
 import argparse
 import numpy as np
-from scipy.spatial.distance import pdist, squareform
 import struct
 import os
 from contextlib import ExitStack
@@ -57,12 +54,11 @@ if args.toxvaerd_alpha is None:
 runtime_nn_config = dict(nn_config)
 runtime_nn_config["toxvaerd_alpha"] = float(args.toxvaerd_alpha)
 if args.model:
-#    validate_model_manifest(
-#        args.model,
-#        runtime_nn_config,
-#        allow_missing=args.allow_missing_model_manifest,
-#    )
-    pass
+    #validate_model_manifest(
+        args.model,
+        runtime_nn_config,
+        allow_missing=args.allow_missing_model_manifest,
+    )
 
 unsafe_tables = nonconservative_prior_entries(priors)
 if args.nve and unsafe_tables and not args.allow_nonconservative_tables:
@@ -404,65 +400,6 @@ import espressomd.io.writer.vtf
 print(f"[INFO] Running {args.steps} integration steps...")
 
 
-
-def log_diagnostics(step):
-    pos = []
-    types = []
-    mol_ids = []
-    forces = []
-    pids = []
-    for p in system.part:
-        if p.is_virtual:
-            pos.append(p.pos)
-            types.append(p.type)
-            mol_ids.append(p.mol_id)
-            forces.append(p.f)
-            pids.append(p.id)
-            
-    pos = np.array(pos)
-    types = np.array(types)
-    mol_ids = np.array(mol_ids)
-    forces = np.array(forces)
-    pids = np.array(pids)
-    
-    dist_matrix = squareform(pdist(pos))
-    mask = mol_ids[:, None] == mol_ids[None, :]
-    dist_matrix[mask] = np.inf
-    np.fill_diagonal(dist_matrix, np.inf)
-    
-    num_species = nn_config["num_species"]
-    min_dists = {}
-    
-    global_min_dist = np.inf
-    global_min_pair = None
-    global_min_pids = None
-    
-    for i in range(num_species):
-        for j in range(i, num_species):
-            mask_types = (types[:, None] == i) & (types[None, :] == j)
-            # Make symmetric
-            mask_types = mask_types | ((types[:, None] == j) & (types[None, :] == i))
-            
-            valid_dists = dist_matrix[mask_types]
-            if len(valid_dists) > 0:
-                m_d = np.min(valid_dists)
-                min_dists[(i, j)] = m_d
-                if m_d < global_min_dist:
-                    global_min_dist = m_d
-                    global_min_pair = (i, j)
-                    # Find the exact particles
-                    # Get indices where mask_types and dist_matrix == m_d
-                    idx1, idx2 = np.where((dist_matrix == m_d) & mask_types)
-                    if len(idx1) > 0:
-                        global_min_pids = (pids[idx1[0]], pids[idx2[0]])
-            else:
-                min_dists[(i, j)] = np.inf
-                
-    f_max = np.max(np.linalg.norm(forces, axis=1))
-    
-    return global_min_dist, global_min_pair, global_min_pids, f_max
-
-
 def measure_energies():
     energies = system.analysis.energy()
     e_class = energies["total"]
@@ -491,7 +428,7 @@ with ExitStack() as stack:
     vtf_file = None
     if not args.no_log:
         energy_file = stack.enter_context(open("energy.csv", "w"))
-        energy_file.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot,E_class,E_ml,min_dist,min_pair,min_pids,f_max\n")
+        energy_file.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot,E_class,E_ml\n")
         vtf_file = stack.enter_context(open("cg_trajectory.vtf", "w"))
         espressomd.io.writer.vtf.writevsf(system, vtf_file)
         for mol_idx, com_id in mol_com_parts.items():
@@ -506,7 +443,9 @@ with ExitStack() as stack:
         completed += current
 
         e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml = measure_energies()
-        g_dist, g_pair, g_pids, max_f = log_diagnostics(completed)
+        max_f = max(
+            sum(f_c**2 for f_c in p.f) ** 0.5 for p in system.part
+        )
         real_particles = [p for p in system.part if p.mass > 1e-4]
         max_t = max(
             (sum(t_c**2 for t_c in p.torque_lab) ** 0.5 for p in real_particles),
@@ -515,13 +454,12 @@ with ExitStack() as stack:
 
         print(
             f"[INFO] Step {completed}/{args.steps} | E_tot: {e_tot:.6f} | "
-            f"E_kin: {e_kin:.2f} | E_ML: {e_ml:.2f} | max_f: {max_f:.2f} | "
-            f"min_dist: {g_dist:.3f} nm (types {g_pair})"
+            f"E_kin: {e_kin:.2f} | E_class: {e_class:.2f} | E_ML: {e_ml:.2f} | max_f: {max_f:.2f}"
         )
 
         if energy_file is not None:
             energy_file.write(
-                f"{completed},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot},{e_class},{e_ml},{g_dist},{g_pair},{g_pids},{max_f}\n"
+                f"{completed},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot},{e_class},{e_ml}\n"
             )
             energy_file.flush()
 
