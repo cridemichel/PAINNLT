@@ -1041,7 +1041,7 @@ for pair_key, wca_info in wca_prior_dict.items():
         mol_ids_t2 = []
         for m_idx, (rname, sites) in enumerate(zip(mol_resnames, sites_data_history[frame_idx])):
             # Find sites of type t1
-            for (s_name, s_pos, s_type, s_mass) in sites:
+            for (s_type, s_pos) in sites:
                 if s_type == t1: mol_ids_t1.append((m_idx, s_pos))
                 if s_type == t2: mol_ids_t2.append((m_idx, s_pos))
                 
@@ -1072,8 +1072,8 @@ for pair_key, wca_info in wca_prior_dict.items():
         
         # Apply translation to all sites in mol2
         for i in range(len(decoy_sites[m2_idx])):
-            s_name, s_pos, s_type, s_mass = decoy_sites[m2_idx][i]
-            decoy_sites[m2_idx][i] = (s_name, s_pos + translation, s_type, s_mass)
+            s_type, s_pos = decoy_sites[m2_idx][i]
+            decoy_sites[m2_idx][i] = (s_type, s_pos + translation)
             
         decoy_centers[m2_idx] += translation
         
@@ -1091,7 +1091,7 @@ for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
     flat_types = []
     
     for m_idx, sites in enumerate(d_sites):
-        for (s_name, s_pos, s_type, s_mass) in sites:
+        for (s_type, s_pos) in sites:
             flat_pos.append(s_pos)
             flat_types.append(s_type)
             
