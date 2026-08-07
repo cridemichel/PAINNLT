@@ -815,7 +815,7 @@ with open(args.output, "wb") as f:
         res_torques = np.copy(frame_torques)
     
         # 3.1 Sottrazione WCA sui siti virtuali
-        # 3.1 Sottrazione WCA usando i parametri di wca_priors.json (36 coppie)
+        # 3.1 Sottrazione WCA usando i parametri di cg_priors.json (36 coppie)
         if wca_prior_dict:
             flat_pos = []
             flat_mol = []
@@ -868,8 +868,12 @@ with open(args.output, "wb") as f:
                     r_hat = diff[i, j] / r
                     s_ij = sigma_ij[i, j]
                     e_ij = eps_ij[i, j]
+                    
+                    # BUG 12: CAP WCA force at r_guard = 0.9 * r_c to prevent exploding F_resid
+                    r_guard = 0.9 * np.sqrt(r_cut_sq[i, j])
+                    r_eval = max(r, r_guard)
                 
-                    f_scalar = 24.0 * e_ij * (2.0 * (s_ij/r)**12 - (s_ij/r)**6) / r
+                    f_scalar = 24.0 * e_ij * (2.0 * (s_ij/r_eval)**12 - (s_ij/r_eval)**6) / r_eval
                     f_vec = f_scalar * r_hat
                 
                     res_forces[mol_i] -= f_vec
@@ -1050,7 +1054,7 @@ import copy
 import random
 
 # Number of decoys per pair
-N_DECOYS_PER_PAIR = 256
+N_DECOYS_PER_PAIR = 16
 
 # Collect all frames data in memory to easily pick parents for decoys
 # Wait, we already have sites_data_history, forces_history, cg_centers_history, etc.
@@ -1147,7 +1151,9 @@ with open(args.output, "r+b") as f:
     f.seek(0)
     total_frames = len(cg_centers_history) + len(decoy_frames)
     f.write(struct.pack("i", total_frames))
-print("[INFO] Aggiornato il contatore dei frame totali.")
+
+f_decoy = len(decoy_frames) / total_frames if total_frames > 0 else 0
+print(f"[INFO] Aggiornato il contatore dei frame totali: {total_frames} (Frazione decoy: {f_decoy:.2%})")
 
 
 print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
