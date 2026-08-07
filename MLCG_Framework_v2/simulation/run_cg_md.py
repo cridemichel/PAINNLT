@@ -237,7 +237,7 @@ import json
 import os
 import math
 
-cg_priors_path = "cg_priors.json"
+cg_priors_path = args.priors
 if os.path.exists(cg_priors_path):
     print(f"[INFO] Loading unified WCA priors from {cg_priors_path}")
     with open(cg_priors_path, "r") as f:
