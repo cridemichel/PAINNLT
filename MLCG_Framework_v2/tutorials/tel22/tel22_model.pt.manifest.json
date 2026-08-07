@@ -29,7 +29,7 @@
   "framework": "MLCG_Framework_v2",
   "model_file_size_bytes": 417254,
   "model_path": "tel22_model.pt",
-  "model_sha256": "eee329554d89d2ba3b97c910a0cdd86badbb4e52c377df5b8627846f77efc813",
+  "model_sha256": "7839c268442c9c9c2a4f0ec50c5892c01425fbd56f7c0a90aa6891f99056b47d",
   "schema_version": 2,
   "split_seed": 42,
   "torque_units": "kJ mol^-1",
