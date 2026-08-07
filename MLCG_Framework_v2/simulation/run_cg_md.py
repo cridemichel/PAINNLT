@@ -232,26 +232,30 @@ for m_idx, pids in mol_to_vs.items():
 
 
 print("[INFO] Adding priors...")
-# WCA
+# WCA from wca_priors.json
+import json
+import os
 import math
 
-wca = priors.get("wca", {})
-has_wca = wca.get("sigma", 0.0) > 0 or len(wca.get("overrides", {})) > 0
-if wca.get("epsilon", 0.0) > 0 and has_wca:
-    for i in range(nn_config["num_species"]):
-        sigma_i = wca.get("overrides", {}).get(str(i), {}).get("sigma", wca["sigma"])
-        eps_i = wca.get("overrides", {}).get(str(i), {}).get("epsilon", wca["epsilon"])
-        for j in range(i, nn_config["num_species"]):
-            sigma_j = wca.get("overrides", {}).get(str(j), {}).get("sigma", wca["sigma"])
-            eps_j = wca.get("overrides", {}).get(str(j), {}).get("epsilon", wca["epsilon"])
-            
-            sigma_mix = (sigma_i + sigma_j) / 2.0
-            eps_mix = math.sqrt(eps_i * eps_j)
-            
-            system.non_bonded_inter[i, j].lennard_jones.set_params(
-                epsilon=eps_mix, sigma=sigma_mix,
-                cutoff=sigma_mix * (2.0**(1/6)), shift="auto"
-            )
+wca_priors_path = "wca_priors.json"
+if os.path.exists(wca_priors_path):
+    print(f"[INFO] Loading statistical WCA priors from {wca_priors_path}")
+    with open(wca_priors_path, "r") as f:
+        wca_dict = json.load(f)
+        
+    for pair_key, wca_info in wca_dict.items():
+        type_i = wca_info["type_i"]
+        type_j = wca_info["type_j"]
+        sig = wca_info["sigma_nm"]
+        eps = wca_info["epsilon_kjmol"]
+        cut = wca_info["cutoff_nm"]
+        
+        system.non_bonded_inter[type_i, type_j].lennard_jones.set_params(
+            epsilon=eps, sigma=sig,
+            cutoff=cut, shift="auto"
+        )
+else:
+    print(f"[WARNING] {wca_priors_path} not found! No WCA will be applied.")
 
 # No additional COM-COM hard core is added: runtime interactions must match
 # the priors subtracted during preprocessing.
@@ -518,6 +522,20 @@ with ExitStack() as stack:
             f"E_kin: {e_kin:.2f} | E_ML: {e_ml:.2f} | max_f: {max_f:.2f} | "
             f"min_dist: {g_dist:.3f} nm (types {g_pair})"
         )
+        if max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15:
+            print("[CRITICAL] Safety abort triggered! max_f > 10000, E_kin > 5000, or min_dist < 0.15")
+            system.analysis.energy() # force update
+            espressomd.io.writer.vtf.writevsf(system, "crash.vtf")
+            espressomd.io.writer.vtf.writevcf(system, "crash.vtf")
+            np.savez("crash_checkpoint.npz",
+                positions=system.part.all().pos,
+                velocities=system.part.all().v,
+                forces=system.part.all().f,
+                quaternions=system.part.all().quat,
+                omega_body=system.part.all().omega_body
+            )
+            print("[CRITICAL] Crash checkpoint saved. Exiting gracefully.")
+            break
 
         if energy_file is not None:
             energy_file.write(
