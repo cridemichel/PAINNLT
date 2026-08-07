@@ -1,1 +1,1 @@
-zip -r MLCG_framework_v2.zip . -x "mlcg_venv/*" -x "espresso/*" -i "*.py" "*.hpp" "*.cpp" "*.sh" "*.txt" "*.pyx" "*.md" "*.json" -x "tutorials/tel22/*" -x "tutorials/water/*" -x "training/build/*" -x "training/build_test/*"
+zip -r MLCG_framework_v2.zip . -x "tutorials/ethanol/*" -x "mlcg_venv/*" -x "espresso/*" -i "*.py" "*.hpp" "*.cpp" "*.sh" "*.txt" "*.pyx" "*.md" -x "tutorials/water/*" -x "training/build/*" -x "training/build_test/*"
