@@ -748,417 +748,422 @@ if derived_priors is None:
         json.dump(derived_priors, pf, indent=4)
     print("[INFO] Salvato file cg_priors.json (da passare poi a run_cg_md.py)")
 
-if args.priors:
-    wca_prior_dict = derived_priors.get("wca_pairs", {})
+# I WCA utilizzati nel Pass 2 vengono SEMPRE dai priors finali,
+# sia che siano stati appena calcolati sia che siano stati caricati
+# tramite --priors.
+wca_prior_dict = derived_priors.get("wca_pairs", {})
+
+if not wca_prior_dict:
+    raise RuntimeError("No pair-specific WCA priors found in derived_priors['wca_pairs']")
 
 
-    # =====================================================================
-    # 3. PASS 2: SOTTRAZIONE PRIOR E SCRITTURA BINARIO
-    # =====================================================================
-    print(f"[INFO] Pass 2: Sottrazione forze prior e generazione dataset {args.output}...")
+# =====================================================================
+# 3. PASS 2: SOTTRAZIONE PRIOR E SCRITTURA BINARIO
+# =====================================================================
+print(f"[INFO] Pass 2: Sottrazione forze prior e generazione dataset {args.output}...")
 
-    out_dir = os.path.dirname(args.output)
-    if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
+out_dir = os.path.dirname(args.output)
+if out_dir:
+    os.makedirs(out_dir, exist_ok=True)
 
-    cached_tables = {}
-    cached_splines = {}
+cached_tables = {}
+cached_splines = {}
 
-    with open(args.output, "wb") as f:
-        num_frames = len(cg_centers_history)
-        f.write(struct.pack("i", num_frames))
+with open(args.output, "wb") as f:
+    num_frames = len(cg_centers_history)
+    f.write(struct.pack("i", num_frames))
+
+    for ts_idx in range(num_frames):
+        if ts_idx % 100 == 0:
+            print(f"\r[INFO] Scrittura binario: Frame {ts_idx}/{num_frames}", end="")
     
-        for ts_idx in range(num_frames):
-            if ts_idx % 100 == 0:
-                print(f"\r[INFO] Scrittura binario: Frame {ts_idx}/{num_frames}", end="")
+        box_dim = box_dim_history[ts_idx]
+        frame_centers = cg_centers_history[ts_idx]
+        frame_forces = cg_forces_history[ts_idx]
+        frame_torques = cg_torques_history[ts_idx]
+        # Copia superficiale della lista per non alterare lo storico originario
+        frame_sites = [list(sites) for sites in sites_data_history[ts_idx]]
+    
+        # [NEW LOGIC] RECONSTRUCT IDEAL SITES FOR PRIOR SUBTRACTION
+        # Applichiamo Kabsch per posizionare i siti ideali con l'orientamento istantaneo
+        for mol_idx, r_name in enumerate(mol_resnames):
+            if r_name in rigid_bodies_info and "sites" in rigid_bodies_info[r_name]:
+                site_names = list(rigid_bodies_info[r_name]["sites"].keys())
+                if len(site_names) < 2: continue
+            
+                ideal_rel = []
+                inst_rel = []
+                site_indices = []
+            
+                for s_idx, (st, sp) in enumerate(frame_sites[mol_idx]):
+                    if s_idx < len(site_names):
+                        s_name = site_names[s_idx]
+                        ideal_rel.append(rigid_bodies_info[r_name]["sites"][s_name]["relative_pos_nm"])
+                        inst_rel.append(np.array(sp) - frame_centers[mol_idx])
+                        site_indices.append(s_idx)
+            
+                if len(ideal_rel) >= 2:
+                    ideal_rel = np.array(ideal_rel)
+                    inst_rel = np.array(inst_rel)
+                
+                    # R @ ideal_rel \approx inst_rel
+                    R = kabsch_align(ideal_rel, inst_rel)
+                    ideal_rel_rotated = (R @ ideal_rel.T).T
+                
+                    for i_local, s_idx in enumerate(site_indices):
+                        new_pos = frame_centers[mol_idx] + ideal_rel_rotated[i_local]
+                        frame_sites[mol_idx][s_idx] = (frame_sites[mol_idx][s_idx][0], new_pos)
+    
+        num_molecules = len(frame_centers)
+        num_total_sites = sum(len(s) for s in frame_sites)
+    
+        f.write(struct.pack("i", num_molecules))
+        f.write(struct.pack("i", num_total_sites))
+        f.write(struct.pack("3f", *box_dim))
+    
+        # Copia indipendente per la sottrazione
+        res_forces = np.copy(frame_forces)
+        res_torques = np.copy(frame_torques)
+    
+        # 3.1 Sottrazione WCA sui siti virtuali
+        # 3.1 Sottrazione WCA usando i parametri di wca_priors.json (36 coppie)
+        if WCA_SIGMA == "auto" and 'wca_prior_dict' in locals():
+            flat_pos = []
+            flat_mol = []
+            flat_type = []
+            for m_idx, sites in enumerate(frame_sites):
+                for s_type, s_pos in sites:
+                    flat_pos.append(s_pos)
+                    flat_mol.append(m_idx)
+                    flat_type.append(s_type)
         
-            box_dim = box_dim_history[ts_idx]
-            frame_centers = cg_centers_history[ts_idx]
-            frame_forces = cg_forces_history[ts_idx]
-            frame_torques = cg_torques_history[ts_idx]
-            # Copia superficiale della lista per non alterare lo storico originario
-            frame_sites = [list(sites) for sites in sites_data_history[ts_idx]]
-        
-            # [NEW LOGIC] RECONSTRUCT IDEAL SITES FOR PRIOR SUBTRACTION
-            # Applichiamo Kabsch per posizionare i siti ideali con l'orientamento istantaneo
-            for mol_idx, r_name in enumerate(mol_resnames):
-                if r_name in rigid_bodies_info and "sites" in rigid_bodies_info[r_name]:
-                    site_names = list(rigid_bodies_info[r_name]["sites"].keys())
-                    if len(site_names) < 2: continue
-                
-                    ideal_rel = []
-                    inst_rel = []
-                    site_indices = []
-                
-                    for s_idx, (st, sp) in enumerate(frame_sites[mol_idx]):
-                        if s_idx < len(site_names):
-                            s_name = site_names[s_idx]
-                            ideal_rel.append(rigid_bodies_info[r_name]["sites"][s_name]["relative_pos_nm"])
-                            inst_rel.append(np.array(sp) - frame_centers[mol_idx])
-                            site_indices.append(s_idx)
-                
-                    if len(ideal_rel) >= 2:
-                        ideal_rel = np.array(ideal_rel)
-                        inst_rel = np.array(inst_rel)
+            if len(flat_pos) > 0:
+                flat_pos = np.array(flat_pos)
+                flat_mol = np.array(flat_mol)
+                flat_type = np.array(flat_type)
+            
+                diff = flat_pos[:, np.newaxis, :] - flat_pos[np.newaxis, :, :]
+                diff -= box_dim * np.round(diff / box_dim)
+                dist_sq = np.sum(diff**2, axis=-1)
+            
+                sigma_ij = np.zeros_like(dist_sq)
+                eps_ij = np.zeros_like(dist_sq)
+                r_cut_sq = np.zeros_like(dist_sq)
+            
+                for i in range(len(flat_type)):
+                    for j in range(len(flat_type)):
+                        t_min = min(int(flat_type[i]), int(flat_type[j]))
+                        t_max = max(int(flat_type[i]), int(flat_type[j]))
+                        pair_key = f"{t_min}_{t_max}"
                     
-                        # R @ ideal_rel \approx inst_rel
-                        R = kabsch_align(ideal_rel, inst_rel)
-                        ideal_rel_rotated = (R @ ideal_rel.T).T
+                        if pair_key in wca_prior_dict:
+                            w = wca_prior_dict[pair_key]
+                            sigma_ij[i, j] = w["sigma_nm"]
+                            eps_ij[i, j] = w["epsilon_kjmol"]
+                            r_cut_sq[i, j] = w["cutoff_nm"]**2
+            
+                # Only distinct molecules (intra-molecular forces cancel out in rigid bodies)
+                idx_i, idx_j = np.where((dist_sq > 1e-6) & (dist_sq < r_cut_sq))
+                valid = (idx_i < idx_j) & (flat_mol[idx_i] != flat_mol[idx_j])
+                idx_i = idx_i[valid]
+                idx_j = idx_j[valid]
+            
+                for i, j in zip(idx_i, idx_j):
+                    mol_i = flat_mol[i]
+                    mol_j = flat_mol[j]
+                
+
                     
-                        for i_local, s_idx in enumerate(site_indices):
-                            new_pos = frame_centers[mol_idx] + ideal_rel_rotated[i_local]
-                            frame_sites[mol_idx][s_idx] = (frame_sites[mol_idx][s_idx][0], new_pos)
-        
-            num_molecules = len(frame_centers)
-            num_total_sites = sum(len(s) for s in frame_sites)
-        
-            f.write(struct.pack("i", num_molecules))
-            f.write(struct.pack("i", num_total_sites))
-            f.write(struct.pack("3f", *box_dim))
-        
-            # Copia indipendente per la sottrazione
-            res_forces = np.copy(frame_forces)
-            res_torques = np.copy(frame_torques)
-        
-            # 3.1 Sottrazione WCA sui siti virtuali
-            # 3.1 Sottrazione WCA usando i parametri di wca_priors.json (36 coppie)
-            if WCA_SIGMA == "auto" and 'wca_prior_dict' in locals():
-                flat_pos = []
-                flat_mol = []
-                flat_type = []
-                for m_idx, sites in enumerate(frame_sites):
-                    for s_type, s_pos in sites:
-                        flat_pos.append(s_pos)
-                        flat_mol.append(m_idx)
-                        flat_type.append(s_type)
-            
-                if len(flat_pos) > 0:
-                    flat_pos = np.array(flat_pos)
-                    flat_mol = np.array(flat_mol)
-                    flat_type = np.array(flat_type)
+                    r_sq = dist_sq[i, j]
+                    r = np.sqrt(r_sq)
+                    r_hat = diff[i, j] / r
+                    s_ij = sigma_ij[i, j]
+                    e_ij = eps_ij[i, j]
                 
-                    diff = flat_pos[:, np.newaxis, :] - flat_pos[np.newaxis, :, :]
-                    diff -= box_dim * np.round(diff / box_dim)
-                    dist_sq = np.sum(diff**2, axis=-1)
+                    f_scalar = 24.0 * e_ij * (2.0 * (s_ij/r)**12 - (s_ij/r)**6) / r
+                    f_vec = f_scalar * r_hat
                 
-                    sigma_ij = np.zeros_like(dist_sq)
-                    eps_ij = np.zeros_like(dist_sq)
-                    r_cut_sq = np.zeros_like(dist_sq)
+                    res_forces[mol_i] -= f_vec
+                    res_forces[mol_j] += f_vec
                 
-                    for i in range(len(flat_type)):
-                        for j in range(len(flat_type)):
-                            t_min = min(int(flat_type[i]), int(flat_type[j]))
-                            t_max = max(int(flat_type[i]), int(flat_type[j]))
-                            pair_key = f"{t_min}_{t_max}"
-                        
-                            if pair_key in wca_prior_dict:
-                                w = wca_prior_dict[pair_key]
-                                sigma_ij[i, j] = w["sigma_nm"]
-                                eps_ij[i, j] = w["epsilon_kjmol"]
-                                r_cut_sq[i, j] = w["cutoff_nm"]**2
+                    # Compute torque around the COM of each molecule
+                    r_site_i = flat_pos[i] - frame_centers[mol_i]
+                    r_site_j = flat_pos[j] - frame_centers[mol_j]
                 
-                    # Only distinct molecules (intra-molecular forces cancel out in rigid bodies)
-                    idx_i, idx_j = np.where((dist_sq > 1e-6) & (dist_sq < r_cut_sq))
-                    valid = (idx_i < idx_j) & (flat_mol[idx_i] != flat_mol[idx_j])
-                    idx_i = idx_i[valid]
-                    idx_j = idx_j[valid]
-                
-                    for i, j in zip(idx_i, idx_j):
-                        mol_i = flat_mol[i]
-                        mol_j = flat_mol[j]
-                    
-
-                        
-                        r_sq = dist_sq[i, j]
-                        r = np.sqrt(r_sq)
-                        r_hat = diff[i, j] / r
-                        s_ij = sigma_ij[i, j]
-                        e_ij = eps_ij[i, j]
-                    
-                        f_scalar = 24.0 * e_ij * (2.0 * (s_ij/r)**12 - (s_ij/r)**6) / r
-                        f_vec = f_scalar * r_hat
-                    
-                        res_forces[mol_i] -= f_vec
-                        res_forces[mol_j] += f_vec
-                    
-                        # Compute torque around the COM of each molecule
-                        r_site_i = flat_pos[i] - frame_centers[mol_i]
-                        r_site_j = flat_pos[j] - frame_centers[mol_j]
-                    
-                        res_torques[mol_i] -= np.cross(r_site_i, f_vec)
-                        res_torques[mol_j] += np.cross(r_site_j, f_vec)
-                
-            # 3.2 Sottrazione Legami (con supporto per siti specifici e momento torcente)
-            for b in derived_priors["bonds"]:
-                i, j = b["mol_i"], b["mol_j"]
-                site_i = b.get("site_i", -1)
-                site_j = b.get("site_j", -1)
-
-                if i >= num_molecules or j >= num_molecules: continue
-
-                pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
-                pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
-
-                r_vec = mic_vector(pos_i, pos_j, box_dim)
-                r = np.linalg.norm(r_vec)
-                if r < 1e-6: continue
-
-                r_hat = r_vec / r
-                f_scalar = 0.0
-                b_type = b.get("type", "harmonic")
-
-                if b_type == "harmonic":
-                    k, r0 = b["k"], b["r0"]
-                    f_scalar = - k * (r - r0)
-
-                elif b_type == "fene":
-                    k, r0, r_max = b["k"], b["r0"], b["r_max"]
-                    diff = r - r0
-                    if abs(diff) >= r_max:
-                        raise ValueError(
-                            f"FENE bond {i}-{j} is outside its domain: "
-                            f"|r-r0|={abs(diff):.6g} >= r_max={r_max:.6g}"
-                        )
-                    f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
-
-                elif b_type == "morse":
-                    D, a, r0 = b["D"], b["a"], b["r0"]
-                    diff = r - r0
-                    exp_term = np.exp(-a * diff)
-                    f_scalar = - 2.0 * a * D * (1.0 - exp_term) * exp_term
-
-
-                f_vec = - f_scalar * r_hat
-
-                res_forces[i] -= f_vec
-                res_forces[j] += f_vec
-
-                if site_i != -1:
-                    r_rel_i = mic_vector(frame_centers[i], pos_i, box_dim)
-                    res_torques[i] -= np.cross(r_rel_i, f_vec)
-
-                if site_j != -1:
-                    r_rel_j = mic_vector(frame_centers[j], pos_j, box_dim)
-                    res_torques[j] += np.cross(r_rel_j, f_vec)
-                
-            # 3.2.1 Sottrazione Angoli
-            for a in derived_priors.get("angles", []):
-                a_type = a.get("type", "harmonic")
-                if a_type in ["ibi", "dbi"]:
-                    continue
+                    res_torques[mol_i] -= np.cross(r_site_i, f_vec)
+                    res_torques[mol_j] += np.cross(r_site_j, f_vec)
             
-                i, j, k_idx = a["mol_i"], a["mol_j"], a["mol_k"]
-                if i >= num_molecules or j >= num_molecules or k_idx >= num_molecules: continue
-            
-                site_i, site_j, site_k = a.get("site_i", -1), a.get("site_j", -1), a.get("site_k", -1)
-                pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
-                pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
-                pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
-            
-                r_ji = mic_vector(pos_j, pos_i, box_dim)
-                r_jk = mic_vector(pos_j, pos_k, box_dim)
-                d_ji = np.linalg.norm(r_ji)
-                d_jk = np.linalg.norm(r_jk)
-                if d_ji < 1e-6 or d_jk < 1e-6: continue
-            
-                cos_theta = np.clip(np.dot(r_ji, r_jk) / (d_ji * d_jk), -1.0, 1.0)
-                theta = np.arccos(cos_theta)
-                sin_theta = np.sqrt(1.0 - cos_theta**2)
-                if sin_theta < 1e-6: continue
-            
-                if a_type == "harmonic":
-                    dV_dtheta = a["k"] * (theta - a["theta0"])
+        # 3.2 Sottrazione Legami (con supporto per siti specifici e momento torcente)
+        for b in derived_priors["bonds"]:
+            i, j = b["mol_i"], b["mol_j"]
+            site_i = b.get("site_i", -1)
+            site_j = b.get("site_j", -1)
 
-                else:
-                    dV_dtheta = 0.0
-                
-                grad_i_cos = r_jk / (d_ji * d_jk) - cos_theta * r_ji / (d_ji**2)
-                grad_k_cos = r_ji / (d_ji * d_jk) - cos_theta * r_jk / (d_jk**2)
-            
-                scalar_force = dV_dtheta / sin_theta
-                f_i = scalar_force * grad_i_cos
-                f_k = scalar_force * grad_k_cos
-                f_j = -(f_i + f_k)
-            
-                res_forces[i] -= f_i
-                res_forces[j] -= f_j
-                res_forces[k_idx] -= f_k
-            
-                if site_i != -1: res_torques[i] -= np.cross(mic_vector(frame_centers[i], pos_i, box_dim), f_i)
-                if site_j != -1: res_torques[j] -= np.cross(mic_vector(frame_centers[j], pos_j, box_dim), f_j)
-                if site_k != -1: res_torques[k_idx] -= np.cross(mic_vector(frame_centers[k_idx], pos_k, box_dim), f_k)
-            
-            # 3.2.2 Sottrazione Diedri
-            for d in derived_priors.get("dihedrals", []):
-                d_type = d.get("type", "cosine")
-                if d_type in ["ibi", "dbi"]:
-                    continue
-                
-                i, j, k_idx, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
-                if i >= num_molecules or j >= num_molecules or k_idx >= num_molecules or l >= num_molecules: continue
-            
-                site_i, site_j, site_k, site_l = d.get("site_i", -1), d.get("site_j", -1), d.get("site_k", -1), d.get("site_l", -1)
-                pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
-                pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
-                pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
-                pos_l = resolve_site_position(frame_centers, frame_sites, l, site_l)
+            if i >= num_molecules or j >= num_molecules: continue
 
-                if d_type == "cosine":
-                    f_i, f_j, f_k, f_l = dihedral_forces(
-                        pos_i,
-                        pos_j,
-                        pos_k,
-                        pos_l,
-                        box_dim,
-                        d["k"],
-                        d.get("n", 1),
-                        d["phi0"],
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
+
+            r_vec = mic_vector(pos_i, pos_j, box_dim)
+            r = np.linalg.norm(r_vec)
+            if r < 1e-6: continue
+
+            r_hat = r_vec / r
+            f_scalar = 0.0
+            b_type = b.get("type", "harmonic")
+
+            if b_type == "harmonic":
+                k, r0 = b["k"], b["r0"]
+                f_scalar = - k * (r - r0)
+
+            elif b_type == "fene":
+                k, r0, r_max = b["k"], b["r0"], b["r_max"]
+                diff = r - r0
+                if abs(diff) >= r_max:
+                    raise ValueError(
+                        f"FENE bond {i}-{j} is outside its domain: "
+                        f"|r-r0|={abs(diff):.6g} >= r_max={r_max:.6g}"
                     )
-                else:
-                    continue
+                f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
 
-                res_forces[i] -= f_i
-                res_forces[j] -= f_j
-                res_forces[k_idx] -= f_k
-                res_forces[l] -= f_l
+            elif b_type == "morse":
+                D, a, r0 = b["D"], b["a"], b["r0"]
+                diff = r - r0
+                exp_term = np.exp(-a * diff)
+                f_scalar = - 2.0 * a * D * (1.0 - exp_term) * exp_term
+
+
+            f_vec = - f_scalar * r_hat
+
+            res_forces[i] -= f_vec
+            res_forces[j] += f_vec
+
+            if site_i != -1:
+                r_rel_i = mic_vector(frame_centers[i], pos_i, box_dim)
+                res_torques[i] -= np.cross(r_rel_i, f_vec)
+
+            if site_j != -1:
+                r_rel_j = mic_vector(frame_centers[j], pos_j, box_dim)
+                res_torques[j] += np.cross(r_rel_j, f_vec)
             
-                if site_i != -1: res_torques[i] -= np.cross(mic_vector(frame_centers[i], pos_i, box_dim), f_i)
-                if site_j != -1: res_torques[j] -= np.cross(mic_vector(frame_centers[j], pos_j, box_dim), f_j)
-                if site_k != -1: res_torques[k_idx] -= np.cross(mic_vector(frame_centers[k_idx], pos_k, box_dim), f_k)
-                if site_l != -1: res_torques[l] -= np.cross(mic_vector(frame_centers[l], pos_l, box_dim), f_l)
-            
-            
-            # 3.2.2 Sottrazione Diedri
-            # (Omitted lines in between handled properly)
+        # 3.2.1 Sottrazione Angoli
+        for a in derived_priors.get("angles", []):
+            a_type = a.get("type", "harmonic")
+            if a_type in ["ibi", "dbi"]:
+                continue
         
-            # 3.3 Clip delle forze residue e scrittura nel file
-            # Il clip finale è FONDAMENTALE quando si usa l'IBI, perché la sottrazione dei potenziali IBI (che hanno muri molto ripidi)
-            # crea degli artefatti spaventosi (forze > 1000) sui bordi delle distribuzioni.
-            if args.clip_forces is not None:
-                res_forces = np.clip(res_forces, -args.clip_forces, args.clip_forces)
-                res_torques = np.clip(res_torques, -args.clip_forces, args.clip_forces)
+            i, j, k_idx = a["mol_i"], a["mol_j"], a["mol_k"]
+            if i >= num_molecules or j >= num_molecules or k_idx >= num_molecules: continue
         
-            for mol_id in range(num_molecules):
-                num_sites = len(frame_sites[mol_id])
-                f.write(struct.pack("i", mol_id))
-                f.write(struct.pack("i", num_sites))
-                f.write(struct.pack("3f", *frame_centers[mol_id]))
-                f.write(struct.pack("3f", *res_forces[mol_id]))
-                f.write(struct.pack("3f", *res_torques[mol_id]))
-                for site_type, site_pos in frame_sites[mol_id]:
-                    f.write(struct.pack("i", site_type))
-                    f.write(struct.pack("3f", *site_pos))
+            site_i, site_j, site_k = a.get("site_i", -1), a.get("site_j", -1), a.get("site_k", -1)
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
+            pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
+        
+            r_ji = mic_vector(pos_j, pos_i, box_dim)
+            r_jk = mic_vector(pos_j, pos_k, box_dim)
+            d_ji = np.linalg.norm(r_ji)
+            d_jk = np.linalg.norm(r_jk)
+            if d_ji < 1e-6 or d_jk < 1e-6: continue
+        
+            cos_theta = np.clip(np.dot(r_ji, r_jk) / (d_ji * d_jk), -1.0, 1.0)
+            theta = np.arccos(cos_theta)
+            sin_theta = np.sqrt(1.0 - cos_theta**2)
+            if sin_theta < 1e-6: continue
+        
+            if a_type == "harmonic":
+                dV_dtheta = a["k"] * (theta - a["theta0"])
 
-    # --- DECOY GENERATION ---
-    print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
-    decoy_frames = []
-    import copy
-    import random
-
-    # Number of decoys per pair
-    N_DECOYS_PER_PAIR = 256
-
-    # Collect all frames data in memory to easily pick parents for decoys
-    # Wait, we already have sites_data_history, forces_history, cg_centers_history, etc.
-    # We can just pick random frames from there!
-
-    total_decoys_generated = 0
-    for pair_key, wca_info in wca_prior_dict.items():
-        t1, t2 = wca_info["type_i"], wca_info["type_j"]
-        r_c = wca_info["cutoff_nm"]
-        r_emp_min = wca_info["empirical_min"]
-    
-        # R_OOD is max of 0.75 r_c and something below r_emp_min
-        r_ood_max = min(0.95 * r_c, r_emp_min - 0.01)
-        r_ood_min = 0.70 * r_c
-        if r_ood_max <= r_ood_min:
-            # No reliable deep-OOD interval exists for this pair
-            print(f"    [Decoy] Skipping pair {t1}-{t2} (rc={r_c:.3f}, r_min={r_emp_min:.3f}) - no valid OOD interval.")
-            continue
-    
-        for _ in range(N_DECOYS_PER_PAIR):
-            frame_idx = random.randint(0, len(sites_data_history) - 1)
-            
-            # Pick two distinct molecules that have t1 and t2
-            mol_ids_t1 = []
-            mol_ids_t2 = []
-            for m_idx, (rname, sites) in enumerate(zip(mol_resnames, sites_data_history[frame_idx])):
-                # Find sites of type t1
-                for (s_type, s_pos) in sites:
-                    if s_type == t1: mol_ids_t1.append((m_idx, s_pos))
-                    if s_type == t2: mol_ids_t2.append((m_idx, s_pos))
-                    
-            if not mol_ids_t1 or not mol_ids_t2: continue
-            
-            # Pick random sites
-            m1_idx, pos1 = random.choice(mol_ids_t1)
-            m2_idx, pos2 = random.choice(mol_ids_t2)
-            
-            if m1_idx == m2_idx: continue # must be different molecules
-            
-            target_r = random.uniform(r_ood_min, r_ood_max)
-            
-            box = np.asarray(box_dim_history[frame_idx])
-            dvec = mic_vector(pos2, pos1, box)
-            dist = np.linalg.norm(dvec)
-            
-            if dist < 1e-8:
-                u = np.array([1.0, 0.0, 0.0])
             else:
-                u = dvec / dist
+                dV_dtheta = 0.0
             
-            translation = dvec - target_r * u
+            grad_i_cos = r_jk / (d_ji * d_jk) - cos_theta * r_ji / (d_ji**2)
+            grad_k_cos = r_ji / (d_ji * d_jk) - cos_theta * r_jk / (d_jk**2)
+        
+            scalar_force = dV_dtheta / sin_theta
+            f_i = scalar_force * grad_i_cos
+            f_k = scalar_force * grad_k_cos
+            f_j = -(f_i + f_k)
+        
+            res_forces[i] -= f_i
+            res_forces[j] -= f_j
+            res_forces[k_idx] -= f_k
+        
+            if site_i != -1: res_torques[i] -= np.cross(mic_vector(frame_centers[i], pos_i, box_dim), f_i)
+            if site_j != -1: res_torques[j] -= np.cross(mic_vector(frame_centers[j], pos_j, box_dim), f_j)
+            if site_k != -1: res_torques[k_idx] -= np.cross(mic_vector(frame_centers[k_idx], pos_k, box_dim), f_k)
+        
+        # 3.2.2 Sottrazione Diedri
+        for d in derived_priors.get("dihedrals", []):
+            d_type = d.get("type", "cosine")
+            if d_type in ["ibi", "dbi"]:
+                continue
             
-            # Copy frame data
-            decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
-            decoy_centers = np.copy(cg_centers_history[frame_idx])
-            decoy_forces = np.zeros_like(cg_forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
-            
-            # Apply translation to all sites in mol2
-            for i in range(len(decoy_sites[m2_idx])):
-                s_type, s_pos = decoy_sites[m2_idx][i]
-                decoy_sites[m2_idx][i] = (s_type, s_pos + translation)
-                
-            decoy_centers[m2_idx] += translation
-            
-            decoy_frames.append((decoy_sites, decoy_centers, decoy_forces, box_dim_history[frame_idx]))
-            total_decoys_generated += 1
+            i, j, k_idx, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
+            if i >= num_molecules or j >= num_molecules or k_idx >= num_molecules or l >= num_molecules: continue
+        
+            site_i, site_j, site_k, site_l = d.get("site_i", -1), d.get("site_j", -1), d.get("site_k", -1), d.get("site_l", -1)
+            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
+            pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
+            pos_l = resolve_site_position(frame_centers, frame_sites, l, site_l)
 
-    print(f"[INFO] Generati {total_decoys_generated} decoy frames.")
+            if d_type == "cosine":
+                f_i, f_j, f_k, f_l = dihedral_forces(
+                    pos_i,
+                    pos_j,
+                    pos_k,
+                    pos_l,
+                    box_dim,
+                    d["k"],
+                    d.get("n", 1),
+                    d["phi0"],
+                )
+            else:
+                continue
 
-    # Write decoys to dataset
-    print("[INFO] Scrittura decoy nel binario...")
-    with open(args.output, "ab") as f:
-        for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
-            num_molecules = len(d_sites)
-            num_total_sites = sum(len(sites) for sites in d_sites)
-            
-            f.write(struct.pack("i", num_molecules))
-            f.write(struct.pack("i", num_total_sites))
-            f.write(struct.pack("3f", float(d_box[0]), float(d_box[1]), float(d_box[2])))
+            res_forces[i] -= f_i
+            res_forces[j] -= f_j
+            res_forces[k_idx] -= f_k
+            res_forces[l] -= f_l
+        
+            if site_i != -1: res_torques[i] -= np.cross(mic_vector(frame_centers[i], pos_i, box_dim), f_i)
+            if site_j != -1: res_torques[j] -= np.cross(mic_vector(frame_centers[j], pos_j, box_dim), f_j)
+            if site_k != -1: res_torques[k_idx] -= np.cross(mic_vector(frame_centers[k_idx], pos_k, box_dim), f_k)
+            if site_l != -1: res_torques[l] -= np.cross(mic_vector(frame_centers[l], pos_l, box_dim), f_l)
+        
+        
+        # 3.2.2 Sottrazione Diedri
+        # (Omitted lines in between handled properly)
     
-            for mol_id in range(num_molecules):
-                num_sites = len(d_sites[mol_id])
-                f.write(struct.pack("i", mol_id))
-                f.write(struct.pack("i", num_sites))
-                f.write(struct.pack("3f", *d_centers[mol_id]))
-                f.write(struct.pack("3f", *d_forces[mol_id]))
-                f.write(struct.pack("3f", 0.0, 0.0, 0.0)) # torques are zero
-                for site_type, site_pos in d_sites[mol_id]:
-                    f.write(struct.pack("i", int(site_type)))
-                    f.write(struct.pack("3f", *site_pos))
+        # 3.3 Clip delle forze residue e scrittura nel file
+        # Il clip finale è FONDAMENTALE quando si usa l'IBI, perché la sottrazione dei potenziali IBI (che hanno muri molto ripidi)
+        # crea degli artefatti spaventosi (forze > 1000) sui bordi delle distribuzioni.
+        if args.clip_forces is not None:
+            res_forces = np.clip(res_forces, -args.clip_forces, args.clip_forces)
+            res_torques = np.clip(res_torques, -args.clip_forces, args.clip_forces)
+    
+        for mol_id in range(num_molecules):
+            num_sites = len(frame_sites[mol_id])
+            f.write(struct.pack("i", mol_id))
+            f.write(struct.pack("i", num_sites))
+            f.write(struct.pack("3f", *frame_centers[mol_id]))
+            f.write(struct.pack("3f", *res_forces[mol_id]))
+            f.write(struct.pack("3f", *res_torques[mol_id]))
+            for site_type, site_pos in frame_sites[mol_id]:
+                f.write(struct.pack("i", site_type))
+                f.write(struct.pack("3f", *site_pos))
 
-    print(f"[INFO] Scritti {len(decoy_frames)} decoy nel binario.")
-    with open(args.output, "r+b") as f:
-        f.seek(0)
-        total_frames = len(cg_centers_history) + len(decoy_frames)
-        f.write(struct.pack("i", total_frames))
-    print("[INFO] Aggiornato il contatore dei frame totali.")
+# --- DECOY GENERATION ---
+print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
+decoy_frames = []
+import copy
+import random
+
+# Number of decoys per pair
+N_DECOYS_PER_PAIR = 256
+
+# Collect all frames data in memory to easily pick parents for decoys
+# Wait, we already have sites_data_history, forces_history, cg_centers_history, etc.
+# We can just pick random frames from there!
+
+total_decoys_generated = 0
+for pair_key, wca_info in wca_prior_dict.items():
+    t1, t2 = wca_info["type_i"], wca_info["type_j"]
+    r_c = wca_info["cutoff_nm"]
+    r_emp_min = wca_info["empirical_min"]
+
+    # R_OOD is max of 0.75 r_c and something below r_emp_min
+    r_ood_max = min(0.95 * r_c, r_emp_min - 0.01)
+    r_ood_min = 0.70 * r_c
+    if r_ood_max <= r_ood_min:
+        # No reliable deep-OOD interval exists for this pair
+        print(f"    [Decoy] Skipping pair {t1}-{t2} (rc={r_c:.3f}, r_min={r_emp_min:.3f}) - no valid OOD interval.")
+        continue
+
+    for _ in range(N_DECOYS_PER_PAIR):
+        frame_idx = random.randint(0, len(sites_data_history) - 1)
+        
+        # Pick two distinct molecules that have t1 and t2
+        mol_ids_t1 = []
+        mol_ids_t2 = []
+        for m_idx, (rname, sites) in enumerate(zip(mol_resnames, sites_data_history[frame_idx])):
+            # Find sites of type t1
+            for (s_type, s_pos) in sites:
+                if s_type == t1: mol_ids_t1.append((m_idx, s_pos))
+                if s_type == t2: mol_ids_t2.append((m_idx, s_pos))
+                
+        if not mol_ids_t1 or not mol_ids_t2: continue
+        
+        # Pick random sites
+        m1_idx, pos1 = random.choice(mol_ids_t1)
+        m2_idx, pos2 = random.choice(mol_ids_t2)
+        
+        if m1_idx == m2_idx: continue # must be different molecules
+        
+        target_r = random.uniform(r_ood_min, r_ood_max)
+        
+        box = np.asarray(box_dim_history[frame_idx])
+        dvec = mic_vector(pos2, pos1, box)
+        dist = np.linalg.norm(dvec)
+        
+        if dist < 1e-8:
+            u = np.array([1.0, 0.0, 0.0])
+        else:
+            u = dvec / dist
+        
+        translation = dvec - target_r * u
+        
+        # Copy frame data
+        decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
+        decoy_centers = np.copy(cg_centers_history[frame_idx])
+        decoy_forces = np.zeros_like(cg_forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
+        
+        # Apply translation to all sites in mol2
+        for i in range(len(decoy_sites[m2_idx])):
+            s_type, s_pos = decoy_sites[m2_idx][i]
+            decoy_sites[m2_idx][i] = (s_type, s_pos + translation)
+            
+        decoy_centers[m2_idx] += translation
+        
+        decoy_frames.append((decoy_sites, decoy_centers, decoy_forces, box_dim_history[frame_idx]))
+        total_decoys_generated += 1
+
+print(f"[INFO] Generati {total_decoys_generated} decoy frames.")
+
+# Write decoys to dataset
+print("[INFO] Scrittura decoy nel binario...")
+with open(args.output, "ab") as f:
+    for d_idx, (d_sites, d_centers, d_forces, d_box) in enumerate(decoy_frames):
+        num_molecules = len(d_sites)
+        num_total_sites = sum(len(sites) for sites in d_sites)
+        
+        f.write(struct.pack("i", num_molecules))
+        f.write(struct.pack("i", num_total_sites))
+        f.write(struct.pack("3f", float(d_box[0]), float(d_box[1]), float(d_box[2])))
+
+        for mol_id in range(num_molecules):
+            num_sites = len(d_sites[mol_id])
+            f.write(struct.pack("i", mol_id))
+            f.write(struct.pack("i", num_sites))
+            f.write(struct.pack("3f", *d_centers[mol_id]))
+            f.write(struct.pack("3f", *d_forces[mol_id]))
+            f.write(struct.pack("3f", 0.0, 0.0, 0.0)) # torques are zero
+            for site_type, site_pos in d_sites[mol_id]:
+                f.write(struct.pack("i", int(site_type)))
+                f.write(struct.pack("3f", *site_pos))
+
+print(f"[INFO] Scritti {len(decoy_frames)} decoy nel binario.")
+with open(args.output, "r+b") as f:
+    f.seek(0)
+    total_frames = len(cg_centers_history) + len(decoy_frames)
+    f.write(struct.pack("i", total_frames))
+print("[INFO] Aggiornato il contatore dei frame totali.")
 
 
-    print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
+print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
 
 
-    with open("rigid_bodies_info.json", "w") as jf:
-        json.dump(rigid_bodies_info, jf, indent=4)
-    print("[INFO] Masse e inerzie salvate in rigid_bodies_info.json!")
+with open("rigid_bodies_info.json", "w") as jf:
+    json.dump(rigid_bodies_info, jf, indent=4)
+print("[INFO] Masse e inerzie salvate in rigid_bodies_info.json!")
