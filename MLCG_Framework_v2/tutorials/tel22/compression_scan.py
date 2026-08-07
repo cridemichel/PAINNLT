@@ -9,8 +9,9 @@ import numpy as np
 import json
 
 def run_scan():
-    with open("wca_priors.json") as f:
-        wca_priors = json.load(f)
+    with open("cg_priors.json") as f:
+        cg_priors = json.load(f)
+        wca_priors = cg_priors.get("wca_pairs", {})
     with open("tel22_training_config.json") as f:
         nn_config = json.load(f)
         
