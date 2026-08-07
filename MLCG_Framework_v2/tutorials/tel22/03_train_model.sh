@@ -21,7 +21,7 @@ cat << 'JSON' > tel22_training_config.json
 
     "toxvaerd_alpha": 0.1,
     "learning_rate": 0.001,
-    "epochs": 50,
+    "epochs": 20,
     "batch_size": 16
 }
 JSON
