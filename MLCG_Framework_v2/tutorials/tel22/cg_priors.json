@@ -5357,11 +5357,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.5214350687893483,
             "empirical_min": 0.4652481966454742,
+            "histogram_min_nm": 0.4652481966454742,
             "quantile_percent": 0.1,
             "q_low_nm": 0.5239473237767523,
             "r_guard_nm": 0.41714805503147867,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.5214350687893483,
+            "physical_cutoff_limit_nm": 0.5699290408907058
         },
         "0_1": {
             "type_i": 0,
@@ -5370,11 +5374,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.45663363971728954,
             "empirical_min": 0.4247401036149807,
+            "histogram_min_nm": 0.4247401036149807,
             "quantile_percent": 0.1,
             "q_low_nm": 0.45663363971728954,
             "r_guard_nm": 0.3653069117738317,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.45663363971728954,
+            "physical_cutoff_limit_nm": 0.5203066269283513
         },
         "0_2": {
             "type_i": 0,
@@ -5383,11 +5391,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.5917216765601532,
             "empirical_min": 0.5273497901948195,
+            "histogram_min_nm": 0.5273497901948195,
             "quantile_percent": 0.1,
             "q_low_nm": 0.5917216765601532,
             "r_guard_nm": 0.4733773412481226,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.5917216765601532,
+            "physical_cutoff_limit_nm": 0.6460034929886539
         },
         "0_3": {
             "type_i": 0,
@@ -5396,11 +5408,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.4877478398023628,
             "empirical_min": 0.4235185461670757,
+            "histogram_min_nm": 0.4235185461670757,
             "quantile_percent": 0.1,
             "q_low_nm": 0.48782435388697293,
             "r_guard_nm": 0.39019827184189027,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.4877478398023628,
+            "physical_cutoff_limit_nm": 0.5188102190546676
         },
         "0_4": {
             "type_i": 0,
@@ -5409,11 +5425,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.4209691548141186,
             "empirical_min": 0.3598994909799384,
+            "histogram_min_nm": 0.3598994909799384,
             "quantile_percent": 0.1,
             "q_low_nm": 0.4209691548141186,
             "r_guard_nm": 0.33677532385129494,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.4209691548141186,
+            "physical_cutoff_limit_nm": 0.4408768764504245
         },
         "0_5": {
             "type_i": 0,
@@ -5422,11 +5442,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.4850434626501276,
             "empirical_min": 0.3964448784930971,
+            "histogram_min_nm": 0.3964448784930971,
             "quantile_percent": 0.1,
             "q_low_nm": 0.48521031131283243,
             "r_guard_nm": 0.3880347701201021,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.4850434626501276,
+            "physical_cutoff_limit_nm": 0.48564497615404395
         },
         "0_6": {
             "type_i": 0,
@@ -5435,11 +5459,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.43234950116560145,
             "empirical_min": 0.3998144504805385,
+            "histogram_min_nm": 0.3998144504805385,
             "quantile_percent": 0.1,
             "q_low_nm": 0.4324227526529618,
             "r_guard_nm": 0.34587960093248116,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.43234950116560145,
+            "physical_cutoff_limit_nm": 0.48977270183865956
         },
         "0_7": {
             "type_i": 0,
@@ -5448,11 +5476,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.41219013531668325,
             "empirical_min": 0.38147518107784917,
+            "histogram_min_nm": 0.38147518107784917,
             "quantile_percent": 0.1,
             "q_low_nm": 0.4121930806171404,
             "r_guard_nm": 0.3297521082533466,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.41219013531668325,
+            "physical_cutoff_limit_nm": 0.4673070968203652
         },
         "1_1": {
             "type_i": 1,
@@ -5461,11 +5493,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.6878178941394019,
             "empirical_min": 0.6325045237820174,
+            "histogram_min_nm": 0.6325045237820174,
             "quantile_percent": 0.1,
             "q_low_nm": 0.6878178941394019,
             "r_guard_nm": 0.5502543153115215,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.6878178941394019,
+            "physical_cutoff_limit_nm": 0.7748180416329712
         },
         "1_2": {
             "type_i": 1,
@@ -5474,11 +5510,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.5817306394474089,
             "empirical_min": 0.5149907093048782,
+            "histogram_min_nm": 0.5149907093048782,
             "quantile_percent": 0.1,
             "q_low_nm": 0.5817306394474089,
             "r_guard_nm": 0.46538451155792715,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.5817306394474089,
+            "physical_cutoff_limit_nm": 0.6308636188984758
         },
         "1_3": {
             "type_i": 1,
@@ -5487,24 +5527,32 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.7846940434357581,
             "empirical_min": 0.7017979649622502,
+            "histogram_min_nm": 0.7017979649622502,
             "quantile_percent": 0.1,
             "q_low_nm": 0.7852017800788842,
             "r_guard_nm": 0.6277552347486065,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.7846940434357581,
+            "physical_cutoff_limit_nm": 0.8597025070787564
         },
         "1_4": {
             "type_i": 1,
             "type_j": 4,
-            "sigma_nm": 0.6347489992952803,
-            "epsilon_kjmol": 3.1484156126063936,
-            "cutoff_nm": 0.712481661911305,
+            "sigma_nm": 0.6097741317910004,
+            "epsilon_kjmol": 3.1484156126064033,
+            "cutoff_nm": 0.6844483209761959,
             "empirical_min": 0.5587333232458742,
+            "histogram_min_nm": 0.5587333232458742,
             "quantile_percent": 0.1,
             "q_low_nm": 0.7127426088550007,
-            "r_guard_nm": 0.569985329529044,
+            "r_guard_nm": 0.5475586567809567,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.712481661911305,
+            "physical_cutoff_limit_nm": 0.6844483209761959
         },
         "1_5": {
             "type_i": 1,
@@ -5513,11 +5561,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.6996146628095712,
             "empirical_min": 0.575018483821368,
+            "histogram_min_nm": 0.575018483821368,
             "quantile_percent": 0.1,
             "q_low_nm": 0.6998911410924152,
             "r_guard_nm": 0.559691730247657,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.6996146628095712,
+            "physical_cutoff_limit_nm": 0.7043976426811757
         },
         "1_6": {
             "type_i": 1,
@@ -5526,11 +5578,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.701802406983088,
             "empirical_min": 0.6086046826134208,
+            "histogram_min_nm": 0.6086046826134208,
             "quantile_percent": 0.1,
             "q_low_nm": 0.7021777770652298,
             "r_guard_nm": 0.5614419255864704,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.701802406983088,
+            "physical_cutoff_limit_nm": 0.7455407362014405
         },
         "1_7": {
             "type_i": 1,
@@ -5539,11 +5595,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.7232889583015498,
             "empirical_min": 0.5933006014420681,
+            "histogram_min_nm": 0.5933006014420681,
             "quantile_percent": 0.1,
             "q_low_nm": 0.7237853252943408,
             "r_guard_nm": 0.5786311666412399,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.7232889583015498,
+            "physical_cutoff_limit_nm": 0.7267932367665333
         },
         "2_2": {
             "type_i": 2,
@@ -5552,76 +5612,100 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.7135480764109562,
             "empirical_min": 0.6341395578978297,
+            "histogram_min_nm": 0.6341395578978297,
             "quantile_percent": 0.1,
             "q_low_nm": 0.7135480764109562,
             "r_guard_nm": 0.570838461128765,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.7135480764109562,
+            "physical_cutoff_limit_nm": 0.7768209584248414
         },
         "2_3": {
             "type_i": 2,
             "type_j": 3,
-            "sigma_nm": 0.5671447322850881,
-            "epsilon_kjmol": 3.1484156126063936,
-            "cutoff_nm": 0.6365984378885909,
+            "sigma_nm": 0.5290656990490689,
+            "epsilon_kjmol": 3.1484156126064033,
+            "cutoff_nm": 0.5938561682448481,
             "empirical_min": 0.48478054550599853,
+            "histogram_min_nm": 0.48478054550599853,
             "quantile_percent": 0.1,
             "q_low_nm": 0.6366858029858699,
-            "r_guard_nm": 0.5092787503108728,
+            "r_guard_nm": 0.4750849345958785,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.6365984378885909,
+            "physical_cutoff_limit_nm": 0.5938561682448481
         },
         "2_4": {
             "type_i": 2,
             "type_j": 4,
-            "sigma_nm": 0.6004422301259877,
+            "sigma_nm": 0.5921062054031828,
             "epsilon_kjmol": 3.1484156126064033,
-            "cutoff_nm": 0.6739736155186641,
+            "cutoff_nm": 0.6646167441335469,
             "empirical_min": 0.5425442809253445,
+            "histogram_min_nm": 0.5425442809253445,
             "quantile_percent": 0.1,
             "q_low_nm": 0.674137211076539,
-            "r_guard_nm": 0.5391788924149313,
+            "r_guard_nm": 0.5316933953068376,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.6739736155186641,
+            "physical_cutoff_limit_nm": 0.6646167441335469
         },
         "2_5": {
             "type_i": 2,
             "type_j": 5,
-            "sigma_nm": 0.6187275013806308,
-            "epsilon_kjmol": 3.1484156126063936,
-            "cutoff_nm": 0.6944981385450433,
+            "sigma_nm": 0.5692819820265796,
+            "epsilon_kjmol": 3.1484156126064033,
+            "cutoff_nm": 0.6389974196111743,
             "empirical_min": 0.5216305466213668,
+            "histogram_min_nm": 0.5216305466213668,
             "quantile_percent": 0.1,
             "q_low_nm": 0.6947136033868286,
-            "r_guard_nm": 0.5555985108360346,
+            "r_guard_nm": 0.5111979356889395,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.6944981385450433,
+            "physical_cutoff_limit_nm": 0.6389974196111743
         },
         "2_6": {
             "type_i": 2,
             "type_j": 6,
-            "sigma_nm": 0.4987099704910608,
-            "epsilon_kjmol": 3.1484156126064033,
-            "cutoff_nm": 0.5597830149897031,
+            "sigma_nm": 0.44635570725591406,
+            "epsilon_kjmol": 3.1484156126063936,
+            "cutoff_nm": 0.5010173414410521,
             "empirical_min": 0.4089937481151446,
+            "histogram_min_nm": 0.4089937481151446,
             "quantile_percent": 0.1,
             "q_low_nm": 0.5598198545157,
-            "r_guard_nm": 0.4478264119917625,
+            "r_guard_nm": 0.4008138731528417,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.5597830149897031,
+            "physical_cutoff_limit_nm": 0.5010173414410521
         },
         "2_7": {
             "type_i": 2,
             "type_j": 7,
-            "sigma_nm": 0.4674266838156126,
-            "epsilon_kjmol": 3.1484156126064033,
-            "cutoff_nm": 0.5246687129501302,
+            "sigma_nm": 0.4146839994323282,
+            "epsilon_kjmol": 3.1484156126063936,
+            "cutoff_nm": 0.46546705140393396,
             "empirical_min": 0.3799731031868849,
+            "histogram_min_nm": 0.3799731031868849,
             "quantile_percent": 0.1,
             "q_low_nm": 0.5246687129501302,
-            "r_guard_nm": 0.41973497036010415,
+            "r_guard_nm": 0.3723736411231472,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.5246687129501302,
+            "physical_cutoff_limit_nm": 0.46546705140393396
         },
         "3_3": {
             "type_i": 3,
@@ -5630,11 +5714,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.414213259039661,
             "empirical_min": 0.3510782850235754,
+            "histogram_min_nm": 0.3510782850235754,
             "quantile_percent": 0.1,
             "q_low_nm": 0.414213259039661,
             "r_guard_nm": 0.33137060723172884,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.414213259039661,
+            "physical_cutoff_limit_nm": 0.43007089915387986
         },
         "3_4": {
             "type_i": 3,
@@ -5643,11 +5731,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.4978039093568377,
             "empirical_min": 0.43028420304157766,
+            "histogram_min_nm": 0.43028420304157766,
             "quantile_percent": 0.1,
             "q_low_nm": 0.4978705129119563,
             "r_guard_nm": 0.3982431274854702,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.4978039093568377,
+            "physical_cutoff_limit_nm": 0.5270981487259326
         },
         "3_5": {
             "type_i": 3,
@@ -5656,11 +5748,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.34887639955450905,
             "empirical_min": 0.3044771457203803,
+            "histogram_min_nm": 0.3044771457203803,
             "quantile_percent": 0.1,
             "q_low_nm": 0.34887639955450905,
             "r_guard_nm": 0.27910111964360723,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.34887639955450905,
+            "physical_cutoff_limit_nm": 0.37298450350746587
         },
         "3_6": {
             "type_i": 3,
@@ -5669,11 +5765,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.3417738466819994,
             "empirical_min": 0.2936763283216035,
+            "histogram_min_nm": 0.2936763283216035,
             "quantile_percent": 0.1,
             "q_low_nm": 0.3417738466819994,
             "r_guard_nm": 0.2734190773455995,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.3417738466819994,
+            "physical_cutoff_limit_nm": 0.35975350219396424
         },
         "3_7": {
             "type_i": 3,
@@ -5682,11 +5782,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.3635802154229263,
             "empirical_min": 0.32183502347132387,
+            "histogram_min_nm": 0.32183502347132387,
             "quantile_percent": 0.1,
             "q_low_nm": 0.3635802154229263,
             "r_guard_nm": 0.29086417233834105,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.3635802154229263,
+            "physical_cutoff_limit_nm": 0.39424790375237173
         },
         "4_4": {
             "type_i": 4,
@@ -5695,11 +5799,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.36325652694246985,
             "empirical_min": 0.30749025011058323,
+            "histogram_min_nm": 0.30749025011058323,
             "quantile_percent": 0.1,
             "q_low_nm": 0.36325652694246985,
             "r_guard_nm": 0.2906052215539759,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.36325652694246985,
+            "physical_cutoff_limit_nm": 0.3766755563854644
         },
         "4_5": {
             "type_i": 4,
@@ -5708,11 +5816,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.3495715778469843,
             "empirical_min": 0.28935999775113475,
+            "histogram_min_nm": 0.28935999775113475,
             "quantile_percent": 0.1,
             "q_low_nm": 0.3495715778469843,
             "r_guard_nm": 0.2796572622775874,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.3495715778469843,
+            "physical_cutoff_limit_nm": 0.35446599724514005
         },
         "4_6": {
             "type_i": 4,
@@ -5721,11 +5833,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.3907093843226183,
             "empirical_min": 0.3242415498678141,
+            "histogram_min_nm": 0.3242415498678141,
             "quantile_percent": 0.1,
             "q_low_nm": 0.3907093843226183,
             "r_guard_nm": 0.3125675074580947,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.3907093843226183,
+            "physical_cutoff_limit_nm": 0.39719589858807225
         },
         "4_7": {
             "type_i": 4,
@@ -5734,11 +5850,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.44589959717969513,
             "empirical_min": 0.37553439505305064,
+            "histogram_min_nm": 0.37553439505305064,
             "quantile_percent": 0.1,
             "q_low_nm": 0.4459660160812478,
             "r_guard_nm": 0.3567196777437561,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.44589959717969513,
+            "physical_cutoff_limit_nm": 0.460029633939987
         },
         "5_5": {
             "type_i": 5,
@@ -5747,11 +5867,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.32224611318449065,
             "empirical_min": 0.29247664931564654,
+            "histogram_min_nm": 0.29247664931564654,
             "quantile_percent": 0.1,
             "q_low_nm": 0.32224611318449065,
             "r_guard_nm": 0.2577968905475925,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.32224611318449065,
+            "physical_cutoff_limit_nm": 0.358283895411667
         },
         "5_6": {
             "type_i": 5,
@@ -5760,11 +5884,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.3230003168757717,
             "empirical_min": 0.2879133047419286,
+            "histogram_min_nm": 0.2879133047419286,
             "quantile_percent": 0.1,
             "q_low_nm": 0.3230003168757717,
             "r_guard_nm": 0.25840025350061735,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.3230003168757717,
+            "physical_cutoff_limit_nm": 0.3526937983088625
         },
         "5_7": {
             "type_i": 5,
@@ -5773,11 +5901,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.34512948050445624,
             "empirical_min": 0.2857248927463347,
+            "histogram_min_nm": 0.2857248927463347,
             "quantile_percent": 0.1,
             "q_low_nm": 0.34512948050445624,
             "r_guard_nm": 0.276103584403565,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.34512948050445624,
+            "physical_cutoff_limit_nm": 0.35001299361425997
         },
         "6_6": {
             "type_i": 6,
@@ -5786,11 +5918,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.33504721346607275,
             "empirical_min": 0.29758538746230084,
+            "histogram_min_nm": 0.29758538746230084,
             "quantile_percent": 0.1,
             "q_low_nm": 0.33504721346607275,
             "r_guard_nm": 0.26803777077285823,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.33504721346607275,
+            "physical_cutoff_limit_nm": 0.3645420996413185
         },
         "6_7": {
             "type_i": 6,
@@ -5799,11 +5935,15 @@
             "epsilon_kjmol": 3.1484156126063936,
             "cutoff_nm": 0.3088803713215567,
             "empirical_min": 0.28323919342775,
+            "histogram_min_nm": 0.28323919342775,
             "quantile_percent": 0.1,
             "q_low_nm": 0.3088803713215567,
             "r_guard_nm": 0.24710429705724538,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.3088803713215567,
+            "physical_cutoff_limit_nm": 0.34696801194899374
         },
         "7_7": {
             "type_i": 7,
@@ -5812,11 +5952,15 @@
             "epsilon_kjmol": 3.1484156126064033,
             "cutoff_nm": 0.3265333742877855,
             "empirical_min": 0.29597439393616176,
+            "histogram_min_nm": 0.29597439393616176,
             "quantile_percent": 0.1,
             "q_low_nm": 0.3265333742877855,
             "r_guard_nm": 0.2612266994302284,
             "guard_fraction": 0.8,
-            "guard_kbt": 10.0
+            "guard_kbt": 10.0,
+            "physical_guard_margin": 0.98,
+            "cutoff_before_physical_guard_nm": 0.3265333742877855,
+            "physical_cutoff_limit_nm": 0.3625686325717981
         }
     },
     "wca_exclusions": {
