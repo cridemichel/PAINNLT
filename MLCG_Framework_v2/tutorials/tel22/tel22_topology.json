@@ -3,6 +3,9 @@
     "wca_sigma": "auto",
     "wca_epsilon": 50.0,
     "wca_overrides": {},
+    "wca_quantile_percent": 0.1,
+    "wca_guard_fraction": 0.8,
+    "wca_guard_kbt": 10.0,
     "mapping": {
         "mapping_method": "COM",
         "residues": {

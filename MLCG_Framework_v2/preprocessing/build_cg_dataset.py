@@ -50,6 +50,20 @@ BONDS = config_data.get("bonds", [])
 WCA_SIGMA = config_data.get("wca_sigma", 0.0)
 WCA_EPSILON = config_data.get("wca_epsilon", 0.0)
 WCA_OVERRIDES = config_data.get("wca_overrides", {})
+
+# Pair-specific WCA guard parameters.  The cutoff is inferred from a low
+# percentile of the physical distance distribution, while epsilon controls
+# how rapidly the repulsion grows only after entering the short-range core.
+WCA_QUANTILE_PERCENT = float(config_data.get("wca_quantile_percent", 0.1))
+WCA_GUARD_FRACTION = float(config_data.get("wca_guard_fraction", 0.80))
+WCA_GUARD_KBT = float(config_data.get("wca_guard_kbt", 10.0))
+
+if not (0.0 < WCA_QUANTILE_PERCENT < 50.0):
+    raise ValueError("wca_quantile_percent must be in (0, 50)")
+if not (0.0 < WCA_GUARD_FRACTION < 1.0):
+    raise ValueError("wca_guard_fraction must be in (0, 1)")
+if WCA_GUARD_KBT <= 0.0:
+    raise ValueError("wca_guard_kbt must be > 0")
 RIGID_BODIES_CONFIG = config_data.get("rigid_bodies", {})
 
 
@@ -431,13 +445,13 @@ if WCA_SIGMA == "auto":
     n_types = len(all_types)
     type_to_idx = {t: i for i, t in enumerate(all_types)}
 
-    empirical_Q1 = {}
+    empirical_QLOW = {}
     empirical_min = {}
     pair_counts = {}
 
     for pair, dists in all_pairwise_distances.items():
         if len(dists) > 0:
-            empirical_Q1[pair] = np.percentile(dists, 1.0)
+            empirical_QLOW[pair] = np.percentile(dists, WCA_QUANTILE_PERCENT)
             empirical_min[pair] = np.min(dists)
             pair_counts[pair] = len(dists)
         
@@ -445,11 +459,11 @@ if WCA_SIGMA == "auto":
     def cost_func_R(R):
         loss = 0.0
         N0 = 1000.0
-        for (t1, t2), q1 in empirical_Q1.items():
+        for (t1, t2), q_low in empirical_QLOW.items():
             N = pair_counts[(t1, t2)]
             weight = N / (N + N0)
             r_pred = R[type_to_idx[t1]] + R[type_to_idx[t2]]
-            loss += weight * (r_pred - q1)**2
+            loss += weight * (r_pred - q_low)**2
         return loss
     
     R_init = np.ones(n_types) * 0.15
@@ -479,27 +493,27 @@ if WCA_SIGMA == "auto":
         else:
             r_emp_min = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
         
-        q1 = empirical_Q1.get((t1, t2), r_base)
+        q_low = empirical_QLOW.get((t1, t2), r_base)
         N_samples = len(dists)
         N0 = 1000.0
         alpha = N_samples / (N_samples + N0)
         
         r_base = R_opt[type_to_idx[t1]] + R_opt[type_to_idx[t2]]
-        r_c = alpha * q1 + (1.0 - alpha) * r_base
+        r_c = alpha * q_low + (1.0 - alpha) * r_base
         
-        # Explicit protection: do not exceed Q1% to prevent massive WCA forces at physical limits
-        if r_c > q1:
-            r_c = q1
-            
-        # We compute epsilon such that U_wca(0.9 r_c) = 10 kT
-        r_guard = 0.9 * r_c
+        # Do not let the WCA onset invade more of the physical distribution
+        # than the selected low percentile.  With the TEL22 default this is
+        # Q0.1%, rather than Q1%.
+        r_c = min(r_c, q_low)
+
+        # Keep the onset at r_c but make the wall gradual near the cutoff.
+        # epsilon is chosen so that U_WCA(guard_fraction * r_c) = guard_kbt*kBT.
+        r_guard = WCA_GUARD_FRACTION * r_c
         sigma = r_c / (2.0**(1.0/6.0))
-        # U(r) = 4 * eps * ((sigma/r)^12 - (sigma/r)^6) + eps
         term = (sigma / r_guard)**6
         u_factor = 4.0 * (term**2 - term) + 1.0
-        # 10 k_B T in kJ/mol: k_B = 0.00831446 kJ/(mol K)
-        kT = 0.00831446 * 300.0
-        epsilon = 10.0 * kT / u_factor
+        kT = R_KJ_MOL_K * TEMPERATURE
+        epsilon = WCA_GUARD_KBT * kT / u_factor
         
         wca_prior_dict[f"{t1}_{t2}"] = {
             "type_i": int(t1),
@@ -508,7 +522,11 @@ if WCA_SIGMA == "auto":
             "epsilon_kjmol": float(epsilon),
             "cutoff_nm": float(r_c),
             "empirical_min": float(r_emp_min),
-            "q1_nm": float(q1)
+            "quantile_percent": float(WCA_QUANTILE_PERCENT),
+            "q_low_nm": float(q_low),
+            "r_guard_nm": float(r_guard),
+            "guard_fraction": float(WCA_GUARD_FRACTION),
+            "guard_kbt": float(WCA_GUARD_KBT)
         }
         
     print(f"[INFO] Elaborazione parametri WCA completata ({len(wca_prior_dict)} coppie)")
@@ -520,7 +538,7 @@ if WCA_SIGMA == "auto":
         t1 = wca_info["type_i"]
         t2 = wca_info["type_j"]
         r_c = wca_info["cutoff_nm"]
-        r_guard = 0.9 * r_c
+        r_guard = WCA_GUARD_FRACTION * r_c
         
         # Retrieve all distances collected for this pair
         # all_pairwise_distances keys are string tuples: (str(t1), str(t2))
@@ -758,6 +776,14 @@ if out_dir:
 cached_tables = {}
 cached_splines = {}
 
+# Diagnostics on physical frames only.  These are intentionally collected
+# before any optional --clip_forces operation so that pathological prior
+# subtraction cannot be hidden by clipping.
+reference_force_norms = []
+residual_force_norms = []
+wca_force_norms = []
+wca_force_norms_by_pair = {key: [] for key in wca_prior_dict}
+
 with open(args.output, "wb") as f:
     num_frames = len(cg_centers_history)
     f.write(struct.pack("i", num_frames))
@@ -813,6 +839,7 @@ with open(args.output, "wb") as f:
         # Copia indipendente per la sottrazione
         res_forces = np.copy(frame_forces)
         res_torques = np.copy(frame_torques)
+        reference_force_norms.extend(np.linalg.norm(frame_forces, axis=1).tolist())
     
         # 3.1 Sottrazione WCA sui siti virtuali
         # 3.1 Sottrazione WCA usando i parametri di cg_priors.json (36 coppie)
@@ -869,13 +896,17 @@ with open(args.output, "wb") as f:
                     s_ij = sigma_ij[i, j]
                     e_ij = eps_ij[i, j]
                     
-                    # BUG 12: CAP WCA force at r_guard = 0.9 * r_c to prevent exploding F_resid
-                    r_guard = 0.9 * np.sqrt(r_cut_sq[i, j])
-                    r_eval = max(r, r_guard)
-                
-                    f_scalar = 24.0 * e_ij * (2.0 * (s_ij/r_eval)**12 - (s_ij/r_eval)**6) / r_eval
+                    # Use the exact same analytical WCA force used at runtime.
+                    # Do not cap r here: a preprocessing-only cap would make the
+                    # force decomposition inconsistent with equilibration/NVE.
+                    f_scalar = 24.0 * e_ij * (2.0 * (s_ij/r)**12 - (s_ij/r)**6) / r
                     f_vec = f_scalar * r_hat
-                
+                    f_norm = float(np.linalg.norm(f_vec))
+                    wca_force_norms.append(f_norm)
+                    pair_key_diag = f"{min(int(flat_type[i]), int(flat_type[j]))}_{max(int(flat_type[i]), int(flat_type[j]))}"
+                    if pair_key_diag in wca_force_norms_by_pair:
+                        wca_force_norms_by_pair[pair_key_diag].append(f_norm)
+
                     res_forces[mol_i] -= f_vec
                     res_forces[mol_j] += f_vec
                 
@@ -1029,6 +1060,9 @@ with open(args.output, "wb") as f:
         # 3.2.2 Sottrazione Diedri
         # (Omitted lines in between handled properly)
     
+        # Record the true residual target distribution before optional clipping.
+        residual_force_norms.extend(np.linalg.norm(res_forces, axis=1).tolist())
+
         # 3.3 Clip delle forze residue e scrittura nel file
         # Il clip finale è FONDAMENTALE quando si usa l'IBI, perché la sottrazione dei potenziali IBI (che hanno muri molto ripidi)
         # crea degli artefatti spaventosi (forze > 1000) sui bordi delle distribuzioni.
@@ -1046,6 +1080,39 @@ with open(args.output, "wb") as f:
             for site_type, site_pos in frame_sites[mol_id]:
                 f.write(struct.pack("i", site_type))
                 f.write(struct.pack("3f", *site_pos))
+
+
+
+def _print_force_percentiles(label, values):
+    arr = np.asarray(values, dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if arr.size == 0:
+        print(f"  {label}: no samples")
+        return
+    qs = [50.0, 90.0, 95.0, 99.0, 99.9]
+    vals = np.percentile(arr, qs)
+    print(f"  {label}:")
+    for q, value in zip(qs, vals):
+        print(f"    P{q:g}: {value:.6g}")
+    print(f"    MAX: {np.max(arr):.6g}")
+
+print("\n[INFO] Diagnostica forze sui frame fisici (prima di eventuale clipping):")
+_print_force_percentiles("|F_reference|", reference_force_norms)
+_print_force_percentiles("|F_WCA pair contribution|", wca_force_norms)
+_print_force_percentiles("|F_ML,target residual|", residual_force_norms)
+
+print("\n[INFO] Coda delle forze WCA per type-pair:")
+print(f"{'pair':<8} {'N_WCA':>10} {'P99.9 |F|':>16} {'MAX |F|':>16}")
+for pair_key in sorted(wca_force_norms_by_pair):
+    vals = np.asarray(wca_force_norms_by_pair[pair_key], dtype=float)
+    vals = vals[np.isfinite(vals)]
+    if vals.size == 0:
+        print(f"{pair_key:<8} {0:>10d} {'-':>16} {'-':>16}")
+    else:
+        print(
+            f"{pair_key:<8} {vals.size:>10d} "
+            f"{np.percentile(vals, 99.9):>16.6g} {np.max(vals):>16.6g}"
+        )
 
 # --- DECOY GENERATION ---
 print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
