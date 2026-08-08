@@ -72,6 +72,11 @@ WCA_OVERRIDES = config_data.get("wca_overrides", {})
 WCA_QUANTILE_PERCENT = float(config_data.get("wca_quantile_percent", 0.1))
 WCA_GUARD_FRACTION = float(config_data.get("wca_guard_fraction", 0.80))
 WCA_GUARD_KBT = float(config_data.get("wca_guard_kbt", 10.0))
+# Keep the WCA deep-core guard strictly below the shortest physical
+# nonbonded distance observed for each type pair.  A value below 1.0 leaves
+# a small numerical/statistical buffer instead of placing the guard exactly
+# on the most compressed training configuration.
+WCA_PHYSICAL_GUARD_MARGIN = float(config_data.get("wca_physical_guard_margin", 0.98))
 DECOY_TARGET_FRACTION = float(config_data.get("decoy_target_fraction", 0.08))
 DECOY_RANDOM_SEED = int(config_data.get("decoy_random_seed", 20260808))
 
@@ -81,6 +86,8 @@ if not (0.0 < WCA_GUARD_FRACTION < 1.0):
     raise ValueError("wca_guard_fraction must be in (0, 1)")
 if WCA_GUARD_KBT <= 0.0:
     raise ValueError("wca_guard_kbt must be > 0")
+if not (0.0 < WCA_PHYSICAL_GUARD_MARGIN <= 1.0):
+    raise ValueError("wca_physical_guard_margin must be in (0, 1]")
 if not (0.0 <= DECOY_TARGET_FRACTION < 1.0):
     raise ValueError("decoy_target_fraction must be in [0, 1)")
 RIGID_BODIES_CONFIG = config_data.get("rigid_bodies", {})
@@ -612,6 +619,18 @@ if WCA_SIGMA == "auto":
         # Q0.1%, rather than Q1%.
         r_c = min(r_c, q_low)
 
+        # Hard physical-support constraint.  The deep-core guard must lie
+        # strictly below the shortest *physical nonbonded* distance observed
+        # for this type pair.  Otherwise the analytic WCA prior can generate
+        # forces far larger than F_reference on configurations that actually
+        # belong to the training distribution.
+        r_true_min = float(empirical_min.get((t1, t2), np.min(dists)))
+        r_c_before_physical_guard = float(r_c)
+        r_c_physical_limit = (
+            WCA_PHYSICAL_GUARD_MARGIN * r_true_min / WCA_GUARD_FRACTION
+        )
+        r_c = min(r_c, r_c_physical_limit)
+
         # Keep the onset at r_c but make the wall gradual near the cutoff.
         # epsilon is chosen so that U_WCA(guard_fraction * r_c) = guard_kbt*kBT.
         r_guard = WCA_GUARD_FRACTION * r_c
@@ -627,19 +646,29 @@ if WCA_SIGMA == "auto":
             "sigma_nm": float(sigma),
             "epsilon_kjmol": float(epsilon),
             "cutoff_nm": float(r_c),
-            "empirical_min": float(r_emp_min),
+            # True minimum over the physical nonbonded samples.  Keep the old
+            # histogram-derived estimate only as diagnostic metadata.
+            "empirical_min": float(r_true_min),
+            "histogram_min_nm": float(r_emp_min),
             "quantile_percent": float(WCA_QUANTILE_PERCENT),
             "q_low_nm": float(q_low),
             "r_guard_nm": float(r_guard),
             "guard_fraction": float(WCA_GUARD_FRACTION),
-            "guard_kbt": float(WCA_GUARD_KBT)
+            "guard_kbt": float(WCA_GUARD_KBT),
+            "physical_guard_margin": float(WCA_PHYSICAL_GUARD_MARGIN),
+            "cutoff_before_physical_guard_nm": float(r_c_before_physical_guard),
+            "physical_cutoff_limit_nm": float(r_c_physical_limit)
         }
         
     print(f"[INFO] Elaborazione parametri WCA completata ({len(wca_prior_dict)} coppie)")
     
     # Print WCA invasion table
     print("\n[INFO] Tabella di Invasione WCA (statistiche sui dati fisici):")
-    print(f"{'pair':<8} {'r_c':<8} {'% < r_c':<15} {'% < r_guard':<15}")
+    print(
+        f"{'pair':<8} {'r_c':<8} {'% < r_c':<15} {'% < r_guard':<15} "
+        f"{'r_guard/r_min':<15}"
+    )
+    physical_guard_violations = []
     for pair_key, wca_info in wca_prior_dict.items():
         t1 = wca_info["type_i"]
         t2 = wca_info["type_j"]
@@ -655,11 +684,37 @@ if WCA_SIGMA == "auto":
             
         if len(dists) > 0:
             dists_arr = np.array(dists)
+            physical_min = float(np.min(dists_arr))
             frac_rc = 100.0 * np.sum(dists_arr < r_c) / len(dists_arr)
             frac_guard = 100.0 * np.sum(dists_arr < r_guard) / len(dists_arr)
-            print(f"{t1}-{t2:<6} {r_c:<8.3f} {frac_rc:<15.2f} {frac_guard:<15.2f}")
+            guard_ratio = r_guard / physical_min
+            print(
+                f"{t1}-{t2:<6} {r_c:<8.3f} {frac_rc:<15.2f} "
+                f"{frac_guard:<15.2f} {guard_ratio:<15.4f}"
+            )
+            if r_guard > physical_min + 1.0e-12:
+                physical_guard_violations.append(
+                    (t1, t2, r_guard, physical_min, guard_ratio)
+                )
         else:
-            print(f"{t1}-{t2:<6} {r_c:<8.3f} {'N/A':<15} {'N/A':<15}")    
+            print(
+                f"{t1}-{t2:<6} {r_c:<8.3f} {'N/A':<15} {'N/A':<15} {'N/A':<15}"
+            )
+
+    if physical_guard_violations:
+        details = "; ".join(
+            f"{t1}-{t2}: r_guard={rg:.6f} > r_min={rmin:.6f} "
+            f"(ratio={ratio:.6f})"
+            for t1, t2, rg, rmin, ratio in physical_guard_violations
+        )
+        raise RuntimeError(
+            "WCA physical-support safety check failed: at least one deep-core "
+            f"guard invades the physical nonbonded trajectory. {details}"
+        )
+    print(
+        "[INFO] WCA physical-support safety check passed: "
+        f"r_guard <= {WCA_PHYSICAL_GUARD_MARGIN:.3f} * r_min for every type pair."
+    )
             
     # Bug 11: Inject wca_prior_dict into cg_priors.json and DO NOT write wca_priors.json
     import os
