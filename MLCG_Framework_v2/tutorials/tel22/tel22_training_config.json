@@ -8,5 +8,7 @@
     "toxvaerd_alpha": 0.1,
     "learning_rate": 0.001,
     "epochs": 20,
-    "batch_size": 16
+    "batch_size": 16,
+    "torque_weight": 1.0,
+    "grad_clip_norm": 1.0
 }

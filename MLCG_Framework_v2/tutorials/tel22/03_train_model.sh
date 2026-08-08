@@ -22,11 +22,13 @@ cat << 'JSON' > tel22_training_config.json
     "toxvaerd_alpha": 0.1,
     "learning_rate": 0.001,
     "epochs": 20,
-    "batch_size": 16
+    "batch_size": 16,
+    "torque_weight": 1.0,
+    "grad_clip_norm": 1.0
 }
 JSON
 
-echo "Avvio l'addestramento C++ (5 epoche)..."
+echo "Avvio l'addestramento C++ (20 epoche, force+torque normalizzati)..."
 export PYTORCH_ENABLE_MPS_FALLBACK=1
 ../../training/build/train_painn \
     tel22_dataset.bin \
