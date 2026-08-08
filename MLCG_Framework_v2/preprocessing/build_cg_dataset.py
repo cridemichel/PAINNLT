@@ -784,6 +784,78 @@ residual_force_norms = []
 wca_force_norms = []
 wca_force_norms_by_pair = {key: [] for key in wca_prior_dict}
 
+# Precompute all topology- and type-dependent WCA data once.  Site ordering is
+# fixed by the CG mapping, so the same upper-triangular inter-molecular pair
+# list can be reused for every frame.  This removes the O(N_sites^2) Python
+# loops that previously rebuilt sigma/epsilon/cutoff matrices at each frame.
+if wca_prior_dict:
+    flat_mol_template = []
+    flat_type_template = []
+    for m_idx, sites in enumerate(sites_data_history[0]):
+        for s_type, _ in sites:
+            flat_mol_template.append(m_idx)
+            flat_type_template.append(int(s_type))
+
+    flat_mol_template = np.asarray(flat_mol_template, dtype=np.int32)
+    flat_type_template = np.asarray(flat_type_template, dtype=np.int32)
+
+    max_prior_type = max(
+        max(int(w["type_i"]), int(w["type_j"]))
+        for w in wca_prior_dict.values()
+    )
+    n_wca_types = max(int(np.max(flat_type_template)), max_prior_type) + 1
+
+    wca_sigma_matrix = np.zeros((n_wca_types, n_wca_types), dtype=np.float64)
+    wca_epsilon_matrix = np.zeros_like(wca_sigma_matrix)
+    wca_cutoff_sq_matrix = np.zeros_like(wca_sigma_matrix)
+
+    for pair_key, w in wca_prior_dict.items():
+        ti = int(w["type_i"])
+        tj = int(w["type_j"])
+        sigma = float(w["sigma_nm"])
+        epsilon = float(w["epsilon_kjmol"])
+        cutoff_sq = float(w["cutoff_nm"]) ** 2
+        wca_sigma_matrix[ti, tj] = wca_sigma_matrix[tj, ti] = sigma
+        wca_epsilon_matrix[ti, tj] = wca_epsilon_matrix[tj, ti] = epsilon
+        wca_cutoff_sq_matrix[ti, tj] = wca_cutoff_sq_matrix[tj, ti] = cutoff_sq
+
+    pair_i_all, pair_j_all = np.triu_indices(flat_type_template.size, k=1)
+    inter_mol = flat_mol_template[pair_i_all] != flat_mol_template[pair_j_all]
+    pair_i_all = pair_i_all[inter_mol]
+    pair_j_all = pair_j_all[inter_mol]
+
+    pair_type_i = flat_type_template[pair_i_all]
+    pair_type_j = flat_type_template[pair_j_all]
+    pair_sigma_all = wca_sigma_matrix[pair_type_i, pair_type_j]
+    pair_epsilon_all = wca_epsilon_matrix[pair_type_i, pair_type_j]
+    pair_cutoff_sq_all = wca_cutoff_sq_matrix[pair_type_i, pair_type_j]
+
+    configured = pair_cutoff_sq_all > 0.0
+    pair_i_all = pair_i_all[configured]
+    pair_j_all = pair_j_all[configured]
+    pair_type_i = pair_type_i[configured]
+    pair_type_j = pair_type_j[configured]
+    pair_sigma_all = pair_sigma_all[configured]
+    pair_epsilon_all = pair_epsilon_all[configured]
+    pair_cutoff_sq_all = pair_cutoff_sq_all[configured]
+
+    pair_type_min = np.minimum(pair_type_i, pair_type_j)
+    pair_type_max = np.maximum(pair_type_i, pair_type_j)
+    pair_code_all = pair_type_min * n_wca_types + pair_type_max
+    pair_code_to_key = {
+        int(ti) * n_wca_types + int(tj): f"{int(ti)}_{int(tj)}"
+        for ti in range(n_wca_types)
+        for tj in range(ti, n_wca_types)
+        if wca_cutoff_sq_matrix[ti, tj] > 0.0
+    }
+    wca_global_cutoff_sq = float(np.max(pair_cutoff_sq_all))
+
+    print(
+        f"[INFO] WCA vectorized kernel: {flat_type_template.size} sites, "
+        f"{pair_i_all.size} inter-molecular candidate pairs, "
+        f"global cutoff={np.sqrt(wca_global_cutoff_sq):.4f} nm"
+    )
+
 with open(args.output, "wb") as f:
     num_frames = len(cg_centers_history)
     f.write(struct.pack("i", num_frames))
@@ -841,82 +913,72 @@ with open(args.output, "wb") as f:
         res_torques = np.copy(frame_torques)
         reference_force_norms.extend(np.linalg.norm(frame_forces, axis=1).tolist())
     
-        # 3.1 Sottrazione WCA sui siti virtuali
-        # 3.1 Sottrazione WCA usando i parametri di cg_priors.json (36 coppie)
+        # 3.1 Sottrazione WCA sui siti virtuali.
+        # The pair topology and all type-dependent parameters are precomputed
+        # once above.  Per frame we only evaluate MIC distances for the unique
+        # inter-molecular upper-triangular pairs and vectorize the WCA kernel.
         if wca_prior_dict:
-            flat_pos = []
-            flat_mol = []
-            flat_type = []
-            for m_idx, sites in enumerate(frame_sites):
-                for s_type, s_pos in sites:
-                    flat_pos.append(s_pos)
-                    flat_mol.append(m_idx)
-                    flat_type.append(s_type)
-        
-            if len(flat_pos) > 0:
-                flat_pos = np.array(flat_pos)
-                flat_mol = np.array(flat_mol)
-                flat_type = np.array(flat_type)
-            
-                diff = flat_pos[:, np.newaxis, :] - flat_pos[np.newaxis, :, :]
-                diff -= box_dim * np.round(diff / box_dim)
-                dist_sq = np.sum(diff**2, axis=-1)
-            
-                sigma_ij = np.zeros_like(dist_sq)
-                eps_ij = np.zeros_like(dist_sq)
-                r_cut_sq = np.zeros_like(dist_sq)
-            
-                for i in range(len(flat_type)):
-                    for j in range(len(flat_type)):
-                        t_min = min(int(flat_type[i]), int(flat_type[j]))
-                        t_max = max(int(flat_type[i]), int(flat_type[j]))
-                        pair_key = f"{t_min}_{t_max}"
-                    
-                        if pair_key in wca_prior_dict:
-                            w = wca_prior_dict[pair_key]
-                            sigma_ij[i, j] = w["sigma_nm"]
-                            eps_ij[i, j] = w["epsilon_kjmol"]
-                            r_cut_sq[i, j] = w["cutoff_nm"]**2
-            
-                # Only distinct molecules (intra-molecular forces cancel out in rigid bodies)
-                idx_i, idx_j = np.where((dist_sq > 1e-6) & (dist_sq < r_cut_sq))
-                valid = (idx_i < idx_j) & (flat_mol[idx_i] != flat_mol[idx_j])
-                idx_i = idx_i[valid]
-                idx_j = idx_j[valid]
-            
-                for i, j in zip(idx_i, idx_j):
-                    mol_i = flat_mol[i]
-                    mol_j = flat_mol[j]
-                
+            flat_pos = np.asarray(
+                [s_pos for sites in frame_sites for _, s_pos in sites],
+                dtype=np.float64,
+            )
+            frame_centers_arr = np.asarray(frame_centers, dtype=np.float64)
 
-                    
-                    r_sq = dist_sq[i, j]
-                    r = np.sqrt(r_sq)
-                    r_hat = diff[i, j] / r
-                    s_ij = sigma_ij[i, j]
-                    e_ij = eps_ij[i, j]
-                    
-                    # Use the exact same analytical WCA force used at runtime.
-                    # Do not cap r here: a preprocessing-only cap would make the
-                    # force decomposition inconsistent with equilibration/NVE.
-                    f_scalar = 24.0 * e_ij * (2.0 * (s_ij/r)**12 - (s_ij/r)**6) / r
-                    f_vec = f_scalar * r_hat
-                    f_norm = float(np.linalg.norm(f_vec))
-                    wca_force_norms.append(f_norm)
-                    pair_key_diag = f"{min(int(flat_type[i]), int(flat_type[j]))}_{max(int(flat_type[i]), int(flat_type[j]))}"
-                    if pair_key_diag in wca_force_norms_by_pair:
-                        wca_force_norms_by_pair[pair_key_diag].append(f_norm)
+            if flat_pos.shape[0] != flat_type_template.size:
+                raise RuntimeError(
+                    "CG site count changed between frames; cannot reuse the "
+                    "precomputed WCA pair topology"
+                )
 
-                    res_forces[mol_i] -= f_vec
-                    res_forces[mol_j] += f_vec
-                
-                    # Compute torque around the COM of each molecule
-                    r_site_i = flat_pos[i] - frame_centers[mol_i]
-                    r_site_j = flat_pos[j] - frame_centers[mol_j]
-                
-                    res_torques[mol_i] -= np.cross(r_site_i, f_vec)
-                    res_torques[mol_j] += np.cross(r_site_j, f_vec)
-            
+            pair_diff = flat_pos[pair_i_all] - flat_pos[pair_j_all]
+            pair_diff -= box_dim * np.round(pair_diff / box_dim)
+            pair_dist_sq = np.einsum("ij,ij->i", pair_diff, pair_diff)
+
+            # Cheap global cutoff first, then the exact pair-specific cutoff.
+            active = (pair_dist_sq > 1.0e-6) & (pair_dist_sq < wca_global_cutoff_sq)
+            active_idx = np.flatnonzero(active)
+            if active_idx.size:
+                active_idx = active_idx[
+                    pair_dist_sq[active_idx] < pair_cutoff_sq_all[active_idx]
+                ]
+
+            if active_idx.size:
+                i_idx = pair_i_all[active_idx]
+                j_idx = pair_j_all[active_idx]
+                mol_i = flat_mol_template[i_idx]
+                mol_j = flat_mol_template[j_idx]
+
+                r_sq = pair_dist_sq[active_idx]
+                r = np.sqrt(r_sq)
+                r_hat = pair_diff[active_idx] / r[:, None]
+                sigma = pair_sigma_all[active_idx]
+                epsilon = pair_epsilon_all[active_idx]
+
+                sr6 = (sigma / r) ** 6
+                f_scalar = 24.0 * epsilon * (2.0 * sr6 * sr6 - sr6) / r
+                f_vec = f_scalar[:, None] * r_hat
+
+                # Accumulate all site-site contributions on rigid-body COM forces.
+                np.add.at(res_forces, mol_i, -f_vec)
+                np.add.at(res_forces, mol_j, +f_vec)
+
+                # Preserve the original torque convention exactly: lever arms
+                # are site position minus the corresponding molecular COM.
+                lever_i = flat_pos[i_idx] - frame_centers_arr[mol_i]
+                lever_j = flat_pos[j_idx] - frame_centers_arr[mol_j]
+                np.add.at(res_torques, mol_i, -np.cross(lever_i, f_vec))
+                np.add.at(res_torques, mol_j, +np.cross(lever_j, f_vec))
+
+                # Diagnostics are collected only for actually active WCA pairs.
+                f_norm = np.linalg.norm(f_vec, axis=1)
+                wca_force_norms.extend(f_norm.tolist())
+
+                active_codes = pair_code_all[active_idx]
+                for code in np.unique(active_codes):
+                    pair_key_diag = pair_code_to_key[int(code)]
+                    vals = f_norm[active_codes == code]
+                    wca_force_norms_by_pair[pair_key_diag].extend(vals.tolist())
+
         # 3.2 Sottrazione Legami (con supporto per siti specifici e momento torcente)
         for b in derived_priors["bonds"]:
             i, j = b["mol_i"], b["mol_j"]
