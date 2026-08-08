@@ -307,7 +307,12 @@ dihedral_values = {f"dict_{idx}": [] for idx in range(len(DIHEDRALS))}
 rigid_bodies_info = {}
 principal_axes_lab_by_resname = {}
 
-all_pairwise_distances = {} # Per statistical WCA: (type_i, type_j) -> list of distances
+all_pairwise_distances = {} # Per statistical WCA: (type_i, type_j) -> sampled distances
+# Streaming exact minimum over every physical nonbonded distance seen in Pass 1.
+# Keep this separate from all_pairwise_distances because the latter is deliberately
+# subsampled (<=1000 distances per pair per frame) to keep quantile/histogram memory
+# bounded.  The physical-support guard must never use that sampled minimum.
+exact_pair_min = {}
 
 # Helper to map entire trajectory frames into memory for CG centers
 # Assuming each molecule is a CG site for the non-bonded/bonded priors as per convert_gro2bin
@@ -483,10 +488,20 @@ for ts_idx, ts in enumerate(u.trajectory):
             unique_pairs = np.unique(pair_ids)
             
             for pid in unique_pairs:
-                dists = valid_dist[pair_ids == pid]
+                dists_full = valid_dist[pair_ids == pid]
                 pair = (str(int(pid // 10000)), str(int(pid % 10000))) # Must use strings for JSON matching in WCA fit!
                 if pair not in all_pairwise_distances:
                     all_pairwise_distances[pair] = []
+
+                # Update the exact physical minimum BEFORE statistical subsampling.
+                # This is O(1) memory and guarantees that rare short contacts cannot
+                # be missed by the WCA physical-support safety constraint.
+                frame_pair_min = float(np.min(dists_full))
+                exact_pair_min[pair] = min(
+                    exact_pair_min.get(pair, np.inf), frame_pair_min
+                )
+
+                dists = dists_full
                 # Subsample if too many, to avoid OOM
                 if len(dists) > 1000:
                     dists = np.random.choice(dists, 1000, replace=False)
@@ -565,7 +580,13 @@ if WCA_SIGMA == "auto":
     for pair, dists in all_pairwise_distances.items():
         if len(dists) > 0:
             empirical_QLOW[pair] = np.percentile(dists, WCA_QUANTILE_PERCENT)
-            empirical_min[pair] = np.min(dists)
+            # The low quantile is intentionally estimated from the bounded sample,
+            # but the hard support limit must use the exact streaming minimum.
+            if pair not in exact_pair_min:
+                raise RuntimeError(
+                    f"Missing exact streaming minimum for WCA type pair {pair}."
+                )
+            empirical_min[pair] = float(exact_pair_min[pair])
             pair_counts[pair] = len(dists)
         
     # Ottimizzazione globale dei raggi di base R_i
@@ -649,6 +670,7 @@ if WCA_SIGMA == "auto":
             # True minimum over the physical nonbonded samples.  Keep the old
             # histogram-derived estimate only as diagnostic metadata.
             "empirical_min": float(r_true_min),
+            "empirical_min_source": "exact_streaming_nonbonded",
             "histogram_min_nm": float(r_emp_min),
             "quantile_percent": float(WCA_QUANTILE_PERCENT),
             "q_low_nm": float(q_low),
@@ -675,7 +697,8 @@ if WCA_SIGMA == "auto":
         r_c = wca_info["cutoff_nm"]
         r_guard = WCA_GUARD_FRACTION * r_c
         
-        # Retrieve all distances collected for this pair
+        # Retrieve sampled distances for invasion percentages.  The hard safety
+        # comparison below uses the exact streaming minimum saved in the prior.
         # all_pairwise_distances keys are string tuples: (str(t1), str(t2))
         dists = all_pairwise_distances.get((str(t1), str(t2)), [])
         if not dists:
@@ -684,7 +707,7 @@ if WCA_SIGMA == "auto":
             
         if len(dists) > 0:
             dists_arr = np.array(dists)
-            physical_min = float(np.min(dists_arr))
+            physical_min = float(wca_info["empirical_min"])
             frac_rc = 100.0 * np.sum(dists_arr < r_c) / len(dists_arr)
             frac_guard = 100.0 * np.sum(dists_arr < r_guard) / len(dists_arr)
             guard_ratio = r_guard / physical_min
