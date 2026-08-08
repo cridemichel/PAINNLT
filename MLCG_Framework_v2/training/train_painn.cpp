@@ -435,6 +435,7 @@ int main(int argc, char* argv[]) {
 
     double toxvaerd_alpha = 0.1;
     float torque_weight = 0.0f;
+    float grad_clip_norm = 1.0f;
     json loaded_config = json::object();
 
     // Lettura JSON
@@ -455,9 +456,16 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("early_stopping_patience")) es_patience = loaded_config["early_stopping_patience"];
         if (loaded_config.contains("reduce_lr_patience")) reduce_lr_patience = loaded_config["reduce_lr_patience"];
         if (loaded_config.contains("torque_weight")) torque_weight = loaded_config["torque_weight"];
+        if (loaded_config.contains("grad_clip_norm")) grad_clip_norm = loaded_config["grad_clip_norm"];
         if (loaded_config.contains("batch_size")) batch_size = loaded_config["batch_size"];
         if (batch_size <= 0) {
             throw std::runtime_error("batch_size must be positive");
+        }
+        if (torque_weight < 0.0f) {
+            throw std::runtime_error("torque_weight must be non-negative");
+        }
+        if (grad_clip_norm < 0.0f) {
+            throw std::runtime_error("grad_clip_norm must be non-negative (0 disables clipping)");
         }
         std::cout << "[INFO] Caricati iperparametri da " << config_path << "\n";
     } else {
@@ -479,7 +487,9 @@ int main(int argc, char* argv[]) {
     effective_config["early_stopping_patience"] = es_patience;
     effective_config["reduce_lr_patience"] = reduce_lr_patience;
     effective_config["torque_weight"] = torque_weight;
+    effective_config["grad_clip_norm"] = grad_clip_norm;
     effective_config["batch_size"] = batch_size;
+    effective_config["loss_normalization"] = "train_target_rms_v1";
     effective_config["energy_gauge"] = "isolated_species_zero_v1";
 
     // Inizializza il Modello
@@ -524,7 +534,9 @@ int main(int argc, char* argv[]) {
     
     std::ofstream csv_file("cg_training_log.csv");
     if (csv_file.is_open()) {
-        csv_file << "Epoch,Train_Loss,Val_Loss,Train_MAE_F,Train_MAE_T,Val_MAE_F,Val_MAE_T\n";
+        csv_file << "Epoch,Train_Loss,Val_Loss,Train_Loss_F_Norm,Train_Loss_T_Norm,"
+                    "Val_Loss_F_Norm,Val_Loss_T_Norm,Train_MAE_F,Train_MAE_T,"
+                    "Val_MAE_F,Val_MAE_T\n";
     }
 
     std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
@@ -551,24 +563,77 @@ int main(int argc, char* argv[]) {
               << "       - Train: " << train_dataset.size() << " frames\n"
               << "       - Val:   " << val_dataset.size() << " frames\n\n";
 
-    // -------------------------------------------------------
-    // Calcolo della standardizzazione delle forze sul train set
-    // -------------------------------------------------------
+    // -----------------------------------------------------------------
+    // Scale fisiche del train set per una loss adimensionale e bilanciata.
+    // Force/torque MAE remain in physical units for interpretable logging.
+    // Torque statistics include only multi-site rigid bodies, exactly as the
+    // torque loss mask used below.
+    // -----------------------------------------------------------------
     double force_sum2 = 0.0;
+    double force_abs_sum = 0.0;
     long   force_count = 0;
-    for (const auto& frame : train_dataset)
-        for (const auto& mol : frame.molecules)
+    double torque_sum2 = 0.0;
+    double torque_abs_sum = 0.0;
+    long   torque_count = 0;
+    long   torque_molecule_count = 0;
+
+    for (const auto& frame : train_dataset) {
+        for (const auto& mol : frame.molecules) {
             for (int k = 0; k < 3; ++k) {
-                force_sum2 += mol.target_force[k] * mol.target_force[k];
+                const double f = static_cast<double>(mol.target_force[k]);
+                force_sum2 += f * f;
+                force_abs_sum += std::abs(f);
                 force_count++;
             }
-    float force_std = (force_count > 0) ? std::sqrt(force_sum2 / force_count) : 1.0f;
-    if (force_std < 1e-6f) force_std = 1.0f;
-    std::cout << "[INFO] Force std (train): " << force_std << " kJ/(mol*nm)\n\n";
+            if (mol.sites.size() > 1) {
+                torque_molecule_count++;
+                for (int k = 0; k < 3; ++k) {
+                    const double t = static_cast<double>(mol.target_torque[k]);
+                    torque_sum2 += t * t;
+                    torque_abs_sum += std::abs(t);
+                    torque_count++;
+                }
+            }
+        }
+    }
+
+    float force_rms = (force_count > 0)
+        ? static_cast<float>(std::sqrt(force_sum2 / force_count)) : 1.0f;
+    float torque_rms = (torque_count > 0)
+        ? static_cast<float>(std::sqrt(torque_sum2 / torque_count)) : 1.0f;
+    if (force_rms < 1e-6f) force_rms = 1.0f;
+    if (torque_rms < 1e-6f) torque_rms = 1.0f;
+
+    const float force_zero_mae = (force_count > 0)
+        ? static_cast<float>(force_abs_sum / force_count) : 0.0f;
+    const float torque_zero_mae = (torque_count > 0)
+        ? static_cast<float>(torque_abs_sum / torque_count) : 0.0f;
+    const float force_scale2 = force_rms * force_rms;
+    const float torque_scale2 = torque_rms * torque_rms;
+
+    if (torque_weight > 0.0f && torque_count == 0) {
+        throw std::runtime_error(
+            "torque_weight > 0 but the training split contains no multi-site molecules");
+    }
+
+    std::cout << "[INFO] Force RMS (train): " << force_rms
+              << " kJ/(mol*nm) | zero-predictor MAE: " << force_zero_mae << "\n";
+    if (torque_count > 0) {
+        std::cout << "[INFO] Torque RMS (train, multi-site only): " << torque_rms
+                  << " kJ/mol | zero-predictor MAE: " << torque_zero_mae
+                  << " | samples: " << torque_molecule_count << " molecules\n";
+    } else {
+        std::cout << "[INFO] Torque RMS: n/a (no multi-site molecules in train split)\n";
+    }
+    std::cout << "[INFO] Loss normalization: MSE(F)/ForceRMS^2 + "
+              << torque_weight << " * MSE(T)/TorqueRMS^2"
+              << " | grad_clip_norm=" << grad_clip_norm << "\n\n";
 
     for (int epoch = 1; epoch <= max_epochs; ++epoch) {
         model->train();
         float train_loss_tot = 0.0f;
+        float train_loss_f_norm_tot = 0.0f;
+        float train_loss_t_norm_tot = 0.0f;
         float train_mae_forces_tot = 0.0f;  
         float train_mae_torques_tot = 0.0f; 
         int train_torque_frames = 0; 
@@ -621,10 +686,11 @@ int main(int argc, char* argv[]) {
                     pred_mol_forces_diff.index_add_(0, mol_of_row,  f_diff);
                     pred_mol_forces_diff.index_add_(0, mol_of_col, -f_diff);
 
-                    torch::Tensor loss_f_diff = torch::mse_loss(
+                    torch::Tensor loss_f_raw = torch::mse_loss(
                         pred_mol_forces_diff,
                         batch.target_mol_forces
                     );
+                    torch::Tensor loss_f_norm = loss_f_raw / force_scale2;
 
                     // Momenti torcenti (Ripristinati senza forward pass addizionali)
                     torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
@@ -643,26 +709,35 @@ int main(int argc, char* argv[]) {
                     torch::Tensor torque_mask = (sites_per_mol > 1).to(torch::kFloat32); 
                     float num_valid_mols = torque_mask.sum().item<float>();
 
-                    torch::Tensor loss_final = loss_f_diff;
+                    torch::Tensor loss_t_norm = torch::zeros({}, loss_f_norm.options());
+                    torch::Tensor loss_final = loss_f_norm;
                     if (num_valid_mols > 0) {
-                        torch::Tensor loss_t_raw = torch::mse_loss(pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
+                        torch::Tensor loss_t_raw = torch::mse_loss(
+                            pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
                         torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
-                        torch::Tensor loss_t = loss_t_masked.sum() / (num_valid_mols * 3.0f);
-                        loss_final = loss_final + torque_weight * loss_t;
+                        torch::Tensor loss_t_phys = loss_t_masked.sum() / (num_valid_mols * 3.0f);
+                        loss_t_norm = loss_t_phys / torque_scale2;
+                        loss_final = loss_final + torque_weight * loss_t_norm;
                     }
                     if (lipschitz_lambda > 0.0f) {
-                        torch::Tensor loss_lipschitz = site_f_per_site.norm(2, 1).pow(2).mean();
+                        torch::Tensor loss_lipschitz =
+                            site_f_per_site.norm(2, 1).pow(2).mean() / force_scale2;
                         loss_final = loss_final + lipschitz_lambda * loss_lipschitz;
                     }
 
                     loss_final.backward();
 
-                    torch::nn::utils::clip_grad_norm_(model->parameters(), /*max_norm=*/ 1.0);
+                    if (grad_clip_norm > 0.0f) {
+                        torch::nn::utils::clip_grad_norm_(
+                            model->parameters(), /*max_norm=*/ grad_clip_norm);
+                    }
                     optimizer.step();
 
                     float current_batch_weight = static_cast<float>(train_batch_frames.size());
                     float mae_f_phys = torch::l1_loss(pred_mol_forces_diff, batch.target_mol_forces).item<float>();
                     train_loss_tot        += loss_final.item<float>() * current_batch_weight;
+                    train_loss_f_norm_tot += loss_f_norm.item<float>() * current_batch_weight;
+                    train_loss_t_norm_tot += loss_t_norm.item<float>() * current_batch_weight;
                     train_mae_forces_tot  += mae_f_phys                * current_batch_weight; 
                     
                     if (num_valid_mols > 0) {
@@ -698,6 +773,8 @@ int main(int argc, char* argv[]) {
         model->eval(); 
         
         float val_loss_tot = 0.0f;
+        float val_loss_f_norm_tot = 0.0f;
+        float val_loss_t_norm_tot = 0.0f;
         float val_mae_forces_tot = 0.0f;
         float val_mae_torques_tot = 0.0f;
         int val_torque_frames = 0;
@@ -751,29 +828,33 @@ int main(int argc, char* argv[]) {
                 torch::Tensor torque_mask = (sites_per_mol > 1).to(torch::kFloat32);
                 float num_valid_mols = torque_mask.sum().item<float>();
 
-                torch::Tensor loss_f = torch::mse_loss(
+                torch::Tensor loss_f_raw = torch::mse_loss(
                     pred_mol_forces,
                     batch.target_mol_forces
                 );
-                torch::Tensor loss_t;
+                torch::Tensor loss_f_norm = loss_f_raw / force_scale2;
+                torch::Tensor loss_t_norm = torch::zeros({}, loss_f_norm.options());
                 if (num_valid_mols > 0) {
-                    torch::Tensor loss_t_raw = torch::mse_loss(pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
+                    torch::Tensor loss_t_raw = torch::mse_loss(
+                        pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
                     torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
-                    loss_t = loss_t_masked.sum() / (num_valid_mols * 3.0f);
-                } else {
-                    loss_t = torch::zeros({}, loss_f.options());
+                    torch::Tensor loss_t_phys = loss_t_masked.sum() / (num_valid_mols * 3.0f);
+                    loss_t_norm = loss_t_phys / torque_scale2;
                 }
 
-                torch::Tensor loss = loss_f + torque_weight * loss_t;
+                torch::Tensor loss = loss_f_norm + torque_weight * loss_t_norm;
                 if (lipschitz_lambda > 0.0f) {
-                    torch::Tensor loss_lipschitz = site_forces_per_site.norm(2, 1).pow(2).mean();
+                    torch::Tensor loss_lipschitz =
+                        site_forces_per_site.norm(2, 1).pow(2).mean() / force_scale2;
                     loss = loss + lipschitz_lambda * loss_lipschitz;
                 }
                 
                 float current_batch_weight = static_cast<float>(val_batch_frames.size());
                 float mae_f_phys = torch::l1_loss(pred_mol_forces, batch.target_mol_forces).item<float>();
-                val_loss_tot       += loss.item<float>()  * current_batch_weight;
-                val_mae_forces_tot += mae_f_phys          * current_batch_weight;
+                val_loss_tot        += loss.item<float>()        * current_batch_weight;
+                val_loss_f_norm_tot += loss_f_norm.item<float>() * current_batch_weight;
+                val_loss_t_norm_tot += loss_t_norm.item<float>() * current_batch_weight;
+                val_mae_forces_tot  += mae_f_phys                 * current_batch_weight;
                 
                 if (num_valid_mols > 0) {
                     torch::Tensor abs_t = torch::abs(
@@ -791,27 +872,37 @@ int main(int argc, char* argv[]) {
         }
         std::cout << "\n";
 
-        float train_loss_avg = train_loss_tot / train_dataset.size(); 
+        float train_loss_avg = train_loss_tot / train_dataset.size();
+        float train_loss_f_norm_avg = train_loss_f_norm_tot / train_dataset.size();
+        float train_loss_t_norm_avg = train_loss_t_norm_tot / train_dataset.size();
         float train_mae_forces_avg = train_mae_forces_tot / train_dataset.size();
-        float train_mae_torques_avg = (train_torque_frames > 0) ? (train_mae_torques_tot / train_torque_frames) : 0.0f;   
-   
-        float val_loss_avg = val_loss_tot / val_dataset.size(); 
+        float train_mae_torques_avg = (train_torque_frames > 0) ? (train_mae_torques_tot / train_torque_frames) : 0.0f;
+
+        float val_loss_avg = val_loss_tot / val_dataset.size();
+        float val_loss_f_norm_avg = val_loss_f_norm_tot / val_dataset.size();
+        float val_loss_t_norm_avg = val_loss_t_norm_tot / val_dataset.size();
         float val_mae_forces_avg = val_mae_forces_tot / val_dataset.size();
         float val_mae_torques_avg = (val_torque_frames > 0) ? (val_mae_torques_tot / val_torque_frames) : 0.0f;
 
         std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "]\n"
                   << "  [LR]    " << current_lr << "\n"
-                  << "  [TRAIN] Loss: " << train_loss_avg 
-                  << " | MAE Forze: " << train_mae_forces_avg 
+                  << "  [TRAIN] Loss: " << train_loss_avg
+                  << " (F: " << train_loss_f_norm_avg
+                  << ", T: " << train_loss_t_norm_avg << ")"
+                  << " | MAE Forze: " << train_mae_forces_avg
                   << " | MAE Torques: " << train_mae_torques_avg << "\n"
-                  << "  [VAL]   Loss: " << val_loss_avg 
-                  << " | MAE Forze: " << val_mae_forces_avg 
+                  << "  [VAL]   Loss: " << val_loss_avg
+                  << " (F: " << val_loss_f_norm_avg
+                  << ", T: " << val_loss_t_norm_avg << ")"
+                  << " | MAE Forze: " << val_mae_forces_avg
                   << " | MAE Torques: " << val_mae_torques_avg << "\n";
 
         if (csv_file.is_open()) {
-            csv_file << epoch << "," 
-                     << train_loss_avg << "," << val_loss_avg << "," 
-                     << train_mae_forces_avg << "," << train_mae_torques_avg << "," 
+            csv_file << epoch << ","
+                     << train_loss_avg << "," << val_loss_avg << ","
+                     << train_loss_f_norm_avg << "," << train_loss_t_norm_avg << ","
+                     << val_loss_f_norm_avg << "," << val_loss_t_norm_avg << ","
+                     << train_mae_forces_avg << "," << train_mae_torques_avg << ","
                      << val_mae_forces_avg << "," << val_mae_torques_avg << "\n";
             csv_file.flush();
         }
