@@ -172,6 +172,121 @@ def kabsch_align(P, Q):
     return R
 
 
+def reconstruct_rigid_sites_for_frame(
+    raw_frame_sites, frame_centers, mol_resnames, rigid_bodies_info
+):
+    """Rebuild mapped sites on the ideal rigid-body geometry for one frame.
+
+    This is the single geometry path used both by the WCA fit and by Pass 2.
+    The ideal body-frame offsets are rotated onto the instantaneous mapped
+    orientation with Kabsch, exactly as they are during prior subtraction.
+    """
+    frame_sites = [list(sites) for sites in raw_frame_sites]
+
+    for mol_idx, r_name in enumerate(mol_resnames):
+        rb_info = rigid_bodies_info.get(r_name)
+        if not rb_info or "sites" not in rb_info:
+            continue
+
+        site_names = list(rb_info["sites"].keys())
+        if len(site_names) < 2:
+            continue
+
+        ideal_rel = []
+        inst_rel = []
+        site_indices = []
+        for s_idx, (_site_type, site_pos) in enumerate(frame_sites[mol_idx]):
+            if s_idx >= len(site_names):
+                continue
+            site_name = site_names[s_idx]
+            ideal_rel.append(rb_info["sites"][site_name]["relative_pos_nm"])
+            inst_rel.append(np.asarray(site_pos, dtype=float) - frame_centers[mol_idx])
+            site_indices.append(s_idx)
+
+        if len(ideal_rel) < 2:
+            continue
+
+        ideal_rel = np.asarray(ideal_rel, dtype=float)
+        inst_rel = np.asarray(inst_rel, dtype=float)
+        rotation = kabsch_align(ideal_rel, inst_rel)
+        ideal_rel_rotated = (rotation @ ideal_rel.T).T
+
+        for i_local, s_idx in enumerate(site_indices):
+            new_pos = np.asarray(frame_centers[mol_idx], dtype=float) + ideal_rel_rotated[i_local]
+            frame_sites[mol_idx][s_idx] = (
+                frame_sites[mol_idx][s_idx][0],
+                new_pos,
+            )
+
+    return frame_sites
+
+
+def accumulate_wca_distance_samples(
+    frame_sites,
+    box_dim,
+    wca_excluded_mol_matrix,
+    all_pairwise_distances,
+    exact_pair_min,
+    sample_limit=1000,
+):
+    """Accumulate WCA statistics for one already-rigidified physical frame.
+
+    The exact minimum is updated before bounded statistical subsampling so the
+    physical-support guard cannot miss rare short contacts.
+    """
+    flat_pos = []
+    flat_types = []
+    flat_mols = []
+    for m_idx, mol_sites in enumerate(frame_sites):
+        for site_type, site_pos in mol_sites:
+            flat_pos.append(site_pos)
+            flat_types.append(int(site_type))
+            flat_mols.append(m_idx)
+
+    flat_pos = np.asarray(flat_pos, dtype=float)
+    flat_types = np.asarray(flat_types, dtype=np.int32)
+    flat_mols = np.asarray(flat_mols, dtype=np.int32)
+
+    dist_matrix = minimum_image_distance_matrix(flat_pos, box_dim)
+    same_mol_mask = flat_mols[:, None] == flat_mols[None, :]
+    dist_matrix[same_mol_mask] = np.inf
+
+    i_idx, j_idx = np.triu_indices(len(flat_pos), k=1)
+    valid_dist = dist_matrix[i_idx, j_idx]
+    topology_excluded = wca_excluded_mol_matrix[
+        flat_mols[i_idx], flat_mols[j_idx]
+    ]
+
+    types_i = flat_types[i_idx]
+    types_j = flat_types[j_idx]
+    t1 = np.minimum(types_i, types_j)
+    t2 = np.maximum(types_i, types_j)
+
+    close_mask = (valid_dist < 1.5) & (~topology_excluded)
+    if not np.any(close_mask):
+        return
+
+    valid_dist = valid_dist[close_mask]
+    t1 = t1[close_mask]
+    t2 = t2[close_mask]
+    pair_ids = t1 * 10000 + t2
+
+    for pid in np.unique(pair_ids):
+        dists_full = valid_dist[pair_ids == pid]
+        pair = (str(int(pid // 10000)), str(int(pid % 10000)))
+        all_pairwise_distances.setdefault(pair, [])
+
+        frame_pair_min = float(np.min(dists_full))
+        exact_pair_min[pair] = min(
+            exact_pair_min.get(pair, np.inf), frame_pair_min
+        )
+
+        dists = dists_full
+        if len(dists) > sample_limit:
+            dists = np.random.choice(dists, sample_limit, replace=False)
+        all_pairwise_distances[pair].extend(dists)
+
+
 def mic_vector(pos1, pos2, box_dim):
     """Vettore da pos1 a pos2 con Minimum Image Convention"""
     dvec = pos2 - pos1
@@ -441,73 +556,11 @@ for ts_idx, ts in enumerate(u.trajectory):
     cg_torques_history.append(frame_torques)
     sites_data_history.append(frame_sites)
     
-    # --- Estrazione distanze WCA non-bonded ---
-    if WCA_SIGMA == "auto":
-        flat_pos = []
-        flat_types = []
-        flat_mols = []
-        for m_idx, mol_sites in enumerate(frame_sites):
-            for s_type, s_pos in mol_sites:
-                flat_pos.append(s_pos)
-                flat_types.append(int(s_type))
-                flat_mols.append(m_idx)
-                
-        flat_pos = np.array(flat_pos)
-        flat_types = np.array(flat_types)
-        flat_mols = np.array(flat_mols)
-        
-        # Calculate MIC distance matrix
-        dist_matrix = minimum_image_distance_matrix(flat_pos, box_dim)
-        
-        # Mask out intra-molecular distances (same rigid body)
-        same_mol_mask = flat_mols[:, None] == flat_mols[None, :]
-        dist_matrix[same_mol_mask] = np.inf
-        
-        # We only want unique pairs (upper triangle)
-        i_idx, j_idx = np.triu_indices(len(flat_pos), k=1)
-        valid_dist = dist_matrix[i_idx, j_idx]
-        topology_excluded = wca_excluded_mol_matrix[
-            flat_mols[i_idx], flat_mols[j_idx]
-        ]
-        
-        types_i = flat_types[i_idx]
-        types_j = flat_types[j_idx]
-        
-        t1 = np.minimum(types_i, types_j)
-        t2 = np.maximum(types_i, types_j)
-        
-        # We only care about distances < 1.5 nm for WCA parametrization to save memory
-        close_mask = (valid_dist < 1.5) & (~topology_excluded)
-        
-        if np.any(close_mask):
-            valid_dist = valid_dist[close_mask]
-            t1 = t1[close_mask]
-            t2 = t2[close_mask]
-            
-            pair_ids = t1 * 10000 + t2
-            unique_pairs = np.unique(pair_ids)
-            
-            for pid in unique_pairs:
-                dists_full = valid_dist[pair_ids == pid]
-                pair = (str(int(pid // 10000)), str(int(pid % 10000))) # Must use strings for JSON matching in WCA fit!
-                if pair not in all_pairwise_distances:
-                    all_pairwise_distances[pair] = []
+    # WCA distance statistics are intentionally NOT collected here.
+    # At this stage DG sites still contain instantaneous internal distortions.
+    # The WCA prior used in Pass 2/runtime acts on the averaged rigid geometry,
+    # so WCA statistics are collected only after the Kabsch rigid-body average.
 
-                # Update the exact physical minimum BEFORE statistical subsampling.
-                # This is O(1) memory and guarantees that rare short contacts cannot
-                # be missed by the WCA physical-support safety constraint.
-                frame_pair_min = float(np.min(dists_full))
-                exact_pair_min[pair] = min(
-                    exact_pair_min.get(pair, np.inf), frame_pair_min
-                )
-
-                dists = dists_full
-                # Subsample if too many, to avoid OOM
-                if len(dists) > 1000:
-                    dists = np.random.choice(dists, 1000, replace=False)
-                all_pairwise_distances[pair].extend(dists)
-
-    
     # Collect bond distances for Boltzmann Inversion (only if specified as a pair [i, j] or [i, j, site_i, site_j])
     for b_idx, b in enumerate(BONDS):
         if isinstance(b, list) and len(b) >= 2:
@@ -558,6 +611,104 @@ if _reference_force_max <= 1.0e-12:
         "All mapped reference forces are zero. The trajectory likely does not "
         "contain usable force records; refusing to build F_ref - F_prior targets."
     )
+
+print("\n[INFO] Esecuzione allineamento Kabsch per mediare le geometrie dei corpi rigidi...")
+
+for resname, info in rigid_bodies_info.items():
+    if "sites" not in info or len(info["sites"]) < 2:
+        continue
+        
+    site_names = list(info["sites"].keys())
+    N_sites = len(site_names)
+    
+    # Raccogli tutti gli snapshot delle coordinate relative
+    snapshots = []
+    for frame_idx, frame_sites in enumerate(sites_data_history):
+        frame_centers = cg_centers_history[frame_idx]
+        for mol_id, rname in enumerate(mol_resnames):
+            if rname == resname:
+                center = frame_centers[mol_id]
+                site_positions = [site[1] for site in frame_sites[mol_id]]
+                if len(site_positions) == N_sites:
+                    rel_pos = np.array(site_positions) - center
+                    snapshots.append(rel_pos)
+                    
+    snapshots = np.array(snapshots)
+    if len(snapshots) == 0: continue
+    
+    if info.get("auto_align_sites", True):
+        # Iterative Kabsch average, anchored to the first observed orientation.
+        ref = snapshots[0].copy()
+        for iteration in range(3):
+            aligned_snapshots = []
+            for snap in snapshots:
+                R = kabsch_align(snap, ref)
+                aligned_snapshots.append((R @ snap.T).T)
+            ref = np.mean(aligned_snapshots, axis=0)
+        source_description = f"mediati {len(snapshots)} snapshot"
+    else:
+        rb_config = RIGID_BODIES_CONFIG.get(resname, {})
+        configured_sites = rb_config.get("sites", {})
+        missing = [name for name in site_names if name not in configured_sites]
+        if missing:
+            raise ValueError(
+                f"Rigid body {resname} has auto_align_sites=False but is missing manual sites: {missing}"
+            )
+        manual = np.asarray(
+            [configured_sites[name]["relative_pos_nm"] for name in site_names], dtype=float
+        )
+        if manual.shape != snapshots[0].shape:
+            raise ValueError(f"Invalid manual rigid-body geometry for {resname}: {manual.shape}")
+        manual_to_lab = kabsch_align(manual, snapshots[0])
+        ref = (manual_to_lab @ manual.T).T
+        source_description = "usata geometria manuale"
+        
+    # Express the ideal geometry in the principal-axis body frame.
+    # ESPResSo stores rinertia as three principal moments, so the virtual-site
+    # offsets must use the same body-fixed axes.
+    principal_axes = principal_axes_lab_by_resname.get(resname)
+    if principal_axes is None:
+        raise RuntimeError(f"Missing principal axes for rigid body {resname}")
+    ref_body = (principal_axes.T @ ref.T).T
+    for i, sname in enumerate(site_names):
+        info["sites"][sname]["relative_pos_nm"] = [float(v) for v in ref_body[i]]
+    print(
+        f"  -> {resname}: {source_description}; "
+        "siti salvati nel frame degli assi principali."
+    )
+
+# Recompute WCA statistics on the same rigidified geometry used in Pass 2.
+# This must happen after the Kabsch average above: fitting on the raw mapped
+# sites and subtracting the prior on ideal rigid sites are different
+# Hamiltonians and can create artificial deep-core WCA forces.
+if WCA_SIGMA == "auto":
+    print("\n[INFO] Raccolta distanze WCA sulla geometria rigidizzata usata nel Pass 2...")
+    all_pairwise_distances = {}
+    exact_pair_min = {}
+    for ts_idx, raw_frame_sites in enumerate(sites_data_history):
+        if ts_idx % 100 == 0:
+            print(
+                f"\r[INFO] WCA rigid geometry: Frame {ts_idx}/{len(sites_data_history)}",
+                end="",
+            )
+        rigid_frame_sites = reconstruct_rigid_sites_for_frame(
+            raw_frame_sites,
+            cg_centers_history[ts_idx],
+            mol_resnames,
+            rigid_bodies_info,
+        )
+        accumulate_wca_distance_samples(
+            rigid_frame_sites,
+            box_dim_history[ts_idx],
+            wca_excluded_mol_matrix,
+            all_pairwise_distances,
+            exact_pair_min,
+        )
+    print()
+    if not all_pairwise_distances:
+        raise RuntimeError(
+            "No nonbonded WCA distance samples were collected on the rigid geometry."
+        )
 
 if WCA_SIGMA == "auto":
     print("\n[INFO] Calcolo parametri WCA geometrici con regolarizzazione gerarchica...")
@@ -667,10 +818,10 @@ if WCA_SIGMA == "auto":
             "sigma_nm": float(sigma),
             "epsilon_kjmol": float(epsilon),
             "cutoff_nm": float(r_c),
-            # True minimum over the physical nonbonded samples.  Keep the old
+            # True minimum over the physical rigid nonbonded samples.  Keep the old
             # histogram-derived estimate only as diagnostic metadata.
             "empirical_min": float(r_true_min),
-            "empirical_min_source": "exact_streaming_nonbonded",
+            "empirical_min_source": "exact_streaming_rigid_nonbonded",
             "histogram_min_nm": float(r_emp_min),
             "quantile_percent": float(WCA_QUANTILE_PERCENT),
             "q_low_nm": float(q_low),
@@ -736,7 +887,7 @@ if WCA_SIGMA == "auto":
         )
     print(
         "[INFO] WCA physical-support safety check passed: "
-        f"r_guard <= {WCA_PHYSICAL_GUARD_MARGIN:.3f} * r_min for every type pair."
+        f"r_guard <= {WCA_PHYSICAL_GUARD_MARGIN:.3f} * rigid r_min for every type pair."
     )
             
     # Bug 11: Inject wca_prior_dict into cg_priors.json and DO NOT write wca_priors.json
@@ -751,71 +902,6 @@ if WCA_SIGMA == "auto":
     cg_priors["wca_pairs"] = wca_prior_dict
     
     print(f"[INFO] Elaborazione parametri WCA completata ({len(wca_prior_dict)} coppie)")
-
-print("\n[INFO] Esecuzione allineamento Kabsch per mediare le geometrie dei corpi rigidi...")
-
-for resname, info in rigid_bodies_info.items():
-    if "sites" not in info or len(info["sites"]) < 2:
-        continue
-        
-    site_names = list(info["sites"].keys())
-    N_sites = len(site_names)
-    
-    # Raccogli tutti gli snapshot delle coordinate relative
-    snapshots = []
-    for frame_idx, frame_sites in enumerate(sites_data_history):
-        frame_centers = cg_centers_history[frame_idx]
-        for mol_id, rname in enumerate(mol_resnames):
-            if rname == resname:
-                center = frame_centers[mol_id]
-                site_positions = [site[1] for site in frame_sites[mol_id]]
-                if len(site_positions) == N_sites:
-                    rel_pos = np.array(site_positions) - center
-                    snapshots.append(rel_pos)
-                    
-    snapshots = np.array(snapshots)
-    if len(snapshots) == 0: continue
-    
-    if info.get("auto_align_sites", True):
-        # Iterative Kabsch average, anchored to the first observed orientation.
-        ref = snapshots[0].copy()
-        for iteration in range(3):
-            aligned_snapshots = []
-            for snap in snapshots:
-                R = kabsch_align(snap, ref)
-                aligned_snapshots.append((R @ snap.T).T)
-            ref = np.mean(aligned_snapshots, axis=0)
-        source_description = f"mediati {len(snapshots)} snapshot"
-    else:
-        rb_config = RIGID_BODIES_CONFIG.get(resname, {})
-        configured_sites = rb_config.get("sites", {})
-        missing = [name for name in site_names if name not in configured_sites]
-        if missing:
-            raise ValueError(
-                f"Rigid body {resname} has auto_align_sites=False but is missing manual sites: {missing}"
-            )
-        manual = np.asarray(
-            [configured_sites[name]["relative_pos_nm"] for name in site_names], dtype=float
-        )
-        if manual.shape != snapshots[0].shape:
-            raise ValueError(f"Invalid manual rigid-body geometry for {resname}: {manual.shape}")
-        manual_to_lab = kabsch_align(manual, snapshots[0])
-        ref = (manual_to_lab @ manual.T).T
-        source_description = "usata geometria manuale"
-        
-    # Express the ideal geometry in the principal-axis body frame.
-    # ESPResSo stores rinertia as three principal moments, so the virtual-site
-    # offsets must use the same body-fixed axes.
-    principal_axes = principal_axes_lab_by_resname.get(resname)
-    if principal_axes is None:
-        raise RuntimeError(f"Missing principal axes for rigid body {resname}")
-    ref_body = (principal_axes.T @ ref.T).T
-    for i, sname in enumerate(site_names):
-        info["sites"][sname]["relative_pos_nm"] = [float(v) for v in ref_body[i]]
-    print(
-        f"  -> {resname}: {source_description}; "
-        "siti salvati nel frame degli assi principali."
-    )
 
 print("\n[INFO] Pass 1 completato. Calcolo parametri Harmonic Priors...")
 
@@ -1092,38 +1178,13 @@ with open(args.output, "wb") as f:
         frame_centers = cg_centers_history[ts_idx]
         frame_forces = cg_forces_history[ts_idx]
         frame_torques = cg_torques_history[ts_idx]
-        # Copia superficiale della lista per non alterare lo storico originario
-        frame_sites = [list(sites) for sites in sites_data_history[ts_idx]]
-    
-        # [NEW LOGIC] RECONSTRUCT IDEAL SITES FOR PRIOR SUBTRACTION
-        # Applichiamo Kabsch per posizionare i siti ideali con l'orientamento istantaneo
-        for mol_idx, r_name in enumerate(mol_resnames):
-            if r_name in rigid_bodies_info and "sites" in rigid_bodies_info[r_name]:
-                site_names = list(rigid_bodies_info[r_name]["sites"].keys())
-                if len(site_names) < 2: continue
-            
-                ideal_rel = []
-                inst_rel = []
-                site_indices = []
-            
-                for s_idx, (st, sp) in enumerate(frame_sites[mol_idx]):
-                    if s_idx < len(site_names):
-                        s_name = site_names[s_idx]
-                        ideal_rel.append(rigid_bodies_info[r_name]["sites"][s_name]["relative_pos_nm"])
-                        inst_rel.append(np.array(sp) - frame_centers[mol_idx])
-                        site_indices.append(s_idx)
-            
-                if len(ideal_rel) >= 2:
-                    ideal_rel = np.array(ideal_rel)
-                    inst_rel = np.array(inst_rel)
-                
-                    # R @ ideal_rel \approx inst_rel
-                    R = kabsch_align(ideal_rel, inst_rel)
-                    ideal_rel_rotated = (R @ ideal_rel.T).T
-                
-                    for i_local, s_idx in enumerate(site_indices):
-                        new_pos = frame_centers[mol_idx] + ideal_rel_rotated[i_local]
-                        frame_sites[mol_idx][s_idx] = (frame_sites[mol_idx][s_idx][0], new_pos)
+        # Reconstruct exactly the same ideal rigid-site geometry used to fit WCA.
+        frame_sites = reconstruct_rigid_sites_for_frame(
+            sites_data_history[ts_idx],
+            frame_centers,
+            mol_resnames,
+            rigid_bodies_info,
+        )
     
         num_molecules = len(frame_centers)
         num_total_sites = sum(len(s) for s in frame_sites)
@@ -1411,6 +1472,8 @@ print(
     f"{'1-2':>8} {'1-3':>8} {'NB':>8}"
 )
 _class_names = {0: "1-2", 1: "1-3", 2: "nonbonded"}
+pass2_fit_min_violations = []
+pass2_guard_violations = []
 for pair_key in sorted(wca_prior_dict):
     w = wca_prior_dict[pair_key]
     ti, tj = int(w["type_i"]), int(w["type_j"])
@@ -1426,11 +1489,21 @@ for pair_key in sorted(wca_prior_dict):
         dists = dists[order]
         classes = classes[order]
         r_min = float(dists[0])
+        fit_min = float(w["empirical_min"])
+        r_guard = float(w.get("r_guard_nm", WCA_GUARD_FRACTION * rc))
         min_source = _class_names[int(classes[0])]
         rank = max(0, int(np.ceil(0.0001 * n_total)) - 1)
         q001_text = f"{dists[rank] / rc:.4f}" if rank < dists.size else ">1.0000"
         rmin_text = f"{r_min:.4f}"
         rminrc_text = f"{r_min / rc:.4f}"
+
+        # The WCA fit and Pass 2 must see the same rigid geometry.  A Pass-2
+        # minimum below the fit minimum means the support guard was calibrated
+        # on a different coordinate representation and is unsafe.
+        if r_min < fit_min - 1.0e-9:
+            pass2_fit_min_violations.append((pair_key, r_min, fit_min))
+        if r_min < r_guard - 1.0e-9:
+            pass2_guard_violations.append((pair_key, r_min, r_guard))
     else:
         min_source = "none<rc"
         rmin_text = ">rc"
@@ -1443,6 +1516,29 @@ for pair_key in sorted(wca_prior_dict):
         f"{rmin_text:>11} {rminrc_text:>10} {q001_text:>12} "
         f"{min_source:>12} {counts[0]:>8d} {counts[1]:>8d} {counts[2]:>8d}"
     )
+
+if pass2_fit_min_violations:
+    details = "; ".join(
+        f"{pair}: pass2_min={rmin:.6f} < fit_min={fitmin:.6f}"
+        for pair, rmin, fitmin in pass2_fit_min_violations
+    )
+    raise RuntimeError(
+        "WCA rigid-geometry consistency check failed: Pass 2 observed shorter "
+        f"physical distances than the WCA fit. {details}"
+    )
+if pass2_guard_violations:
+    details = "; ".join(
+        f"{pair}: pass2_min={rmin:.6f} < r_guard={rguard:.6f}"
+        for pair, rmin, rguard in pass2_guard_violations
+    )
+    raise RuntimeError(
+        "WCA physical-support check failed on the actual Pass-2 rigid geometry. "
+        + details
+    )
+print(
+    "[INFO] WCA rigid-geometry consistency check passed: Pass 2 does not "
+    "enter the fitted deep-core guard."
+)
 
 # --- DECOY GENERATION ---
 print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
@@ -1491,9 +1587,15 @@ for pair_key, t1, t2, r_ood_min, r_ood_max in valid_decoy_specs:
     while generated < quota and attempts < max_attempts:
         attempts += 1
         frame_idx = rng.randrange(len(sites_data_history))
+        source_sites = reconstruct_rigid_sites_for_frame(
+            sites_data_history[frame_idx],
+            cg_centers_history[frame_idx],
+            mol_resnames,
+            rigid_bodies_info,
+        )
         mol_ids_t1 = []
         mol_ids_t2 = []
-        for m_idx, sites in enumerate(sites_data_history[frame_idx]):
+        for m_idx, sites in enumerate(source_sites):
             for s_type, s_pos in sites:
                 if int(s_type) == t1:
                     mol_ids_t1.append((m_idx, s_pos))
@@ -1516,7 +1618,9 @@ for pair_key, t1, t2, r_ood_min, r_ood_max in valid_decoy_specs:
         uvec = np.array([1.0, 0.0, 0.0]) if dist < 1e-8 else dvec / dist
         translation = dvec - target_r * uvec
 
-        decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
+        # Start from the same ideal rigid geometry used for the physical frames.
+        # Translating the whole selected molecule preserves all rigid-body offsets.
+        decoy_sites = copy.deepcopy(source_sites)
         decoy_centers = np.copy(cg_centers_history[frame_idx])
         decoy_forces = np.zeros_like(cg_forces_history[frame_idx])
         for site_idx in range(len(decoy_sites[m2_idx])):
