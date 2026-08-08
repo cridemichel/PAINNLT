@@ -413,6 +413,7 @@ int main(int argc, char* argv[]) {
     int es_patience = 10;
     int reduce_lr_patience = 5;
     int batch_size = 16;
+    int diagnostic_overfit_frames = 0;
 
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
@@ -458,8 +459,12 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("torque_weight")) torque_weight = loaded_config["torque_weight"];
         if (loaded_config.contains("grad_clip_norm")) grad_clip_norm = loaded_config["grad_clip_norm"];
         if (loaded_config.contains("batch_size")) batch_size = loaded_config["batch_size"];
+        if (loaded_config.contains("diagnostic_overfit_frames")) diagnostic_overfit_frames = loaded_config["diagnostic_overfit_frames"];
         if (batch_size <= 0) {
             throw std::runtime_error("batch_size must be positive");
+        }
+        if (diagnostic_overfit_frames < 0) {
+            throw std::runtime_error("diagnostic_overfit_frames must be non-negative (0 disables tiny-set mode)");
         }
         if (torque_weight < 0.0f) {
             throw std::runtime_error("torque_weight must be non-negative");
@@ -489,6 +494,7 @@ int main(int argc, char* argv[]) {
     effective_config["torque_weight"] = torque_weight;
     effective_config["grad_clip_norm"] = grad_clip_norm;
     effective_config["batch_size"] = batch_size;
+    effective_config["diagnostic_overfit_frames"] = diagnostic_overfit_frames;
     effective_config["loss_normalization"] = "train_target_rms_v1";
     effective_config["energy_gauge"] = "isolated_species_zero_v1";
 
@@ -551,13 +557,31 @@ int main(int argc, char* argv[]) {
     std::mt19937 g(42);
     std::shuffle(full_dataset.begin(), full_dataset.end(), g);
 
-    // Divisione 80% Train, 20% Validation
-    size_t total_frames = full_dataset.size();
-    size_t val_size = total_frames * 0.2;
-    size_t train_size = total_frames - val_size;
+    std::vector<CGFrame> train_dataset;
+    std::vector<CGFrame> val_dataset;
 
-    std::vector<CGFrame> train_dataset(full_dataset.begin(), full_dataset.begin() + train_size);
-    std::vector<CGFrame> val_dataset(full_dataset.begin() + train_size, full_dataset.end());
+    if (diagnostic_overfit_frames > 0) {
+        const size_t n = std::min(
+            static_cast<size_t>(diagnostic_overfit_frames), full_dataset.size());
+        if (n == 0) {
+            throw std::runtime_error("Tiny-set diagnostic requested but dataset is empty");
+        }
+        train_dataset.assign(full_dataset.begin(), full_dataset.begin() + n);
+        // Deliberately validate on the exact same frames: this is a representability/
+        // optimizer diagnostic, not a generalization estimate.  With torch/manual and
+        // std::mt19937 seeds fixed above, force-only and force+torque runs use the same set.
+        val_dataset = train_dataset;
+        std::cout << "[DIAGNOSTIC] Tiny-set overfit mode enabled: " << n
+                  << " deterministic frames are used for BOTH train and validation.\n"
+                  << "             Do not interpret this validation loss as generalization.\n";
+    } else {
+        // Normal production split: 80% Train, 20% Validation
+        const size_t total_frames = full_dataset.size();
+        const size_t val_size = total_frames * 0.2;
+        const size_t train_size = total_frames - val_size;
+        train_dataset.assign(full_dataset.begin(), full_dataset.begin() + train_size);
+        val_dataset.assign(full_dataset.begin() + train_size, full_dataset.end());
+    }
 
     std::cout << "[INFO] Split completato:\n"
               << "       - Train: " << train_dataset.size() << " frames\n"
