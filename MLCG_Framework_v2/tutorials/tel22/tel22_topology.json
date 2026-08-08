@@ -6,6 +6,8 @@
     "wca_quantile_percent": 0.1,
     "wca_guard_fraction": 0.8,
     "wca_guard_kbt": 10.0,
+    "decoy_target_fraction": 0.08,
+    "decoy_random_seed": 20260808,
     "mapping": {
         "mapping_method": "COM",
         "residues": {
