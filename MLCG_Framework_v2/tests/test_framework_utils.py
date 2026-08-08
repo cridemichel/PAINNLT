@@ -20,6 +20,8 @@ from framework_utils import (  # noqa: E402
     sha256_file,
     validate_checkpoint,
     validate_model_manifest,
+    validate_wca_exclusion_policy,
+    wca_topology_exclusion_pairs,
 )
 
 
@@ -162,6 +164,33 @@ class FrameworkUtilsTests(unittest.TestCase):
             nonconservative_prior_entries(priors),
             ["bond[1]=morse", "angle[0]=tabulated"],
         )
+
+    def test_wca_topology_exclusions(self):
+        priors = {
+            "bonds": [
+                {"mol_i": 0, "mol_j": 1},
+                {"mol_i": 1, "mol_j": 2},
+                {"mol_i": 2, "mol_j": 3},
+                {"mol_i": 0, "mol_j": 3},
+            ],
+            "angles": [
+                {"mol_i": 0, "mol_j": 1, "mol_k": 2},
+                {"mol_i": 1, "mol_j": 2, "mol_k": 3},
+            ],
+            "wca_exclusions": {
+                "exclude_12": True,
+                "exclude_13": True,
+                "scope": "molecule_pair_all_sites",
+            },
+        }
+        validate_wca_exclusion_policy(priors)
+        direct, one_three = wca_topology_exclusion_pairs(priors, 5)
+        self.assertEqual(direct, {(0, 1), (1, 2), (2, 3), (0, 3)})
+        self.assertEqual(one_three, {(0, 2), (1, 3)})
+
+    def test_wca_exclusion_policy_rejects_legacy_priors(self):
+        with self.assertRaises(ValueError):
+            validate_wca_exclusion_policy({"bonds": []})
 
 
 if __name__ == "__main__":
