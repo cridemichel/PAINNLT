@@ -56,13 +56,47 @@ gmx grompp -f mdp/npt.mdp -c nvt.gro -r nvt.gro -t nvt.cpt -p topol.top -o npt.t
 gmx mdrun -v -deffnm npt
 
 echo "[9] MD Production (1 ns) per estrarre le forze..."
+
+# Il force matching richiede che la traiettoria TRR contenga le forze.
+# nstfout=0 disabilita l'output delle forze, quindi interrompiamo subito
+# il workflow se md.mdp non le richiede.
+NSTFOUT=$(awk -F'[=;]' '
+    /^[[:space:]]*nstfout[[:space:]]*=/ {
+        gsub(/[[:space:]]/, "", $2);
+        print $2;
+        exit
+    }
+' mdp/md.mdp)
+
+if [ -z "$NSTFOUT" ] || ! [[ "$NSTFOUT" =~ ^[0-9]+$ ]] || [ "$NSTFOUT" -le 0 ]; then
+    echo "ERRORE: mdp/md.mdp deve avere nstfout > 0 per salvare le forze nel TRR."
+    echo "Valore trovato: '${NSTFOUT:-non definito}'"
+    exit 1
+fi
+
+echo "[INFO] nstfout=$NSTFOUT: le forze verranno scritte in md.trr."
+
 gmx grompp -f mdp/md.mdp -c npt.gro -t npt.cpt -p topol.top -o md.tpr -maxwarn 1
 # Lancia la produzione! Questo richiederà un po' di tempo a seconda dei core
 gmx mdrun -v -deffnm md
 
-echo "[10] Srotolamento della traiettoria (Rimozione PBC)..."
-# Usiamo il gruppo 0 (System) per ricompattare le molecole spezzate dai bordi periodici
-echo "0" | gmx trjconv -s md.tpr -f md.trr -pbc whole -o md_whole.trr
+if [ ! -s md.trr ]; then
+    echo "ERRORE: md.trr non è stato creato oppure è vuoto."
+    exit 1
+fi
+
+echo "[10] Srotolamento della traiettoria (Rimozione PBC, mantenendo le forze)..."
+# Usiamo il gruppo 0 (System) per ricompattare le molecole spezzate dai bordi periodici.
+# -force è essenziale: gmx trjconv NON scrive le forze per default.
+echo "0" | gmx trjconv -s md.tpr -f md.trr -pbc whole -force -o md_whole.trr
+
+if [ ! -s md_whole.trr ]; then
+    echo "ERRORE: md_whole.trr non è stato creato oppure è vuoto."
+    exit 1
+fi
+
+echo "[INFO] Verifica del TRR finale (deve riportare anche le forze):"
+gmx check -f md_whole.trr
 
 echo "======================================================"
 echo " Simulazione GROMACS completata!"

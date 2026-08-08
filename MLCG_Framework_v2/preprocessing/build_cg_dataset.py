@@ -1,4 +1,5 @@
 import MDAnalysis as mda
+from MDAnalysis.exceptions import NoDataError
 import numpy as np
 
 from geometry_utils import diagonalize_inertia_tensor, minimum_image_distance_matrix
@@ -57,6 +58,8 @@ WCA_OVERRIDES = config_data.get("wca_overrides", {})
 WCA_QUANTILE_PERCENT = float(config_data.get("wca_quantile_percent", 0.1))
 WCA_GUARD_FRACTION = float(config_data.get("wca_guard_fraction", 0.80))
 WCA_GUARD_KBT = float(config_data.get("wca_guard_kbt", 10.0))
+DECOY_TARGET_FRACTION = float(config_data.get("decoy_target_fraction", 0.08))
+DECOY_RANDOM_SEED = int(config_data.get("decoy_random_seed", 20260808))
 
 if not (0.0 < WCA_QUANTILE_PERCENT < 50.0):
     raise ValueError("wca_quantile_percent must be in (0, 50)")
@@ -64,6 +67,8 @@ if not (0.0 < WCA_GUARD_FRACTION < 1.0):
     raise ValueError("wca_guard_fraction must be in (0, 1)")
 if WCA_GUARD_KBT <= 0.0:
     raise ValueError("wca_guard_kbt must be > 0")
+if not (0.0 <= DECOY_TARGET_FRACTION < 1.0):
+    raise ValueError("decoy_target_fraction must be in [0, 1)")
 RIGID_BODIES_CONFIG = config_data.get("rigid_bodies", {})
 
 
@@ -207,6 +212,36 @@ def dihedral_forces(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0):
     return tuple(forces)
 
 
+def get_atom_forces_kjmol_nm(atoms, ts):
+    """Return atom forces in kJ mol^-1 nm^-1 or fail loudly."""
+    if getattr(ts, "has_forces", None) is False:
+        raise RuntimeError(
+            "The trajectory frame does not contain forces. Use a force-bearing "
+            "TRR for force matching (check the GROMACS force-output settings)."
+        )
+
+    try:
+        atom_forces = np.asarray(atoms.forces, dtype=np.float64)
+    except (NoDataError, AttributeError):
+        try:
+            ts_forces = np.asarray(ts.forces, dtype=np.float64)
+            atom_forces = ts_forces[np.asarray(atoms.indices, dtype=np.int64)]
+        except (NoDataError, AttributeError, TypeError, IndexError) as exc:
+            raise RuntimeError(
+                "Reference forces are unavailable from the trajectory; "
+                "cannot build force-matching targets."
+            ) from exc
+
+    if atom_forces.shape != (len(atoms), 3):
+        raise RuntimeError(
+            f"Unexpected atomic-force shape {atom_forces.shape}; "
+            f"expected ({len(atoms)}, 3)."
+        )
+    if not np.all(np.isfinite(atom_forces)):
+        raise RuntimeError("Non-finite reference forces found in trajectory.")
+    return atom_forces * 10.0
+
+
 # =====================================================================
 # 2. PASS 1: DIRECT BOLTZMANN INVERSION
 # =====================================================================
@@ -254,11 +289,7 @@ for ts_idx, ts in enumerate(u.trajectory):
         
         atoms = residue.atoms
         positions_nm = atoms.positions / 10.0
-        # Check if forces exist
-        if hasattr(atoms, 'forces'):
-            forces_nm = atoms.forces * 10.0
-        else:
-            forces_nm = np.zeros_like(positions_nm)
+        forces_nm = get_atom_forces_kjmol_nm(atoms, ts)
             
         try:
             masses = atoms.masses
@@ -431,6 +462,17 @@ for ts_idx, ts in enumerate(u.trajectory):
             pos_l = resolve_site_position(frame_centers, frame_sites, l, d.get("site_l", -1))
             dihedral_values[f"dict_{idx}"].append(get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim))
             
+# Refuse to continue if force mapping produced an all-zero trajectory.
+_reference_force_max = max(
+    (float(np.max(np.abs(np.asarray(frame, dtype=float)))) for frame in cg_forces_history),
+    default=0.0,
+)
+if _reference_force_max <= 1.0e-12:
+    raise RuntimeError(
+        "All mapped reference forces are zero. The trajectory likely does not "
+        "contain usable force records; refusing to build F_ref - F_prior targets."
+    )
+
 if WCA_SIGMA == "auto":
     print("\n[INFO] Calcolo parametri WCA geometrici con regolarizzazione gerarchica...")
     import scipy.optimize
@@ -783,6 +825,8 @@ reference_force_norms = []
 residual_force_norms = []
 wca_force_norms = []
 wca_force_norms_by_pair = {key: [] for key in wca_prior_dict}
+wca_active_distances_by_pair = {key: [] for key in wca_prior_dict}
+wca_active_classes_by_pair = {key: [] for key in wca_prior_dict}
 
 # Precompute all topology- and type-dependent WCA data once.  Site ordering is
 # fixed by the CG mapping, so the same upper-triangular inter-molecular pair
@@ -848,6 +892,38 @@ if wca_prior_dict:
         for tj in range(ti, n_wca_types)
         if wca_cutoff_sq_matrix[ti, tj] > 0.0
     }
+    # Topological class of each candidate pair, for diagnostics only.
+    adjacency = [set() for _ in range(len(mol_resnames))]
+    for bond in derived_priors.get("bonds", []):
+        mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
+        if 0 <= mi < len(adjacency) and 0 <= mj < len(adjacency) and mi != mj:
+            adjacency[mi].add(mj)
+            adjacency[mj].add(mi)
+
+    direct_pairs = {
+        (min(i, j), max(i, j))
+        for i, nbrs in enumerate(adjacency) for j in nbrs if i != j
+    }
+    one_three_pairs = set()
+    for nbrs in adjacency:
+        nbrs = list(nbrs)
+        for a_idx in range(len(nbrs)):
+            for b_idx in range(a_idx + 1, len(nbrs)):
+                a, b = nbrs[a_idx], nbrs[b_idx]
+                key = (min(a, b), max(a, b))
+                if key not in direct_pairs:
+                    one_three_pairs.add(key)
+
+    pair_topology_class_all = np.full(pair_i_all.size, 2, dtype=np.int8)
+    pair_mol_i_all = flat_mol_template[pair_i_all]
+    pair_mol_j_all = flat_mol_template[pair_j_all]
+    for idx, (mi, mj) in enumerate(zip(pair_mol_i_all, pair_mol_j_all)):
+        key = (min(int(mi), int(mj)), max(int(mi), int(mj)))
+        if key in direct_pairs:
+            pair_topology_class_all[idx] = 0
+        elif key in one_three_pairs:
+            pair_topology_class_all[idx] = 1
+
     wca_global_cutoff_sq = float(np.max(pair_cutoff_sq_all))
 
     print(
@@ -974,10 +1050,14 @@ with open(args.output, "wb") as f:
                 wca_force_norms.extend(f_norm.tolist())
 
                 active_codes = pair_code_all[active_idx]
+                active_classes = pair_topology_class_all[active_idx]
                 for code in np.unique(active_codes):
                     pair_key_diag = pair_code_to_key[int(code)]
-                    vals = f_norm[active_codes == code]
+                    code_mask = active_codes == code
+                    vals = f_norm[code_mask]
                     wca_force_norms_by_pair[pair_key_diag].extend(vals.tolist())
+                    wca_active_distances_by_pair[pair_key_diag].extend(r[code_mask].tolist())
+                    wca_active_classes_by_pair[pair_key_diag].extend(active_classes[code_mask].tolist())
 
         # 3.2 Sottrazione Legami (con supporto per siti specifici e momento torcente)
         for b in derived_priors["bonds"]:
@@ -1176,82 +1256,138 @@ for pair_key in sorted(wca_force_norms_by_pair):
             f"{np.percentile(vals, 99.9):>16.6g} {np.max(vals):>16.6g}"
         )
 
+print("\n[INFO] Diagnostica geometrica short-range per type-pair:")
+print(
+    f"{'pair':<8} {'N_total':>12} {'N_WCA':>10} {'r_min[nm]':>11} "
+    f"{'r_min/rc':>10} {'Q0.01%/rc':>12} {'min_source':>12} "
+    f"{'1-2':>8} {'1-3':>8} {'NB':>8}"
+)
+_class_names = {0: "1-2", 1: "1-3", 2: "nonbonded"}
+for pair_key in sorted(wca_prior_dict):
+    w = wca_prior_dict[pair_key]
+    ti, tj = int(w["type_i"]), int(w["type_j"])
+    code = min(ti, tj) * n_wca_types + max(ti, tj)
+    n_per_frame = int(np.count_nonzero(pair_code_all == code))
+    n_total = n_per_frame * num_frames
+    rc = float(w["cutoff_nm"])
+
+    dists = np.asarray(wca_active_distances_by_pair[pair_key], dtype=float)
+    classes = np.asarray(wca_active_classes_by_pair[pair_key], dtype=np.int8)
+    if dists.size:
+        order = np.argsort(dists)
+        dists = dists[order]
+        classes = classes[order]
+        r_min = float(dists[0])
+        min_source = _class_names[int(classes[0])]
+        rank = max(0, int(np.ceil(0.0001 * n_total)) - 1)
+        q001_text = f"{dists[rank] / rc:.4f}" if rank < dists.size else ">1.0000"
+        rmin_text = f"{r_min:.4f}"
+        rminrc_text = f"{r_min / rc:.4f}"
+    else:
+        min_source = "none<rc"
+        rmin_text = ">rc"
+        rminrc_text = ">1.0000"
+        q001_text = ">1.0000"
+
+    counts = [int(np.count_nonzero(classes == cls)) for cls in (0, 1, 2)]
+    print(
+        f"{pair_key:<8} {n_total:>12d} {len(classes):>10d} "
+        f"{rmin_text:>11} {rminrc_text:>10} {q001_text:>12} "
+        f"{min_source:>12} {counts[0]:>8d} {counts[1]:>8d} {counts[2]:>8d}"
+    )
+
 # --- DECOY GENERATION ---
 print(f"\\n[INFO] Generazione Decoy OOD (Deep Core) in corso...")
 decoy_frames = []
 import copy
 import random
 
-# Number of decoys per pair
-N_DECOYS_PER_PAIR = 16
+rng = random.Random(DECOY_RANDOM_SEED)
+n_physical_frames = len(cg_centers_history)
+if DECOY_TARGET_FRACTION > 0.0:
+    target_decoys = int(round(
+        DECOY_TARGET_FRACTION * n_physical_frames / (1.0 - DECOY_TARGET_FRACTION)
+    ))
+else:
+    target_decoys = 0
 
-# Collect all frames data in memory to easily pick parents for decoys
-# Wait, we already have sites_data_history, forces_history, cg_centers_history, etc.
-# We can just pick random frames from there!
-
-total_decoys_generated = 0
+valid_decoy_specs = []
 for pair_key, wca_info in wca_prior_dict.items():
-    t1, t2 = wca_info["type_i"], wca_info["type_j"]
-    r_c = wca_info["cutoff_nm"]
-    r_emp_min = wca_info["empirical_min"]
-
-    # R_OOD is max of 0.75 r_c and something below r_emp_min
+    t1, t2 = int(wca_info["type_i"]), int(wca_info["type_j"])
+    r_c = float(wca_info["cutoff_nm"])
+    r_emp_min = float(wca_info["empirical_min"])
     r_ood_max = min(0.95 * r_c, r_emp_min - 0.01)
     r_ood_min = 0.70 * r_c
     if r_ood_max <= r_ood_min:
-        # No reliable deep-OOD interval exists for this pair
-        print(f"    [Decoy] Skipping pair {t1}-{t2} (rc={r_c:.3f}, r_min={r_emp_min:.3f}) - no valid OOD interval.")
+        print(
+            f"    [Decoy] Skipping pair {t1}-{t2} "
+            f"(rc={r_c:.3f}, r_min={r_emp_min:.3f}) - no valid OOD interval."
+        )
         continue
+    valid_decoy_specs.append((pair_key, t1, t2, r_ood_min, r_ood_max))
 
-    for _ in range(N_DECOYS_PER_PAIR):
-        frame_idx = random.randint(0, len(sites_data_history) - 1)
-        
-        # Pick two distinct molecules that have t1 and t2
+if target_decoys and not valid_decoy_specs:
+    raise RuntimeError("Decoy target is non-zero but no type-pair has a valid OOD interval.")
+
+quotas = {}
+if valid_decoy_specs:
+    base, remainder = divmod(target_decoys, len(valid_decoy_specs))
+    for idx, spec in enumerate(valid_decoy_specs):
+        quotas[spec[0]] = base + (1 if idx < remainder else 0)
+
+for pair_key, t1, t2, r_ood_min, r_ood_max in valid_decoy_specs:
+    quota = quotas[pair_key]
+    generated = 0
+    attempts = 0
+    max_attempts = max(50, quota * 50)
+    while generated < quota and attempts < max_attempts:
+        attempts += 1
+        frame_idx = rng.randrange(len(sites_data_history))
         mol_ids_t1 = []
         mol_ids_t2 = []
-        for m_idx, (rname, sites) in enumerate(zip(mol_resnames, sites_data_history[frame_idx])):
-            # Find sites of type t1
-            for (s_type, s_pos) in sites:
-                if s_type == t1: mol_ids_t1.append((m_idx, s_pos))
-                if s_type == t2: mol_ids_t2.append((m_idx, s_pos))
-                
-        if not mol_ids_t1 or not mol_ids_t2: continue
-        
-        # Pick random sites
-        m1_idx, pos1 = random.choice(mol_ids_t1)
-        m2_idx, pos2 = random.choice(mol_ids_t2)
-        
-        if m1_idx == m2_idx: continue # must be different molecules
-        
-        target_r = random.uniform(r_ood_min, r_ood_max)
-        
+        for m_idx, sites in enumerate(sites_data_history[frame_idx]):
+            for s_type, s_pos in sites:
+                if int(s_type) == t1:
+                    mol_ids_t1.append((m_idx, s_pos))
+                if int(s_type) == t2:
+                    mol_ids_t2.append((m_idx, s_pos))
+        if not mol_ids_t1 or not mol_ids_t2:
+            continue
+
+        m1_idx, pos1 = rng.choice(mol_ids_t1)
+        m2_idx, pos2 = rng.choice(mol_ids_t2)
+        if m1_idx == m2_idx:
+            continue
+
+        target_r = rng.uniform(r_ood_min, r_ood_max)
         box = np.asarray(box_dim_history[frame_idx])
         dvec = mic_vector(pos2, pos1, box)
         dist = np.linalg.norm(dvec)
-        
-        if dist < 1e-8:
-            u = np.array([1.0, 0.0, 0.0])
-        else:
-            u = dvec / dist
-        
-        translation = dvec - target_r * u
-        
-        # Copy frame data
+        uvec = np.array([1.0, 0.0, 0.0]) if dist < 1e-8 else dvec / dist
+        translation = dvec - target_r * uvec
+
         decoy_sites = copy.deepcopy(sites_data_history[frame_idx])
         decoy_centers = np.copy(cg_centers_history[frame_idx])
-        decoy_forces = np.zeros_like(cg_forces_history[frame_idx]) # SET F_ML = 0 FOR ENTIRE FRAME
-        
-        # Apply translation to all sites in mol2
-        for i in range(len(decoy_sites[m2_idx])):
-            s_type, s_pos = decoy_sites[m2_idx][i]
-            decoy_sites[m2_idx][i] = (s_type, s_pos + translation)
-            
+        decoy_forces = np.zeros_like(cg_forces_history[frame_idx])
+        for site_idx in range(len(decoy_sites[m2_idx])):
+            s_type, s_pos = decoy_sites[m2_idx][site_idx]
+            decoy_sites[m2_idx][site_idx] = (s_type, s_pos + translation)
         decoy_centers[m2_idx] += translation
-        
-        decoy_frames.append((decoy_sites, decoy_centers, decoy_forces, box_dim_history[frame_idx]))
-        total_decoys_generated += 1
 
-print(f"[INFO] Generati {total_decoys_generated} decoy frames.")
+        decoy_frames.append((decoy_sites, decoy_centers, decoy_forces, box_dim_history[frame_idx]))
+        generated += 1
+
+    if generated < quota:
+        print(
+            f"    [WARN] Pair {t1}-{t2}: generated {generated}/{quota} decoys "
+            f"after {attempts} attempts."
+        )
+
+print(
+    f"[INFO] Generati {len(decoy_frames)} decoy frames "
+    f"(target={target_decoys}, target fraction={DECOY_TARGET_FRACTION:.2%}, "
+    f"seed={DECOY_RANDOM_SEED})."
+)
 
 # Write decoys to dataset
 print("[INFO] Scrittura decoy nel binario...")
