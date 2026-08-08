@@ -48,6 +48,20 @@ mapping_by_resname = MAPPING_DATA.get("residues", {})
 site_types = MAPPING_DATA.get("site_types", {})
 
 BONDS = config_data.get("bonds", [])
+# When --priors is supplied, WCA topology exclusions must be derived from the
+# exact bonded topology that will later be subtracted and used at runtime.
+_preloaded_priors = None
+if args.priors:
+    with open(args.priors, "r") as _pf:
+        _preloaded_priors = json.load(_pf)
+WCA_TOPOLOGY_BONDS = (
+    _preloaded_priors.get("bonds", BONDS) if _preloaded_priors is not None else BONDS
+)
+WCA_TOPOLOGY_ANGLES = (
+    _preloaded_priors.get("angles", config_data.get("angles", []))
+    if _preloaded_priors is not None
+    else config_data.get("angles", [])
+)
 WCA_SIGMA = config_data.get("wca_sigma", 0.0)
 WCA_EPSILON = config_data.get("wca_epsilon", 0.0)
 WCA_OVERRIDES = config_data.get("wca_overrides", {})
@@ -88,6 +102,37 @@ def get_mass(atom_name):
     return ATOMIC_MASSES.get(alpha_chars[0], 12.0) if alpha_chars else 12.0
 
 
+
+def build_wca_topology_exclusions(bonds, angles, num_molecules):
+    """Return molecule-level 1-2 and explicit-angle 1-3 WCA exclusions.
+
+    Direct pairs are taken from bonded priors.  1-3 pairs are taken only from
+    explicit angle priors (the angle endpoints), not from arbitrary two-hop
+    paths through Morse/restraint bonds.  Every virtual-site cross pair between
+    those molecule pairs is excluded from the non-bonded WCA prior.
+    """
+    direct_pairs = set()
+    for bond in bonds:
+        if isinstance(bond, dict):
+            mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
+        elif isinstance(bond, (list, tuple)) and len(bond) >= 2:
+            mi, mj = int(bond[0]), int(bond[1])
+        else:
+            continue
+        if 0 <= mi < num_molecules and 0 <= mj < num_molecules and mi != mj:
+            direct_pairs.add((min(mi, mj), max(mi, mj)))
+
+    one_three_pairs = set()
+    for angle in angles:
+        if not isinstance(angle, dict):
+            continue
+        mi, mk = int(angle["mol_i"]), int(angle["mol_k"])
+        if 0 <= mi < num_molecules and 0 <= mk < num_molecules and mi != mk:
+            key = (min(mi, mk), max(mi, mk))
+            if key not in direct_pairs:
+                one_three_pairs.add(key)
+
+    return direct_pairs, one_three_pairs
 
 def get_unwrapped_positions(positions, box_dim):
     unwrapped = np.copy(positions)
@@ -266,6 +311,9 @@ cg_torques_history = []
 box_dim_history = []
 sites_data_history = []
 mol_site_indices = {}
+wca_direct_mol_pairs = set()
+wca_one_three_mol_pairs = set()
+wca_excluded_mol_matrix = None
 
 for ts_idx, ts in enumerate(u.trajectory):
     if ts_idx % 100 == 0:
@@ -282,6 +330,19 @@ for ts_idx, ts in enumerate(u.trajectory):
     valid_residues = [res for res in u.residues if res.resname in mapping_by_resname]
     if ts_idx == 0:
         mol_resnames = [res.resname for res in valid_residues]
+        wca_direct_mol_pairs, wca_one_three_mol_pairs = build_wca_topology_exclusions(
+            WCA_TOPOLOGY_BONDS, WCA_TOPOLOGY_ANGLES, len(mol_resnames)
+        )
+        wca_excluded_mol_matrix = np.zeros(
+            (len(mol_resnames), len(mol_resnames)), dtype=bool
+        )
+        for mi, mj in wca_direct_mol_pairs | wca_one_three_mol_pairs:
+            wca_excluded_mol_matrix[mi, mj] = True
+            wca_excluded_mol_matrix[mj, mi] = True
+        print(
+            f"\n[INFO] WCA topology exclusions: {len(wca_direct_mol_pairs)} 1-2 pairs, "
+            f"{len(wca_one_three_mol_pairs)} 1-3 pairs (all virtual-site cross pairs excluded)."
+        )
         
     for mol_id, residue in enumerate(valid_residues):
         resname = residue.resname
@@ -393,6 +454,9 @@ for ts_idx, ts in enumerate(u.trajectory):
         # We only want unique pairs (upper triangle)
         i_idx, j_idx = np.triu_indices(len(flat_pos), k=1)
         valid_dist = dist_matrix[i_idx, j_idx]
+        topology_excluded = wca_excluded_mol_matrix[
+            flat_mols[i_idx], flat_mols[j_idx]
+        ]
         
         types_i = flat_types[i_idx]
         types_j = flat_types[j_idx]
@@ -401,7 +465,7 @@ for ts_idx, ts in enumerate(u.trajectory):
         t2 = np.maximum(types_i, types_j)
         
         # We only care about distances < 1.5 nm for WCA parametrization to save memory
-        close_mask = valid_dist < 1.5
+        close_mask = (valid_dist < 1.5) & (~topology_excluded)
         
         if np.any(close_mask):
             valid_dist = valid_dist[close_mask]
@@ -679,14 +743,23 @@ print("\n[INFO] Pass 1 completato. Calcolo parametri Harmonic Priors...")
 
 if args.priors:
     print(f"[INFO] Trovato flag --priors. Salto inferenza statistica e carico i prior esatti da: {args.priors}")
-    with open(args.priors, "r") as f:
-        derived_priors = json.load(f)
-        wca_info = derived_priors.get("wca", {})
-        WCA_SIGMA_VAL = float(wca_info.get("sigma", 0.0))
-        # Override solo se epsilon è specificato nei priors, altrimenti tieni args
-        if "epsilon" in wca_info:
-            WCA_EPSILON = float(wca_info["epsilon"])
-        WCA_OVERRIDES = wca_info.get("overrides", {})
+    derived_priors = _preloaded_priors
+    exclusion_meta = derived_priors.get("wca_exclusions", {})
+    if not (
+        exclusion_meta.get("exclude_12") is True
+        and exclusion_meta.get("exclude_13") is True
+        and exclusion_meta.get("scope") == "molecule_pair_all_sites"
+    ):
+        raise RuntimeError(
+            "The supplied priors predate the 1-2/1-3 WCA exclusion policy. "
+            "Rebuild cg_priors.json from the physical trajectory before reusing --priors."
+        )
+    wca_info = derived_priors.get("wca", {})
+    WCA_SIGMA_VAL = float(wca_info.get("sigma", 0.0))
+    # Override solo se epsilon è specificato nei priors, altrimenti tieni args
+    if "epsilon" in wca_info:
+        WCA_EPSILON = float(wca_info["epsilon"])
+    WCA_OVERRIDES = wca_info.get("overrides", {})
 else:
     derived_priors = None
 
@@ -791,6 +864,14 @@ if derived_priors is None:
 
     if WCA_SIGMA == "auto":
         derived_priors["wca_pairs"] = wca_prior_dict
+
+    derived_priors["wca_exclusions"] = {
+        "exclude_12": True,
+        "exclude_13": True,
+        "scope": "molecule_pair_all_sites",
+        "direct_pair_count": len(wca_direct_mol_pairs),
+        "one_three_pair_count": len(wca_one_three_mol_pairs),
+    }
         
     # Save priors for simulation
     with open("cg_priors.json", "w") as pf:
@@ -804,6 +885,14 @@ wca_prior_dict = derived_priors.get("wca_pairs", {})
 
 if not wca_prior_dict:
     raise RuntimeError("No pair-specific WCA priors found in derived_priors['wca_pairs']")
+
+_final_direct, _final_one_three = build_wca_topology_exclusions(
+    derived_priors.get("bonds", []), derived_priors.get("angles", []), len(mol_resnames)
+)
+if _final_direct != wca_direct_mol_pairs or _final_one_three != wca_one_three_mol_pairs:
+    raise RuntimeError(
+        "WCA topology exclusions derived in Pass 1 do not match the final bonded priors."
+    )
 
 
 # =====================================================================
@@ -864,9 +953,13 @@ if wca_prior_dict:
         wca_cutoff_sq_matrix[ti, tj] = wca_cutoff_sq_matrix[tj, ti] = cutoff_sq
 
     pair_i_all, pair_j_all = np.triu_indices(flat_type_template.size, k=1)
-    inter_mol = flat_mol_template[pair_i_all] != flat_mol_template[pair_j_all]
-    pair_i_all = pair_i_all[inter_mol]
-    pair_j_all = pair_j_all[inter_mol]
+    pair_mol_i = flat_mol_template[pair_i_all]
+    pair_mol_j = flat_mol_template[pair_j_all]
+    inter_mol = pair_mol_i != pair_mol_j
+    topology_allowed = ~wca_excluded_mol_matrix[pair_mol_i, pair_mol_j]
+    nonbonded = inter_mol & topology_allowed
+    pair_i_all = pair_i_all[nonbonded]
+    pair_j_all = pair_j_all[nonbonded]
 
     pair_type_i = flat_type_template[pair_i_all]
     pair_type_j = flat_type_template[pair_j_all]
@@ -892,43 +985,20 @@ if wca_prior_dict:
         for tj in range(ti, n_wca_types)
         if wca_cutoff_sq_matrix[ti, tj] > 0.0
     }
-    # Topological class of each candidate pair, for diagnostics only.
-    adjacency = [set() for _ in range(len(mol_resnames))]
-    for bond in derived_priors.get("bonds", []):
-        mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
-        if 0 <= mi < len(adjacency) and 0 <= mj < len(adjacency) and mi != mj:
-            adjacency[mi].add(mj)
-            adjacency[mj].add(mi)
-
-    direct_pairs = {
-        (min(i, j), max(i, j))
-        for i, nbrs in enumerate(adjacency) for j in nbrs if i != j
-    }
-    one_three_pairs = set()
-    for nbrs in adjacency:
-        nbrs = list(nbrs)
-        for a_idx in range(len(nbrs)):
-            for b_idx in range(a_idx + 1, len(nbrs)):
-                a, b = nbrs[a_idx], nbrs[b_idx]
-                key = (min(a, b), max(a, b))
-                if key not in direct_pairs:
-                    one_three_pairs.add(key)
-
+    # All 1-2/1-3 molecule pairs were removed above; keep an explicit class
+    # vector so diagnostics verify that only genuinely non-bonded contacts
+    # ever reach the WCA kernel.
     pair_topology_class_all = np.full(pair_i_all.size, 2, dtype=np.int8)
     pair_mol_i_all = flat_mol_template[pair_i_all]
     pair_mol_j_all = flat_mol_template[pair_j_all]
-    for idx, (mi, mj) in enumerate(zip(pair_mol_i_all, pair_mol_j_all)):
-        key = (min(int(mi), int(mj)), max(int(mi), int(mj)))
-        if key in direct_pairs:
-            pair_topology_class_all[idx] = 0
-        elif key in one_three_pairs:
-            pair_topology_class_all[idx] = 1
+    if np.any(wca_excluded_mol_matrix[pair_mol_i_all, pair_mol_j_all]):
+        raise RuntimeError("A 1-2/1-3 pair leaked into the WCA candidate list.")
 
     wca_global_cutoff_sq = float(np.max(pair_cutoff_sq_all))
 
     print(
         f"[INFO] WCA vectorized kernel: {flat_type_template.size} sites, "
-        f"{pair_i_all.size} inter-molecular candidate pairs, "
+        f"{pair_i_all.size} nonbonded candidate pairs, "
         f"global cutoff={np.sqrt(wca_global_cutoff_sq):.4f} nm"
     )
 
@@ -1357,6 +1427,8 @@ for pair_key, t1, t2, r_ood_min, r_ood_max in valid_decoy_specs:
         m1_idx, pos1 = rng.choice(mol_ids_t1)
         m2_idx, pos2 = rng.choice(mol_ids_t2)
         if m1_idx == m2_idx:
+            continue
+        if wca_excluded_mol_matrix[m1_idx, m2_idx]:
             continue
 
         target_r = rng.uniform(r_ood_min, r_ood_max)

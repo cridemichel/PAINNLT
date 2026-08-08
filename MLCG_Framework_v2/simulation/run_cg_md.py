@@ -18,6 +18,8 @@ from framework_utils import (
     rigid_body_quaternion,
     validate_checkpoint,
     validate_model_manifest,
+    validate_wca_exclusion_policy,
+    wca_topology_exclusion_pairs,
 )
 
 parser = argparse.ArgumentParser()
@@ -207,9 +209,8 @@ if args.init_kT is not None:
                 p.omega_body = omega
 
 
-print("[INFO] Setting up WCA exclusions (Intra-molecular only)...")
+print("[INFO] Setting up WCA exclusions (intra-rigid-body + 1-2/1-3)...")
 
-# 1. Intra-molecular exclusions
 mol_to_vs = {}
 for (m_idx, s_idx), pid in mol_vs_parts.items():
     if isinstance(m_idx, int): # Ignore the absolute index mapping keys added previously
@@ -227,8 +228,21 @@ for m_idx, pids in mol_to_vs.items():
             except Exception:
                 pass
 
-
-
+validate_wca_exclusion_policy(priors)
+wca_direct_pairs, wca_one_three_pairs = wca_topology_exclusion_pairs(priors, num_molecules)
+for mol_i, mol_j in sorted(wca_direct_pairs | wca_one_three_pairs):
+    for pid_i in mol_to_vs.get(mol_i, []):
+        for pid_j in mol_to_vs.get(mol_j, []):
+            p1 = system.part.by_id(pid_i)
+            p2 = system.part.by_id(pid_j)
+            try:
+                p1.add_exclusion(p2)
+            except Exception:
+                pass
+print(
+    f"[INFO] WCA topology exclusions active: {len(wca_direct_pairs)} 1-2 pairs, "
+    f"{len(wca_one_three_pairs)} 1-3 pairs."
+)
 
 
 print("[INFO] Adding priors...")

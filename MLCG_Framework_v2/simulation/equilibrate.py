@@ -13,6 +13,8 @@ from framework_utils import (
     rigid_body_quaternion,
     save_checkpoint,
     validate_model_manifest,
+    validate_wca_exclusion_policy,
+    wca_topology_exclusion_pairs,
 )
 
 parser = argparse.ArgumentParser()
@@ -130,7 +132,7 @@ with open(args.dataset, "rb") as f:
             p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
-print("[INFO] Setting up intra-rigid-body non-bonded exclusions...")
+print("[INFO] Setting up WCA exclusions (intra-rigid-body + 1-2/1-3)...")
 mol_to_vs = {}
 for (m_idx, _site_idx), pid in mol_vs_parts.items():
     mol_to_vs.setdefault(m_idx, []).append(pid)
@@ -139,6 +141,17 @@ for pids in mol_to_vs.values():
     for i in range(len(pids)):
         for j in range(i + 1, len(pids)):
             system.part.by_id(pids[i]).add_exclusion(pids[j])
+
+validate_wca_exclusion_policy(priors)
+wca_direct_pairs, wca_one_three_pairs = wca_topology_exclusion_pairs(priors, num_molecules)
+for mol_i, mol_j in sorted(wca_direct_pairs | wca_one_three_pairs):
+    for pid_i in mol_to_vs.get(mol_i, []):
+        for pid_j in mol_to_vs.get(mol_j, []):
+            system.part.by_id(pid_i).add_exclusion(pid_j)
+print(
+    f"[INFO] WCA topology exclusions active: {len(wca_direct_pairs)} 1-2 pairs, "
+    f"{len(wca_one_three_pairs)} 1-3 pairs."
+)
 
 
 print("[INFO] Adding priors...")

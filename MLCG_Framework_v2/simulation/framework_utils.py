@@ -20,6 +20,40 @@ MODEL_MANIFEST_SCHEMA_VERSION = 2
 ENERGY_GAUGE = "isolated_species_zero_v1"
 
 
+def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
+    """Require the WCA prior to use molecule-level 1-2/1-3 exclusions."""
+    meta = priors.get("wca_exclusions", {})
+    if not (
+        meta.get("exclude_12") is True
+        and meta.get("exclude_13") is True
+        and meta.get("scope") == "molecule_pair_all_sites"
+    ):
+        raise ValueError(
+            "cg_priors.json does not declare the required WCA 1-2/1-3 exclusion policy. "
+            "Rebuild the dataset and cg_priors.json with the patched preprocessing step."
+        )
+
+
+def wca_topology_exclusion_pairs(
+    priors: dict[str, Any], num_molecules: int
+) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
+    """Return molecule-level bonded (1-2) and explicit-angle (1-3) WCA exclusions."""
+    direct_pairs: set[tuple[int, int]] = set()
+    for bond in priors.get("bonds", []):
+        mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
+        if 0 <= mi < num_molecules and 0 <= mj < num_molecules and mi != mj:
+            direct_pairs.add((min(mi, mj), max(mi, mj)))
+
+    one_three_pairs: set[tuple[int, int]] = set()
+    for angle in priors.get("angles", []):
+        mi, mk = int(angle["mol_i"]), int(angle["mol_k"])
+        if 0 <= mi < num_molecules and 0 <= mk < num_molecules and mi != mk:
+            key = (min(mi, mk), max(mi, mk))
+            if key not in direct_pairs:
+                one_three_pairs.add(key)
+
+    return direct_pairs, one_three_pairs
+
 def sha256_file(path: str | Path) -> str:
     path = Path(path)
     digest = hashlib.sha256()
