@@ -145,11 +145,6 @@ struct PaiNNModelImpl : torch::nn::Module {
 
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
-        
-        auto x = (cutoff_radius - d_ij) / cutoff_radius;
-        auto x_n = torch::pow(x, 4);
-        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
-        tox_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(tox_cutoff), tox_cutoff);
 
         for (int i = 0; i < num_layers; ++i) {
             auto msg_out = messages[i]->forward(s, v, batch.edge_index, rbf, r_ij_norm);
@@ -179,11 +174,6 @@ struct PaiNNModelImpl : torch::nn::Module {
 
         auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
         auto rbf = expansion_rbf(d_ij);
-        
-        auto x = (cutoff_radius - d_ij) / cutoff_radius;
-        auto x_n = torch::pow(x, 4);
-        auto tox_cutoff = x_n / (x_n + std::pow(toxvaerd_alpha, 4));
-        tox_cutoff = torch::where(d_ij > cutoff_radius, torch::zeros_like(tox_cutoff), tox_cutoff);
 
         for (int i = 0; i < num_layers; ++i) {
             auto msg_out = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm);
