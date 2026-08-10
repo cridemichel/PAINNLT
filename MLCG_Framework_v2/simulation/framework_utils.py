@@ -16,8 +16,9 @@ import numpy as np
 
 
 CHECKPOINT_SCHEMA_VERSION = 3
-MODEL_MANIFEST_SCHEMA_VERSION = 2
+MODEL_MANIFEST_SCHEMA_VERSION = 3
 ENERGY_GAUGE = "isolated_species_zero_v1"
+PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
 
 
 def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
@@ -73,11 +74,21 @@ def model_manifest_path(model_path: str | Path) -> Path:
 
 
 def _effective_architecture(config: dict[str, Any]) -> dict[str, Any]:
-    keys = ("num_species", "hidden_channels", "n_layers", "num_rbf", "cutoff", "toxvaerd_alpha")
+    keys = (
+        "architecture_variant", "num_species", "hidden_channels",
+        "n_layers", "num_rbf", "cutoff", "toxvaerd_alpha"
+    )
     missing = [key for key in keys if key not in config]
     if missing:
         raise ValueError(f"Model config is missing required architecture keys: {missing}")
+    variant = str(config["architecture_variant"])
+    if variant != PAINN_ARCHITECTURE_VARIANT:
+        raise ValueError(
+            f"Unsupported PaiNN architecture_variant {variant!r}; "
+            f"expected {PAINN_ARCHITECTURE_VARIANT!r}."
+        )
     return {
+        "variant": variant,
         "num_species": int(config["num_species"]),
         "hidden_channels": int(config["hidden_channels"]),
         "n_layers": int(config["n_layers"]),
@@ -131,6 +142,9 @@ def validate_model_manifest(
         actual = recorded[key]
         if isinstance(expected_value, float):
             if not math.isclose(float(actual), expected_value, rel_tol=1e-12, abs_tol=1e-12):
+                mismatches.append(f"{key}: manifest={actual}, runtime={expected_value}")
+        elif isinstance(expected_value, str):
+            if str(actual) != expected_value:
                 mismatches.append(f"{key}: manifest={actual}, runtime={expected_value}")
         elif int(actual) != expected_value:
             mismatches.append(f"{key}: manifest={actual}, runtime={expected_value}")
@@ -274,6 +288,9 @@ def validate_checkpoint(
         actual = recorded_architecture.get(key)
         if isinstance(expected, float):
             if actual is None or not math.isclose(float(actual), expected, rel_tol=1e-12, abs_tol=1e-12):
+                mismatches.append(f"architecture.{key}: checkpoint={actual}, runtime={expected}")
+        elif isinstance(expected, str):
+            if actual is None or str(actual) != expected:
                 mismatches.append(f"architecture.{key}: checkpoint={actual}, runtime={expected}")
         elif actual is None or int(actual) != expected:
             mismatches.append(f"architecture.{key}: checkpoint={actual}, runtime={expected}")

@@ -129,3 +129,32 @@ Ecco la procedura passo-passo per attivare l'unfolding sicuro:
    Apri `04_run_espresso.sh` e aggiungi il parametro `--kT 8.31` (che corrisponde a circa 1000 K, contro i classici 2.49 di 300 K).
    
 Quando avvierai la simulazione, il modello estrapolerà dolcemente a grandi distanze e il tuo DNA si denaturerà in un perfetto polimero *random-coil* senza mai andare in crash!
+
+### Diagnostic: global symmetry projection (03g)
+
+If full physical validation remains at the zero-predictor baseline, use
+`03g_symmetry_projection_test.sh` before increasing PaiNN capacity again.  It
+compares the same fast 64x2 PaiNN on the raw force-matching targets and on a
+diagnostic copy where the frame-wise net force and residual global generalized
+torque have been removed.  The original `tel22_dataset.bin` is not modified;
+legacy zero-target OOD decoys, if present in an old dataset, remain unchanged but
+are excluded from optimization by default because the binary schema has no
+per-molecule loss mask.
+
+### Training-safety corrections (canonical PaiNN / unmasked decoys)
+
+The current TEL22 profile uses the canonical PaiNN interatomic context MLP
+(`D -> D -> 3D` with SiLU), a stabilized vector norm, deterministic per-epoch
+shuffle, physical-only validation, and `include_decoys_in_train=false`.  The
+legacy whole-frame zero-target OOD decoys are disabled at preprocessing time
+(`decoy_target_fraction=0`) because only a local contact is perturbed while the
+old format labels every molecule in that synthetic frame as zero residual.
+
+DA and DT are one-site CG molecules.  Their sole site is mapped with `['*']`,
+so it coincides exactly with the residue COM; this is required because one-site
+bodies have no rotational degree of freedom in the ESPResSo runtime.
+
+These changes alter both the mapped dataset and the PaiNN parameterization.
+After applying the corresponding patch, rebuild `tel22_dataset.bin` with
+`./02_build_dataset.sh`, recompile `training/train_painn`, delete/rename old
+`.pt` files and manifests, then retrain from scratch.

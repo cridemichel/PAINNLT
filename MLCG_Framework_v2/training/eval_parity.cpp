@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
     } else {
         json manifest;
         manifest_in >> manifest;
-        if (manifest.value("schema_version", -1) != 2 ||
+        if (manifest.value("schema_version", -1) != 3 ||
             manifest.value("framework", std::string()) != "MLCG_Framework_v2") {
             throw std::runtime_error("Unsupported model manifest: " + manifest_file);
         }
@@ -328,6 +328,11 @@ int main(int argc, char** argv) {
                 "Unsupported or missing energy gauge in model manifest: " + manifest_file);
         }
         const auto& architecture = manifest.at("architecture");
+        const std::string expected_variant(PAINN_ARCHITECTURE_VARIANT);
+        if (architecture.value("variant", std::string()) != expected_variant ||
+            config.value("architecture_variant", std::string()) != expected_variant) {
+            throw std::runtime_error("Model/config PaiNN architecture variant mismatch");
+        }
         const std::vector<std::string> integer_keys = {
             "num_species", "hidden_channels", "n_layers", "num_rbf"};
         for (const auto& key : integer_keys) {

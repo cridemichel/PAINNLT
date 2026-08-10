@@ -29,6 +29,7 @@ run_case() {
 
     cat > "$config" <<JSON
 {
+    "architecture_variant": "painn_canonical_context_silu_v2",
     "num_species": 8,
     "hidden_channels": 64,
     "n_layers": 2,
@@ -43,7 +44,9 @@ run_case() {
     "grad_clip_norm": 1.0,
     "early_stopping_patience": 40,
     "reduce_lr_patience": 15,
-    "diagnostic_overfit_frames": 16
+    "diagnostic_overfit_frames": 16,
+    "include_decoys_in_train": false,
+    "shuffle_each_epoch": true
 }
 JSON
 

@@ -41,7 +41,10 @@ import sys
 src, dst, weight = sys.argv[1], sys.argv[2], float(sys.argv[3])
 with open(src) as handle:
     cfg = json.load(handle)
+cfg["architecture_variant"] = "painn_canonical_context_silu_v2"
 cfg["torque_weight"] = weight
+cfg["include_decoys_in_train"] = False
+cfg["shuffle_each_epoch"] = True
 # Keep the comparison controlled and deterministic.
 cfg["epochs"] = 100
 cfg["batch_size"] = 4

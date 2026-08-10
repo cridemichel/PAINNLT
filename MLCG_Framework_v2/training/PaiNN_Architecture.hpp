@@ -2,15 +2,28 @@
 #include <torch/torch.h>
 #include <cmath>
 #include <vector>
+#include <string_view>
+
+inline constexpr std::string_view PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2";
 
 // ============================================================================
 // 1. BLOCCO MESSAGGI (Message Passing)
 // ============================================================================
 struct PaiNNMessageImpl : torch::nn::Module {
-    torch::nn::Linear scalar_mlp{nullptr}, filter_mlp{nullptr};
-    PaiNNMessageImpl(int dim, int num_rbf) { 
-        scalar_mlp = register_module("scalar_mlp", torch::nn::Linear(dim, dim * 3));
-        filter_mlp = register_module("filter_mlp", torch::nn::Linear(torch::nn::LinearOptions(num_rbf, dim * 3).bias(false))); 
+    torch::nn::Sequential scalar_mlp{nullptr};
+    torch::nn::Linear filter_mlp{nullptr};
+    PaiNNMessageImpl(int dim, int num_rbf) {
+        // Canonical PaiNN interatomic context network:
+        // D -> D with SiLU -> 3D, then elementwise multiplication by the
+        // radial filter.  The previous single Linear(D, 3D) removed the
+        // nonlinear context transform and materially reduced data efficiency.
+        scalar_mlp = register_module("scalar_mlp", torch::nn::Sequential(
+            torch::nn::Linear(dim, dim),
+            torch::nn::SiLU(),
+            torch::nn::Linear(dim, dim * 3)
+        ));
+        filter_mlp = register_module("filter_mlp", torch::nn::Linear(
+            torch::nn::LinearOptions(num_rbf, dim * 3).bias(false)));
     }
     std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, torch::Tensor rbf, torch::Tensor r_ij_norm) {
         auto row = edge_index[0], col = edge_index[1]; 
@@ -33,7 +46,8 @@ TORCH_MODULE(PaiNNMessage);
 struct PaiNNUpdateImpl : torch::nn::Module {
     torch::nn::Linear linear_v{nullptr}, linear_u{nullptr};
     torch::nn::Sequential scalar_mlp{nullptr};
-    PaiNNUpdateImpl(int dim) {
+    double epsilon;
+    PaiNNUpdateImpl(int dim, double eps = 1.0e-8) : epsilon(eps) {
         linear_v = register_module("linear_v", torch::nn::Linear(torch::nn::LinearOptions(dim, dim).bias(false)));
         linear_u = register_module("linear_u", torch::nn::Linear(torch::nn::LinearOptions(dim, dim).bias(false)));
         scalar_mlp = register_module("scalar_mlp", torch::nn::Sequential(
@@ -41,9 +55,14 @@ struct PaiNNUpdateImpl : torch::nn::Module {
         ));
     }
     std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v) {
-        auto v_v = linear_v->forward(v); 
-        auto v_u = linear_u->forward(v); 
-        auto s_out = scalar_mlp->forward(torch::cat({s, torch::linalg_vector_norm(v_v, 2, {1}, false)}, 1)); 
+        auto v_v = linear_v->forward(v);
+        auto v_u = linear_u->forward(v);
+        // Match the canonical PaiNN stabilized vector norm.  The epsilon is
+        // important when vector features are exactly zero (e.g. isolated
+        // species or the first interaction block) and keeps second-order
+        // force training numerically smooth.
+        auto v_v_norm = torch::sqrt(torch::sum(v_v * v_v, 1) + epsilon);
+        auto s_out = scalar_mlp->forward(torch::cat({s, v_v_norm}, 1));
         auto chunks = s_out.chunk(3, 1);
         auto delta_s = chunks[0] + (v_v * v_u).sum(1) * chunks[1]; 
         return {s + delta_s, v + v_u * chunks[2].unsqueeze(1)};
@@ -118,7 +137,7 @@ struct PaiNNModelImpl : torch::nn::Module {
     template <typename BatchType>
     torch::Tensor forward(BatchType& batch) {
         auto row = batch.edge_index[0], col = batch.edge_index[1]; 
-        auto r_ij = batch.coordinates.index({col}) - batch.coordinates.index({row});
+        auto r_ij = batch.coordinates.index({row}) - batch.coordinates.index({col});
         auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
 
         torch::Tensor s = embedding->forward(batch.atomic_numbers);
