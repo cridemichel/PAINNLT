@@ -59,12 +59,11 @@ if args.toxvaerd_alpha is None:
 runtime_nn_config = dict(nn_config)
 runtime_nn_config["toxvaerd_alpha"] = float(args.toxvaerd_alpha)
 if args.model:
-#    validate_model_manifest(
-#        args.model,
-#        runtime_nn_config,
-#        allow_missing=args.allow_missing_model_manifest,
-#    )
-    pass
+    validate_model_manifest(
+        args.model,
+        runtime_nn_config,
+        allow_missing=args.allow_missing_model_manifest,
+    )
 
 unsafe_tables = nonconservative_prior_entries(priors)
 if args.nve and unsafe_tables and not args.allow_nonconservative_tables:

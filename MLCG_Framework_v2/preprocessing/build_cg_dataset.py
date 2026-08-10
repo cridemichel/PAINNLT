@@ -77,8 +77,16 @@ WCA_GUARD_KBT = float(config_data.get("wca_guard_kbt", 10.0))
 # a small numerical/statistical buffer instead of placing the guard exactly
 # on the most compressed training configuration.
 WCA_PHYSICAL_GUARD_MARGIN = float(config_data.get("wca_physical_guard_margin", 0.98))
-DECOY_TARGET_FRACTION = float(config_data.get("decoy_target_fraction", 0.08))
+# Legacy OOD decoys write an all-zero residual target for the entire frame,
+# although only one local contact is intentionally displaced.  Without a
+# per-molecule loss mask this creates artificial labels away from the OOD
+# contact, so the safe default is no decoys.  The legacy path is retained only
+# behind an explicit opt-in for reproducibility of old experiments.
+DECOY_TARGET_FRACTION = float(config_data.get("decoy_target_fraction", 0.0))
 DECOY_RANDOM_SEED = int(config_data.get("decoy_random_seed", 20260808))
+ALLOW_UNMASKED_ZERO_TARGET_DECOYS = bool(
+    config_data.get("allow_unmasked_zero_target_decoys", False)
+)
 
 if not (0.0 < WCA_QUANTILE_PERCENT < 50.0):
     raise ValueError("wca_quantile_percent must be in (0, 50)")
@@ -90,6 +98,13 @@ if not (0.0 < WCA_PHYSICAL_GUARD_MARGIN <= 1.0):
     raise ValueError("wca_physical_guard_margin must be in (0, 1]")
 if not (0.0 <= DECOY_TARGET_FRACTION < 1.0):
     raise ValueError("decoy_target_fraction must be in [0, 1)")
+if DECOY_TARGET_FRACTION > 0.0 and not ALLOW_UNMASKED_ZERO_TARGET_DECOYS:
+    raise ValueError(
+        "decoy_target_fraction > 0 requests legacy whole-frame zero-target OOD decoys, "
+        "but the current binary schema has no per-molecule loss mask. Set "
+        "decoy_target_fraction=0 (recommended) or explicitly set "
+        "allow_unmasked_zero_target_decoys=true only to reproduce a legacy ablation."
+    )
 RIGID_BODIES_CONFIG = config_data.get("rigid_bodies", {})
 
 
@@ -611,6 +626,24 @@ if _reference_force_max <= 1.0e-12:
         "All mapped reference forces are zero. The trajectory likely does not "
         "contain usable force records; refusing to build F_ref - F_prior targets."
     )
+
+# A one-site CG molecule has no rotational degree of freedom in the current
+# ESPResSo runtime.  Therefore its sole interaction site must coincide with
+# the translational reference particle.  A non-zero offset would be frozen in
+# the laboratory frame at runtime and would not match the mapped trajectory.
+for _resname, _info in rigid_bodies_info.items():
+    _sites = _info.get("sites", {})
+    if len(_sites) == 1:
+        _site_name, _site_info = next(iter(_sites.items()))
+        _offset = np.asarray(_site_info["relative_pos_nm"], dtype=float)
+        _offset_norm = float(np.linalg.norm(_offset))
+        if _offset_norm > 1.0e-6:
+            raise ValueError(
+                f"Single-site CG body {_resname}/{_site_name} has a non-zero "
+                f"COM offset ({_offset_norm:.6g} nm), but one-site bodies have no "
+                "rotational DOF at runtime. Map the site to the residue COM "
+                "(for COM mapping, use ['*']) or generalize the runtime DOFs."
+            )
 
 print("\n[INFO] Esecuzione allineamento Kabsch per mediare le geometrie dei corpi rigidi...")
 

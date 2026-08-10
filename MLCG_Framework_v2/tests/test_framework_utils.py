@@ -98,6 +98,7 @@ class FrameworkUtilsTests(unittest.TestCase):
 
     def test_manifest_and_checkpoint_roundtrip(self):
         config = {
+            "architecture_variant": "painn_canonical_context_silu_v2",
             "num_species": 3,
             "hidden_channels": 16,
             "n_layers": 2,
@@ -118,10 +119,18 @@ class FrameworkUtilsTests(unittest.TestCase):
             priors.write_text("{}")
             rb_info.write_text("{}")
             manifest = {
-                "schema_version": 2,
+                "schema_version": 3,
                 "framework": "MLCG_Framework_v2",
                 "energy_gauge": "isolated_species_zero_v1",
-                "architecture": config,
+                "architecture": {
+                    "variant": config["architecture_variant"],
+                    "num_species": config["num_species"],
+                    "hidden_channels": config["hidden_channels"],
+                    "n_layers": config["n_layers"],
+                    "num_rbf": config["num_rbf"],
+                    "cutoff": config["cutoff"],
+                    "toxvaerd_alpha": config["toxvaerd_alpha"],
+                },
                 "model_file_size_bytes": model.stat().st_size,
                 "model_sha256": sha256_file(model),
             }

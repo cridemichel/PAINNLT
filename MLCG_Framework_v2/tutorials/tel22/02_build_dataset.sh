@@ -53,7 +53,24 @@ from pathlib import Path
 
 config = json.loads(Path("tel22_topology.json").read_text())
 priors = json.loads(Path("cg_priors.json").read_text())
+rb_info = json.loads(Path("rigid_bodies_info.json").read_text())
 meta = priors.get("wca_exclusions", {})
+
+if float(config.get("decoy_target_fraction", 0.0)) != 0.0:
+    raise SystemExit(
+        "[ERRORE] I legacy decoy whole-frame senza loss mask devono essere disabilitati "
+        "(decoy_target_fraction=0)."
+    )
+
+for resname, info in rb_info.items():
+    sites = info.get("sites", {})
+    if len(sites) == 1:
+        site_name, site = next(iter(sites.items()))
+        rel = [float(v) for v in site.get("relative_pos_nm", [])]
+        if len(rel) != 3 or sum(v*v for v in rel) > 1.0e-12:
+            raise SystemExit(
+                f"[ERRORE] Corpo one-site {resname}/{site_name} non centrato sul COM: {rel}."
+            )
 
 if not (
     meta.get("exclude_12") is True

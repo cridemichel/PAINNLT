@@ -163,65 +163,126 @@ CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::D
     
     return batch;
 }
-std::vector<CGFrame> read_cg_dataset(const std::string& filepath) {
+static void read_exact(std::ifstream& file, void* dst, std::size_t nbytes, const std::string& what) {
+    file.read(reinterpret_cast<char*>(dst), static_cast<std::streamsize>(nbytes));
+    if (!file) {
+        throw std::runtime_error("Truncated/corrupt CG dataset while reading " + what);
+    }
+}
+
+static bool finite3(const float values[3]) {
+    return std::isfinite(values[0]) && std::isfinite(values[1]) && std::isfinite(values[2]);
+}
+
+std::vector<CGFrame> read_cg_dataset(const std::string& filepath, int num_species) {
     std::vector<CGFrame> dataset;
     std::ifstream file(filepath, std::ios::binary);
-    
+
     if (!file.is_open()) {
-        std::cerr << "Errore: Impossibile aprire il file " << filepath << "\n";
-        return dataset;
+        throw std::runtime_error("Impossibile aprire il dataset binario: " + filepath);
     }
 
-    int num_frames;
-    file.read(reinterpret_cast<char*>(&num_frames), sizeof(int));
-    dataset.reserve(num_frames);
+    int num_frames = 0;
+    read_exact(file, &num_frames, sizeof(int), "num_frames");
+    if (num_frames <= 0 || num_frames > 10000000) {
+        throw std::runtime_error("Invalid num_frames in CG dataset: " + std::to_string(num_frames));
+    }
+    dataset.reserve(static_cast<std::size_t>(num_frames));
 
     for (int f = 0; f < num_frames; ++f) {
         CGFrame frame;
-        int num_molecules, num_total_sites;
-        
-        file.read(reinterpret_cast<char*>(&num_molecules), sizeof(int));
-        file.read(reinterpret_cast<char*>(&num_total_sites), sizeof(int));
-        file.read(reinterpret_cast<char*>(frame.box), 3 * sizeof(float));
-        
-        frame.molecules.reserve(num_molecules);
+        int num_molecules = 0;
+        int num_total_sites = 0;
+
+        read_exact(file, &num_molecules, sizeof(int), "frame num_molecules");
+        read_exact(file, &num_total_sites, sizeof(int), "frame num_total_sites");
+        read_exact(file, frame.box, 3 * sizeof(float), "frame box");
+        if (num_molecules <= 0 || num_molecules > 10000000) {
+            throw std::runtime_error("Invalid num_molecules at frame " + std::to_string(f));
+        }
+        if (num_total_sites < num_molecules || num_total_sites > 100000000) {
+            throw std::runtime_error("Invalid num_total_sites at frame " + std::to_string(f));
+        }
+        if (!finite3(frame.box) || frame.box[0] <= 0.0f || frame.box[1] <= 0.0f || frame.box[2] <= 0.0f) {
+            throw std::runtime_error("Invalid/non-finite box at frame " + std::to_string(f));
+        }
+
+        frame.molecules.reserve(static_cast<std::size_t>(num_molecules));
+        int counted_sites = 0;
 
         for (int m = 0; m < num_molecules; ++m) {
             CGMolecule mol;
-            int num_sites;
-            
-            file.read(reinterpret_cast<char*>(&mol.molecule_id), sizeof(int));
-            file.read(reinterpret_cast<char*>(&num_sites), sizeof(int));
-            
-            file.read(reinterpret_cast<char*>(mol.center_of_geometry), 3 * sizeof(float));
-            file.read(reinterpret_cast<char*>(mol.target_force), 3 * sizeof(float));
-            file.read(reinterpret_cast<char*>(mol.target_torque), 3 * sizeof(float));
-            
-            mol.sites.reserve(num_sites);
-            for (int s = 0; s < num_sites; ++s) {
+            int num_sites = 0;
+
+            read_exact(file, &mol.molecule_id, sizeof(int), "molecule_id");
+            read_exact(file, &num_sites, sizeof(int), "num_sites");
+            if (mol.molecule_id != m) {
+                throw std::runtime_error(
+                    "Non-sequential molecule_id at frame " + std::to_string(f) +
+                    ": expected " + std::to_string(m) + ", got " + std::to_string(mol.molecule_id));
+            }
+            if (num_sites <= 0 || num_sites > num_total_sites) {
+                throw std::runtime_error("Invalid num_sites at frame " + std::to_string(f) +
+                                         ", molecule " + std::to_string(m));
+            }
+
+            read_exact(file, mol.center_of_geometry, 3 * sizeof(float), "molecule center");
+            read_exact(file, mol.target_force, 3 * sizeof(float), "molecule target_force");
+            read_exact(file, mol.target_torque, 3 * sizeof(float), "molecule target_torque");
+            if (!finite3(mol.center_of_geometry) || !finite3(mol.target_force) || !finite3(mol.target_torque)) {
+                throw std::runtime_error("Non-finite molecule data at frame " + std::to_string(f) +
+                                         ", molecule " + std::to_string(m));
+            }
+
+            mol.sites.reserve(static_cast<std::size_t>(num_sites));
+            for (int site_idx = 0; site_idx < num_sites; ++site_idx) {
                 CGSite site;
                 site.molecule_id = mol.molecule_id;
-                file.read(reinterpret_cast<char*>(&site.site_type), sizeof(int));
-                file.read(reinterpret_cast<char*>(&site.x), sizeof(float));
-                file.read(reinterpret_cast<char*>(&site.y), sizeof(float));
-                file.read(reinterpret_cast<char*>(&site.z), sizeof(float));
-                
+                read_exact(file, &site.site_type, sizeof(int), "site_type");
+                read_exact(file, &site.x, sizeof(float), "site x");
+                read_exact(file, &site.y, sizeof(float), "site y");
+                read_exact(file, &site.z, sizeof(float), "site z");
+                if (site.site_type < 0 || site.site_type >= num_species) {
+                    throw std::runtime_error(
+                        "site_type out of range at frame " + std::to_string(f) +
+                        ", molecule " + std::to_string(m) +
+                        ": " + std::to_string(site.site_type));
+                }
+                if (!std::isfinite(site.x) || !std::isfinite(site.y) || !std::isfinite(site.z)) {
+                    throw std::runtime_error("Non-finite site coordinate at frame " + std::to_string(f) +
+                                             ", molecule " + std::to_string(m));
+                }
                 mol.sites.push_back(site);
             }
-            frame.molecules.push_back(mol);
+            counted_sites += num_sites;
+            frame.molecules.push_back(std::move(mol));
         }
-        dataset.push_back(frame);
+
+        if (counted_sites != num_total_sites) {
+            throw std::runtime_error(
+                "num_total_sites mismatch at frame " + std::to_string(f) +
+                ": header=" + std::to_string(num_total_sites) +
+                ", parsed=" + std::to_string(counted_sites));
+        }
+        dataset.push_back(std::move(frame));
     }
-    
-    file.close();
+
+    char trailing = 0;
+    if (file.read(&trailing, 1)) {
+        throw std::runtime_error("CG dataset contains trailing bytes after declared frames");
+    }
+    if (!file.eof()) {
+        throw std::runtime_error("I/O error while checking end of CG dataset");
+    }
+
     std::cout << "[INFO] Letti " << dataset.size() << " frame dal dataset.\n";
     return dataset;
 }
 
-// OOD decoys generated by build_cg_dataset.py carry an exactly zero residual
-// force and torque target for every molecule.  This lets the trainer keep
-// decoys in the training set while reserving validation for physical frames,
-// without changing the binary dataset schema.
+// Legacy OOD decoys generated by older build_cg_dataset.py versions carry an
+// exactly zero residual force and torque target for every molecule.  We still
+// detect them so existing datasets can be audited and safely exclude them from
+// optimization unless an explicit legacy-ablation flag is set.
 bool is_zero_target_decoy_frame(const CGFrame& frame) {
     if (frame.molecules.empty()) return false;
     for (const auto& mol : frame.molecules) {
@@ -313,7 +374,7 @@ static void validate_resume_manifest(
     }
     json manifest;
     input >> manifest;
-    if (manifest.value("schema_version", -1) != 2 ||
+    if (manifest.value("schema_version", -1) != 3 ||
         manifest.value("framework", std::string()) != "MLCG_Framework_v2") {
         throw std::runtime_error("Unsupported model manifest: " + manifest_path);
     }
@@ -322,6 +383,10 @@ static void validate_resume_manifest(
             "Cannot resume: unsupported or missing energy gauge in " + manifest_path);
     }
     const auto& architecture = manifest.at("architecture");
+    if (architecture.value("variant", std::string()) !=
+        effective_config.at("architecture_variant").get<std::string>()) {
+        throw std::runtime_error("Cannot resume: model manifest mismatch for architecture variant");
+    }
     const std::vector<std::string> integer_keys = {
         "num_species", "hidden_channels", "n_layers", "num_rbf"};
     for (const auto& key : integer_keys) {
@@ -356,6 +421,7 @@ static void write_model_manifest(
     const json& effective_config,
     float best_validation_loss) {
     json architecture = {
+        {"variant", effective_config.at("architecture_variant")},
         {"num_species", effective_config.at("num_species")},
         {"hidden_channels", effective_config.at("hidden_channels")},
         {"n_layers", effective_config.at("n_layers")},
@@ -364,7 +430,7 @@ static void write_model_manifest(
         {"toxvaerd_alpha", effective_config.at("toxvaerd_alpha")},
     };
     json manifest = {
-        {"schema_version", 2},
+        {"schema_version", 3},
         {"framework", "MLCG_Framework_v2"},
         {"energy_gauge", "isolated_species_zero_v1"},
         {"architecture", architecture},
@@ -431,7 +497,9 @@ int main(int argc, char* argv[]) {
     int reduce_lr_patience = 5;
     int batch_size = 16;
     int diagnostic_overfit_frames = 0;
-    bool physical_validation_only = false;
+    bool physical_validation_only = true;
+    bool include_decoys_in_train = false;
+    bool shuffle_each_epoch = true;
     int split_seed = 42;
     float validation_fraction = 0.2f;
 
@@ -481,6 +549,8 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("batch_size")) batch_size = loaded_config["batch_size"];
         if (loaded_config.contains("diagnostic_overfit_frames")) diagnostic_overfit_frames = loaded_config["diagnostic_overfit_frames"];
         if (loaded_config.contains("physical_validation_only")) physical_validation_only = loaded_config["physical_validation_only"];
+        if (loaded_config.contains("include_decoys_in_train")) include_decoys_in_train = loaded_config["include_decoys_in_train"];
+        if (loaded_config.contains("shuffle_each_epoch")) shuffle_each_epoch = loaded_config["shuffle_each_epoch"];
         if (loaded_config.contains("split_seed")) split_seed = loaded_config["split_seed"];
         if (loaded_config.contains("validation_fraction")) validation_fraction = loaded_config["validation_fraction"];
         if (batch_size <= 0) {
@@ -504,7 +574,17 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
+    const std::string expected_architecture_variant(PAINN_ARCHITECTURE_VARIANT);
+    const std::string configured_architecture_variant =
+        loaded_config.value("architecture_variant", std::string());
+    if (configured_architecture_variant != expected_architecture_variant) {
+        throw std::runtime_error(
+            "Training config architecture_variant must be '" + expected_architecture_variant +
+            "' for this build; got '" + configured_architecture_variant + "'");
+    }
+
     json effective_config = loaded_config;
+    effective_config["architecture_variant"] = expected_architecture_variant;
     effective_config["num_species"] = num_species;
     effective_config["hidden_channels"] = dim;
     effective_config["n_layers"] = layers;
@@ -522,6 +602,8 @@ int main(int argc, char* argv[]) {
     effective_config["batch_size"] = batch_size;
     effective_config["diagnostic_overfit_frames"] = diagnostic_overfit_frames;
     effective_config["physical_validation_only"] = physical_validation_only;
+    effective_config["include_decoys_in_train"] = include_decoys_in_train;
+    effective_config["shuffle_each_epoch"] = shuffle_each_epoch;
     effective_config["split_seed"] = split_seed;
     effective_config["validation_fraction"] = validation_fraction;
     effective_config["decoy_detection"] = "exact_zero_residual_target_v1";
@@ -577,7 +659,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
     
-    std::vector<CGFrame> full_dataset = read_cg_dataset(dataset_path);
+    std::vector<CGFrame> full_dataset = read_cg_dataset(dataset_path, num_species);
     
     if (full_dataset.empty()) {
         std::cerr << "Errore critico: dataset vuoto o file non trovato. Interruzione.\n";
@@ -586,39 +668,55 @@ int main(int argc, char* argv[]) {
 
     std::mt19937 g(static_cast<std::mt19937::result_type>(split_seed));
 
+    std::vector<CGFrame> physical_frames;
+    std::vector<CGFrame> decoy_frames;
+    physical_frames.reserve(full_dataset.size());
+    decoy_frames.reserve(full_dataset.size());
+    for (auto& frame : full_dataset) {
+        if (is_zero_target_decoy_frame(frame)) {
+            decoy_frames.push_back(std::move(frame));
+        } else {
+            physical_frames.push_back(std::move(frame));
+        }
+    }
+    const size_t detected_physical_frames = physical_frames.size();
+    const size_t detected_decoy_frames = decoy_frames.size();
+
+    if (physical_frames.empty()) {
+        throw std::runtime_error(
+            "No physical (non-zero-target) frames detected in the CG dataset");
+    }
+    if (detected_decoy_frames > 0 && include_decoys_in_train) {
+        std::cerr
+            << "[WARNING] include_decoys_in_train=true enables the legacy whole-frame "
+               "zero-target decoys. These frames do not carry per-molecule loss masks and "
+               "can impose artificial zero labels on molecules outside the OOD contact. "
+               "Use only for an explicit legacy ablation.\n";
+    }
+
     std::vector<CGFrame> train_dataset;
     std::vector<CGFrame> val_dataset;
-    size_t detected_physical_frames = 0;
-    size_t detected_decoy_frames = 0;
 
     if (diagnostic_overfit_frames > 0) {
-        // Preserve the historical tiny-set diagnostic semantics.
-        std::shuffle(full_dataset.begin(), full_dataset.end(), g);
+        // Tiny-set diagnostics should use physical targets by default.  Legacy
+        // zero-target decoys are included only through the explicit unsafe flag.
+        std::vector<CGFrame> diagnostic_pool = physical_frames;
+        if (include_decoys_in_train) {
+            diagnostic_pool.insert(
+                diagnostic_pool.end(), decoy_frames.begin(), decoy_frames.end());
+        }
+        std::shuffle(diagnostic_pool.begin(), diagnostic_pool.end(), g);
         const size_t n = std::min(
-            static_cast<size_t>(diagnostic_overfit_frames), full_dataset.size());
+            static_cast<size_t>(diagnostic_overfit_frames), diagnostic_pool.size());
         if (n == 0) {
             throw std::runtime_error("Tiny-set diagnostic requested but dataset is empty");
         }
-        train_dataset.assign(full_dataset.begin(), full_dataset.begin() + n);
+        train_dataset.assign(diagnostic_pool.begin(), diagnostic_pool.begin() + n);
         val_dataset = train_dataset;
         std::cout << "[DIAGNOSTIC] Tiny-set overfit mode enabled: " << n
                   << " deterministic frames are used for BOTH train and validation.\n"
                   << "             Do not interpret this validation loss as generalization.\n";
     } else if (physical_validation_only) {
-        std::vector<CGFrame> physical_frames;
-        std::vector<CGFrame> decoy_frames;
-        physical_frames.reserve(full_dataset.size());
-        decoy_frames.reserve(full_dataset.size());
-
-        for (const auto& frame : full_dataset) {
-            if (is_zero_target_decoy_frame(frame)) {
-                decoy_frames.push_back(frame);
-            } else {
-                physical_frames.push_back(frame);
-            }
-        }
-        detected_physical_frames = physical_frames.size();
-        detected_decoy_frames = decoy_frames.size();
         if (physical_frames.size() < 2) {
             throw std::runtime_error(
                 "physical_validation_only requested but fewer than two physical frames were detected");
@@ -626,9 +724,6 @@ int main(int argc, char* argv[]) {
 
         // The physical split is deterministic and independent of cutoff/model settings.
         std::shuffle(physical_frames.begin(), physical_frames.end(), g);
-        std::mt19937 g_decoy(static_cast<std::mt19937::result_type>(split_seed + 1));
-        std::shuffle(decoy_frames.begin(), decoy_frames.end(), g_decoy);
-
         size_t val_size = static_cast<size_t>(
             static_cast<double>(physical_frames.size()) * validation_fraction);
         val_size = std::max<size_t>(1, std::min(val_size, physical_frames.size() - 1));
@@ -638,27 +733,40 @@ int main(int argc, char* argv[]) {
             physical_frames.begin(), physical_frames.begin() + train_physical_size);
         val_dataset.assign(
             physical_frames.begin() + train_physical_size, physical_frames.end());
-        // OOD zero-target decoys regularize only the training objective.
-        train_dataset.insert(train_dataset.end(), decoy_frames.begin(), decoy_frames.end());
+        if (include_decoys_in_train) {
+            std::mt19937 g_decoy(static_cast<std::mt19937::result_type>(split_seed + 1));
+            std::shuffle(decoy_frames.begin(), decoy_frames.end(), g_decoy);
+            train_dataset.insert(train_dataset.end(), decoy_frames.begin(), decoy_frames.end());
+        }
 
         std::cout << "[INFO] Physical-only validation enabled.\n"
-                  << "       - Detected physical frames: " << physical_frames.size() << "\n"
-                  << "       - Detected zero-target OOD decoys: " << decoy_frames.size() << "\n"
+                  << "       - Detected physical frames: " << detected_physical_frames << "\n"
+                  << "       - Detected zero-target OOD decoys: " << detected_decoy_frames << "\n"
                   << "       - Physical train: " << train_physical_size << "\n"
-                  << "       - Decoys appended to train: " << decoy_frames.size() << "\n"
+                  << "       - Decoys included in train: "
+                  << (include_decoys_in_train ? detected_decoy_frames : 0) << "\n"
+                  << "       - Decoys excluded from optimization: "
+                  << (include_decoys_in_train ? 0 : detected_decoy_frames) << "\n"
                   << "       - Physical validation: " << val_dataset.size() << "\n"
                   << "       - Split seed: " << split_seed
                   << " | validation_fraction=" << validation_fraction << "\n";
     } else {
-        // Legacy production split: shuffle all frames together, including decoys.
-        std::shuffle(full_dataset.begin(), full_dataset.end(), g);
-        const size_t total_frames = full_dataset.size();
+        // Generic split.  Safe default: discard legacy unmasked decoys rather
+        // than mixing artificial zero-target frames into train/validation.
+        std::vector<CGFrame> split_pool = physical_frames;
+        if (include_decoys_in_train) {
+            split_pool.insert(split_pool.end(), decoy_frames.begin(), decoy_frames.end());
+        }
+        std::shuffle(split_pool.begin(), split_pool.end(), g);
+        if (split_pool.size() < 2) {
+            throw std::runtime_error("Need at least two frames for train/validation split");
+        }
         size_t val_size = static_cast<size_t>(
-            static_cast<double>(total_frames) * validation_fraction);
-        val_size = std::max<size_t>(1, std::min(val_size, total_frames - 1));
-        const size_t train_size = total_frames - val_size;
-        train_dataset.assign(full_dataset.begin(), full_dataset.begin() + train_size);
-        val_dataset.assign(full_dataset.begin() + train_size, full_dataset.end());
+            static_cast<double>(split_pool.size()) * validation_fraction);
+        val_size = std::max<size_t>(1, std::min(val_size, split_pool.size() - 1));
+        const size_t train_size = split_pool.size() - val_size;
+        train_dataset.assign(split_pool.begin(), split_pool.begin() + train_size);
+        val_dataset.assign(split_pool.begin() + train_size, split_pool.end());
     }
 
     std::cout << "[INFO] Split completato:\n"
@@ -775,6 +883,15 @@ int main(int argc, char* argv[]) {
               << " | MAE T=" << val_zero_mae_t << "\n\n";
 
     for (int epoch = 1; epoch <= max_epochs; ++epoch) {
+        if (shuffle_each_epoch && train_dataset.size() > 1) {
+            // Deterministic epoch-specific shuffling: reproducible across runs,
+            // but avoids presenting AdamW with the same minibatch order forever.
+            const auto epoch_seed = static_cast<std::mt19937::result_type>(
+                static_cast<unsigned long long>(split_seed) +
+                1000003ULL * static_cast<unsigned long long>(epoch));
+            std::mt19937 epoch_rng(epoch_seed);
+            std::shuffle(train_dataset.begin(), train_dataset.end(), epoch_rng);
+        }
         model->train();
         float train_loss_tot = 0.0f;
         float train_loss_f_norm_tot = 0.0f;

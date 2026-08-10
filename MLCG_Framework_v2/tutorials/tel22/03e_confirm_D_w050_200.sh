@@ -29,6 +29,7 @@ export PYTORCH_ENABLE_MPS_FALLBACK=1
 
 cat > "$config" <<'JSON'
 {
+    "architecture_variant": "painn_canonical_context_silu_v2",
     "num_species": 8,
     "hidden_channels": 128,
     "n_layers": 3,
@@ -43,7 +44,9 @@ cat > "$config" <<'JSON'
     "grad_clip_norm": 1.0,
     "early_stopping_patience": 200,
     "reduce_lr_patience": 10,
-    "diagnostic_overfit_frames": 16
+    "diagnostic_overfit_frames": 16,
+    "include_decoys_in_train": false,
+    "shuffle_each_epoch": true
 }
 JSON
 

@@ -49,7 +49,7 @@ echo "======================================================"
 echo "Architecture: hidden=128 | layers=3 | rbf=64 | torque_weight=0.5"
 echo "Cases: cutoff 1.2616 vs 1.6000 nm"
 echo "Epochs per case: $EPOCHS"
-echo "Validation: PHYSICAL ONLY | decoys: TRAIN ONLY | split_seed=42"
+echo "Validation: PHYSICAL ONLY | legacy decoys: EXCLUDED | split_seed=42"
 echo
 
 run_case() {
@@ -83,6 +83,8 @@ cfg.update({
     "lipschitz_lambda": 0.0,
     "diagnostic_overfit_frames": 0,
     "physical_validation_only": True,
+    "include_decoys_in_train": False,
+    "shuffle_each_epoch": True,
     "split_seed": 42,
     "validation_fraction": 0.2,
     # Do not let LR scheduling / early stopping confound this short A/B test.
@@ -102,13 +104,13 @@ PY
         "$TRAINER" "$DATASET" model.pt config.json | tee run.log
     )
 
-    # TEL22 guardrail: these counts are expected for the current 1088-frame dataset.
+    # TEL22 guardrail for the corrected dataset: 1001 physical frames, no legacy decoys.
     if ! grep -q "Detected physical frames: 1001" "$case_dir/run.log"; then
         echo "[ERROR] $label: attesi 1001 frame fisici. Controlla il riconoscimento decoy."
         exit 3
     fi
-    if ! grep -q "Detected zero-target OOD decoys: 87" "$case_dir/run.log"; then
-        echo "[ERROR] $label: attesi 87 decoy. Controlla il riconoscimento decoy."
+    if ! grep -q "Detected zero-target OOD decoys: 0" "$case_dir/run.log"; then
+        echo "[ERROR] $label: attesi 0 legacy decoy. Controlla il riconoscimento decoy."
         exit 3
     fi
 }

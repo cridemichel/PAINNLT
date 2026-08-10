@@ -7,58 +7,19 @@
     "wca_guard_fraction": 0.8,
     "wca_guard_kbt": 10.0,
     "wca_physical_guard_margin": 0.98,
-    "decoy_target_fraction": 0.08,
+    "decoy_target_fraction": 0.0,
     "decoy_random_seed": 20260808,
     "mapping": {
         "mapping_method": "COM",
         "residues": {
             "DA": {
                 "CG_DA": [
-                    "P",
-                    "O1P",
-                    "O2P",
-                    "O5'",
-                    "C5'",
-                    "C4'",
-                    "O4'",
-                    "C1'",
-                    "N9",
-                    "C8",
-                    "N7",
-                    "C5",
-                    "C6",
-                    "N6",
-                    "N1",
-                    "C2",
-                    "N3",
-                    "C4",
-                    "C3'",
-                    "C2'",
-                    "O3'"
+                    "*"
                 ]
             },
             "DT": {
                 "CG_DT": [
-                    "P",
-                    "O1P",
-                    "O2P",
-                    "O5'",
-                    "C5'",
-                    "C4'",
-                    "O4'",
-                    "C1'",
-                    "N1",
-                    "C6",
-                    "C5",
-                    "C7",
-                    "C4",
-                    "O4",
-                    "N3",
-                    "C2",
-                    "O2",
-                    "C3'",
-                    "C2'",
-                    "O3'"
+                    "*"
                 ]
             },
             "DG": {
@@ -5453,5 +5414,6 @@
             "name": "ang_G_G_G"
         }
     ],
-    "dihedrals": []
+    "dihedrals": [],
+    "allow_unmasked_zero_target_decoys": false
 }

@@ -9,6 +9,9 @@ import json
 from pathlib import Path
 
 
+PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -29,7 +32,13 @@ def main() -> None:
             raise FileNotFoundError(path)
 
     config = json.loads(args.config.read_text())
+    variant = str(config.get("architecture_variant", ""))
+    if variant != PAINN_ARCHITECTURE_VARIANT:
+        raise ValueError(
+            f"Config architecture_variant must be {PAINN_ARCHITECTURE_VARIANT!r}; got {variant!r}"
+        )
     architecture = {
+        "variant": variant,
         "num_species": int(config["num_species"]),
         "hidden_channels": int(config["hidden_channels"]),
         "n_layers": int(config["n_layers"]),
@@ -42,7 +51,7 @@ def main() -> None:
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text())
     manifest.update({
-        "schema_version": 2,
+        "schema_version": 3,
         "framework": "MLCG_Framework_v2",
         "energy_gauge": "isolated_species_zero_v1",
         "architecture": architecture,
@@ -56,8 +65,11 @@ def main() -> None:
         "config_path": str(args.config),
         "config_file_size_bytes": args.config.stat().st_size,
         "config_sha256": sha256_file(args.config),
-        "split_seed": 42,
-        "validation_fraction": 0.2,
+        "split_seed": int(config.get("split_seed", 42)),
+        "validation_fraction": float(config.get("validation_fraction", 0.2)),
+        "physical_validation_only": bool(config.get("physical_validation_only", True)),
+        "include_decoys_in_train": bool(config.get("include_decoys_in_train", False)),
+        "shuffle_each_epoch": bool(config.get("shuffle_each_epoch", True)),
         "force_units": "kJ mol^-1 nm^-1",
         "torque_units": "kJ mol^-1",
     })
