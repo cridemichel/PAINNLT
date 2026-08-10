@@ -38,7 +38,18 @@ Genererà il dataset `tel22_dataset.bin` pronto per la rete neurale.
 ---
 
 ## 03_train_model.sh
-Passa il binario al programma C++. Addestrerà una rete Graph Neural Network in C++ (tramite LibTorch) per prevedere le interazioni residenziali. Per il tutorial è impostato su sole 5 epoche, ma sentiti libero di aumentarle in `tel22_training_config.json`.
+Passa il dataset binario al trainer PaiNN C++/LibTorch e ottimizza simultaneamente forze traslazionali e torque dei rigid body con loss normalizzata sugli RMS del train set.
+
+Per TEL22 il profilo di produzione selezionato dalle ablation tiny-set è:
+- `hidden_channels = 128`
+- `n_layers = 3`
+- `num_rbf = 64`
+- `cutoff = 1.6 nm`
+- `torque_weight = 0.5`
+- `batch_size = 4`
+- massimo `200` epoche, con riduzione del learning rate su plateau ed early stopping.
+
+Il limite di 200 epoche è un massimo: il trainer conserva il miglior checkpoint di validation e può arrestarsi prima. Il file `tel22_training_config.json` non viene riscritto se esiste già, così eventuali configurazioni deliberate non vengono perse.
 
 ---
 
