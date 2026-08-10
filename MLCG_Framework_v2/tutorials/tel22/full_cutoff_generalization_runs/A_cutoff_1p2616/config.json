@@ -6,13 +6,16 @@
     "cutoff": 1.2616,
     "toxvaerd_alpha": 0.1,
     "learning_rate": 0.001,
-    "epochs": 200,
+    "epochs": 10,
     "batch_size": 4,
     "torque_weight": 0.5,
     "grad_clip_norm": 1.0,
-    "early_stopping_patience": 30,
-    "reduce_lr_patience": 8,
+    "early_stopping_patience": 50,
+    "reduce_lr_patience": 50,
     "weight_decay": 0.0,
     "lipschitz_lambda": 0.0,
-    "diagnostic_overfit_frames": 0
+    "diagnostic_overfit_frames": 0,
+    "physical_validation_only": true,
+    "split_seed": 42,
+    "validation_fraction": 0.2
 }
