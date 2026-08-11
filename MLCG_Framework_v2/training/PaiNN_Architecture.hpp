@@ -35,6 +35,14 @@ struct PaiNNMessageImpl : torch::nn::Module {
         auto delta_v = torch::zeros_like(v);
         delta_s.index_add_(0, col, chunks[0]);
         delta_v.index_add_(0, col, delta_v_edges);
+        
+        auto num_neighbors = torch::zeros({s.size(0), 1}, s.options());
+        num_neighbors.index_add_(0, col, torch::ones_like(row, s.options()).unsqueeze(1));
+        auto scale = torch::pow(num_neighbors.clamp_min(1.0), -0.5);
+        delta_s = delta_s * scale;
+        delta_v = delta_v * scale.unsqueeze(2);
+        
+        
         return {delta_s, delta_v};
     }
 };
@@ -51,7 +59,9 @@ struct PaiNNUpdateImpl : torch::nn::Module {
         linear_v = register_module("linear_v", torch::nn::Linear(torch::nn::LinearOptions(dim, dim).bias(false)));
         linear_u = register_module("linear_u", torch::nn::Linear(torch::nn::LinearOptions(dim, dim).bias(false)));
         scalar_mlp = register_module("scalar_mlp", torch::nn::Sequential(
-            torch::nn::Linear(dim * 2, dim), torch::nn::SiLU(), torch::nn::Linear(dim, dim * 3)
+            torch::nn::Linear(dim * 2, dim),
+            torch::nn::SiLU(),
+            torch::nn::Linear(dim, dim * 3)
         ));
     }
     std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v) {
@@ -83,10 +93,12 @@ struct PaiNNModelImpl : torch::nn::Module {
     double cutoff_radius; 
     int num_radial_basis; 
     double toxvaerd_alpha;
+    torch::Tensor energy_scale;
     
     PaiNNModelImpl(int num_embeddings, int dim, int layers, int num_rbf = 20, double cutoff = 5.0, double t_alpha = 0.1) 
         : num_layers(layers), num_embeddings(num_embeddings), cutoff_radius(cutoff), num_radial_basis(num_rbf), toxvaerd_alpha(t_alpha) {
         
+        energy_scale = register_buffer("energy_scale", torch::ones({1}));
         embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
         for (int i = 0; i < layers; ++i) {
             messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim, num_rbf)));
@@ -115,7 +127,7 @@ struct PaiNNModelImpl : torch::nn::Module {
     torch::Tensor apply_isolated_species_gauge(
         torch::Tensor atomic_numbers, torch::Tensor raw_atom_energies) {
         auto references = isolated_species_reference_table(atomic_numbers);
-        return raw_atom_energies - references.index_select(0, atomic_numbers);
+        return (raw_atom_energies - references.index_select(0, atomic_numbers)) * energy_scale;
     }
 
     // Espansione RBF con Toxvaerd Cutoff (C3 smooth energy)
