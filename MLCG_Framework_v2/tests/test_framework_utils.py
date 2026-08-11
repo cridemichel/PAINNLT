@@ -175,27 +175,45 @@ class FrameworkUtilsTests(unittest.TestCase):
         )
 
     def test_wca_topology_exclusions(self):
+        # Runtime consumes the explicit pair lists stored at preprocessing time;
+        # it must not reinterpret arbitrary bonded restraints as topology.
         priors = {
             "bonds": [
-                {"mol_i": 0, "mol_j": 1},
-                {"mol_i": 1, "mol_j": 2},
-                {"mol_i": 2, "mol_j": 3},
-                {"mol_i": 0, "mol_j": 3},
-            ],
-            "angles": [
-                {"mol_i": 0, "mol_j": 1, "mol_k": 2},
-                {"mol_i": 1, "mol_j": 2, "mol_k": 3},
+                {"mol_i": 0, "mol_j": 1, "type": "harmonic", "exclude_wca": True},
+                {"mol_i": 0, "mol_j": 3, "type": "morse", "exclude_wca": False},
             ],
             "wca_exclusions": {
                 "exclude_12": True,
                 "exclude_13": True,
                 "scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v2",
+                "direct_pairs": [[0, 1], [1, 2], [2, 3]],
+                "one_three_pairs": [[0, 2], [1, 3]],
+                "direct_pair_count": 3,
+                "one_three_pair_count": 2,
             },
         }
         validate_wca_exclusion_policy(priors)
         direct, one_three = wca_topology_exclusion_pairs(priors, 5)
-        self.assertEqual(direct, {(0, 1), (1, 2), (2, 3), (0, 3)})
+        self.assertEqual(direct, {(0, 1), (1, 2), (2, 3)})
         self.assertEqual(one_three, {(0, 2), (1, 3)})
+        self.assertNotIn((0, 3), direct)
+
+    def test_wca_topology_exclusion_pair_count_is_validated(self):
+        priors = {
+            "wca_exclusions": {
+                "exclude_12": True,
+                "exclude_13": True,
+                "scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v2",
+                "direct_pairs": [[0, 1]],
+                "one_three_pairs": [],
+                "direct_pair_count": 2,
+                "one_three_pair_count": 0,
+            },
+        }
+        with self.assertRaises(ValueError):
+            wca_topology_exclusion_pairs(priors, 3)
 
     def test_wca_exclusion_policy_rejects_legacy_priors(self):
         with self.assertRaises(ValueError):

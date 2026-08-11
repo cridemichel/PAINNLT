@@ -70,6 +70,10 @@
             "CG_DG_B5": 7
         }
     },
+    "prior_geometry": {
+        "default_angle_site": 0,
+        "description": "Backbone bond and angle priors use the same site-0 chain; fit is performed on reconstructed rigid CG geometry."
+    },
     "bonds": [
         {
             "mol_i": 0,

@@ -35,6 +35,26 @@ class PreprocessingGeometryTests(unittest.TestCase):
         self.assertGreater(np.linalg.det(axes), 0.0)
         self.assertTrue(np.allclose(axes @ np.diag(values) @ axes.T, tensor, atol=1e-12))
 
+    def test_bonded_statistics_are_collected_after_rigid_geometry_finalization(self):
+        source = (ROOT / "preprocessing" / "build_cg_dataset.py").read_text()
+        rigid_finalize = source.index("Esecuzione allineamento Kabsch")
+        bonded_collect = source.index("Raccolta statistiche bonded sulla geometria CG effettiva")
+        pass2 = source.index("3. PASS 2: SOTTRAZIONE PRIOR")
+        self.assertLess(rigid_finalize, bonded_collect)
+        self.assertLess(bonded_collect, pass2)
+        # There must be no DBI accumulation on the raw mapped geometry before
+        # the rigid-body reference geometry has been finalized.
+        self.assertNotIn("bond_distances[b_key].append(r)", source[:bonded_collect])
+        self.assertNotIn("angle_values[f\"dict_{idx}\"].append", source[:bonded_collect])
+
+    def test_tel22_uses_same_site_chain_for_backbone_bonds_and_angles(self):
+        import json
+        config = json.loads((ROOT / "tutorials" / "tel22" / "tel22_topology.json").read_text())
+        self.assertEqual(config.get("prior_geometry", {}).get("default_angle_site"), 0)
+        for bond in config.get("bonds", []):
+            if str(bond.get("type", "")).lower() == "harmonic":
+                self.assertEqual((bond.get("site_i"), bond.get("site_j")), (0, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

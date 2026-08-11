@@ -36,13 +36,6 @@ struct PaiNNMessageImpl : torch::nn::Module {
         delta_s.index_add_(0, col, chunks[0]);
         delta_v.index_add_(0, col, delta_v_edges);
         
-        auto num_neighbors = torch::zeros({s.size(0), 1}, s.options());
-        num_neighbors.index_add_(0, col, torch::ones_like(row, s.options()).unsqueeze(1));
-        auto scale = torch::pow(num_neighbors.clamp_min(1.0), -0.5);
-        delta_s = delta_s * scale;
-        delta_v = delta_v * scale.unsqueeze(2);
-        
-        
         return {delta_s, delta_v};
     }
 };

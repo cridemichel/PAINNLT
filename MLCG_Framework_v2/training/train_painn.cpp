@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <filesystem>
 #include <cmath>
+#include <chrono>
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -44,6 +45,12 @@ struct CGMolecule {
 struct CGFrame {
     std::vector<CGMolecule> molecules;
     float box[3];
+
+    // Directed PaiNN neighbor list in frame-local site indices.  The geometry
+    // and cutoff are fixed for a training run, so rebuilding this O(N^2) list
+    // every epoch is pure overhead.  It is populated once after loading.
+    std::vector<int64_t> edge_rows_local;
+    std::vector<int64_t> edge_cols_local;
 };
 
 // Batch di tensori pronti per la GPU
@@ -67,100 +74,137 @@ struct CGBatch {
 // =====================================================================
 // 2. FUNZIONI DI SUPPORTO E BATCHING
 // =====================================================================
-CGBatch collate_batch(const std::vector<CGFrame>& frames, float cutoff, torch::Device device) {
+static std::size_t cache_frame_edges(CGFrame& frame, float cutoff) {
+    std::vector<const CGSite*> frame_sites;
+    std::size_t nsites = 0;
+    for (const auto& mol : frame.molecules) nsites += mol.sites.size();
+    frame_sites.reserve(nsites);
+    for (const auto& mol : frame.molecules) {
+        for (const auto& site : mol.sites) frame_sites.push_back(&site);
+    }
+
+    frame.edge_rows_local.clear();
+    frame.edge_cols_local.clear();
+    const float cutoff_sq = cutoff * cutoff;
+    const float box_x = frame.box[0];
+    const float box_y = frame.box[1];
+    const float box_z = frame.box[2];
+
+    for (std::size_t i = 0; i < frame_sites.size(); ++i) {
+        for (std::size_t j = i + 1; j < frame_sites.size(); ++j) {
+            if (frame_sites[i]->molecule_id == frame_sites[j]->molecule_id) continue;
+
+            float dx = frame_sites[i]->x - frame_sites[j]->x;
+            float dy = frame_sites[i]->y - frame_sites[j]->y;
+            float dz = frame_sites[i]->z - frame_sites[j]->z;
+            dx -= box_x * std::round(dx / box_x);
+            dy -= box_y * std::round(dy / box_y);
+            dz -= box_z * std::round(dz / box_z);
+
+            if ((dx * dx + dy * dy + dz * dz) <= cutoff_sq) {
+                frame.edge_rows_local.push_back(static_cast<int64_t>(i));
+                frame.edge_cols_local.push_back(static_cast<int64_t>(j));
+                frame.edge_rows_local.push_back(static_cast<int64_t>(j));
+                frame.edge_cols_local.push_back(static_cast<int64_t>(i));
+            }
+        }
+    }
+    return frame.edge_rows_local.size();
+}
+
+static std::size_t cache_dataset_edges(std::vector<CGFrame>& dataset, float cutoff) {
+    std::size_t total_directed_edges = 0;
+    for (auto& frame : dataset) {
+        total_directed_edges += cache_frame_edges(frame, cutoff);
+    }
+    return total_directed_edges;
+}
+
+CGBatch collate_batch(const std::vector<CGFrame>& frames, torch::Device device) {
     CGBatch batch;
     std::vector<int64_t> site_types_vec, batch_indices_vec, mol_indices_vec;
     std::vector<float> coords_vec, centers_vec, forces_vec, torques_vec;
     std::vector<int64_t> edge_rows, edge_cols;
-    
+
     std::vector<float> frame_boxes_vec;
     frame_boxes_vec.reserve(frames.size() * 3);
-    
-    // Esempio per evitare riallocazioni
-    size_t estimated_sites = frames.size() * frames[0].molecules.size();
+
+    std::size_t estimated_sites = 0;
+    std::size_t estimated_edges = 0;
+    for (const auto& frame : frames) {
+        for (const auto& mol : frame.molecules) estimated_sites += mol.sites.size();
+        estimated_edges += frame.edge_rows_local.size();
+    }
     site_types_vec.reserve(estimated_sites);
     coords_vec.reserve(estimated_sites * 3);
+    batch_indices_vec.reserve(estimated_sites);
+    mol_indices_vec.reserve(estimated_sites);
+    edge_rows.reserve(estimated_edges);
+    edge_cols.reserve(estimated_edges);
+
     int site_offset = 0;
     int global_mol_idx = 0;
-    float cutoff_sq = cutoff * cutoff;
 
     for (size_t b_idx = 0; b_idx < frames.size(); ++b_idx) {
         const auto& frame = frames[b_idx];
         frame_boxes_vec.push_back(frame.box[0]);
         frame_boxes_vec.push_back(frame.box[1]);
         frame_boxes_vec.push_back(frame.box[2]);
-        float box_x = frame.box[0];
-        float box_y = frame.box[1];
-        float box_z = frame.box[2];
-        
-        int frame_site_start = site_offset;
-        
-        std::vector<CGSite> frame_sites; // Flatten dei siti per calcolare le distanze
-        
+
+        const int frame_site_start = site_offset;
+        int num_sites_in_frame = 0;
+
         for (const auto& mol : frame.molecules) {
-            centers_vec.insert(centers_vec.end(), {mol.center_of_geometry[0], mol.center_of_geometry[1], mol.center_of_geometry[2]});
-            forces_vec.insert(forces_vec.end(), {mol.target_force[0], mol.target_force[1], mol.target_force[2]});
-            torques_vec.insert(torques_vec.end(), {mol.target_torque[0], mol.target_torque[1], mol.target_torque[2]});
-            
+            centers_vec.insert(centers_vec.end(), {
+                mol.center_of_geometry[0], mol.center_of_geometry[1], mol.center_of_geometry[2]});
+            forces_vec.insert(forces_vec.end(), {
+                mol.target_force[0], mol.target_force[1], mol.target_force[2]});
+            torques_vec.insert(torques_vec.end(), {
+                mol.target_torque[0], mol.target_torque[1], mol.target_torque[2]});
+
             for (const auto& site : mol.sites) {
                 site_types_vec.push_back(site.site_type);
                 coords_vec.insert(coords_vec.end(), {site.x, site.y, site.z});
-                batch_indices_vec.push_back(b_idx);
+                batch_indices_vec.push_back(static_cast<int64_t>(b_idx));
                 mol_indices_vec.push_back(global_mol_idx);
-                frame_sites.push_back(site);
+                ++num_sites_in_frame;
             }
-            global_mol_idx++;
+            ++global_mol_idx;
         }
-        
-        // COSTRUZIONE DEL GRAFO CON CONDIZIONI PERIODICHE (PBC)
-        int num_sites_in_frame = frame_sites.size();
-        for (int i = 0; i < num_sites_in_frame; ++i) {
-            for (int j = i + 1; j < num_sites_in_frame; ++j) {
-                // REGOLA: Se appartengono alla stessa molecola, NON interagiscono
-                if (frame_sites[i].molecule_id == frame_sites[j].molecule_id) continue;
-                
-                // 1. Distanza cartesiana iniziale
-                float dx = frame_sites[i].x - frame_sites[j].x;
-                float dy = frame_sites[i].y - frame_sites[j].y;
-                float dz = frame_sites[i].z - frame_sites[j].z;
-                
-                // 2. Applicazione della Minimum Image Convention per le PBC
-                dx -= box_x * std::round(dx / box_x);
-                dy -= box_y * std::round(dy / box_y);
-                dz -= box_z * std::round(dz / box_z);
 
-                // 3. Controllo del cutoff sulla distanza reale periodica
-                if ((dx*dx + dy*dy + dz*dz) <= cutoff_sq) {
-                    edge_rows.push_back(frame_site_start + i); edge_cols.push_back(frame_site_start + j);
-                    edge_rows.push_back(frame_site_start + j); edge_cols.push_back(frame_site_start + i);
-                }
-            }
+        if (frame.edge_rows_local.size() != frame.edge_cols_local.size()) {
+            throw std::runtime_error("Cached edge-list row/col size mismatch");
+        }
+        for (std::size_t e = 0; e < frame.edge_rows_local.size(); ++e) {
+            edge_rows.push_back(frame_site_start + frame.edge_rows_local[e]);
+            edge_cols.push_back(frame_site_start + frame.edge_cols_local[e]);
         }
         site_offset += num_sites_in_frame;
     }
-    
-    // Creazione Tensori PyTorch
+
     batch.frame_boxes = torch::tensor(frame_boxes_vec, torch::kFloat32).reshape({-1, 3}).to(device);
     batch.site_types = torch::tensor(site_types_vec, torch::kInt64).to(device);
     batch.coordinates = torch::tensor(coords_vec, torch::kFloat32).reshape({-1, 3}).to(device);
     batch.batch_indices = torch::tensor(batch_indices_vec, torch::kInt64).to(device);
     batch.mol_indices = torch::tensor(mol_indices_vec, torch::kInt64).to(device);
-    
+
     batch.mol_centers = torch::tensor(centers_vec, torch::kFloat32).reshape({-1, 3}).to(device);
     batch.target_mol_forces = torch::tensor(forces_vec, torch::kFloat32).reshape({-1, 3}).to(device);
     batch.target_mol_torques = torch::tensor(torques_vec, torch::kFloat32).reshape({-1, 3}).to(device);
-    
     batch.num_molecules_in_batch = global_mol_idx;
-    
+
     if (!edge_rows.empty()) {
         std::vector<int64_t> flat_edges;
+        flat_edges.reserve(edge_rows.size() + edge_cols.size());
         flat_edges.insert(flat_edges.end(), edge_rows.begin(), edge_rows.end());
         flat_edges.insert(flat_edges.end(), edge_cols.begin(), edge_cols.end());
-        batch.edge_index = torch::tensor(flat_edges, torch::kInt64).reshape({2, (long)edge_rows.size()}).to(device);
+        batch.edge_index = torch::tensor(flat_edges, torch::kInt64)
+                               .reshape({2, static_cast<long>(edge_rows.size())})
+                               .to(device);
     } else {
         batch.edge_index = torch::empty({2, 0}, torch::dtype(torch::kInt64).device(device));
     }
-    
+
     return batch;
 }
 static void read_exact(std::ifstream& file, void* dst, std::size_t nbytes, const std::string& what) {
@@ -382,6 +426,12 @@ static void validate_resume_manifest(
         throw std::runtime_error(
             "Cannot resume: unsupported or missing energy gauge in " + manifest_path);
     }
+    const auto& previous_effective_config = manifest.at("effective_config");
+    if (previous_effective_config.value("message_aggregation", std::string()) !=
+        effective_config.at("message_aggregation").get<std::string>()) {
+        throw std::runtime_error(
+            "Cannot resume: PaiNN message aggregation changed; start a fresh model");
+    }
     const auto& architecture = manifest.at("architecture");
     if (architecture.value("variant", std::string()) !=
         effective_config.at("architecture_variant").get<std::string>()) {
@@ -500,6 +550,8 @@ int main(int argc, char* argv[]) {
     bool physical_validation_only = true;
     bool include_decoys_in_train = false;
     bool shuffle_each_epoch = true;
+    bool report_grad_norms = true;
+    int mps_empty_cache_every_batches = 0;
     int split_seed = 42;
     float validation_fraction = 0.2f;
 
@@ -551,6 +603,8 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("physical_validation_only")) physical_validation_only = loaded_config["physical_validation_only"];
         if (loaded_config.contains("include_decoys_in_train")) include_decoys_in_train = loaded_config["include_decoys_in_train"];
         if (loaded_config.contains("shuffle_each_epoch")) shuffle_each_epoch = loaded_config["shuffle_each_epoch"];
+        if (loaded_config.contains("report_grad_norms")) report_grad_norms = loaded_config["report_grad_norms"];
+        if (loaded_config.contains("mps_empty_cache_every_batches")) mps_empty_cache_every_batches = loaded_config["mps_empty_cache_every_batches"];
         if (loaded_config.contains("split_seed")) split_seed = loaded_config["split_seed"];
         if (loaded_config.contains("validation_fraction")) validation_fraction = loaded_config["validation_fraction"];
         if (batch_size <= 0) {
@@ -567,6 +621,9 @@ int main(int argc, char* argv[]) {
         }
         if (grad_clip_norm < 0.0f) {
             throw std::runtime_error("grad_clip_norm must be non-negative (0 disables clipping)");
+        }
+        if (mps_empty_cache_every_batches < 0) {
+            throw std::runtime_error("mps_empty_cache_every_batches must be >= 0 (0 disables periodic emptyCache)");
         }
         std::cout << "[INFO] Caricati iperparametri da " << config_path << "\n";
     } else {
@@ -604,11 +661,14 @@ int main(int argc, char* argv[]) {
     effective_config["physical_validation_only"] = physical_validation_only;
     effective_config["include_decoys_in_train"] = include_decoys_in_train;
     effective_config["shuffle_each_epoch"] = shuffle_each_epoch;
+    effective_config["report_grad_norms"] = report_grad_norms;
+    effective_config["mps_empty_cache_every_batches"] = mps_empty_cache_every_batches;
     effective_config["split_seed"] = split_seed;
     effective_config["validation_fraction"] = validation_fraction;
     effective_config["decoy_detection"] = "exact_zero_residual_target_v1";
     effective_config["loss_normalization"] = "train_target_rms_v1";
     effective_config["energy_gauge"] = "isolated_species_zero_v1";
+    effective_config["message_aggregation"] = "sum_v1";
 
     // Inizializza il Modello
     PaiNNModel model(num_species, dim, layers, num_rbf, cutoff, toxvaerd_alpha);
@@ -654,7 +714,8 @@ int main(int argc, char* argv[]) {
     if (csv_file.is_open()) {
         csv_file << "Epoch,Train_Loss,Val_Loss,Train_Loss_F_Norm,Train_Loss_T_Norm,"
                     "Val_Loss_F_Norm,Val_Loss_T_Norm,Train_MAE_F,Train_MAE_T,"
-                    "Val_MAE_F,Val_MAE_T,Val_Zero_F_Norm,Val_Zero_T_Norm,Val_Zero_Total\n";
+                    "Val_MAE_F,Val_MAE_T,Val_Zero_F_Norm,Val_Zero_T_Norm,Val_Zero_Total,"
+                    "GradNorm_Mean,GradNorm_P50,GradNorm_P95,GradNorm_Max,GradClip_Fraction\n";
     }
 
     std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
@@ -665,6 +726,15 @@ int main(int argc, char* argv[]) {
         std::cerr << "Errore critico: dataset vuoto o file non trovato. Interruzione.\n";
         return 1;
     }
+
+    const auto edge_cache_t0 = std::chrono::steady_clock::now();
+    const std::size_t total_cached_edges = cache_dataset_edges(full_dataset, cutoff);
+    const auto edge_cache_t1 = std::chrono::steady_clock::now();
+    const double edge_cache_seconds =
+        std::chrono::duration<double>(edge_cache_t1 - edge_cache_t0).count();
+    std::cout << "[INFO] Neighbor lists cached once for cutoff=" << cutoff
+              << " nm: " << total_cached_edges << " directed edges across "
+              << full_dataset.size() << " frames in " << edge_cache_seconds << " s.\n";
 
     std::mt19937 g(static_cast<std::mt19937::result_type>(split_seed));
 
@@ -840,7 +910,17 @@ int main(int argc, char* argv[]) {
               << " | grad_clip_norm=" << grad_clip_norm << "\n";
 
     model->energy_scale.copy_(torch::tensor({force_rms}, torch::kFloat32).to(device));
+    effective_config["energy_scale_value"] = force_rms;
+    effective_config["energy_scale_source"] = "train_force_rms_v1";
 
+    std::cout << "[INFO] Optimizer diagnostics: report_grad_norms="
+              << (report_grad_norms ? "true" : "false")
+              << " | MPS emptyCache every " << mps_empty_cache_every_batches
+              << " training batches (0=disabled).\n";
+    if (torque_weight == 0.0f) {
+        std::cout << "[INFO] Force-only fast path enabled: torque graph/loss is skipped during training; "
+                     "validation torque metrics remain diagnostic only.\n";
+    }
 
     // Exact zero-predictor baseline on validation, normalized with TRAIN scales.
     // This is the correct reference for deciding whether validation learns anything.
@@ -902,6 +982,10 @@ int main(int argc, char* argv[]) {
         float train_mae_forces_tot = 0.0f;  
         float train_mae_torques_tot = 0.0f; 
         int train_torque_frames = 0; 
+        std::vector<double> epoch_grad_norms;
+        std::size_t clipped_batches = 0;
+        std::size_t train_batch_counter = 0;
+        const bool train_torque_enabled = torque_weight > 0.0f;
 
         std::vector<CGFrame> train_batch_frames;
 
@@ -920,7 +1004,7 @@ int main(int argc, char* argv[]) {
 
                     optimizer.zero_grad();
                 
-                    CGBatch batch = collate_batch(train_batch_frames, cutoff, device);
+                    CGBatch batch = collate_batch(train_batch_frames, device);
 
                     auto row = batch.edge_index[0];
                     auto col = batch.edge_index[1];
@@ -957,33 +1041,51 @@ int main(int argc, char* argv[]) {
                     );
                     torch::Tensor loss_f_norm = loss_f_raw / force_scale2;
 
-                    // Momenti torcenti (Ripristinati senza forward pass addizionali)
-                    torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
-                    torch::Tensor site_f_per_site = torch::zeros({(long)batch.coordinates.size(0), 3}, f_diff.options());
-                    site_f_per_site.index_add_(0, row,  f_diff);
-                    site_f_per_site.index_add_(0, col, -f_diff);
-                    auto site_boxes = batch.frame_boxes.index({batch.batch_indices});
-                    torch::Tensor r_vec = (batch.coordinates - site_centers).detach();
-                    r_vec = r_vec - site_boxes * torch::round(r_vec / site_boxes).detach();
-                    torch::Tensor site_torques = torch::linalg_cross(r_vec, site_f_per_site);
-                    torch::Tensor pred_mol_torques = torch::zeros({batch.num_molecules_in_batch, 3}, site_torques.options());
-                    pred_mol_torques.index_add_(0, batch.mol_indices, site_torques);
-
-                    auto mol_indices_long = batch.mol_indices.to(torch::kLong);
-                    torch::Tensor sites_per_mol = torch::bincount(mol_indices_long, torch::Tensor(), batch.num_molecules_in_batch);
-                    torch::Tensor torque_mask = (sites_per_mol > 1).to(torch::kFloat32); 
-                    float num_valid_mols = torque_mask.sum().item<float>();
-
                     torch::Tensor loss_t_norm = torch::zeros({}, loss_f_norm.options());
                     torch::Tensor loss_final = loss_f_norm;
-                    if (num_valid_mols > 0) {
-                        torch::Tensor loss_t_raw = torch::mse_loss(
-                            pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
-                        torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
-                        torch::Tensor loss_t_phys = loss_t_masked.sum() / (num_valid_mols * 3.0f);
-                        loss_t_norm = loss_t_phys / torque_scale2;
-                        loss_final = loss_final + torque_weight * loss_t_norm;
+                    torch::Tensor pred_mol_torques;
+                    torch::Tensor torque_mask;
+                    torch::Tensor site_f_per_site;
+                    float num_valid_mols = 0.0f;
+
+                    // Build per-site forces only when they contribute to the
+                    // optimization objective.  With torque_weight==0 and no
+                    // Lipschitz term, this avoids an otherwise unused torque
+                    // graph on every training batch.
+                    if (train_torque_enabled || lipschitz_lambda > 0.0f) {
+                        site_f_per_site = torch::zeros(
+                            {(long)batch.coordinates.size(0), 3}, f_diff.options());
+                        site_f_per_site.index_add_(0, row,  f_diff);
+                        site_f_per_site.index_add_(0, col, -f_diff);
                     }
+
+                    if (train_torque_enabled) {
+                        torch::Tensor site_centers = batch.mol_centers.index({batch.mol_indices});
+                        auto site_boxes = batch.frame_boxes.index({batch.batch_indices});
+                        torch::Tensor r_vec = (batch.coordinates - site_centers).detach();
+                        r_vec = r_vec - site_boxes * torch::round(r_vec / site_boxes).detach();
+                        torch::Tensor site_torques = torch::linalg_cross(r_vec, site_f_per_site);
+                        pred_mol_torques = torch::zeros(
+                            {batch.num_molecules_in_batch, 3}, site_torques.options());
+                        pred_mol_torques.index_add_(0, batch.mol_indices, site_torques);
+
+                        auto mol_indices_long = batch.mol_indices.to(torch::kLong);
+                        torch::Tensor sites_per_mol = torch::bincount(
+                            mol_indices_long, torch::Tensor(), batch.num_molecules_in_batch);
+                        torque_mask = (sites_per_mol > 1).to(torch::kFloat32);
+                        num_valid_mols = torque_mask.sum().item<float>();
+
+                        if (num_valid_mols > 0) {
+                            torch::Tensor loss_t_raw = torch::mse_loss(
+                                pred_mol_torques, batch.target_mol_torques, torch::Reduction::None);
+                            torch::Tensor loss_t_masked = loss_t_raw * torque_mask.unsqueeze(-1);
+                            torch::Tensor loss_t_phys =
+                                loss_t_masked.sum() / (num_valid_mols * 3.0f);
+                            loss_t_norm = loss_t_phys / torque_scale2;
+                            loss_final = loss_final + torque_weight * loss_t_norm;
+                        }
+                    }
+
                     if (lipschitz_lambda > 0.0f) {
                         torch::Tensor loss_lipschitz =
                             site_f_per_site.norm(2, 1).pow(2).mean() / force_scale2;
@@ -991,20 +1093,33 @@ int main(int argc, char* argv[]) {
                     }
                     loss_final.backward();
 
+                    double grad_norm_preclip = 0.0;
                     if (grad_clip_norm > 0.0f) {
-                        torch::nn::utils::clip_grad_norm_(
+                        grad_norm_preclip = torch::nn::utils::clip_grad_norm_(
                             model->parameters(), /*max_norm=*/ grad_clip_norm);
+                        if (grad_norm_preclip > static_cast<double>(grad_clip_norm)) {
+                            ++clipped_batches;
+                        }
+                    } else if (report_grad_norms) {
+                        // max_norm=inf computes the total norm without modifying gradients.
+                        grad_norm_preclip = torch::nn::utils::clip_grad_norm_(
+                            model->parameters(), std::numeric_limits<double>::infinity());
+                    }
+                    if (report_grad_norms || grad_clip_norm > 0.0f) {
+                        epoch_grad_norms.push_back(grad_norm_preclip);
                     }
                     optimizer.step();
+                    ++train_batch_counter;
 
                     float current_batch_weight = static_cast<float>(train_batch_frames.size());
-                    float mae_f_phys = torch::l1_loss(pred_mol_forces_diff, batch.target_mol_forces).item<float>();
+                    float mae_f_phys = torch::l1_loss(
+                        pred_mol_forces_diff, batch.target_mol_forces).item<float>();
                     train_loss_tot        += loss_final.item<float>() * current_batch_weight;
                     train_loss_f_norm_tot += loss_f_norm.item<float>() * current_batch_weight;
                     train_loss_t_norm_tot += loss_t_norm.item<float>() * current_batch_weight;
-                    train_mae_forces_tot  += mae_f_phys                * current_batch_weight; 
-                    
-                    if (num_valid_mols > 0) {
+                    train_mae_forces_tot  += mae_f_phys * current_batch_weight;
+
+                    if (train_torque_enabled && num_valid_mols > 0) {
                         torch::Tensor abs_t = torch::abs(
                             pred_mol_torques - batch.target_mol_torques
                         ) * torque_mask.unsqueeze(-1);
@@ -1014,16 +1129,15 @@ int main(int argc, char* argv[]) {
                         train_torque_frames   += train_batch_frames.size();
                     }
 
-#ifdef __APPLE__
-                    if (torch::mps::is_available()) {
-                        torch::mps::synchronize();
-                        at::mps::getIMPSAllocator()->emptyCache();
-                    }
-#endif
                 } // --- FINE SCOPE TENSORI ---
 
 #ifdef __APPLE__
                 objc_autoreleasePoolPop(pool);
+                if (torch::mps::is_available() &&
+                    mps_empty_cache_every_batches > 0 &&
+                    (train_batch_counter % static_cast<std::size_t>(mps_empty_cache_every_batches) == 0)) {
+                    at::mps::getIMPSAllocator()->emptyCache();
+                }
 #endif
 
                 progress_bar(static_cast<double>(i + 1) / train_dataset.size());
@@ -1050,7 +1164,7 @@ int main(int argc, char* argv[]) {
             val_batch_frames.push_back(val_dataset[i]);
 
             if (val_batch_frames.size() == batch_size || i == val_dataset.size() - 1) {
-                CGBatch batch = collate_batch(val_batch_frames, cutoff, device);
+                CGBatch batch = collate_batch(val_batch_frames, device);
 
                 auto row = batch.edge_index[0];
                 auto col = batch.edge_index[1];
@@ -1148,6 +1262,30 @@ int main(int argc, char* argv[]) {
         float val_mae_forces_avg = val_mae_forces_tot / val_dataset.size();
         float val_mae_torques_avg = (val_torque_frames > 0) ? (val_mae_torques_tot / val_torque_frames) : 0.0f;
 
+        double grad_norm_mean = 0.0;
+        double grad_norm_p50 = 0.0;
+        double grad_norm_p95 = 0.0;
+        double grad_norm_max = 0.0;
+        double grad_clip_fraction = 0.0;
+        if (!epoch_grad_norms.empty()) {
+            std::vector<double> sorted_grad_norms = epoch_grad_norms;
+            std::sort(sorted_grad_norms.begin(), sorted_grad_norms.end());
+            for (double value : epoch_grad_norms) grad_norm_mean += value;
+            grad_norm_mean /= static_cast<double>(epoch_grad_norms.size());
+            auto percentile = [&sorted_grad_norms](double q) {
+                const double idx = q * static_cast<double>(sorted_grad_norms.size() - 1);
+                const std::size_t lo = static_cast<std::size_t>(std::floor(idx));
+                const std::size_t hi = static_cast<std::size_t>(std::ceil(idx));
+                const double frac = idx - static_cast<double>(lo);
+                return sorted_grad_norms[lo] * (1.0 - frac) + sorted_grad_norms[hi] * frac;
+            };
+            grad_norm_p50 = percentile(0.50);
+            grad_norm_p95 = percentile(0.95);
+            grad_norm_max = sorted_grad_norms.back();
+            grad_clip_fraction = static_cast<double>(clipped_batches) /
+                                 static_cast<double>(epoch_grad_norms.size());
+        }
+
         std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "]\n"
                   << "  [LR]    " << current_lr << "\n"
                   << "  [TRAIN] Loss: " << train_loss_avg
@@ -1160,6 +1298,13 @@ int main(int argc, char* argv[]) {
                   << ", T: " << val_loss_t_norm_avg << ")"
                   << " | MAE Forze: " << val_mae_forces_avg
                   << " | MAE Torques: " << val_mae_torques_avg << "\n";
+        if (!epoch_grad_norms.empty()) {
+            std::cout << "  [GRAD]  pre-clip mean=" << grad_norm_mean
+                      << " | P50=" << grad_norm_p50
+                      << " | P95=" << grad_norm_p95
+                      << " | max=" << grad_norm_max
+                      << " | clipped=" << (100.0 * grad_clip_fraction) << "%\n";
+        }
 
         if (csv_file.is_open()) {
             csv_file << epoch << ","
@@ -1169,7 +1314,10 @@ int main(int argc, char* argv[]) {
                      << train_mae_forces_avg << "," << train_mae_torques_avg << ","
                      << val_mae_forces_avg << "," << val_mae_torques_avg << ","
                      << val_zero_f_norm << "," << val_zero_t_norm << ","
-                     << val_zero_total << "\n";
+                     << val_zero_total << ","
+                     << grad_norm_mean << "," << grad_norm_p50 << ","
+                     << grad_norm_p95 << "," << grad_norm_max << ","
+                     << grad_clip_fraction << "\n";
             csv_file.flush();
         }
 
