@@ -1,0 +1,345 @@
+{
+  "definition": {
+    "geometry": "all physical CG sites of one repeated TEL22 copy, MIC-unwrapped along residue sequence, centered, Kabsch-aligned to a fixed reference; RMSD in nm",
+    "target": "residual molecular force and rigid-body torque stored in tel22_dataset.bin, rotated by the same Kabsch transform",
+    "local_noise_proxy": "MSE(target_i-target_j)/(2*MSE(target)); exact conditional-noise fraction only in the zero-geometry-separation/independent-hidden-DOF limit",
+    "random_control": "same pairing constraints but random geometrically unrelated samples",
+    "isolation": "copy has no CG site from another TEL22 copy within the PaiNN cutoff"
+  },
+  "inputs": {
+    "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/tel22_dataset.bin",
+    "config": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/tel22_training_config.json",
+    "cutoff_nm": 1.2616,
+    "same_copy_min_gap_frames": 20,
+    "random_seed": 20260811
+  },
+  "counts": {
+    "frames": 1001,
+    "molecules_per_frame": 220,
+    "detected_residues_per_copy": 22,
+    "detected_copies_per_frame": 10,
+    "sites_per_copy": 82,
+    "copy_samples": 10010,
+    "isolated_copy_samples": 224,
+    "isolated_copy_fraction": 0.022377622377622378,
+    "copy_samples_with_external_cg_contact": 9786,
+    "residue_positions_per_copy": {
+      "DA": 4,
+      "DG": 12,
+      "DT": 6
+    }
+  },
+  "target_scale": {
+    "force_component_rms_kj_mol_nm": 887.0357402600663,
+    "torque_component_rms_kj_mol": 325.9677755677125
+  },
+  "pair_analyses": {
+    "nearest_different_copy_all": {
+      "nearest": {
+        "name": "nearest_different_copy_all",
+        "pairs": 951,
+        "geometry_rmsd_nm": {
+          "p50": 0.04393800692161108,
+          "p90": 0.053189897039951646,
+          "p95": 0.054901092231322834,
+          "p99": 0.0590770062643223,
+          "max": 0.06184249687934168
+        },
+        "force_pair_difference_rms": {
+          "p50": 1237.2914086936307,
+          "p90": 1426.551649534248,
+          "p95": 1487.0667161916258,
+          "p99": 1602.9428216076656,
+          "max": 1689.3630875743715
+        },
+        "torque_pair_difference_rms": {
+          "p50": 455.41581519720836,
+          "p90": 535.2646315052942,
+          "p95": 555.2150174678698,
+          "p99": 615.7463827298194,
+          "max": 740.5227756951173
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.9990434646606445,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 1.003149390220642,
+        "pearson_geometry_rmsd_vs_force_pair_rms": 0.06214662946438325,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 842.2943017161376,
+            "pair_difference_component_rms": 1204.5490845511774,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.0225658416748047
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 903.1745051104763,
+            "pair_difference_component_rms": 1268.0917472958406,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9856619834899902
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 883.5330493704779,
+            "pair_difference_component_rms": 1257.4495612836035,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.0127577781677246
+          }
+        }
+      },
+      "random_control": {
+        "name": "nearest_different_copy_all_random_control",
+        "pairs": 951,
+        "geometry_rmsd_nm": {
+          "p50": 0.09409651851460162,
+          "p90": 0.12354632345905509,
+          "p95": 0.1316570118842454,
+          "p99": 0.14580041450692027,
+          "max": 0.15648557439852098
+        },
+        "force_pair_difference_rms": {
+          "p50": 1238.3126388548053,
+          "p90": 1415.3844424976878,
+          "p95": 1462.0930731800158,
+          "p99": 1578.4790577214194,
+          "max": 1705.9197658695305
+        },
+        "torque_pair_difference_rms": {
+          "p50": 452.9623180058971,
+          "p90": 540.120411779061,
+          "p95": 563.3359320526175,
+          "p99": 606.193481224105,
+          "max": 687.8112425510159
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.9954532384872437,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.9988808035850525,
+        "pearson_geometry_rmsd_vs_force_pair_rms": -0.028017327995558367,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 842.2943017161376,
+            "pair_difference_component_rms": 1198.1386553013372,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.0117108821868896
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 903.1745051104763,
+            "pair_difference_component_rms": 1270.5085629446155,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9894226789474487
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 883.5330493704779,
+            "pair_difference_component_rms": 1248.3831673341983,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9982060790061951
+          }
+        }
+      },
+      "nearest_vs_random_force_half_mse_ratio": 1.0036066246354844,
+      "nearest_vs_random_torque_half_mse_ratio": 1.0042733693752741
+    },
+    "nearest_different_copy_isolated": {
+      "nearest": {
+        "name": "nearest_different_copy_isolated",
+        "pairs": 95,
+        "geometry_rmsd_nm": {
+          "p50": 0.07377810095591004,
+          "p90": 0.07946920490823209,
+          "p95": 0.08181686769699265,
+          "p99": 0.08377612608501049,
+          "max": 0.0872425356428838
+        },
+        "force_pair_difference_rms": {
+          "p50": 1192.9502885608576,
+          "p90": 1305.2335760840108,
+          "p95": 1330.4307395737806,
+          "p99": 1459.3001268358805,
+          "max": 1542.390164033252
+        },
+        "torque_pair_difference_rms": {
+          "p50": 457.35238964806337,
+          "p90": 529.2923203690639,
+          "p95": 543.2647823096887,
+          "p99": 586.2690165029229,
+          "max": 605.1849539773648
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.902840256690979,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 1.0102918148040771,
+        "pearson_geometry_rmsd_vs_force_pair_rms": 0.33439695965970373,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 842.2943017161376,
+            "pair_difference_component_rms": 1133.8606061529847,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9060696959495544
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 903.1745051104763,
+            "pair_difference_component_rms": 1212.447585920858,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.901057779788971
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 883.5330493704779,
+            "pair_difference_component_rms": 1188.4149986383268,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.904608428478241
+          }
+        }
+      },
+      "random_control": {
+        "name": "nearest_different_copy_isolated_random_control",
+        "pairs": 95,
+        "geometry_rmsd_nm": {
+          "p50": 0.08779420032284828,
+          "p90": 0.09581580743771267,
+          "p95": 0.09719518433709373,
+          "p99": 0.10022618818856596,
+          "max": 0.10854749355399329
+        },
+        "force_pair_difference_rms": {
+          "p50": 1227.6113686847823,
+          "p90": 1387.4047257763154,
+          "p95": 1433.548973992543,
+          "p99": 1550.4581129652508,
+          "max": 1553.1384821937943
+        },
+        "torque_pair_difference_rms": {
+          "p50": 452.8893476754679,
+          "p90": 521.8849691358772,
+          "p95": 539.1124770767682,
+          "p99": 573.5086380099779,
+          "max": 601.8813741708973
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.9939990639686584,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.9696906805038452,
+        "pearson_geometry_rmsd_vs_force_pair_rms": -0.1324903031505615,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 842.2943017161376,
+            "pair_difference_component_rms": 1179.4609580017677,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9804137945175171
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 903.1745051104763,
+            "pair_difference_component_rms": 1275.929101467661,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9978832602500916
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 883.5330493704779,
+            "pair_difference_component_rms": 1245.8206414845322,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9941123723983765
+          }
+        }
+      },
+      "nearest_vs_random_force_half_mse_ratio": 0.9082908519916335,
+      "nearest_vs_random_torque_half_mse_ratio": 1.0418701913058872
+    },
+    "nearest_same_copy_gap": {
+      "nearest": {
+        "name": "nearest_same_copy_gap",
+        "pairs": 9030,
+        "geometry_rmsd_nm": {
+          "p50": 0.029684530832821642,
+          "p90": 0.037663586300099736,
+          "p95": 0.041525770170762186,
+          "p99": 0.05090920245096934,
+          "max": 0.0758851214670434
+        },
+        "force_pair_difference_rms": {
+          "p50": 1240.6628477540048,
+          "p90": 1416.641159815384,
+          "p95": 1469.2458461223323,
+          "p99": 1569.0803137563896,
+          "max": 1772.527801048673
+        },
+        "torque_pair_difference_rms": {
+          "p50": 452.2653679518086,
+          "p90": 536.1114238691015,
+          "p95": 560.1874417893221,
+          "p99": 614.9280844231786,
+          "max": 703.7651679607594
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.9955741167068481,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.9925450086593628,
+        "pearson_geometry_rmsd_vs_force_pair_rms": 0.023246826353181333,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 842.2943017161376,
+            "pair_difference_component_rms": 1191.7542514060367,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.000957727432251
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 903.1745051104763,
+            "pair_difference_component_rms": 1272.9096592464787,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9931659698486328
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 883.5330493704779,
+            "pair_difference_component_rms": 1247.8446080779415,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9973450303077698
+          }
+        }
+      },
+      "random_control": {
+        "name": "nearest_same_copy_gap_random_control",
+        "pairs": 9030,
+        "geometry_rmsd_nm": {
+          "p50": 0.06015783867964322,
+          "p90": 0.09264861474091769,
+          "p95": 0.10104264128209207,
+          "p99": 0.11656210982527593,
+          "max": 0.14703829549082895
+        },
+        "force_pair_difference_rms": {
+          "p50": 1244.3567598419115,
+          "p90": 1419.2618450065384,
+          "p95": 1471.307578067024,
+          "p99": 1569.2896759126138,
+          "max": 1859.0147568240386
+        },
+        "torque_pair_difference_rms": {
+          "p50": 453.4709689277762,
+          "p90": 540.4634533215193,
+          "p95": 566.3050831193202,
+          "p99": 617.0503815262235,
+          "max": 726.9833528902118
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 1.0020208358764648,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 1.0001517534255981,
+        "pearson_geometry_rmsd_vs_force_pair_rms": 0.030361750049536913,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 842.2943017161376,
+            "pair_difference_component_rms": 1189.6184230186734,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.997373104095459
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 903.1745051104763,
+            "pair_difference_component_rms": 1278.8761814266172,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.0024982690811157
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 883.5330493704779,
+            "pair_difference_component_rms": 1251.9003770995305,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.0038387775421143
+          }
+        }
+      },
+      "nearest_vs_random_force_half_mse_ratio": 0.9935662823178943,
+      "nearest_vs_random_torque_half_mse_ratio": 0.9923944094081907
+    }
+  },
+  "interpretation_guardrails": [
+    "A nearest/random ratio near 1 means geometry similarity, at the tested resolution, barely reduces target differences.",
+    "A ratio well below 1 means nearby CG geometries carry predictive information about the target.",
+    "The half-pair MSE fraction is not a rigorous lower bound when geometries are not identical.",
+    "Prefer nearest_different_copy_isolated when it has enough samples, because external TEL22-TEL22 interactions are then absent inside the model cutoff.",
+    "Same-copy pairs separated in time are complementary but their eliminated solvent/ion degrees of freedom may remain temporally correlated."
+  ]
+}

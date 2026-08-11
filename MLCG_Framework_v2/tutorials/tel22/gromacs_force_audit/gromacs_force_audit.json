@@ -1,0 +1,113 @@
+{
+  "checks": {
+    "coordinate_force_output_stride": {
+      "detail": "nstxout=500, nstfout=500",
+      "status": "PASS"
+    },
+    "finite_data": {
+      "detail": "all trajectory positions/forces finite",
+      "status": "PASS"
+    },
+    "observed_frame_spacing": {
+      "detail": "observed median=1 ps; expected coordinate=1 ps; expected force=1 ps",
+      "status": "PASS"
+    },
+    "raw_forces_present": {
+      "detail": "missing=0 / 1001",
+      "status": "PASS"
+    },
+    "raw_positions_present": {
+      "detail": "missing=0 / 1001",
+      "status": "PASS"
+    },
+    "raw_whole_time_alignment": {
+      "detail": "max |dt|=0 ps",
+      "status": "PASS"
+    },
+    "rerun_force_reproduction": {
+      "detail": "relative RMS=1.23227e-06; RMS delta=7.77361e-05 kJ/(mol A); max abs delta=0.0138564 kJ/(mol A); tolerance=0.001",
+      "status": "PASS"
+    },
+    "rerun_time_alignment": {
+      "detail": "max |dt|=0 ps",
+      "status": "PASS"
+    },
+    "tpr_nstfout": {
+      "detail": "nstfout=500",
+      "status": "PASS"
+    },
+    "tpr_nstxout": {
+      "detail": "nstxout=500",
+      "status": "PASS"
+    },
+    "trjconv_force_preservation": {
+      "detail": "relative RMS=0; max abs delta=0 kJ/(mol A)",
+      "status": "PASS"
+    },
+    "whole_forces_present": {
+      "detail": "missing=0 / 1001",
+      "status": "PASS"
+    },
+    "whole_positions_present": {
+      "detail": "missing=0 / 1001",
+      "status": "PASS"
+    }
+  },
+  "inputs": {
+    "mdp_from_tpr": "gromacs_force_audit/md_from_tpr.mdp",
+    "raw_trr": "md.trr",
+    "topology": "md.gro",
+    "whole_trr": "md_whole.trr"
+  },
+  "raw_vs_whole": {
+    "first_time_ps": 0.0,
+    "frames_with_nonfinite_forces": 0,
+    "frames_with_nonfinite_positions": 0,
+    "last_time_ps": 1000.0,
+    "max_frame_dt_deviation_ps": 0.0,
+    "max_raw_whole_time_delta_ps": 0.0,
+    "median_frame_dt_ps": 1.0,
+    "raw_atoms": 49869,
+    "raw_frames": 1001,
+    "raw_missing_force_frames": 0,
+    "raw_missing_position_frames": 0,
+    "raw_whole_force_component_rms_delta_kj_mol_A": 0.0,
+    "raw_whole_force_max_abs_delta_kj_mol_A": 0.0,
+    "raw_whole_force_relative_rms": 0.0,
+    "whole_atoms": 49869,
+    "whole_frames": 1001,
+    "whole_missing_force_frames": 0,
+    "whole_missing_position_frames": 0
+  },
+  "rerun": {
+    "force_component_rms_delta_kj_mol_A": 7.773608169174107e-05,
+    "force_max_abs_delta_kj_mol_A": 0.01385641098022461,
+    "force_relative_rms": 1.2322683334902216e-06,
+    "max_time_delta_ps": 0.0,
+    "rerun_atoms": 49869,
+    "rerun_frames": 11,
+    "stored_subset_atoms": 49869,
+    "stored_subset_frames": 11
+  },
+  "rerun_selection": {
+    "expected_subset_frames_approx": 11,
+    "target_frames": 11,
+    "trjconv_skip": 100
+  },
+  "tpr_parameters": {
+    "constraint_algorithm": "Lincs",
+    "constraints": null,
+    "coulombtype": "PME",
+    "cutoff_scheme": "Verlet",
+    "dt_ps": 0.002,
+    "integrator": "md",
+    "nsteps": 500000,
+    "nstfout": 500,
+    "nstvout": 500,
+    "nstxout": 500,
+    "nstxout_compressed": 0,
+    "pcoupl": "Parrinello-Rahman",
+    "tcoupl": "V-rescale",
+    "vdwtype": null
+  }
+}
