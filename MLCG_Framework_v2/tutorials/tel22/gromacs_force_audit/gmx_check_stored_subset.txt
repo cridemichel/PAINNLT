@@ -1,0 +1,26 @@
+                  :-) GROMACS - gmx check, 2026.3-Homebrew (-:
+
+Executable:   /opt/homebrew/bin/../Cellar/gromacs/2026.3/bin/gmx
+Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2026.3
+Working dir:  /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22
+Command line:
+  gmx check -f gromacs_force_audit/stored_subset.trr
+
+trr version: GMX_trn_file (single precision)
+Reading frame       0 time    0.000   
+# Atoms  49869
+Reading frame       1 time  100.000   Reading frame       2 time  200.000   Reading frame       3 time  300.000   Reading frame       4 time  400.000   Reading frame       5 time  500.000   Reading frame       6 time  600.000   Reading frame       7 time  700.000   Reading frame       8 time  800.000   Reading frame       9 time  900.000   Reading frame      10 time 1000.000   Last frame         10 time 1000.000   
+
+
+Item        #frames Timestep (ps)
+Step            11    100
+Time            11    100
+Lambda          11    100
+Coords          11    100
+Velocities      11    100
+Forces          11    100
+Box             11    100
+
+GROMACS reminds you: "The World is a Friendly Place" (Magnapop)
+
+Checking file gromacs_force_audit/stored_subset.trr
