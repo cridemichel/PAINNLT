@@ -1,0 +1,28 @@
+======================================================
+ TEL22 FORCE-MAPPING / FORCE-SOURCE AUDIT
+======================================================
+Mapped reference force RMS : 884.964 kJ/(mol nm)
+Dataset residual force RMS : 884.981 kJ/(mol nm)
+COM force-map compatibility: PASS (max err=1.11e-16)
+Subset closure force       : 1.72569e-06 relative RMS
+Subset closure torque      : 1.72607e-06 relative RMS
+Closure status             : PASS
+
+Force source RMS [kJ/(mol nm)] and ratio to residual:
+  dna_internal           849.0326   / residual=0.9594   cos(res)=0.7947
+  water                  590.6561   / residual=0.6674   cos(res)=0.3457
+  potassium              314.3550   / residual=0.3552   cos(res)=0.0128
+  chloride                99.8884   / residual=0.1129   cos(res)=0.0060
+  environment_total      552.8011   / residual=0.6246   cos(res)=0.3777
+
+Torque source RMS [kJ/mol] and ratio to residual:
+  dna_internal           314.6318   / residual=0.9541   cos(res)=0.7927
+  water                  217.7475   / residual=0.6603   cos(res)=0.3491
+  potassium              124.5676   / residual=0.3777   cos(res)=0.0333
+  chloride                33.4401   / residual=0.1014   cos(res)=-0.0010
+  environment_total      207.5418   / residual=0.6294   cos(res)=0.3861
+
+Diagnostic residual-env force RMS ratio : 0.9583
+Diagnostic residual-env torque RMS ratio: 0.9540
+
+Report: force_source_audit/force_mapping_source_report.json
