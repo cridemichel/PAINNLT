@@ -1,0 +1,23 @@
+{
+  "topology": "md.gro",
+  "atoms_total": 49869,
+  "atoms_dna": 7150,
+  "atoms_water": 42417,
+  "atoms_k": 256,
+  "atoms_cl": 46,
+  "partition_missing_atoms": 0,
+  "groups": {
+    "FS_DNA_ONLY": 7150,
+    "FS_DNA_WATER": 49567,
+    "FS_DNA_K": 7406,
+    "FS_DNA_CL": 7196
+  },
+  "resnames_present": [
+    "CL",
+    "DA",
+    "DG",
+    "DT",
+    "K",
+    "SOL"
+  ]
+}
