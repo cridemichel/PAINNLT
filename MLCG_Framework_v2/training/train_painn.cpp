@@ -839,6 +839,9 @@ int main(int argc, char* argv[]) {
               << torque_weight << " * MSE(T)/TorqueRMS^2"
               << " | grad_clip_norm=" << grad_clip_norm << "\n";
 
+    model->energy_scale.copy_(torch::tensor({force_rms}, torch::kFloat32).to(device));
+
+
     // Exact zero-predictor baseline on validation, normalized with TRAIN scales.
     // This is the correct reference for deciding whether validation learns anything.
     double val_force_sum2 = 0.0;
@@ -986,7 +989,6 @@ int main(int argc, char* argv[]) {
                             site_f_per_site.norm(2, 1).pow(2).mean() / force_scale2;
                         loss_final = loss_final + lipschitz_lambda * loss_lipschitz;
                     }
-
                     loss_final.backward();
 
                     if (grad_clip_norm > 0.0f) {
