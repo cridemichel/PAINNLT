@@ -28,9 +28,12 @@ def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
         meta.get("exclude_12") is True
         and meta.get("exclude_13") is True
         and meta.get("scope") == "molecule_pair_all_sites"
+        and meta.get("pair_source") == "explicit_topology_pairs_v2"
+        and isinstance(meta.get("direct_pairs"), list)
+        and isinstance(meta.get("one_three_pairs"), list)
     ):
         raise ValueError(
-            "cg_priors.json does not declare the required WCA 1-2/1-3 exclusion policy. "
+            "cg_priors.json does not declare explicit topological WCA 1-2/1-3 pair lists. "
             "Rebuild the dataset and cg_priors.json with the patched preprocessing step."
         )
 
@@ -38,21 +41,29 @@ def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
 def wca_topology_exclusion_pairs(
     priors: dict[str, Any], num_molecules: int
 ) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
-    """Return molecule-level bonded (1-2) and explicit-angle (1-3) WCA exclusions."""
-    direct_pairs: set[tuple[int, int]] = set()
-    for bond in priors.get("bonds", []):
-        mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
-        if 0 <= mi < num_molecules and 0 <= mj < num_molecules and mi != mj:
-            direct_pairs.add((min(mi, mj), max(mi, mj)))
+    """Return the explicit molecule-pair WCA exclusions stored in cg_priors."""
+    validate_wca_exclusion_policy(priors)
+    meta = priors["wca_exclusions"]
 
-    one_three_pairs: set[tuple[int, int]] = set()
-    for angle in priors.get("angles", []):
-        mi, mk = int(angle["mol_i"]), int(angle["mol_k"])
-        if 0 <= mi < num_molecules and 0 <= mk < num_molecules and mi != mk:
-            key = (min(mi, mk), max(mi, mk))
-            if key not in direct_pairs:
-                one_three_pairs.add(key)
+    def parse_pairs(name: str) -> set[tuple[int, int]]:
+        result: set[tuple[int, int]] = set()
+        for raw in meta.get(name, []):
+            if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+                raise ValueError(f"Invalid WCA exclusion pair in {name}: {raw!r}")
+            mi, mj = int(raw[0]), int(raw[1])
+            if not (0 <= mi < num_molecules and 0 <= mj < num_molecules and mi != mj):
+                raise ValueError(f"Out-of-range WCA exclusion pair in {name}: {(mi, mj)}")
+            result.add((min(mi, mj), max(mi, mj)))
+        return result
 
+    direct_pairs = parse_pairs("direct_pairs")
+    one_three_pairs = parse_pairs("one_three_pairs")
+    if direct_pairs & one_three_pairs:
+        raise ValueError("WCA direct_pairs and one_three_pairs must be disjoint")
+    if len(direct_pairs) != int(meta.get("direct_pair_count", -1)):
+        raise ValueError("WCA direct_pair_count does not match explicit direct_pairs")
+    if len(one_three_pairs) != int(meta.get("one_three_pair_count", -1)):
+        raise ValueError("WCA one_three_pair_count does not match explicit one_three_pairs")
     return direct_pairs, one_three_pairs
 
 def sha256_file(path: str | Path) -> str:

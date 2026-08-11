@@ -5,6 +5,7 @@ import numpy as np
 from geometry_utils import diagonalize_inertia_tensor, minimum_image_distance_matrix
 import struct
 import json
+import copy
 import argparse
 import sys
 import os
@@ -47,7 +48,35 @@ MAPPING_METHOD = MAPPING_DATA.get("mapping_method", "COM")
 mapping_by_resname = MAPPING_DATA.get("residues", {})
 site_types = MAPPING_DATA.get("site_types", {})
 
-BONDS = config_data.get("bonds", [])
+BONDS = copy.deepcopy(config_data.get("bonds", []))
+ANGLES = copy.deepcopy(config_data.get("angles", []))
+DIHEDRALS = copy.deepcopy(config_data.get("dihedrals", []))
+
+# Optional geometry defaults for bonded priors.  They are applied before both
+# Boltzmann inversion and WCA 1-3 classification, and are copied into the
+# generated cg_priors.json.  Omitting the setting preserves COM-based angles.
+PRIOR_GEOMETRY = config_data.get("prior_geometry", {})
+_DEFAULT_ANGLE_SITE = PRIOR_GEOMETRY.get("default_angle_site", None)
+if _DEFAULT_ANGLE_SITE is not None:
+    _DEFAULT_ANGLE_SITE = int(_DEFAULT_ANGLE_SITE)
+    for _angle in ANGLES:
+        if not isinstance(_angle, dict):
+            continue
+        _angle.setdefault("site_i", _DEFAULT_ANGLE_SITE)
+        _angle.setdefault("site_j", _DEFAULT_ANGLE_SITE)
+        _angle.setdefault("site_k", _DEFAULT_ANGLE_SITE)
+
+# WCA exclusion membership is a topological property, not a property of the
+# analytic energy form.  ``exclude_wca`` is therefore carried explicitly on
+# generated priors.  For legacy configs, distance restraints of type Morse are
+# non-topological by default; ordinary bond potentials retain the old default.
+for _bond in BONDS:
+    if isinstance(_bond, dict):
+        _bond.setdefault("exclude_wca", str(_bond.get("type", "harmonic")).lower() != "morse")
+for _angle in ANGLES:
+    if isinstance(_angle, dict):
+        _angle.setdefault("exclude_wca", True)
+
 # When --priors is supplied, WCA topology exclusions must be derived from the
 # exact bonded topology that will later be subtracted and used at runtime.
 _preloaded_priors = None
@@ -58,9 +87,7 @@ WCA_TOPOLOGY_BONDS = (
     _preloaded_priors.get("bonds", BONDS) if _preloaded_priors is not None else BONDS
 )
 WCA_TOPOLOGY_ANGLES = (
-    _preloaded_priors.get("angles", config_data.get("angles", []))
-    if _preloaded_priors is not None
-    else config_data.get("angles", [])
+    _preloaded_priors.get("angles", ANGLES) if _preloaded_priors is not None else ANGLES
 )
 WCA_SIGMA = config_data.get("wca_sigma", 0.0)
 WCA_EPSILON = config_data.get("wca_epsilon", 0.0)
@@ -107,13 +134,6 @@ if DECOY_TARGET_FRACTION > 0.0 and not ALLOW_UNMASKED_ZERO_TARGET_DECOYS:
     )
 RIGID_BODIES_CONFIG = config_data.get("rigid_bodies", {})
 
-
-
-# ANGLES will be loaded below
-
-ANGLES = config_data.get("angles", [])
-DIHEDRALS = config_data.get("dihedrals", [])
-
 print(f"[INFO] Caricamento MDAnalysis: {args.topology}, {args.trajectory}...")
 u = mda.Universe(args.topology, args.trajectory)
 
@@ -125,16 +145,32 @@ def get_mass(atom_name):
 
 
 
-def build_wca_topology_exclusions(bonds, angles, num_molecules):
-    """Return molecule-level 1-2 and explicit-angle 1-3 WCA exclusions.
+def _bond_excludes_wca(bond):
+    """Return whether a bonded prior defines a topological 1-2 WCA exclusion."""
+    if isinstance(bond, dict):
+        return bool(bond.get("exclude_wca", str(bond.get("type", "harmonic")).lower() != "morse"))
+    # Legacy list/tuple bonds are ordinary topological bonds.
+    return isinstance(bond, (list, tuple)) and len(bond) >= 2
 
-    Direct pairs are taken from bonded priors.  1-3 pairs are taken only from
-    explicit angle priors (the angle endpoints), not from arbitrary two-hop
-    paths through Morse/restraint bonds.  Every virtual-site cross pair between
-    those molecule pairs is excluded from the non-bonded WCA prior.
+
+def _angle_excludes_wca(angle):
+    """Return whether an angle prior defines an explicit 1-3 WCA exclusion."""
+    return isinstance(angle, dict) and bool(angle.get("exclude_wca", True))
+
+
+def build_wca_topology_exclusions(bonds, angles, num_molecules):
+    """Return molecule-level topological 1-2 and explicit-angle 1-3 exclusions.
+
+    WCA exclusions are determined by explicit topology semantics, not merely by
+    the presence of an analytic restraint between two molecules.  In
+    particular, TEL22 Morse native-contact restraints do not suppress the
+    short-range WCA core.  Every virtual-site cross pair between a selected
+    molecule pair is excluded from WCA.
     """
     direct_pairs = set()
     for bond in bonds:
+        if not _bond_excludes_wca(bond):
+            continue
         if isinstance(bond, dict):
             mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
         elif isinstance(bond, (list, tuple)) and len(bond) >= 2:
@@ -146,7 +182,7 @@ def build_wca_topology_exclusions(bonds, angles, num_molecules):
 
     one_three_pairs = set()
     for angle in angles:
-        if not isinstance(angle, dict):
+        if not _angle_excludes_wca(angle):
             continue
         mi, mk = int(angle["mol_i"]), int(angle["mol_k"])
         if 0 <= mi < num_molecules and 0 <= mk < num_molecules and mi != mk:
@@ -576,46 +612,11 @@ for ts_idx, ts in enumerate(u.trajectory):
     # The WCA prior used in Pass 2/runtime acts on the averaged rigid geometry,
     # so WCA statistics are collected only after the Kabsch rigid-body average.
 
-    # Collect bond distances for Boltzmann Inversion (only if specified as a pair [i, j] or [i, j, site_i, site_j])
-    for b_idx, b in enumerate(BONDS):
-        if isinstance(b, list) and len(b) >= 2:
-            i, j = b[0], b[1]
-            site_i = b[2] if len(b) > 2 else -1
-            site_j = b[3] if len(b) > 3 else -1
-            b_key = tuple(b)
-        elif isinstance(b, dict) and b.get("r0") == "auto":
-            i, j = b["mol_i"], b["mol_j"]
-            site_i = b.get("site_i", -1)
-            site_j = b.get("site_j", -1)
-            b_key = f"dict_{b_idx}"
-        else:
-            continue
-            
-        if i < len(frame_centers) and j < len(frame_centers):
-            pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
-            pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
-            
-            r_vec = mic_vector(pos_i, pos_j, box_dim)
-            r = np.linalg.norm(r_vec)
-            bond_distances[b_key].append(r)
-            
-    for idx, a in enumerate(ANGLES):
-        i, j, k = a["mol_i"], a["mol_j"], a["mol_k"]
-        if i < len(frame_centers) and j < len(frame_centers) and k < len(frame_centers):
-            pos_i = resolve_site_position(frame_centers, frame_sites, i, a.get("site_i", -1))
-            pos_j = resolve_site_position(frame_centers, frame_sites, j, a.get("site_j", -1))
-            pos_k = resolve_site_position(frame_centers, frame_sites, k, a.get("site_k", -1))
-            angle_values[f"dict_{idx}"].append(get_angle(pos_i, pos_j, pos_k, box_dim))
-            
-    for idx, d in enumerate(DIHEDRALS):
-        i, j, k, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
-        if i < len(frame_centers) and j < len(frame_centers) and k < len(frame_centers) and l < len(frame_centers):
-            pos_i = resolve_site_position(frame_centers, frame_sites, i, d.get("site_i", -1))
-            pos_j = resolve_site_position(frame_centers, frame_sites, j, d.get("site_j", -1))
-            pos_k = resolve_site_position(frame_centers, frame_sites, k, d.get("site_k", -1))
-            pos_l = resolve_site_position(frame_centers, frame_sites, l, d.get("site_l", -1))
-            dihedral_values[f"dict_{idx}"].append(get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim))
-            
+    # Bond/angle/dihedral statistics are deliberately NOT collected here.
+    # Multi-site bodies still contain instantaneous internal distortions at
+    # this point.  They are collected after the ideal rigid geometry has been
+    # finalized, using exactly the same reconstructed sites as Pass 2/runtime.
+
 # Refuse to continue if force mapping produced an all-zero trajectory.
 _reference_force_max = max(
     (float(np.max(np.abs(np.asarray(frame, dtype=float)))) for frame in cg_forces_history),
@@ -710,38 +711,83 @@ for resname, info in rigid_bodies_info.items():
         "siti salvati nel frame degli assi principali."
     )
 
-# Recompute WCA statistics on the same rigidified geometry used in Pass 2.
-# This must happen after the Kabsch average above: fitting on the raw mapped
-# sites and subtracting the prior on ideal rigid sites are different
-# Hamiltonians and can create artificial deep-core WCA forces.
+# Collect every geometry-derived prior statistic on the same effective CG
+# geometry used by Pass 2/runtime.  This is essential for rigid multi-site
+# bodies: fitting on raw mapped sites and applying on ideal rigid sites would
+# define different Hamiltonians.
+print("\n[INFO] Raccolta statistiche bonded sulla geometria CG effettiva usata nel Pass 2...")
 if WCA_SIGMA == "auto":
-    print("\n[INFO] Raccolta distanze WCA sulla geometria rigidizzata usata nel Pass 2...")
+    print("[INFO] Raccolta simultanea delle distanze WCA nonbonded...")
     all_pairwise_distances = {}
     exact_pair_min = {}
-    for ts_idx, raw_frame_sites in enumerate(sites_data_history):
-        if ts_idx % 100 == 0:
-            print(
-                f"\r[INFO] WCA rigid geometry: Frame {ts_idx}/{len(sites_data_history)}",
-                end="",
-            )
-        rigid_frame_sites = reconstruct_rigid_sites_for_frame(
-            raw_frame_sites,
-            cg_centers_history[ts_idx],
-            mol_resnames,
-            rigid_bodies_info,
+
+for ts_idx, raw_frame_sites in enumerate(sites_data_history):
+    if ts_idx % 100 == 0:
+        print(
+            f"\r[INFO] Prior geometry: Frame {ts_idx}/{len(sites_data_history)}",
+            end="",
         )
+
+    frame_centers = cg_centers_history[ts_idx]
+    box_dim = box_dim_history[ts_idx]
+    rigid_frame_sites = reconstruct_rigid_sites_for_frame(
+        raw_frame_sites,
+        frame_centers,
+        mol_resnames,
+        rigid_bodies_info,
+    )
+
+    for b_idx, b in enumerate(BONDS):
+        if isinstance(b, list) and len(b) >= 2:
+            i, j = b[0], b[1]
+            site_i = b[2] if len(b) > 2 else -1
+            site_j = b[3] if len(b) > 3 else -1
+            b_key = tuple(b)
+        elif isinstance(b, dict) and b.get("r0") == "auto":
+            i, j = b["mol_i"], b["mol_j"]
+            site_i = b.get("site_i", -1)
+            site_j = b.get("site_j", -1)
+            b_key = f"dict_{b_idx}"
+        else:
+            continue
+
+        if i < len(frame_centers) and j < len(frame_centers):
+            pos_i = resolve_site_position(frame_centers, rigid_frame_sites, i, site_i)
+            pos_j = resolve_site_position(frame_centers, rigid_frame_sites, j, site_j)
+            r = np.linalg.norm(mic_vector(pos_i, pos_j, box_dim))
+            bond_distances[b_key].append(r)
+
+    for idx, a in enumerate(ANGLES):
+        i, j, k = a["mol_i"], a["mol_j"], a["mol_k"]
+        if i < len(frame_centers) and j < len(frame_centers) and k < len(frame_centers):
+            pos_i = resolve_site_position(frame_centers, rigid_frame_sites, i, a.get("site_i", -1))
+            pos_j = resolve_site_position(frame_centers, rigid_frame_sites, j, a.get("site_j", -1))
+            pos_k = resolve_site_position(frame_centers, rigid_frame_sites, k, a.get("site_k", -1))
+            angle_values[f"dict_{idx}"].append(get_angle(pos_i, pos_j, pos_k, box_dim))
+
+    for idx, d in enumerate(DIHEDRALS):
+        i, j, k, l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
+        if i < len(frame_centers) and j < len(frame_centers) and k < len(frame_centers) and l < len(frame_centers):
+            pos_i = resolve_site_position(frame_centers, rigid_frame_sites, i, d.get("site_i", -1))
+            pos_j = resolve_site_position(frame_centers, rigid_frame_sites, j, d.get("site_j", -1))
+            pos_k = resolve_site_position(frame_centers, rigid_frame_sites, k, d.get("site_k", -1))
+            pos_l = resolve_site_position(frame_centers, rigid_frame_sites, l, d.get("site_l", -1))
+            dihedral_values[f"dict_{idx}"].append(get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim))
+
+    if WCA_SIGMA == "auto":
         accumulate_wca_distance_samples(
             rigid_frame_sites,
-            box_dim_history[ts_idx],
+            box_dim,
             wca_excluded_mol_matrix,
             all_pairwise_distances,
             exact_pair_min,
         )
-    print()
-    if not all_pairwise_distances:
-        raise RuntimeError(
-            "No nonbonded WCA distance samples were collected on the rigid geometry."
-        )
+
+print()
+if WCA_SIGMA == "auto" and not all_pairwise_distances:
+    raise RuntimeError(
+        "No nonbonded WCA distance samples were collected on the effective CG geometry."
+    )
 
 if WCA_SIGMA == "auto":
     print("\n[INFO] Calcolo parametri WCA geometrici con regolarizzazione gerarchica...")
@@ -946,9 +992,12 @@ if args.priors:
         exclusion_meta.get("exclude_12") is True
         and exclusion_meta.get("exclude_13") is True
         and exclusion_meta.get("scope") == "molecule_pair_all_sites"
+        and exclusion_meta.get("pair_source") == "explicit_topology_pairs_v2"
+        and isinstance(exclusion_meta.get("direct_pairs"), list)
+        and isinstance(exclusion_meta.get("one_three_pairs"), list)
     ):
         raise RuntimeError(
-            "The supplied priors predate the 1-2/1-3 WCA exclusion policy. "
+            "The supplied priors predate the explicit topological WCA-pair policy. "
             "Rebuild cg_priors.json from the physical trajectory before reusing --priors."
         )
     wca_info = derived_priors.get("wca", {})
@@ -1066,6 +1115,9 @@ if derived_priors is None:
         "exclude_12": True,
         "exclude_13": True,
         "scope": "molecule_pair_all_sites",
+        "pair_source": "explicit_topology_pairs_v2",
+        "direct_pairs": [list(pair) for pair in sorted(wca_direct_mol_pairs)],
+        "one_three_pairs": [list(pair) for pair in sorted(wca_one_three_mol_pairs)],
         "direct_pair_count": len(wca_direct_mol_pairs),
         "one_three_pair_count": len(wca_one_three_mol_pairs),
     }

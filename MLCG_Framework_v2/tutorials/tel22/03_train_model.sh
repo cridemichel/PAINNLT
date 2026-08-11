@@ -41,6 +41,8 @@ if [ ! -f "tel22_training_config.json" ]; then
     "physical_validation_only": true,
     "include_decoys_in_train": false,
     "shuffle_each_epoch": true,
+    "report_grad_norms": true,
+    "mps_empty_cache_every_batches": 0,
     "split_seed": 42,
     "validation_fraction": 0.2
 }
@@ -65,7 +67,8 @@ print(
     f"rbf={c.get('num_rbf')} | cutoff={c.get('cutoff')} nm | "
     f"epochs={c.get('epochs')} | batch={c.get('batch_size')} | "
     f"torque_weight={c.get('torque_weight')} | physical_val={c.get('physical_validation_only')} | "
-    f"include_decoys={c.get('include_decoys_in_train')} | shuffle_each_epoch={c.get('shuffle_each_epoch')}"
+    f"include_decoys={c.get('include_decoys_in_train')} | shuffle_each_epoch={c.get('shuffle_each_epoch')} | "
+    f"grad_diag={c.get('report_grad_norms')} | mps_empty_cache_every={c.get('mps_empty_cache_every_batches', 0)}"
 )
 if int(c.get("diagnostic_overfit_frames", 0)) > 0:
     raise SystemExit(
@@ -82,6 +85,8 @@ if c.get("include_decoys_in_train", False):
     )
 if c.get("shuffle_each_epoch") is not True:
     raise SystemExit("[ERROR] Il training TEL22 richiede shuffle_each_epoch=true.")
+if int(c.get("mps_empty_cache_every_batches", 0)) < 0:
+    raise SystemExit("[ERROR] mps_empty_cache_every_batches deve essere >= 0.")
 if float(topology.get("decoy_target_fraction", 0.0)) != 0.0:
     raise SystemExit(
         "[ERROR] tel22_topology.json abilita legacy decoy senza loss mask. "
