@@ -152,7 +152,10 @@ def validate_model_manifest(
             continue
         actual = recorded[key]
         if isinstance(expected_value, float):
-            if not math.isclose(float(actual), expected_value, rel_tol=1e-12, abs_tol=1e-12):
+            # Architecture floats may be serialized after a float32 round-trip
+            # (e.g. 1.2616 -> 1.2616000175476074).  Treat that representation
+            # noise as equal while still rejecting physically meaningful changes.
+            if not math.isclose(float(actual), expected_value, rel_tol=1e-6, abs_tol=1e-8):
                 mismatches.append(f"{key}: manifest={actual}, runtime={expected_value}")
         elif isinstance(expected_value, str):
             if str(actual) != expected_value:
