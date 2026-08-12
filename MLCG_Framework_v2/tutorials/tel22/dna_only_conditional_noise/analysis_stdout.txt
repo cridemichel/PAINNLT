@@ -1,0 +1,10 @@
+======================================================
+ TEL22 DNA-ONLY CONDITIONAL-NOISE DIAGNOSTIC
+======================================================
+frames=101 copies/frame=10 samples=1010 isolated=25
+DNA-only RMS: force=844.478 kJ/(mol nm), torque=311.494 kJ/mol
+[nearest_different_copy_all] pairs=975 geomP50=0.0565 nm F near/random=1.002 T near/random=1.020
+[nearest_different_copy_isolated] pairs=23 geomP50=0.0803 nm F near/random=0.993 T near/random=1.039
+[nearest_same_copy_gap] pairs=811 geomP50=0.0329 nm F near/random=0.986 T near/random=0.967
+JSON: dna_only_conditional_noise/dna_only_conditional_noise_report.json
+CSV:  dna_only_conditional_noise/dna_only_conditional_noise_pairs.csv
