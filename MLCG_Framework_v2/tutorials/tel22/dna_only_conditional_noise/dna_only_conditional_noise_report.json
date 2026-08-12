@@ -1,0 +1,540 @@
+{
+  "definition": {
+    "geometry": "same CG copy descriptor/Kabsch alignment as analyze_conditional_noise.py",
+    "target": "GROMACS DNA-only rerun mapped per residue: force=sum atomistic DNA-only forces; torque=sum (r-COM)xF; rotated by same Kabsch transform",
+    "question": "Does removing water/K/Cl make instantaneous DNA forces substantially more predictable from the retained CG geometry?",
+    "local_noise_proxy": "MSE(target_i-target_j)/(2*MSE(target)); interpret via nearest/random ratio, not as a rigorous lower bound."
+  },
+  "inputs": {
+    "sampled_frames": 101,
+    "times_ps": [
+      0.0,
+      10.0,
+      20.0,
+      30.0,
+      40.0,
+      50.0,
+      60.0,
+      70.0,
+      80.0,
+      90.0,
+      100.0,
+      110.0,
+      120.0,
+      130.0,
+      140.0,
+      150.0,
+      160.0,
+      170.0,
+      180.0,
+      190.0,
+      200.0,
+      210.0,
+      220.0,
+      230.0,
+      240.0,
+      250.0,
+      260.0,
+      270.0,
+      280.0,
+      290.0,
+      300.0,
+      310.0,
+      320.0,
+      330.0,
+      340.0,
+      350.0,
+      360.0,
+      370.0,
+      380.0,
+      390.0,
+      400.0,
+      410.0,
+      420.0,
+      430.0,
+      440.0,
+      450.0,
+      460.0,
+      470.0,
+      480.0,
+      490.0,
+      500.0,
+      510.0,
+      520.0,
+      530.0,
+      540.0,
+      550.0,
+      560.0,
+      570.0,
+      580.0,
+      590.0,
+      600.0,
+      610.0,
+      620.0,
+      630.0,
+      640.0,
+      650.0,
+      660.0,
+      670.0,
+      680.0,
+      690.0,
+      700.0,
+      710.0,
+      720.0,
+      730.0,
+      740.0,
+      750.0,
+      760.0,
+      770.0,
+      780.0,
+      790.0,
+      800.0,
+      810.0,
+      820.0,
+      830.0,
+      840.0,
+      850.0,
+      860.0,
+      870.0,
+      880.0,
+      890.0,
+      900.0,
+      910.0,
+      920.0,
+      930.0,
+      940.0,
+      950.0,
+      960.0,
+      970.0,
+      980.0,
+      990.0,
+      1000.0
+    ],
+    "raw_dataset_frame_indices": [
+      0,
+      10,
+      20,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90,
+      100,
+      110,
+      120,
+      130,
+      140,
+      150,
+      160,
+      170,
+      180,
+      190,
+      200,
+      210,
+      220,
+      230,
+      240,
+      250,
+      260,
+      270,
+      280,
+      290,
+      300,
+      310,
+      320,
+      330,
+      340,
+      350,
+      360,
+      370,
+      380,
+      390,
+      400,
+      410,
+      420,
+      430,
+      440,
+      450,
+      460,
+      470,
+      480,
+      490,
+      500,
+      510,
+      520,
+      530,
+      540,
+      550,
+      560,
+      570,
+      580,
+      590,
+      600,
+      610,
+      620,
+      630,
+      640,
+      650,
+      660,
+      670,
+      680,
+      690,
+      700,
+      710,
+      720,
+      730,
+      740,
+      750,
+      760,
+      770,
+      780,
+      790,
+      800,
+      810,
+      820,
+      830,
+      840,
+      850,
+      860,
+      870,
+      880,
+      890,
+      900,
+      910,
+      920,
+      930,
+      940,
+      950,
+      960,
+      970,
+      980,
+      990,
+      1000
+    ],
+    "cutoff_nm": 1.2616,
+    "same_copy_min_gap_frames": 20,
+    "seed": 20260811
+  },
+  "counts": {
+    "copy_samples": 1010,
+    "isolated_copy_samples": 25,
+    "isolated_copy_fraction": 0.024752475247524754,
+    "copies_per_frame": 10,
+    "residues_per_copy": 22,
+    "sites_per_copy": 82
+  },
+  "target_scale": {
+    "dna_only_force_component_rms_kj_mol_nm": 844.4776047736746,
+    "dna_only_torque_component_rms_kj_mol": 311.4941271598634
+  },
+  "pair_analyses": {
+    "nearest_different_copy_all": {
+      "nearest": {
+        "name": "nearest_different_copy_all",
+        "pairs": 975,
+        "geometry_rmsd_nm": {
+          "p50": 0.056500166307142476,
+          "p90": 0.08073170769152578,
+          "p95": 0.08694395255848278,
+          "p99": 0.09282630792747558,
+          "max": 0.10033648520061943
+        },
+        "force_pair_difference_rms": {
+          "p50": 1125.7340215354088,
+          "p90": 1293.1862281654567,
+          "p95": 1338.4337499950216,
+          "p99": 1439.7256762383463,
+          "max": 1576.7845026447706
+        },
+        "torque_pair_difference_rms": {
+          "p50": 413.6690115483394,
+          "p90": 498.0147544841288,
+          "p95": 526.8239399864723,
+          "p99": 584.8692681780971,
+          "max": 663.1442712909845
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.9101769328117371,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.9196524620056152,
+        "pearson_geometry_rmsd_vs_force_pair_rms": -0.09338253170270534,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 798.2664052275401,
+            "pair_difference_component_rms": 1097.316742252719,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9447965621948242
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 853.2860960143208,
+            "pair_difference_component_rms": 1154.7399067159438,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9156911969184875
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 856.6456282635477,
+            "pair_difference_component_rms": 1135.9480643565457,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8791935443878174
+          }
+        }
+      },
+      "random_control": {
+        "name": "nearest_different_copy_all_random_control",
+        "pairs": 975,
+        "geometry_rmsd_nm": {
+          "p50": 0.09360928772319456,
+          "p90": 0.1207455723960995,
+          "p95": 0.12846718105513727,
+          "p99": 0.15285265818248556,
+          "max": 0.163828601849472
+        },
+        "force_pair_difference_rms": {
+          "p50": 1127.599477198766,
+          "p90": 1285.615136038341,
+          "p95": 1336.3626142035587,
+          "p99": 1439.080845792972,
+          "max": 1592.8475105841326
+        },
+        "torque_pair_difference_rms": {
+          "p50": 413.5657793647069,
+          "p90": 485.6616604806117,
+          "p95": 508.29578921278795,
+          "p99": 553.3637981079944,
+          "max": 593.1171751145666
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.908275842666626,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.9014182090759277,
+        "pearson_geometry_rmsd_vs_force_pair_rms": 0.049597568837807006,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 798.2664052275401,
+            "pair_difference_component_rms": 1091.664268505867,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.935088038444519
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 853.2860960143208,
+            "pair_difference_component_rms": 1160.3379745709449,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9245909452438354
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 856.6456282635477,
+            "pair_difference_component_rms": 1123.727971358314,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8603793978691101
+          }
+        }
+      },
+      "nearest_vs_random_force_half_mse_ratio": 1.0020930757549706,
+      "nearest_vs_random_torque_half_mse_ratio": 1.0202284053573536
+    },
+    "nearest_different_copy_isolated": {
+      "nearest": {
+        "name": "nearest_different_copy_isolated",
+        "pairs": 23,
+        "geometry_rmsd_nm": {
+          "p50": 0.08032148768761632,
+          "p90": 0.08704669228213463,
+          "p95": 0.08838098833881496,
+          "p99": 0.08925436827953061,
+          "max": 0.08946475249133148
+        },
+        "force_pair_difference_rms": {
+          "p50": 1108.5501612513133,
+          "p90": 1308.3921254127424,
+          "p95": 1334.5746440081539,
+          "p99": 1354.3408428131158,
+          "max": 1359.4167184592297
+        },
+        "torque_pair_difference_rms": {
+          "p50": 449.9436858463541,
+          "p90": 499.02293129723415,
+          "p95": 509.2453125122209,
+          "p99": 532.0782587736256,
+          "max": 538.2260223740775
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.9122311472892761,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 1.0149389505386353,
+        "pearson_geometry_rmsd_vs_force_pair_rms": 0.34945092419606705,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 798.2664052275401,
+            "pair_difference_component_rms": 1066.4898203026298,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8924579620361328
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 853.2860960143208,
+            "pair_difference_component_rms": 1214.193379638655,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.0124098062515259
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 856.6456282635477,
+            "pair_difference_component_rms": 1031.4588095434192,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.7248887419700623
+          }
+        }
+      },
+      "random_control": {
+        "name": "nearest_different_copy_isolated_random_control",
+        "pairs": 23,
+        "geometry_rmsd_nm": {
+          "p50": 0.08776067362271125,
+          "p90": 0.0909808228258026,
+          "p95": 0.09138521034518839,
+          "p99": 0.09143017789560573,
+          "max": 0.09143069290498736
+        },
+        "force_pair_difference_rms": {
+          "p50": 1119.6465525222218,
+          "p90": 1297.6396424995241,
+          "p95": 1323.7088400917678,
+          "p99": 1334.189721735562,
+          "max": 1336.3445564314395
+        },
+        "torque_pair_difference_rms": {
+          "p50": 406.3925827628272,
+          "p90": 494.36721262407394,
+          "p95": 566.7448334970959,
+          "p99": 584.2694248901553,
+          "max": 586.9776741059294
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.9186474680900574,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.9764667749404907,
+        "pearson_geometry_rmsd_vs_force_pair_rms": -0.12201618372009844,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 798.2664052275401,
+            "pair_difference_component_rms": 1045.2404209200133,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8572483658790588
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 853.2860960143208,
+            "pair_difference_component_rms": 1213.6030501779162,
+            "half_pair_difference_mse_fraction_of_target_mse": 1.0114256143569946
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 856.6456282635477,
+            "pair_difference_component_rms": 1063.1296220466274,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.7700874209403992
+          }
+        }
+      },
+      "nearest_vs_random_force_half_mse_ratio": 0.9930154699994751,
+      "nearest_vs_random_torque_half_mse_ratio": 1.0393993698356907
+    },
+    "nearest_same_copy_gap": {
+      "nearest": {
+        "name": "nearest_same_copy_gap",
+        "pairs": 811,
+        "geometry_rmsd_nm": {
+          "p50": 0.03293147977349098,
+          "p90": 0.04135655441577406,
+          "p95": 0.045086186297688235,
+          "p99": 0.06018961066690433,
+          "max": 0.07889759518439278
+        },
+        "force_pair_difference_rms": {
+          "p50": 1098.2927427783704,
+          "p90": 1258.2778630382857,
+          "p95": 1309.5306312994394,
+          "p99": 1420.8609921056864,
+          "max": 1496.5859469155967
+        },
+        "torque_pair_difference_rms": {
+          "p50": 402.64969044204935,
+          "p90": 476.61604598473974,
+          "p95": 501.59338753012923,
+          "p99": 538.1440049172322,
+          "max": 617.9311313498173
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.8560143113136292,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.8576071262359619,
+        "pearson_geometry_rmsd_vs_force_pair_rms": -0.05732858057109756,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 798.2664052275401,
+            "pair_difference_component_rms": 1048.222064291892,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8621461391448975
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 853.2860960143208,
+            "pair_difference_component_rms": 1125.791241163592,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.870354950428009
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 856.6456282635477,
+            "pair_difference_component_rms": 1099.7194182272992,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8240079283714294
+          }
+        }
+      },
+      "random_control": {
+        "name": "nearest_same_copy_gap_random_control",
+        "pairs": 811,
+        "geometry_rmsd_nm": {
+          "p50": 0.05952826853343235,
+          "p90": 0.09197708935508464,
+          "p95": 0.1000604450889403,
+          "p99": 0.12027372396036921,
+          "max": 0.14361891435894417
+        },
+        "force_pair_difference_rms": {
+          "p50": 1105.4306563235425,
+          "p90": 1270.5567003105548,
+          "p95": 1304.72020603063,
+          "p99": 1399.6545427451892,
+          "max": 1532.0548393747126
+        },
+        "torque_pair_difference_rms": {
+          "p50": 405.6709822726044,
+          "p90": 488.4422901443311,
+          "p95": 514.3749850444553,
+          "p99": 561.9577991577736,
+          "max": 591.4393532323842
+        },
+        "force_half_pair_difference_mse_fraction_of_target_mse": 0.8682388663291931,
+        "torque_half_pair_difference_mse_fraction_of_target_mse": 0.8864338994026184,
+        "pearson_geometry_rmsd_vs_force_pair_rms": 0.04637778361206255,
+        "force_by_residue_type": {
+          "DA": {
+            "positions_per_copy": 4,
+            "target_component_rms": 798.2664052275401,
+            "pair_difference_component_rms": 1072.432295267141,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.9024311900138855
+          },
+          "DG": {
+            "positions_per_copy": 12,
+            "target_component_rms": 853.2860960143208,
+            "pair_difference_component_rms": 1128.1082140775002,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8739411234855652
+          },
+          "DT": {
+            "positions_per_copy": 6,
+            "target_component_rms": 856.6456282635477,
+            "pair_difference_component_rms": 1108.440965547819,
+            "half_pair_difference_mse_fraction_of_target_mse": 0.8371297121047974
+          }
+        }
+      },
+      "nearest_vs_random_force_half_mse_ratio": 0.9859202858917755,
+      "nearest_vs_random_torque_half_mse_ratio": 0.967480064575505
+    }
+  },
+  "interpretation_guardrails": [
+    "Compare primarily nearest/random ratios.",
+    "Ratios near 1 mean retained CG geometry barely reduces DNA-only target differences at the tested resolution.",
+    "Ratios well below 1 mean DNA-only targets are substantially more predictable after removing solvent/ions.",
+    "The isolated subset may be small; report its pair count before interpreting it."
+  ]
+}

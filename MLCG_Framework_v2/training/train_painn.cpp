@@ -554,6 +554,8 @@ int main(int argc, char* argv[]) {
     int mps_empty_cache_every_batches = 0;
     int split_seed = 42;
     float validation_fraction = 0.2f;
+    std::string validation_split_mode = "random";
+    int validation_tail_frames = 0;
 
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
@@ -607,6 +609,8 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("mps_empty_cache_every_batches")) mps_empty_cache_every_batches = loaded_config["mps_empty_cache_every_batches"];
         if (loaded_config.contains("split_seed")) split_seed = loaded_config["split_seed"];
         if (loaded_config.contains("validation_fraction")) validation_fraction = loaded_config["validation_fraction"];
+        if (loaded_config.contains("validation_split_mode")) validation_split_mode = loaded_config["validation_split_mode"].get<std::string>();
+        if (loaded_config.contains("validation_tail_frames")) validation_tail_frames = loaded_config["validation_tail_frames"];
         if (batch_size <= 0) {
             throw std::runtime_error("batch_size must be positive");
         }
@@ -615,6 +619,12 @@ int main(int argc, char* argv[]) {
         }
         if (validation_fraction <= 0.0f || validation_fraction >= 1.0f) {
             throw std::runtime_error("validation_fraction must be strictly between 0 and 1");
+        }
+        if (validation_split_mode != "random" && validation_split_mode != "tail") {
+            throw std::runtime_error("validation_split_mode must be either random or tail");
+        }
+        if (validation_tail_frames < 0) {
+            throw std::runtime_error("validation_tail_frames must be >= 0");
         }
         if (torque_weight < 0.0f) {
             throw std::runtime_error("torque_weight must be non-negative");
@@ -665,6 +675,8 @@ int main(int argc, char* argv[]) {
     effective_config["mps_empty_cache_every_batches"] = mps_empty_cache_every_batches;
     effective_config["split_seed"] = split_seed;
     effective_config["validation_fraction"] = validation_fraction;
+    effective_config["validation_split_mode"] = validation_split_mode;
+    effective_config["validation_tail_frames"] = validation_tail_frames;
     effective_config["decoy_detection"] = "exact_zero_residual_target_v1";
     effective_config["loss_normalization"] = "train_target_rms_v1";
     effective_config["energy_gauge"] = "isolated_species_zero_v1";
@@ -792,10 +804,20 @@ int main(int argc, char* argv[]) {
                 "physical_validation_only requested but fewer than two physical frames were detected");
         }
 
-        // The physical split is deterministic and independent of cutoff/model settings.
-        std::shuffle(physical_frames.begin(), physical_frames.end(), g);
-        size_t val_size = static_cast<size_t>(
-            static_cast<double>(physical_frames.size()) * validation_fraction);
+        // Default behavior remains the historical deterministic random split.
+        // Diagnostic datasets may instead be preordered as [train..., validation...]
+        // and request an exact tail holdout.  This avoids reshuffling a controlled
+        // temporal/stratified split prepared by an external dataset builder.
+        if (validation_split_mode == "random") {
+            std::shuffle(physical_frames.begin(), physical_frames.end(), g);
+        }
+        size_t val_size = 0;
+        if (validation_split_mode == "tail" && validation_tail_frames > 0) {
+            val_size = static_cast<size_t>(validation_tail_frames);
+        } else {
+            val_size = static_cast<size_t>(
+                static_cast<double>(physical_frames.size()) * validation_fraction);
+        }
         val_size = std::max<size_t>(1, std::min(val_size, physical_frames.size() - 1));
         const size_t train_physical_size = physical_frames.size() - val_size;
 
@@ -818,8 +840,10 @@ int main(int argc, char* argv[]) {
                   << "       - Decoys excluded from optimization: "
                   << (include_decoys_in_train ? 0 : detected_decoy_frames) << "\n"
                   << "       - Physical validation: " << val_dataset.size() << "\n"
-                  << "       - Split seed: " << split_seed
-                  << " | validation_fraction=" << validation_fraction << "\n";
+                  << "       - Split mode: " << validation_split_mode
+                  << " | split seed=" << split_seed
+                  << " | validation_fraction=" << validation_fraction
+                  << " | validation_tail_frames=" << validation_tail_frames << "\n";
     } else {
         // Generic split.  Safe default: discard legacy unmasked decoys rather
         // than mixing artificial zero-target frames into train/validation.
@@ -827,12 +851,19 @@ int main(int argc, char* argv[]) {
         if (include_decoys_in_train) {
             split_pool.insert(split_pool.end(), decoy_frames.begin(), decoy_frames.end());
         }
-        std::shuffle(split_pool.begin(), split_pool.end(), g);
+        if (validation_split_mode == "random") {
+            std::shuffle(split_pool.begin(), split_pool.end(), g);
+        }
         if (split_pool.size() < 2) {
             throw std::runtime_error("Need at least two frames for train/validation split");
         }
-        size_t val_size = static_cast<size_t>(
-            static_cast<double>(split_pool.size()) * validation_fraction);
+        size_t val_size = 0;
+        if (validation_split_mode == "tail" && validation_tail_frames > 0) {
+            val_size = static_cast<size_t>(validation_tail_frames);
+        } else {
+            val_size = static_cast<size_t>(
+                static_cast<double>(split_pool.size()) * validation_fraction);
+        }
         val_size = std::max<size_t>(1, std::min(val_size, split_pool.size() - 1));
         const size_t train_size = split_pool.size() - val_size;
         train_dataset.assign(split_pool.begin(), split_pool.begin() + train_size);
