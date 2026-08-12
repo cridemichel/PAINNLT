@@ -1,6 +1,0 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(test_painn_eval)
-find_package(Torch REQUIRED)
-add_executable(test_painn_eval test_painn_eval.cpp)
-target_link_libraries(test_painn_eval "${TORCH_LIBRARIES}")
-set_property(TARGET test_painn_eval PROPERTY CXX_STANDARD 14)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -42,18 +42,16 @@ class PreprocessingGeometryTests(unittest.TestCase):
         pass2 = source.index("3. PASS 2: SOTTRAZIONE PRIOR")
         self.assertLess(rigid_finalize, bonded_collect)
         self.assertLess(bonded_collect, pass2)
-        # There must be no DBI accumulation on the raw mapped geometry before
-        # the rigid-body reference geometry has been finalized.
         self.assertNotIn("bond_distances[b_key].append(r)", source[:bonded_collect])
         self.assertNotIn("angle_values[f\"dict_{idx}\"].append", source[:bonded_collect])
 
-    def test_tel22_uses_same_site_chain_for_backbone_bonds_and_angles(self):
-        import json
-        config = json.loads((ROOT / "tutorials" / "tel22" / "tel22_topology.json").read_text())
-        self.assertEqual(config.get("prior_geometry", {}).get("default_angle_site"), 0)
-        for bond in config.get("bonds", []):
-            if str(bond.get("type", "")).lower() == "harmonic":
-                self.assertEqual((bond.get("site_i"), bond.get("site_j")), (0, 0))
+    def test_default_topology_template_is_chemistry_agnostic(self):
+        config = json.loads((ROOT / "preprocessing" / "topology_config.json").read_text())
+        residues = config["mapping"]["residues"]
+        self.assertEqual(set(residues), {"MOL"})
+        self.assertEqual(set(config["mapping"]["site_types"]), {"CG_A", "CG_B"})
+        self.assertEqual(float(config.get("decoy_target_fraction", -1.0)), 0.0)
+        self.assertFalse(bool(config.get("allow_unmasked_zero_target_decoys", True)))
 
 
 if __name__ == "__main__":

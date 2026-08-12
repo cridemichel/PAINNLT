@@ -1,24 +1,28 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "======================================================"
-echo " 04. ESPRESSO MD EQUILIBRATION "
-echo "======================================================"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRAMEWORK_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PYRESSO="${PYRESSO:-pypresso}"
+DEVICE="${DEVICE:-auto}"
 
-if [ ! -f "tel22_model.pt" ]; then
-    echo "Errore: Modello tel22_model.pt non trovato! Hai eseguito 03_train_model.sh?"
-    exit 1
-fi
+cd "${SCRIPT_DIR}"
 
-echo "Avvio l'equilibrazione con Langevin Dynamics e Force Capping..."
-export PYTORCH_ENABLE_MPS_FALLBACK=1
-../../espresso/build/pypresso ../../simulation/equilibrate.py \
+for path in tel22_model.pt tel22_training_config.json cg_priors.json rigid_bodies_info.json tel22_dataset.bin; do
+    if [ ! -f "${path}" ]; then
+        echo "[ERROR] Missing required input: ${path}" >&2
+        exit 1
+    fi
+done
+
+"${PYRESSO}" "${FRAMEWORK_ROOT}/simulation/equilibrate.py" \
     --model tel22_model.pt \
     --config tel22_training_config.json \
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
     --out_checkpoint equilibrated.npz \
+    --device "${DEVICE}" \
     --kT 2.49
 
-echo "[SUCCESS] Sistema equilibrato e salvato in equilibrated.npz"
+echo "[DONE] equilibrated.npz"

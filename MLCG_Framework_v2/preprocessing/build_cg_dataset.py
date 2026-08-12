@@ -22,9 +22,18 @@ parser.add_argument("-f", "--trajectory", type=str, required=True, help="File di
 parser.add_argument("-j", "--config", type=str, default="topology_config.json", help="File JSON con topologia CG e mapping")
 
 parser.add_argument("-p", "--priors", type=str, default=None, help="File JSON con prior pre-esistenti (salta calcolo statistico DBI e carica questo)")
-parser.add_argument("-o", "--output", type=str, default="../training/cg_dataset.bin", help="Nome del file binario di output")
+parser.add_argument("-o", "--output", type=str, default="cg_dataset.bin", help="Nome del file binario di output")
+parser.add_argument("--priors-output", type=str, default=None, help="Output JSON dei prior; default: cg_priors.json accanto al dataset")
+parser.add_argument("--rb-info-output", type=str, default=None, help="Output JSON dei rigid body; default: rigid_bodies_info.json accanto al dataset")
 parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
 args = parser.parse_args()
+
+output_path = os.path.abspath(args.output)
+output_dir = os.path.dirname(output_path) or os.getcwd()
+os.makedirs(output_dir, exist_ok=True)
+args.output = output_path
+priors_output_path = os.path.abspath(args.priors_output) if args.priors_output else os.path.join(output_dir, "cg_priors.json")
+rb_info_output_path = os.path.abspath(args.rb_info_output) if args.rb_info_output else os.path.join(output_dir, "rigid_bodies_info.json")
 
 try:
     with open(args.config, "r") as mf:
@@ -162,10 +171,10 @@ def build_wca_topology_exclusions(bonds, angles, num_molecules):
     """Return molecule-level topological 1-2 and explicit-angle 1-3 exclusions.
 
     WCA exclusions are determined by explicit topology semantics, not merely by
-    the presence of an analytic restraint between two molecules.  In
-    particular, TEL22 Morse native-contact restraints do not suppress the
-    short-range WCA core.  Every virtual-site cross pair between a selected
-    molecule pair is excluded from WCA.
+    the presence of an analytic restraint between two molecules. Distance
+    restraints such as Morse terms therefore need not suppress the short-range
+    WCA core. Every virtual-site cross pair between a selected molecule pair is
+    excluded from WCA.
     """
     direct_pairs = set()
     for bond in bonds:
@@ -608,7 +617,7 @@ for ts_idx, ts in enumerate(u.trajectory):
     sites_data_history.append(frame_sites)
     
     # WCA distance statistics are intentionally NOT collected here.
-    # At this stage DG sites still contain instantaneous internal distortions.
+    # At this stage multi-site bodies still contain instantaneous internal distortions.
     # The WCA prior used in Pass 2/runtime acts on the averaged rigid geometry,
     # so WCA statistics are collected only after the Kabsch rigid-body average.
 
@@ -866,8 +875,7 @@ if WCA_SIGMA == "auto":
         r_c = alpha * q_low + (1.0 - alpha) * r_base
         
         # Do not let the WCA onset invade more of the physical distribution
-        # than the selected low percentile.  With the TEL22 default this is
-        # Q0.1%, rather than Q1%.
+        # than the selected low percentile configured by wca_quantile_percent.
         r_c = min(r_c, q_low)
 
         # Hard physical-support constraint.  The deep-core guard must lie
@@ -969,17 +977,6 @@ if WCA_SIGMA == "auto":
         f"r_guard <= {WCA_PHYSICAL_GUARD_MARGIN:.3f} * rigid r_min for every type pair."
     )
             
-    # Bug 11: Inject wca_prior_dict into cg_priors.json and DO NOT write wca_priors.json
-    import os
-    import json
-    if os.path.exists("cg_priors.json"):
-        with open("cg_priors.json", "r") as f:
-            cg_priors = json.load(f)
-    else:
-        cg_priors = {}
-        
-    cg_priors["wca_pairs"] = wca_prior_dict
-    
     print(f"[INFO] Elaborazione parametri WCA completata ({len(wca_prior_dict)} coppie)")
 
 print("\n[INFO] Pass 1 completato. Calcolo parametri Harmonic Priors...")
@@ -1123,9 +1120,9 @@ if derived_priors is None:
     }
         
     # Save priors for simulation
-    with open("cg_priors.json", "w") as pf:
+    with open(priors_output_path, "w") as pf:
         json.dump(derived_priors, pf, indent=4)
-    print("[INFO] Salvato file cg_priors.json (da passare poi a run_cg_md.py)")
+    print(f"[INFO] Salvati prior CG in {priors_output_path}")
 
 # I WCA utilizzati nel Pass 2 vengono SEMPRE dai priors finali,
 # sia che siano stati appena calcolati sia che siano stati caricati
@@ -1763,6 +1760,6 @@ print(f"[INFO] Aggiornato il contatore dei frame totali: {total_frames} (Frazion
 print("[INFO] Conversione completata e forze residue salvate con successo nel dataset!")
 
 
-with open("rigid_bodies_info.json", "w") as jf:
+with open(rb_info_output_path, "w") as jf:
     json.dump(rigid_bodies_info, jf, indent=4)
-print("[INFO] Masse e inerzie salvate in rigid_bodies_info.json!")
+print(f"[INFO] Masse, inerzie e geometrie rigid-body salvate in {rb_info_output_path}")

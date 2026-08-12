@@ -150,7 +150,7 @@ Also remember that the minimal box length must satisfy the condition `box_l / 2 
 
 ## 6. Simulating Coarse-Grained Rigid Bodies
 
-When performing Coarse-Graining on complex macromolecules (such as TEL22 or G-quadruplexes), residues are often mapped to multiple CG sites that must move together as a single rigid body. 
+When performing Coarse-Graining on complex multi-site macromolecules, residues are often mapped to multiple CG sites that must move together as a single rigid body.
 The script `convert_gro2bin.py` automatically generates a `rigid_bodies_info.json` file containing the total mass, the principal moments of inertia, and the relative coordinates of each CG site for every residue.
 
 To simulate these rigid bodies in ESPResSo with the PaiNN potential, you must use **Virtual Sites**:
@@ -172,13 +172,13 @@ with open("rigid_bodies_info.json", "r") as f:
 for resname, data in rb_info.items():
     # 1. Real Central Particle
     center_part = system.part.add(
-        pos=[box_l/2, box_l/2, box_l/2], 
+        pos=[box_l/2, box_l/2, box_l/2],
         type=100,
         mass=data["mass_amu"],
         rinertia=data["inertia_amu_nm2"],
         rotation=[1, 1, 1]
     )
-    
+
     # 2. Virtual Sites (if any)
     for site_name, site_data in data.get("sites", {}).items():
         rel_pos = np.array(site_data["relative_pos_nm"])

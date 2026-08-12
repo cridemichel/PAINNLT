@@ -1,27 +1,30 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "======================================================"
-echo " 05. ESPRESSO MD SIMULATION "
-echo "======================================================"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRAMEWORK_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PYRESSO="${PYRESSO:-pypresso}"
+DEVICE="${DEVICE:-auto}"
+CG_STEPS="${CG_STEPS:-20000}"
+CG_DT="${CG_DT:-0.001}"
 
-if [ ! -f "tel22_model.pt" ]; then
-    echo "Errore: Modello tel22_model.pt non trovato! Hai eseguito 03_train_model.sh?"
-    exit 1
-fi
+cd "${SCRIPT_DIR}"
 
-echo "Avvio la simulazione ESPResSo usando il pypresso di sistema."
-echo "Per personalizzare, apri e modifica lo script run_cg_md.py."
+for path in tel22_model.pt tel22_training_config.json cg_priors.json rigid_bodies_info.json tel22_dataset.bin equilibrated.npz; do
+    if [ ! -f "${path}" ]; then
+        echo "[ERROR] Missing required input: ${path}" >&2
+        exit 1
+    fi
+done
 
-echo "Avvio della Dinamica Molecolare Coarse-Grained..."
-export PYTORCH_ENABLE_MPS_FALLBACK=1 && ../../espresso/build/pypresso ../../simulation/run_cg_md.py \
+"${PYRESSO}" "${FRAMEWORK_ROOT}/simulation/run_cg_md.py" \
     --model tel22_model.pt \
     --config tel22_training_config.json \
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel22_dataset.bin \
     --checkpoint equilibrated.npz \
-    --steps 20000 \
-    --dt 0.001 \
-    --kT 2.49\
-    --device mps
+    --steps "${CG_STEPS}" \
+    --dt "${CG_DT}" \
+    --kT 2.49 \
+    --device "${DEVICE}"
