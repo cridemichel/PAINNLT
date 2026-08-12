@@ -387,8 +387,13 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
 print("[INFO] Setting up dummy interactions for Verlet lists...")
-for i in range(nn_config["num_species"] + 2):
-    for j in range(i, nn_config["num_species"] + 2):
+# Only ML site types participate in PaiNN. Do not activate the dummy
+# zero-strength SoftSphere for COM particle types: single-site molecules place
+# their virtual ML site exactly at the COM, so a SoftSphere pair at r=0 would
+# evaluate the singular power-law form and contaminate the reported energy
+# with NaN even when a=0.
+for i in range(nn_config["num_species"]):
+    for j in range(i, nn_config["num_species"]):
         ml_cutoff = nn_config["cutoff"] if "cutoff" in nn_config else 5.0
         system.non_bonded_inter[i, j].soft_sphere.set_params(
             a=0.0, n=1, cutoff=ml_cutoff, offset=0.0)
@@ -481,6 +486,32 @@ def log_diagnostics(step):
 
 def measure_energies():
     energies = system.analysis.energy()
+
+    bad_energy_terms = []
+    for key, value in energies.items():
+        try:
+            scalar = float(value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(scalar):
+            bad_energy_terms.append((key, scalar))
+
+    if bad_energy_terms:
+        print("[CRITICAL] Non-finite ESPResSo energy terms:")
+        for key, value in bad_energy_terms:
+            print(f"    {key!r}: {value!r}")
+
+        print("[INFO] Finite top-level ESPResSo energies:")
+        for key in ("kinetic", "kinetic_lin", "kinetic_rot",
+                    "bonded", "non_bonded",
+                    "coulomb", "external_fields"):
+            if key in energies:
+                print(f"    {key!r}: {energies[key]!r}")
+
+        raise RuntimeError(
+            "Non-finite ESPResSo energy at the current state"
+        )
+
     e_class = energies["total"]
     e_ml = 0.0
     if args.model:

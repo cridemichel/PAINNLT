@@ -286,8 +286,13 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
 # Zero-strength interactions make the ML cutoff visible to ESPResSo's
 # neighbor-list machinery for every particle-type pair.
 ml_cutoff = float(nn_config.get("cutoff", 5.0))
-for i in range(nn_config["num_species"] + 2):
-    for j in range(i, nn_config["num_species"] + 2):
+# Only ML site types participate in PaiNN. Do not activate the dummy
+# zero-strength SoftSphere for COM particle types: single-site molecules place
+# their virtual ML site exactly at the COM, so a SoftSphere pair at r=0 would
+# evaluate the singular power-law form and contaminate the reported energy
+# with NaN even when a=0.
+for i in range(nn_config["num_species"]):
+    for j in range(i, nn_config["num_species"]):
         system.non_bonded_inter[i, j].soft_sphere.set_params(
             a=0.0, n=1, cutoff=ml_cutoff, offset=0.0
         )
