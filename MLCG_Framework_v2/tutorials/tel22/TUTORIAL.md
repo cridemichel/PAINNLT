@@ -24,3 +24,35 @@ Inputs kept under version control:
 Generated files such as `tel22_dataset.bin`, `cg_priors.json`,
 `rigid_bodies_info.json`, `*.pt`, manifests, checkpoints and trajectories are
 runtime artifacts and are intentionally excluded from the source tree.
+
+## NVE energy-conservation certification
+
+After equilibration, certify the complete conservative Hamiltonian from the same
+`equilibrated.npz` checkpoint at several Velocity-Verlet time steps:
+
+```bash
+PYRESSO=../../espresso/build/pypresso bash 06_certify_nve.sh
+```
+
+The wrapper defaults to CPU and runs the same physical duration at
+`dt = 0.002, 0.001, 0.0005, 0.00025 ps`. It writes
+`nve_certification/nve_certification_report.json` and returns a non-zero exit
+status unless both conditions pass:
+
+1. the RMS total-energy error follows `RMS(dE) ~ dt^p` with the configured
+   exponent/r-squared guardrails (defaults: `1.7 <= p <= 2.3`, `R^2 >= 0.97`);
+2. the difference between the mean total energy in the final and initial 20%
+   blocks is below the configured relative threshold (default `1e-4`).
+
+Useful overrides:
+
+```bash
+NVE_DURATION_PS=10 \
+NVE_DTS="0.002 0.001 0.0005 0.00025" \
+NVE_MAX_RELATIVE_DRIFT=1e-5 \
+PYRESSO=../../espresso/build/pypresso \
+bash 06_certify_nve.sh --overwrite
+```
+
+The certification path refuses explicitly tabulated bonded priors. Analytic
+Morse, harmonic, FENE, harmonic-angle and cosine-dihedral priors remain allowed.
