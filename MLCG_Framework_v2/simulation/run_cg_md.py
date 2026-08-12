@@ -22,6 +22,8 @@ from framework_utils import (
     wca_topology_exclusion_pairs,
 )
 
+from espresso_interactions import make_analytic_morse_bond
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
@@ -43,7 +45,7 @@ parser.add_argument("--allow_missing_model_manifest", action="store_true", help=
 parser.add_argument("--allow_legacy_checkpoint", action="store_true", help="Allow checkpoints without provenance metadata")
 parser.add_argument("--allow_checkpoint_mismatch", action="store_true", help="Continue despite checkpoint hash or particle-identity mismatches")
 parser.add_argument("--allow_unsafe_mpi", action="store_true", help="Allow the uncertified multi-rank PaiNN path")
-parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow Morse/tabulated priors during NVE despite separate energy/force interpolation")
+parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow explicitly tabulated priors during NVE despite separate energy/force interpolation")
 args = parser.parse_args()
 
 print("[INFO] Loading configurations...")
@@ -68,8 +70,9 @@ if args.model:
 unsafe_tables = nonconservative_prior_entries(priors)
 if args.nve and unsafe_tables and not args.allow_nonconservative_tables:
     raise RuntimeError(
-        "NVE certification is disabled for Morse/tabulated priors because ESPResSo "
-        "interpolates energy and force separately. Offending entries: " + ", ".join(unsafe_tables)
+        "NVE certification is disabled for explicitly tabulated priors because ESPResSo "
+        "interpolates energy and force separately. Analytic Morse bonds are NVE-safe. "
+        "Offending entries: " + ", ".join(unsafe_tables)
         + ". Pass --allow_nonconservative_tables only for a deliberate diagnostic run."
     )
 
@@ -282,20 +285,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "fene":
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
     elif b_type == "morse":
-        # We model Morse as tabulated to allow large r without breaking FENE limits
-        rmin_tab = 0.001
-        rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
-        r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
-        
-        diff = r_vals - b["r0"]
-        exp_term = np.exp(-b["a"] * diff)
-        
-        energy = b["D"] * (1.0 - exp_term)**2
-        force = -2.0 * b["a"] * b["D"] * (1.0 - exp_term) * exp_term
-        
-        bond = espressomd.interactions.TabulatedDistance(
-            min=rmin_tab, max=rmax_tab, energy=energy, force=force
-        )
+        bond = make_analytic_morse_bond(espressomd.interactions, b)
     elif b_type == "tabulated":
         data = np.loadtxt(b["file"])
         rmin_tab = float(b["min"])

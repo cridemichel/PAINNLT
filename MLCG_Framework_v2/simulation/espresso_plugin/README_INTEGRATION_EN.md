@@ -196,3 +196,39 @@ If a residue is mapped to a single CG particle (e.g., Adenine or Thymine), the J
 
 That’s it! Follow the steps above to integrate your PaiNN model into ESPResSo, compile, and run the provided test scripts to verify everything works correctly. If you encounter any issues or need further customization, just let me know.
 
+
+## Analytic Morse bond (required for NVE)
+
+The framework no longer represents bonded Morse priors with
+`TabulatedDistance`. This directory contains `morse_bond.hpp` and
+`install_analytic_morse_bond.py`, which add a conservative pair bond to the
+ESPResSo core, ScriptInterface and `espressomd.interactions`.
+
+The potential convention is identical to preprocessing:
+
+```text
+U(r) = D * (1 - exp(-a * (r-r_0)))^2
+```
+
+`copy_plugin_files.sh` installs this bond automatically. If the ESPResSo source
+tree is not `<framework>/espresso`, provide it explicitly:
+
+```bash
+ESPRESSO_SRC=/path/to/espresso bash simulation/espresso_plugin/copy_plugin_files.sh
+python3 simulation/espresso_plugin/install_analytic_morse_bond.py \
+  --espresso-root /path/to/espresso --check
+```
+
+The installer is idempotent and uses ESPResSo-5.0.x-specific anchors. It aborts
+on an unknown layout rather than making ambiguous edits. Rebuild ESPResSo after
+installation.
+
+### Verify the rebuilt runtime
+
+After rebuilding ESPResSo, run the smoke test with the rebuilt launcher:
+
+```bash
+/path/to/espresso/build/pypresso simulation/espresso_plugin/check_analytic_morse_bond.py
+```
+
+The test creates one Morse bond and verifies that the ESPResSo bonded energy and particle forces agree with the analytic expression.

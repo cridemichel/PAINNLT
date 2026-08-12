@@ -26,3 +26,7 @@ JSON/files rather than being compiled into the code.
 `training/`, `simulation/` or `tests/` depends on that tutorial.
 
 See `HOWTO.md` or `HOWTO_EN.md` for usage.
+
+## ESPResSo extension
+
+Bonded Morse priors are evaluated by the conservative analytic `MorseBond` extension in `simulation/espresso_plugin/`; run `copy_plugin_files.sh` and rebuild ESPResSo before simulations that use `type: "morse"`.

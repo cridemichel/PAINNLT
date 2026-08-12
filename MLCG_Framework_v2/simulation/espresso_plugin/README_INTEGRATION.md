@@ -114,3 +114,39 @@ for i in range(10): # per ogni tipo di atomo
         system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, cutoff=5.0, shift=0.0)
 ```
 Inoltre, ricorda che la dimensione minima della scatola `system.box_l` deve rispettare il criterio `box_l / 2 > cutoff + skin`. Se usi cutoff = 5.0 e skin = 0.4, il box deve essere almeno 10.9x10.9x10.9.
+
+## Bond Morse analitico (necessario per NVE)
+
+Il framework non rappresenta piu' i prior bonded Morse con `TabulatedDistance`.
+La cartella contiene `morse_bond.hpp` e l'installer
+`install_analytic_morse_bond.py`, che aggiunge un vero pair bond conservativo
+al core, alla ScriptInterface e a `espressomd.interactions`.
+
+La convenzione e' la stessa del preprocessing:
+
+```text
+U(r) = D * (1 - exp(-a * (r-r_0)))^2
+```
+
+`copy_plugin_files.sh` installa automaticamente anche questo bond. Se ESPResSo
+non si trova in `<framework>/espresso`, indicare il source tree esplicitamente:
+
+```bash
+ESPRESSO_SRC=/path/to/espresso bash simulation/espresso_plugin/copy_plugin_files.sh
+python3 simulation/espresso_plugin/install_analytic_morse_bond.py \
+  --espresso-root /path/to/espresso --check
+```
+
+L'installer e' idempotente e usa anchor specifici per ESPResSo 5.0.x: se il
+layout non corrisponde, termina con errore invece di applicare modifiche
+ambigue. Dopo l'installazione ESPResSo deve essere ricompilato.
+
+### Verifica del runtime ricompilato
+
+Dopo la ricompilazione di ESPResSo, esegui lo smoke test con il launcher ricompilato:
+
+```bash
+/path/to/espresso/build/pypresso simulation/espresso_plugin/check_analytic_morse_bond.py
+```
+
+Il test crea un singolo Morse bond e verifica che energia bonded e forze sulle particelle coincidano con l'espressione analitica.
