@@ -3,6 +3,7 @@ import espressomd.interactions
 import espressomd.io.writer.vtf
 import espressomd.painn
 import json
+import csv
 import argparse
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
@@ -33,8 +34,11 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
-parser.add_argument("--no_log", action="store_true", help="Disable wandb logging")
-parser.add_argument("--log_interval", type=int, default=10, help="Interval for writing trajectory (default: 10)")
+parser.add_argument("--no_log", action="store_true", help="Disable energy and trajectory logging")
+parser.add_argument("--no_vtf", action="store_true", help="Disable VTF trajectory output while keeping the energy log")
+parser.add_argument("--energy_file", type=str, default="energy.csv", help="Energy CSV output path")
+parser.add_argument("--trajectory_file", type=str, default="cg_trajectory.vtf", help="VTF trajectory output path")
+parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
@@ -94,11 +98,15 @@ system.time_step = args.dt
 system.cell_system.skin = 0.4
 if args.model:
     ensure_single_rank(system, allow_unsafe_mpi=args.allow_unsafe_mpi)
-# Production uses no global force cap; PaiNN forces remain the exact energy gradient.
-if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
-else:
+# Certification/production invariant: no force capping and explicit Velocity Verlet.
+# Force capping changes forces without changing the reported energy and therefore
+# invalidates an NVE conservation test.
+system.force_cap = 0.0
+system.integrator.set_vv()
+if args.nve:
     system.thermostat.turn_off()
+else:
+    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
 
 print(f"[INFO] Running {args.steps} integration steps...")
@@ -400,8 +408,12 @@ if args.model:
 else:
     print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")
 
-if not args.nve:
-    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+# Re-assert the integration invariants after all interactions and the ML plugin
+# have been configured.
+system.force_cap = 0.0
+system.integrator.set_vv()
+if args.nve:
+    system.thermostat.turn_off()
 
 import sys
 import espressomd.io.writer.vtf
@@ -490,66 +502,124 @@ def measure_energies():
     return e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml
 
 
+def stringify_pair(value):
+    if value is None:
+        return ""
+    return ":".join(str(int(v)) for v in value)
+
+
+def record_state(step, energy_writer, energy_handle, vtf_handle):
+    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml = measure_energies()
+    g_dist, g_pair, g_pids, max_f = log_diagnostics(step)
+    real_particles = [p for p in system.part if p.mass > 1e-4]
+    max_t = max(
+        (sum(t_c**2 for t_c in p.torque_lab) ** 0.5 for p in real_particles),
+        default=0.0,
+    )
+    time_ps = float(step) * float(args.dt)
+
+    print(
+        f"[INFO] Step {step}/{args.steps} | t={time_ps:.6f} ps | E_tot: {e_tot:.9f} | "
+        f"E_kin: {e_kin:.6f} | E_ML: {e_ml:.6f} | max_f: {max_f:.2f} | "
+        f"min_dist: {g_dist:.3f} nm (types {g_pair})"
+    )
+
+    if energy_writer is not None:
+        energy_writer.writerow([
+            step,
+            time_ps,
+            e_tot,
+            e_kin,
+            e_kin_trans,
+            e_kin_rot,
+            e_class,
+            e_ml,
+            g_dist,
+            stringify_pair(g_pair),
+            stringify_pair(g_pids),
+            max_f,
+            max_t,
+        ])
+        energy_handle.flush()
+
+    if vtf_handle is not None:
+        vtf_handle.write(f"\ntimestep {step}\n")
+        espressomd.io.writer.vtf.writevcf(system, vtf_handle)
+
+    unsafe = max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15
+    return unsafe
+
+
+simulation_ok = True
 with ExitStack() as stack:
-    energy_file = None
-    vtf_file = None
+    energy_handle = None
+    energy_writer = None
+    vtf_handle = None
     if not args.no_log:
-        energy_file = stack.enter_context(open("energy.csv", "w"))
-        energy_file.write("Step,E_tot,E_kin,E_kin_trans,E_kin_rot,E_class,E_ml,min_dist,min_pair,min_pids,f_max\n")
-        vtf_file = stack.enter_context(open("cg_trajectory.vtf", "w"))
-        espressomd.io.writer.vtf.writevsf(system, vtf_file)
-        for mol_idx, com_id in mol_com_parts.items():
-            for (m_idx, _s_idx), vs_id in mol_vs_parts.items():
-                if m_idx == mol_idx:
-                    vtf_file.write(f"bond {com_id}:{vs_id}\n")
+        energy_handle = stack.enter_context(open(args.energy_file, "w", newline=""))
+        energy_writer = csv.writer(energy_handle)
+        energy_writer.writerow([
+            "Step",
+            "Time_ps",
+            "E_tot",
+            "E_kin",
+            "E_kin_trans",
+            "E_kin_rot",
+            "E_class",
+            "E_ml",
+            "min_dist",
+            "min_pair",
+            "min_pids",
+            "f_max",
+            "torque_max",
+        ])
+        energy_handle.flush()
+
+        if not args.no_vtf:
+            vtf_handle = stack.enter_context(open(args.trajectory_file, "w"))
+            espressomd.io.writer.vtf.writevsf(system, vtf_handle)
+            for mol_idx, com_id in mol_com_parts.items():
+                for (m_idx, _s_idx), vs_id in mol_vs_parts.items():
+                    if m_idx == mol_idx:
+                        vtf_handle.write(f"bond {com_id}:{vs_id}\n")
+
+    # Initialize the force-dependent PaiNN energy at the exact initial state.
+    # This is required for a meaningful E(t=0) in NVE certification.
+    system.integrator.run(0, recalc_forces=True)
+    if record_state(0, energy_writer, energy_handle, vtf_handle):
+        print("[CRITICAL] Safety abort triggered at the initial state.")
+        simulation_ok = False
 
     completed = 0
-    while completed <= args.steps:
+    while simulation_ok and completed < args.steps:
         current = min(args.log_interval, args.steps - completed)
         system.integrator.run(current)
         completed += current
 
-        e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml = measure_energies()
-        g_dist, g_pair, g_pids, max_f = log_diagnostics(completed)
-        real_particles = [p for p in system.part if p.mass > 1e-4]
-        max_t = max(
-            (sum(t_c**2 for t_c in p.torque_lab) ** 0.5 for p in real_particles),
-            default=0.0,
-        )
-
-        print(
-            f"[INFO] Step {completed}/{args.steps} | E_tot: {e_tot:.6f} | "
-            f"E_kin: {e_kin:.2f} | E_ML: {e_ml:.2f} | max_f: {max_f:.2f} | "
-            f"min_dist: {g_dist:.3f} nm (types {g_pair})"
-        )
-        if max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15:
+        if record_state(completed, energy_writer, energy_handle, vtf_handle):
             print("[CRITICAL] Safety abort triggered! max_f > 10000, E_kin > 5000, or min_dist < 0.15")
-            system.analysis.energy() # force update
-            espressomd.io.writer.vtf.writevsf(system, "crash.vtf")
-            espressomd.io.writer.vtf.writevcf(system, "crash.vtf")
-            np.savez("crash_checkpoint.npz",
+            system.integrator.run(0, recalc_forces=True)
+            with open("crash.vtf", "w") as crash_vtf:
+                espressomd.io.writer.vtf.writevsf(system, crash_vtf)
+                espressomd.io.writer.vtf.writevcf(system, crash_vtf)
+            np.savez(
+                "crash_checkpoint.npz",
                 positions=system.part.all().pos,
                 velocities=system.part.all().v,
                 forces=system.part.all().f,
                 quaternions=system.part.all().quat,
-                omega_body=system.part.all().omega_body
+                omega_body=system.part.all().omega_body,
             )
-            print("[CRITICAL] Crash checkpoint saved. Exiting gracefully.")
+            print("[CRITICAL] Crash checkpoint saved. Exiting with non-zero status.")
+            simulation_ok = False
             break
 
-        if energy_file is not None:
-            energy_file.write(
-                f"{completed},{e_tot},{e_kin},{e_kin_trans},{e_kin_rot},{e_class},{e_ml},{g_dist},{g_pair},{g_pids},{max_f}\n"
-            )
-            energy_file.flush()
-
-        if vtf_file is not None:
-            vtf_file.write(f"\ntimestep {completed}\n")
-            espressomd.io.writer.vtf.writevcf(system, vtf_file)
-
-print("\n[INFO] Simulation finished successfully.")
+if simulation_ok:
+    print("\n[INFO] Simulation finished successfully.")
+else:
+    print("\n[ERROR] Simulation terminated by a safety guardrail.")
 
 # Force immediate exit to bypass PyTorch/MPI teardown crashes on macOS
 import sys
 sys.stdout.flush()
-os._exit(0)
+os._exit(0 if simulation_ok else 2)
