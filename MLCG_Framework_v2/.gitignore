@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Build trees
+training/build/
+build/
+CMakeFiles/
+CMakeCache.txt
+
+# ML/dataset artifacts
+*.bin
+*.pt
+*.pt.manifest.json
+*.npz
+*.npy
+
+# MD trajectories/checkpoints/logs
+*.trr
+*.xtc
+*.cpt
+*.edr
+*.tpr
+*.log
+*.vtf
+
+# Generated MLCG metadata (source templates/configs are named differently)
+cg_priors.json
+rigid_bodies_info.json
+
+# Run/analysis outputs
+*_runs/
+output/
+wandb/

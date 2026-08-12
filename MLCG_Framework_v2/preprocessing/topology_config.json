@@ -1,37 +1,27 @@
 {
-    "temperature": 300.0,
-    "wca_sigma": 0.0,
-    "wca_epsilon": 0.0,
-    "bonds": [],
-    "mapping": {
-        "mapping_method": "COM",
-        "residues": {
-            "GUA": {
-                "CG_G1": ["N9", "C8"],
-                "CG_G2": ["N7", "C5"],
-                "CG_G3": ["C4", "N3"],
-                "CG_G4": ["C2", "N1"],
-                "CG_G5": ["C6", "O6"],
-                "CG_G6": ["C1*", "C2*", "C3*"]
-            },
-            "ADE": { "CG_ADE": ["*"] },
-            "DA":  { "CG_ADE": ["*"] },
-            "THY": { "CG_THY": ["*"] },
-            "DT":  { "CG_THY": ["*"] },
-            "ETH": {
-                "CG_CH3": ["C1", "H1", "H2", "H3"],
-                "CG_CH2": ["C2", "H4", "H5"],
-                "CG_OH":  ["O1", "H6"]
-            },
-            "SOL": {
-                "CG_WAT": ["*"]
-            }
-        },
-        "site_types": {
-            "CG_G1": 0, "CG_G2": 1, "CG_G3": 2, "CG_G4": 3, "CG_G5": 4, "CG_G6": 5,
-            "CG_ADE": 6, "CG_THY": 7,
-            "CG_CH3": 8, "CG_CH2": 9, "CG_OH": 10,
-            "CG_WAT": 11
-        }
+  "temperature": 300.0,
+  "mapping": {
+    "mapping_method": "COM",
+    "residues": {
+      "MOL": {
+        "CG_A": ["A1", "A2"],
+        "CG_B": ["B1", "B2"]
+      }
+    },
+    "site_types": {
+      "CG_A": 0,
+      "CG_B": 1
     }
+  },
+  "bonds": [],
+  "angles": [],
+  "dihedrals": [],
+  "wca_sigma": "auto",
+  "wca_epsilon": 1.0,
+  "wca_quantile_percent": 0.1,
+  "wca_guard_fraction": 0.8,
+  "wca_guard_kbt": 10.0,
+  "wca_physical_guard_margin": 0.98,
+  "decoy_target_fraction": 0.0,
+  "allow_unmasked_zero_target_decoys": false
 }

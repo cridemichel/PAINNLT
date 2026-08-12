@@ -1,1 +1,0 @@
-zip -r MLCG_framework_v2.zip . -x "tutorials/ethanol/*" -x "mlcg_venv/*" -x "espresso/*" -i "*.json" "*.py" "*.hpp" "*.cpp" "*.sh" "*.txt" "*.pyx" "*.md" -x "tutorials/water/*" -x "training/build/*" -x "training/build_test/*"
