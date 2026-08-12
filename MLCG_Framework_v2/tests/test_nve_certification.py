@@ -53,6 +53,13 @@ class NVECertificationTests(unittest.TestCase):
         self.assertIn("system.integrator.run(0, recalc_forces=True)", source)
         self.assertIn('"Time_ps"', source)
 
+    def test_dummy_neighbor_interactions_exclude_com_types(self):
+        for name in ("run_cg_md.py", "equilibrate.py"):
+            source = (SIMULATION / name).read_text(encoding="utf-8")
+            self.assertIn('for i in range(nn_config["num_species"]):', source)
+            self.assertIn('for j in range(i, nn_config["num_species"]):', source)
+            self.assertNotIn('range(nn_config["num_species"] + 2)', source)
+
 
 if __name__ == "__main__":
     unittest.main()
