@@ -165,13 +165,17 @@ class FrameworkUtilsTests(unittest.TestCase):
 
     def test_tabulated_nve_guard_classification(self):
         priors = {
-            "bonds": [{"type": "harmonic"}, {"type": "morse"}],
+            "bonds": [
+                {"type": "harmonic"},
+                {"type": "morse"},
+                {"type": "tabulated"},
+            ],
             "angles": [{"type": "tabulated"}],
             "dihedrals": [{"type": "cosine"}],
         }
         self.assertEqual(
             nonconservative_prior_entries(priors),
-            ["bond[1]=morse", "angle[0]=tabulated"],
+            ["bond[2]=tabulated", "angle[0]=tabulated"],
         )
 
     def test_wca_topology_exclusions(self):

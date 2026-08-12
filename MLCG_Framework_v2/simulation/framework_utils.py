@@ -352,7 +352,7 @@ def ensure_single_rank(system: Any, *, allow_unsafe_mpi: bool = False) -> None:
 def nonconservative_prior_entries(priors: dict[str, Any]) -> list[str]:
     entries: list[str] = []
     for index, bond in enumerate(priors.get("bonds", [])):
-        if bond.get("type", "harmonic") in {"morse", "tabulated"}:
+        if bond.get("type", "harmonic") == "tabulated":
             entries.append(f"bond[{index}]={bond.get('type')}")
     for index, angle in enumerate(priors.get("angles", [])):
         if angle.get("type", "harmonic") == "tabulated":

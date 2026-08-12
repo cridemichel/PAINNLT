@@ -17,6 +17,8 @@ from framework_utils import (
     wca_topology_exclusion_pairs,
 )
 
+from espresso_interactions import make_analytic_morse_bond
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=True, help="Trained ML potential (.pt)")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
@@ -188,20 +190,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "fene":
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
     elif b_type == "morse":
-        # We model Morse as tabulated to allow large r without breaking FENE limits
-        rmin_tab = 0.001
-        rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
-        r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
-        
-        diff = r_vals - b["r0"]
-        exp_term = np.exp(-b["a"] * diff)
-        
-        energy = b["D"] * (1.0 - exp_term)**2
-        force = -2.0 * b["a"] * b["D"] * (1.0 - exp_term) * exp_term
-        
-        bond = espressomd.interactions.TabulatedDistance(
-            min=rmin_tab, max=rmax_tab, energy=energy, force=force
-        )
+        bond = make_analytic_morse_bond(espressomd.interactions, b)
     elif b_type == "tabulated":
         data = np.loadtxt(b["file"])
         rmin_tab = float(b["min"])

@@ -1,0 +1,835 @@
+diff --git a/README.md b/README.md
+index 7c2cd90..87efd6c 100644
+--- a/README.md
++++ b/README.md
+@@ -26,3 +26,7 @@ JSON/files rather than being compiled into the code.
+ `training/`, `simulation/` or `tests/` depends on that tutorial.
+ 
+ See `HOWTO.md` or `HOWTO_EN.md` for usage.
++
++## ESPResSo extension
++
++Bonded Morse priors are evaluated by the conservative analytic `MorseBond` extension in `simulation/espresso_plugin/`; run `copy_plugin_files.sh` and rebuild ESPResSo before simulations that use `type: "morse"`.
+diff --git a/simulation/equilibrate.py b/simulation/equilibrate.py
+index d9310cb..c29be13 100644
+--- a/simulation/equilibrate.py
++++ b/simulation/equilibrate.py
+@@ -17,6 +17,8 @@ from framework_utils import (
+     wca_topology_exclusion_pairs,
+ )
+ 
++from espresso_interactions import make_analytic_morse_bond
++
+ parser = argparse.ArgumentParser()
+ parser.add_argument("--model", type=str, required=True, help="Trained ML potential (.pt)")
+ parser.add_argument("--config", type=str, required=True, help="NN config JSON")
+@@ -188,20 +190,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
+     elif b_type == "fene":
+         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
+     elif b_type == "morse":
+-        # We model Morse as tabulated to allow large r without breaking FENE limits
+-        rmin_tab = 0.001
+-        rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
+-        r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
+-        
+-        diff = r_vals - b["r0"]
+-        exp_term = np.exp(-b["a"] * diff)
+-        
+-        energy = b["D"] * (1.0 - exp_term)**2
+-        force = -2.0 * b["a"] * b["D"] * (1.0 - exp_term) * exp_term
+-        
+-        bond = espressomd.interactions.TabulatedDistance(
+-            min=rmin_tab, max=rmax_tab, energy=energy, force=force
+-        )
++        bond = make_analytic_morse_bond(espressomd.interactions, b)
+     elif b_type == "tabulated":
+         data = np.loadtxt(b["file"])
+         rmin_tab = float(b["min"])
+diff --git a/simulation/espresso_interactions.py b/simulation/espresso_interactions.py
+new file mode 100644
+index 0000000..8744587
+--- /dev/null
++++ b/simulation/espresso_interactions.py
+@@ -0,0 +1,37 @@
++"""Factories for ESPResSo interactions used by the generic MLCG runtime."""
++
++from __future__ import annotations
++
++from typing import Any
++
++
++DEFAULT_MORSE_R_CUT_NM = 15.0
++
++
++def make_analytic_morse_bond(interactions: Any, prior: dict[str, Any]):
++    """Construct the conservative MLCG Morse bonded interaction.
++
++    No tabulated fallback is allowed: independent interpolation of energy and
++    force would invalidate strict NVE energy-conservation tests.
++    """
++    cls = getattr(interactions, "MorseBond", None)
++    if cls is None:
++        raise RuntimeError(
++            "This simulation contains a Morse bonded prior, but the current "
++            "ESPResSo build has no espressomd.interactions.MorseBond. Re-run "
++            "simulation/espresso_plugin/copy_plugin_files.sh and rebuild ESPResSo."
++        )
++
++    D = float(prior["D"])
++    a = float(prior["a"])
++    r0 = float(prior["r0"])
++    r_cut = float(prior.get("r_cut", DEFAULT_MORSE_R_CUT_NM))
++    if D < 0.0:
++        raise ValueError("Morse D must be >= 0")
++    if a <= 0.0:
++        raise ValueError("Morse a must be > 0")
++    if r0 < 0.0:
++        raise ValueError("Morse r0 must be >= 0")
++    if r_cut <= 0.0:
++        raise ValueError("Morse r_cut must be > 0")
++    return cls(D=D, a=a, r_0=r0, r_cut=r_cut)
+diff --git a/simulation/espresso_plugin/README_INTEGRATION.md b/simulation/espresso_plugin/README_INTEGRATION.md
+index 6e32108..8d566ed 100644
+--- a/simulation/espresso_plugin/README_INTEGRATION.md
++++ b/simulation/espresso_plugin/README_INTEGRATION.md
+@@ -114,3 +114,39 @@ for i in range(10): # per ogni tipo di atomo
+         system.non_bonded_inter[i, j].lennard_jones.set_params(epsilon=0.0, sigma=1.0, cutoff=5.0, shift=0.0)
+ ```
+ Inoltre, ricorda che la dimensione minima della scatola `system.box_l` deve rispettare il criterio `box_l / 2 > cutoff + skin`. Se usi cutoff = 5.0 e skin = 0.4, il box deve essere almeno 10.9x10.9x10.9.
++
++## Bond Morse analitico (necessario per NVE)
++
++Il framework non rappresenta piu' i prior bonded Morse con `TabulatedDistance`.
++La cartella contiene `morse_bond.hpp` e l'installer
++`install_analytic_morse_bond.py`, che aggiunge un vero pair bond conservativo
++al core, alla ScriptInterface e a `espressomd.interactions`.
++
++La convenzione e' la stessa del preprocessing:
++
++```text
++U(r) = D * (1 - exp(-a * (r-r_0)))^2
++```
++
++`copy_plugin_files.sh` installa automaticamente anche questo bond. Se ESPResSo
++non si trova in `<framework>/espresso`, indicare il source tree esplicitamente:
++
++```bash
++ESPRESSO_SRC=/path/to/espresso bash simulation/espresso_plugin/copy_plugin_files.sh
++python3 simulation/espresso_plugin/install_analytic_morse_bond.py \
++  --espresso-root /path/to/espresso --check
++```
++
++L'installer e' idempotente e usa anchor specifici per ESPResSo 5.0.x: se il
++layout non corrisponde, termina con errore invece di applicare modifiche
++ambigue. Dopo l'installazione ESPResSo deve essere ricompilato.
++
++### Verifica del runtime ricompilato
++
++Dopo la ricompilazione di ESPResSo, esegui lo smoke test con il launcher ricompilato:
++
++```bash
++/path/to/espresso/build/pypresso simulation/espresso_plugin/check_analytic_morse_bond.py
++```
++
++Il test crea un singolo Morse bond e verifica che energia bonded e forze sulle particelle coincidano con l'espressione analitica.
+diff --git a/simulation/espresso_plugin/README_INTEGRATION_EN.md b/simulation/espresso_plugin/README_INTEGRATION_EN.md
+index bc132f1..9c8d33a 100644
+--- a/simulation/espresso_plugin/README_INTEGRATION_EN.md
++++ b/simulation/espresso_plugin/README_INTEGRATION_EN.md
+@@ -196,3 +196,39 @@ If a residue is mapped to a single CG particle (e.g., Adenine or Thymine), the J
+ 
+ That’s it! Follow the steps above to integrate your PaiNN model into ESPResSo, compile, and run the provided test scripts to verify everything works correctly. If you encounter any issues or need further customization, just let me know.
+ 
++
++## Analytic Morse bond (required for NVE)
++
++The framework no longer represents bonded Morse priors with
++`TabulatedDistance`. This directory contains `morse_bond.hpp` and
++`install_analytic_morse_bond.py`, which add a conservative pair bond to the
++ESPResSo core, ScriptInterface and `espressomd.interactions`.
++
++The potential convention is identical to preprocessing:
++
++```text
++U(r) = D * (1 - exp(-a * (r-r_0)))^2
++```
++
++`copy_plugin_files.sh` installs this bond automatically. If the ESPResSo source
++tree is not `<framework>/espresso`, provide it explicitly:
++
++```bash
++ESPRESSO_SRC=/path/to/espresso bash simulation/espresso_plugin/copy_plugin_files.sh
++python3 simulation/espresso_plugin/install_analytic_morse_bond.py \
++  --espresso-root /path/to/espresso --check
++```
++
++The installer is idempotent and uses ESPResSo-5.0.x-specific anchors. It aborts
++on an unknown layout rather than making ambiguous edits. Rebuild ESPResSo after
++installation.
++
++### Verify the rebuilt runtime
++
++After rebuilding ESPResSo, run the smoke test with the rebuilt launcher:
++
++```bash
++/path/to/espresso/build/pypresso simulation/espresso_plugin/check_analytic_morse_bond.py
++```
++
++The test creates one Morse bond and verifies that the ESPResSo bonded energy and particle forces agree with the analytic expression.
+diff --git a/simulation/espresso_plugin/check_analytic_morse_bond.py b/simulation/espresso_plugin/check_analytic_morse_bond.py
+new file mode 100755
+index 0000000..d1c173e
+--- /dev/null
++++ b/simulation/espresso_plugin/check_analytic_morse_bond.py
+@@ -0,0 +1,90 @@
++#!/usr/bin/env python3
++"""Runtime smoke test for the analytic ESPResSo MorseBond extension.
++
++Run this script with the *rebuilt* ESPResSo Python launcher (normally
++``pypresso``).  It checks that the Python binding is present and that bonded
++energy and force agree with the analytic Morse expression on a two-particle
++system.
++"""
++
++from __future__ import annotations
++
++import math
++
++import espressomd
++from espressomd import interactions
++
++
++D = 8.5
++a = 3.2
++r0 = 0.37
++r = 0.51
++r_cut = 2.0
++
++
++def morse_energy(distance: float) -> float:
++    exp_term = math.exp(-a * (distance - r0))
++    return D * (1.0 - exp_term) ** 2
++
++
++def dU_dr(distance: float) -> float:
++    exp_term = math.exp(-a * (distance - r0))
++    return 2.0 * a * D * (1.0 - exp_term) * exp_term
++
++
++def main() -> None:
++    cls = getattr(interactions, "MorseBond", None)
++    if cls is None:
++        raise RuntimeError(
++            "espressomd.interactions.MorseBond is unavailable. Install the "
++            "MLCG extension into the ESPResSo source tree and rebuild ESPResSo."
++        )
++
++    system = espressomd.System(box_l=[10.0, 10.0, 10.0])
++    system.time_step = 1.0e-3
++    system.cell_system.skin = 0.1
++
++    p0 = system.part.add(pos=[4.0, 5.0, 5.0])
++    p1 = system.part.add(pos=[4.0 + r, 5.0, 5.0])
++
++    bond = cls(D=D, a=a, r_0=r0, r_cut=r_cut)
++    system.bonded_inter.add(bond)
++    p0.add_bond((bond, p1))
++
++    system.integrator.run(0, recalc_forces=True)
++
++    observed_energy = float(system.analysis.energy()["bonded"])
++    expected_energy = morse_energy(r)
++
++    # p0 lies to the left of p1.  For r > r0 the attractive force on p0 is
++    # +x with magnitude dU/dr; p1 receives the opposite force.
++    expected_fx_p0 = dU_dr(r)
++    observed_fx_p0 = float(p0.f[0])
++    observed_fx_p1 = float(p1.f[0])
++
++    energy_tol = 1.0e-10 * max(1.0, abs(expected_energy))
++    force_tol = 1.0e-10 * max(1.0, abs(expected_fx_p0))
++
++    if abs(observed_energy - expected_energy) > energy_tol:
++        raise RuntimeError(
++            "MorseBond energy mismatch: "
++            f"observed={observed_energy:.16e}, expected={expected_energy:.16e}"
++        )
++    if abs(observed_fx_p0 - expected_fx_p0) > force_tol:
++        raise RuntimeError(
++            "MorseBond force mismatch on particle 0: "
++            f"observed={observed_fx_p0:.16e}, expected={expected_fx_p0:.16e}"
++        )
++    if abs(observed_fx_p1 + expected_fx_p0) > force_tol:
++        raise RuntimeError(
++            "MorseBond Newton-pair mismatch on particle 1: "
++            f"observed={observed_fx_p1:.16e}, expected={-expected_fx_p0:.16e}"
++        )
++
++    print("[PASS] Runtime analytic MorseBond smoke test")
++    print(f"       U(r)={observed_energy:.12g}")
++    print(f"       F0x={observed_fx_p0:.12g}  F1x={observed_fx_p1:.12g}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/simulation/espresso_plugin/copy_plugin_files.sh b/simulation/espresso_plugin/copy_plugin_files.sh
+index c6fdce3..c208667 100755
+--- a/simulation/espresso_plugin/copy_plugin_files.sh
++++ b/simulation/espresso_plugin/copy_plugin_files.sh
+@@ -3,20 +3,26 @@ set -euo pipefail
+ 
+ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ FRAMEWORK_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
+-CORE_DIR="$FRAMEWORK_ROOT/espresso/src/core/nonbonded_interactions"
+-PYTHON_DIR="$FRAMEWORK_ROOT/espresso/src/python/espressomd"
++ESPRESSO_ROOT="${ESPRESSO_SRC:-$FRAMEWORK_ROOT/espresso}"
++CORE_DIR="$ESPRESSO_ROOT/src/core/nonbonded_interactions"
++PYTHON_DIR="$ESPRESSO_ROOT/src/python/espressomd"
++PYTHON_BIN="${PYTHON_BIN:-python3}"
+ 
+ if [[ ! -d "$CORE_DIR" || ! -d "$PYTHON_DIR" ]]; then
+-    echo "[ERROR] ESPResSo source tree not found under: $FRAMEWORK_ROOT/espresso" >&2
++    echo "[ERROR] ESPResSo source tree not found under: $ESPRESSO_ROOT" >&2
++    echo "        Set ESPRESSO_SRC=/path/to/espresso if it lives elsewhere." >&2
+     exit 1
+ fi
+ 
+-# PaiNN_Architecture.hpp may be a symlink in the plugin directory. Copy the
+-# authoritative training header directly so regular-file and symlink layouts
+-# produce the same ESPResSo sources.
+ cp -f "$FRAMEWORK_ROOT/training/PaiNN_Architecture.hpp" "$CORE_DIR/"
+ cp -f "$SCRIPT_DIR/PaiNN_ML_Potential.hpp" "$CORE_DIR/"
+ cp -f "$SCRIPT_DIR/PaiNN_ML_Potential.cpp" "$CORE_DIR/"
+ cp -f "$SCRIPT_DIR/painn.pyx" "$PYTHON_DIR/"
+ 
+-echo "[PASS] PaiNN plugin sources synchronized with ESPResSo."
++# Install the conservative pairwise Morse bond in the core, ScriptInterface,
++# and Python interface. The installer is idempotent and fails closed if the
++# ESPResSo source layout is not recognized.
++"$PYTHON_BIN" "$SCRIPT_DIR/install_analytic_morse_bond.py" \
++    --espresso-root "$ESPRESSO_ROOT"
++
++printf '[PASS] PaiNN plugin and analytic MorseBond synchronized with ESPResSo: %s\n' "$ESPRESSO_ROOT"
+diff --git a/simulation/espresso_plugin/install_analytic_morse_bond.py b/simulation/espresso_plugin/install_analytic_morse_bond.py
+new file mode 100755
+index 0000000..2fced63
+--- /dev/null
++++ b/simulation/espresso_plugin/install_analytic_morse_bond.py
+@@ -0,0 +1,230 @@
++#!/usr/bin/env python3
++"""Install the MLCG analytic Morse bonded interaction into ESPResSo 5.0.x."""
++
++from __future__ import annotations
++
++import argparse
++import shutil
++from pathlib import Path
++
++
++def _read(path: Path) -> str:
++    if not path.is_file():
++        raise RuntimeError(f"Required ESPResSo source file not found: {path}")
++    return path.read_text()
++
++
++def _replace_once(path: Path, old: str, new: str) -> bool:
++    text = _read(path)
++    if new in text:
++        return False
++    count = text.count(old)
++    if count != 1:
++        raise RuntimeError(
++            f"Expected exactly one installation anchor in {path}, found {count}: {old!r}"
++        )
++    path.write_text(text.replace(old, new, 1))
++    return True
++
++
++def _insert_before_once(path: Path, anchor: str, addition: str, sentinel: str) -> bool:
++    text = _read(path)
++    if sentinel in text:
++        return False
++    count = text.count(anchor)
++    if count != 1:
++        raise RuntimeError(
++            f"Expected exactly one installation anchor in {path}, found {count}: {anchor!r}"
++        )
++    path.write_text(text.replace(anchor, addition + anchor, 1))
++    return True
++
++
++def required_paths(espresso_root: Path) -> dict[str, Path]:
++    return {
++        "bond_data": espresso_root / "src/core/bonded_interactions/bonded_interaction_data.hpp",
++        "forces": espresso_root / "src/core/forces_inline.hpp",
++        "energy": espresso_root / "src/core/energy_inline.hpp",
++        "script_header": espresso_root / "src/script_interface/interactions/BondedInteraction.hpp",
++        "script_init": espresso_root / "src/script_interface/interactions/initialize.cpp",
++        "python": espresso_root / "src/python/espressomd/interactions.py",
++        "morse_header": espresso_root / "src/core/bonded_interactions/morse_bond.hpp",
++    }
++
++
++def install(espresso_root: Path, source_header: Path) -> list[str]:
++    paths = required_paths(espresso_root)
++    for key, path in paths.items():
++        if key != "morse_header":
++            _read(path)
++
++    source = _read(source_header)
++    paths["morse_header"].parent.mkdir(parents=True, exist_ok=True)
++    if not paths["morse_header"].is_file() or paths["morse_header"].read_text() != source:
++        shutil.copyfile(source_header, paths["morse_header"])
++
++    changed: list[str] = []
++
++    if _replace_once(
++        paths["bond_data"],
++        '#include "harmonic.hpp"\n',
++        '#include "harmonic.hpp"\n#include "morse_bond.hpp" // MLCG analytic MorseBond\n',
++    ):
++        changed.append("bonded_interaction_data.hpp include")
++
++    if _replace_once(
++        paths["bond_data"],
++        "OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;",
++        "OifGlobalForcesBond, OifLocalForcesBond, VirtualBond, MorseBond>; // MLCG analytic MorseBond",
++    ):
++        changed.append("Bonded_IA_Parameters")
++
++    force_anchor = (
++        "  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n"
++        "    return iap->force(dx);\n"
++        "  }\n"
++    )
++    if _replace_once(
++        paths["forces"],
++        force_anchor,
++        force_anchor
++        + "  // MLCG analytic MorseBond\n"
++          "  if (auto const *iap = std::get_if<MorseBond>(&iaparams)) {\n"
++          "    return iap->force(dx);\n"
++          "  }\n",
++    ):
++        changed.append("forces_inline.hpp")
++
++    energy_anchor = (
++        "  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n"
++        "    return iap->energy(dx);\n"
++        "  }\n"
++    )
++    if _replace_once(
++        paths["energy"],
++        energy_anchor,
++        energy_anchor
++        + "  // MLCG analytic MorseBond\n"
++          "  if (auto const *iap = std::get_if<MorseBond>(&iaparams)) {\n"
++          "    return iap->energy(dx);\n"
++          "  }\n",
++    ):
++        changed.append("energy_inline.hpp")
++
++    script_class = '''// MLCG analytic MorseBond
++class MorseBond : public BondedInteractionImpl<::MorseBond> {
++ public:
++  MorseBond() {
++    add_parameters({
++        {"D", AutoParameter::read_only, [this]() { return get_struct().D; }},
++        {"a", AutoParameter::read_only, [this]() { return get_struct().a; }},
++        {"r_0", AutoParameter::read_only, [this]() { return get_struct().r0; }},
++        {"r_cut", AutoParameter::read_only,
++         [this]() { return get_struct().r_cut; }},
++    });
++  }
++
++ private:
++  void construct_bond(VariantMap const &params) override {
++    m_bonded_ia =
++        std::make_shared<::Bonded_IA_Parameters>(CoreBondedInteraction(
++            get_value<double>(params, "D"), get_value<double>(params, "a"),
++            get_value<double>(params, "r_0"),
++            get_value<double>(params, "r_cut")));
++  }
++};
++
++'''
++    if _insert_before_once(
++        paths["script_header"],
++        "class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {",
++        script_class,
++        "// MLCG analytic MorseBond",
++    ):
++        changed.append("BondedInteraction.hpp")
++
++    init_anchor = '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n'
++    if _replace_once(
++        paths["script_init"],
++        init_anchor,
++        init_anchor
++        + '  om->register_new<MorseBond>("Interactions::MorseBond"); // MLCG analytic MorseBond\n',
++    ):
++        changed.append("initialize.cpp")
++
++    if _replace_once(
++        paths["python"],
++        "    VIRTUAL_BOND = enum.auto()\n",
++        "    VIRTUAL_BOND = enum.auto()\n"
++        "    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n",
++    ):
++        changed.append("BONDED_IA")
++
++    python_class = '''# MLCG analytic MorseBond Python class
++@script_interface_register
++class MorseBond(BondedInteraction):
++    """Conservative bonded Morse potential.
++
++    U(r) = D * (1 - exp(-a * (r-r_0)))**2
++    """
++
++    _so_name = "Interactions::MorseBond"
++    _type_number = BONDED_IA.MORSE_BOND
++
++    def get_default_params(self):
++        return {"r_cut": 15.0}
++
++
++'''
++    if _insert_before_once(
++        paths["python"],
++        "@script_interface_register\nclass BondedInteractions(ScriptObjectMap):",
++        python_class,
++        "# MLCG analytic MorseBond Python class",
++    ):
++        changed.append("interactions.py class")
++
++    return changed
++
++
++def check(espresso_root: Path, source_header: Path) -> None:
++    paths = required_paths(espresso_root)
++    checks = {
++        "morse header": paths["morse_header"].is_file()
++        and paths["morse_header"].read_text() == _read(source_header),
++        "variant": "VirtualBond, MorseBond>" in _read(paths["bond_data"]),
++        "force dispatch": "std::get_if<MorseBond>" in _read(paths["forces"]),
++        "energy dispatch": "std::get_if<MorseBond>" in _read(paths["energy"]),
++        "script interface": "BondedInteractionImpl<::MorseBond>" in _read(paths["script_header"]),
++        "script registration": 'register_new<MorseBond>("Interactions::MorseBond")' in _read(paths["script_init"]),
++        "python enum": "MORSE_BOND = enum.auto()" in _read(paths["python"]),
++        "python class": "class MorseBond(BondedInteraction):" in _read(paths["python"]),
++    }
++    failed = [name for name, ok in checks.items() if not ok]
++    if failed:
++        raise RuntimeError("Analytic MorseBond installation incomplete: " + ", ".join(failed))
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--espresso-root", type=Path, required=True)
++    parser.add_argument("--check", action="store_true")
++    args = parser.parse_args()
++
++    source_header = Path(__file__).resolve().with_name("morse_bond.hpp")
++    espresso_root = args.espresso_root.expanduser().resolve()
++    if args.check:
++        check(espresso_root, source_header)
++        print("[PASS] Analytic MorseBond is installed consistently.")
++        return
++
++    changed = install(espresso_root, source_header)
++    check(espresso_root, source_header)
++    if changed:
++        print("[PASS] Installed analytic MorseBond: " + ", ".join(changed))
++    else:
++        print("[PASS] Analytic MorseBond already installed; no source edits needed.")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/simulation/espresso_plugin/morse_bond.hpp b/simulation/espresso_plugin/morse_bond.hpp
+new file mode 100644
+index 0000000..6b05599
+--- /dev/null
++++ b/simulation/espresso_plugin/morse_bond.hpp
+@@ -0,0 +1,64 @@
++#pragma once
++
++#include <utils/Vector.hpp>
++
++#include <cmath>
++#include <optional>
++#include <stdexcept>
++
++/**
++ * Conservative pairwise Morse bond used by MLCG priors.
++ *
++ * Potential convention:
++ *   U(r) = D * (1 - exp(-a * (r - r0)))^2
++ */
++struct MorseBond {
++  double D;
++  double a;
++  double r0;
++  double r_cut;
++
++  static constexpr int num = 1;
++
++  MorseBond(double D, double a, double r0, double r_cut)
++      : D{D}, a{a}, r0{r0}, r_cut{r_cut} {
++    if (D < 0.0) {
++      throw std::domain_error("Parameter 'D' must be >= 0");
++    }
++    if (a <= 0.0) {
++      throw std::domain_error("Parameter 'a' must be > 0");
++    }
++    if (r0 < 0.0) {
++      throw std::domain_error("Parameter 'r_0' must be >= 0");
++    }
++    if (r_cut <= 0.0) {
++      throw std::domain_error("Parameter 'r_cut' must be > 0");
++    }
++  }
++
++  double cutoff() const { return r_cut; }
++
++  std::optional<Utils::Vector3d>
++  force(Utils::Vector3d const &dx) const {
++    auto const r = dx.norm();
++    if (r >= r_cut || r == 0.0) {
++      return std::nullopt;
++    }
++
++    auto const exp_term = std::exp(-a * (r - r0));
++    auto const radial_force =
++        -2.0 * a * D * (1.0 - exp_term) * exp_term;
++    return (radial_force / r) * dx;
++  }
++
++  std::optional<double> energy(Utils::Vector3d const &dx) const {
++    auto const r = dx.norm();
++    if (r >= r_cut || r == 0.0) {
++      return std::nullopt;
++    }
++
++    auto const exp_term = std::exp(-a * (r - r0));
++    auto const one_minus_exp = 1.0 - exp_term;
++    return D * one_minus_exp * one_minus_exp;
++  }
++};
+diff --git a/simulation/framework_utils.py b/simulation/framework_utils.py
+index 580f12a..deceead 100644
+--- a/simulation/framework_utils.py
++++ b/simulation/framework_utils.py
+@@ -352,7 +352,7 @@ def ensure_single_rank(system: Any, *, allow_unsafe_mpi: bool = False) -> None:
+ def nonconservative_prior_entries(priors: dict[str, Any]) -> list[str]:
+     entries: list[str] = []
+     for index, bond in enumerate(priors.get("bonds", [])):
+-        if bond.get("type", "harmonic") in {"morse", "tabulated"}:
++        if bond.get("type", "harmonic") == "tabulated":
+             entries.append(f"bond[{index}]={bond.get('type')}")
+     for index, angle in enumerate(priors.get("angles", [])):
+         if angle.get("type", "harmonic") == "tabulated":
+diff --git a/simulation/run_cg_md.py b/simulation/run_cg_md.py
+index 65947c6..8c0457c 100644
+--- a/simulation/run_cg_md.py
++++ b/simulation/run_cg_md.py
+@@ -22,6 +22,8 @@ from framework_utils import (
+     wca_topology_exclusion_pairs,
+ )
+ 
++from espresso_interactions import make_analytic_morse_bond
++
+ parser = argparse.ArgumentParser()
+ parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
+ parser.add_argument("--config", type=str, required=True, help="NN config JSON")
+@@ -43,7 +45,7 @@ parser.add_argument("--allow_missing_model_manifest", action="store_true", help=
+ parser.add_argument("--allow_legacy_checkpoint", action="store_true", help="Allow checkpoints without provenance metadata")
+ parser.add_argument("--allow_checkpoint_mismatch", action="store_true", help="Continue despite checkpoint hash or particle-identity mismatches")
+ parser.add_argument("--allow_unsafe_mpi", action="store_true", help="Allow the uncertified multi-rank PaiNN path")
+-parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow Morse/tabulated priors during NVE despite separate energy/force interpolation")
++parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow explicitly tabulated priors during NVE despite separate energy/force interpolation")
+ args = parser.parse_args()
+ 
+ print("[INFO] Loading configurations...")
+@@ -68,8 +70,9 @@ if args.model:
+ unsafe_tables = nonconservative_prior_entries(priors)
+ if args.nve and unsafe_tables and not args.allow_nonconservative_tables:
+     raise RuntimeError(
+-        "NVE certification is disabled for Morse/tabulated priors because ESPResSo "
+-        "interpolates energy and force separately. Offending entries: " + ", ".join(unsafe_tables)
++        "NVE certification is disabled for explicitly tabulated priors because ESPResSo "
++        "interpolates energy and force separately. Analytic Morse bonds are NVE-safe. "
++        "Offending entries: " + ", ".join(unsafe_tables)
+         + ". Pass --allow_nonconservative_tables only for a deliberate diagnostic run."
+     )
+ 
+@@ -282,20 +285,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
+     elif b_type == "fene":
+         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
+     elif b_type == "morse":
+-        # We model Morse as tabulated to allow large r without breaking FENE limits
+-        rmin_tab = 0.001
+-        rmax_tab = 15.0 # Extend up to 15 nm (larger than the box) so it never crashes!
+-        r_vals = np.linspace(rmin_tab, rmax_tab, 5000)
+-        
+-        diff = r_vals - b["r0"]
+-        exp_term = np.exp(-b["a"] * diff)
+-        
+-        energy = b["D"] * (1.0 - exp_term)**2
+-        force = -2.0 * b["a"] * b["D"] * (1.0 - exp_term) * exp_term
+-        
+-        bond = espressomd.interactions.TabulatedDistance(
+-            min=rmin_tab, max=rmax_tab, energy=energy, force=force
+-        )
++        bond = make_analytic_morse_bond(espressomd.interactions, b)
+     elif b_type == "tabulated":
+         data = np.loadtxt(b["file"])
+         rmin_tab = float(b["min"])
+diff --git a/tests/test_analytic_morse_bond.py b/tests/test_analytic_morse_bond.py
+new file mode 100644
+index 0000000..d4e728a
+--- /dev/null
++++ b/tests/test_analytic_morse_bond.py
+@@ -0,0 +1,118 @@
++import importlib.util
++from pathlib import Path
++import shutil
++import subprocess
++import tempfile
++import unittest
++
++
++ROOT = Path(__file__).resolve().parents[1]
++PLUGIN = ROOT / "simulation" / "espresso_plugin"
++
++
++def load_installer():
++    path = PLUGIN / "install_analytic_morse_bond.py"
++    spec = importlib.util.spec_from_file_location("install_analytic_morse_bond", path)
++    module = importlib.util.module_from_spec(spec)
++    assert spec.loader is not None
++    spec.loader.exec_module(module)
++    return module
++
++
++class AnalyticMorseBondTests(unittest.TestCase):
++    def test_cpp_kernel_is_energy_force_consistent(self):
++        compiler = shutil.which("c++") or shutil.which("clang++") or shutil.which("g++")
++        if compiler is None:
++            self.skipTest("No C++ compiler available")
++        with tempfile.TemporaryDirectory() as td:
++            td = Path(td)
++            (td / "utils").mkdir()
++            (td / "utils/Vector.hpp").write_text(r'''#pragma once
++#include <cmath>
++namespace Utils {
++struct Vector3d {
++  double x=0., y=0., z=0.;
++  Vector3d() = default;
++  Vector3d(double x, double y, double z) : x{x}, y{y}, z{z} {}
++  double norm() const { return std::sqrt(x*x+y*y+z*z); }
++  double operator[](int i) const { return i == 0 ? x : (i == 1 ? y : z); }
++};
++inline Vector3d operator*(double s, Vector3d const &v) {
++  return {s*v.x, s*v.y, s*v.z};
++}
++}
++''')
++            source = td / "test.cpp"
++            source.write_text(r'''#include "morse_bond.hpp"
++#include <cmath>
++int main() {
++  MorseBond b(8.5, 3.2, 0.37, 15.0);
++  auto energy = [&](double r) { return *b.energy(Utils::Vector3d{r,0,0}); };
++  double const r = 0.51;
++  double const h = 1e-6;
++  double const minus_dU = -(energy(r+h)-energy(r-h))/(2*h);
++  auto const f = b.force(Utils::Vector3d{r,0,0});
++  if (!f || std::abs((*f)[0] - minus_dU) > 1e-7) return 1;
++  if (std::abs(energy(0.37)) > 1e-14) return 2;
++  if (b.force(Utils::Vector3d{15.1,0,0}).has_value()) return 3;
++  if (b.energy(Utils::Vector3d{15.1,0,0}).has_value()) return 4;
++  if (b.force(Utils::Vector3d{15.0,0,0}).has_value()) return 5;
++  if (b.energy(Utils::Vector3d{15.0,0,0}).has_value()) return 6;
++  if (b.force(Utils::Vector3d{0.0,0,0}).has_value()) return 7;
++  if (b.energy(Utils::Vector3d{0.0,0,0}).has_value()) return 8;
++  return 0;
++}
++''')
++            exe = td / "test"
++            subprocess.run(
++                [compiler, "-std=c++20", "-O2", "-I", str(td), "-I", str(PLUGIN), str(source), "-o", str(exe)],
++                check=True, capture_output=True, text=True)
++            subprocess.run([str(exe)], check=True)
++
++    def test_installer_is_idempotent_on_espresso_5_style_tree(self):
++        installer = load_installer()
++        with tempfile.TemporaryDirectory() as td:
++            root = Path(td)
++            files = {
++                "src/core/bonded_interactions/bonded_interaction_data.hpp": '#include "harmonic.hpp"\nusing Bonded_IA_Parameters = std::variant<FeneBond, HarmonicBond, QuarticBond, OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;\n',
++                "src/core/forces_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n',
++                "src/core/energy_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n',
++                "src/script_interface/interactions/BondedInteraction.hpp": 'class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n',
++                "src/script_interface/interactions/initialize.cpp": '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n',
++                "src/python/espressomd/interactions.py": 'class BONDED_IA(enum.IntEnum):\n    VIRTUAL_BOND = enum.auto()\n\n@script_interface_register\nclass BondedInteractions(ScriptObjectMap):\n',
++            }
++            for rel, data in files.items():
++                path = root / rel
++                path.parent.mkdir(parents=True, exist_ok=True)
++                path.write_text(data)
++            first = installer.install(root, PLUGIN / "morse_bond.hpp")
++            self.assertTrue(first)
++            installer.check(root, PLUGIN / "morse_bond.hpp")
++            snapshot = {rel: (root / rel).read_text() for rel in files}
++            second = installer.install(root, PLUGIN / "morse_bond.hpp")
++            self.assertEqual(second, [])
++            self.assertEqual(snapshot, {rel: (root / rel).read_text() for rel in files})
++
++    def test_runtime_factory_requires_extension_and_maps_parameters(self):
++        import sys
++        sys.path.insert(0, str(ROOT / "simulation"))
++        try:
++            from espresso_interactions import make_analytic_morse_bond
++        finally:
++            sys.path.pop(0)
++
++        class FakeMorse:
++            def __init__(self, **kwargs):
++                self.kwargs = kwargs
++
++        class WithMorse:
++            MorseBond = FakeMorse
++
++        bond = make_analytic_morse_bond(WithMorse, {"D": 4.0, "a": 5.0, "r0": 0.3})
++        self.assertEqual(bond.kwargs, {"D": 4.0, "a": 5.0, "r_0": 0.3, "r_cut": 15.0})
++        with self.assertRaisesRegex(RuntimeError, "no espressomd.interactions.MorseBond"):
++            make_analytic_morse_bond(object(), {"D": 4.0, "a": 5.0, "r0": 0.3})
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests/test_framework_utils.py b/tests/test_framework_utils.py
+index 34c2315..9470da3 100755
+--- a/tests/test_framework_utils.py
++++ b/tests/test_framework_utils.py
+@@ -165,13 +165,17 @@ class FrameworkUtilsTests(unittest.TestCase):
+ 
+     def test_tabulated_nve_guard_classification(self):
+         priors = {
+-            "bonds": [{"type": "harmonic"}, {"type": "morse"}],
++            "bonds": [
++                {"type": "harmonic"},
++                {"type": "morse"},
++                {"type": "tabulated"},
++            ],
+             "angles": [{"type": "tabulated"}],
+             "dihedrals": [{"type": "cosine"}],
+         }
+         self.assertEqual(
+             nonconservative_prior_entries(priors),
+-            ["bond[1]=morse", "angle[0]=tabulated"],
++            ["bond[2]=tabulated", "angle[0]=tabulated"],
+         )
+ 
+     def test_wca_topology_exclusions(self):
