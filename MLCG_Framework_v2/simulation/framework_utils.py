@@ -66,6 +66,79 @@ def wca_topology_exclusion_pairs(
         raise ValueError("WCA one_three_pair_count does not match explicit one_three_pairs")
     return direct_pairs, one_three_pairs
 
+def wca_direct_bonded_site_exclusions(
+    priors: dict[str, Any], num_molecules: int
+) -> dict[tuple[int, int], set[tuple[int, int]]]:
+    """Return the explicit virtual-site exclusions for diagnostic selective 1-2 WCA.
+
+    The production preprocessing policy excludes every virtual-site cross pair
+    between topological 1-2 molecule pairs.  For the runtime A/B diagnostic we
+    instead need the narrower set of *actually bonded* site pairs.  This helper
+    reconstructs that mapping from bonds marked ``exclude_wca=true`` and refuses
+    to guess when an explicit 1-2 pair cannot be traced to site indices.
+
+    Returned site tuples are oriented consistently with the sorted molecule-pair
+    key: ``(site_on_lower_mol, site_on_upper_mol)``.
+    """
+    direct_pairs, _ = wca_topology_exclusion_pairs(priors, num_molecules)
+    result: dict[tuple[int, int], set[tuple[int, int]]] = {pair: set() for pair in direct_pairs}
+    seen_bond_record: set[tuple[int, int]] = set()
+
+    for bond in priors.get("bonds", []):
+        if not isinstance(bond, dict):
+            continue
+        excludes_wca = bool(
+            bond.get("exclude_wca", str(bond.get("type", "harmonic")).lower() != "morse")
+        )
+        if not excludes_wca:
+            continue
+        if "mol_i" not in bond or "mol_j" not in bond:
+            continue
+        mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
+        pair = (min(mi, mj), max(mi, mj))
+        if pair not in result:
+            continue
+        seen_bond_record.add(pair)
+        if "site_i" not in bond or "site_j" not in bond:
+            continue
+        si, sj = int(bond["site_i"]), int(bond["site_j"])
+        # A negative site index denotes a COM-level bonded term.  Such a bond
+        # has no directly bonded virtual-site pair to exclude from WCA.
+        if si < 0 or sj < 0:
+            continue
+        if mi <= mj:
+            result[pair].add((si, sj))
+        else:
+            result[pair].add((sj, si))
+
+    missing_records = sorted(pair for pair in direct_pairs if pair not in seen_bond_record)
+    ambiguous_records = sorted(
+        pair
+        for pair in direct_pairs
+        if pair in seen_bond_record
+        and not result[pair]
+        and not any(
+            isinstance(bond, dict)
+            and bool(bond.get("exclude_wca", str(bond.get("type", "harmonic")).lower() != "morse"))
+            and (min(int(bond.get("mol_i", -1)), int(bond.get("mol_j", -1))),
+                 max(int(bond.get("mol_i", -1)), int(bond.get("mol_j", -1)))) == pair
+            and "site_i" in bond and "site_j" in bond
+            for bond in priors.get("bonds", [])
+        )
+    )
+    if missing_records or ambiguous_records:
+        details = []
+        if missing_records:
+            details.append(f"no matching bonded prior for {missing_records[:8]}")
+        if ambiguous_records:
+            details.append(f"missing explicit site_i/site_j for {ambiguous_records[:8]}")
+        raise ValueError(
+            "Selective 1-2 WCA diagnostic requires traceable bonded-site metadata for every "
+            "explicit direct_pair; " + "; ".join(details)
+        )
+    return result
+
+
 def sha256_file(path: str | Path) -> str:
     path = Path(path)
     digest = hashlib.sha256()
