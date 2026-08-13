@@ -1,0 +1,143 @@
+{
+  "definition": {
+    "quantity": "RMS of E_total(t)-E_total(0) over fixed physical duration",
+    "scaling_model": "RMS_dE = C * dt^p",
+    "drift_metric": "abs(mean(last 20% E)-mean(first 20% E)) / characteristic_abs_energy",
+    "linear_fit": "reported as an additional diagnostic, not used as the pass/fail drift metric",
+    "same_initial_state": "all runs load the identical checkpoint file",
+    "integrator": "explicit ESPResSo Velocity Verlet",
+    "thermostat": "off (--nve)",
+    "force_cap": 0.0,
+    "reference_device": "cpu"
+  },
+  "inputs_sha256": {
+    "runner": "9758002416744aa224cde0751b604722e48343f0f2350c1478b5cd964944df9c",
+    "config": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+    "priors": "8ac0f96c8d4c1f667693dd14e39c18431a90f90cfc5d46956a2e5f1eeba82ca9",
+    "rb_info": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+    "dataset": "5e145d184728e9b24b99c39cb4650e696d4c6651f4ef2087d4062f291dbda787",
+    "checkpoint": "42d81303e6b9bfb1f6367fd20a392aae72bb0568b5f4da06537934b110f70852",
+    "model": "324db5d81ff1a703d42ac2dedba5883ce16cf0d0fcfa51fe7ea0a0b4d0a2fee2",
+    "model_manifest": "775011cc75dfb5c89830b71d8f1d8f3ef21486f00f2dfae80cdc2ecbc6e0d82e"
+  },
+  "device": "cpu",
+  "runs": [
+    {
+      "samples": 51,
+      "duration_ps": 0.5,
+      "E0": 2131.5895199191,
+      "E_mean": 2131.5713535831146,
+      "energy_scale": 2131.5895199191,
+      "rms_delta_E": 0.01953867841295291,
+      "centered_rms_E": 0.007193343520127948,
+      "peak_to_peak_E": 0.025350917933792516,
+      "max_abs_delta_E": 0.024714444863093377,
+      "relative_rms_delta_E": 9.166248112204295e-06,
+      "relative_peak_to_peak_E": 1.1892964239547705e-05,
+      "linear_drift_kjmol_per_ps": -0.03165687345471473,
+      "linear_fit_intercept": 2131.5792678014777,
+      "linear_drift_span_kjmol": -0.015828436727357367,
+      "relative_linear_drift_span": 7.425649534980873e-06,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": 2131.5850319962174,
+      "last_block_mean_E": 2131.5691482233715,
+      "block_mean_drift_kjmol": -0.01588377284588205,
+      "relative_block_mean_drift": 7.4516095605897356e-06,
+      "drift_span_over_rms_delta": 0.8129399803904911,
+      "dt_ps": 0.002,
+      "steps": 250,
+      "log_interval_steps": 5,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p002/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p002/run.log"
+    },
+    {
+      "samples": 51,
+      "duration_ps": 0.5,
+      "E0": 2131.5895199191,
+      "E_mean": 2131.585177324244,
+      "energy_scale": 2131.5895199191,
+      "rms_delta_E": 0.004730084075233223,
+      "centered_rms_E": 0.001874984073211937,
+      "peak_to_peak_E": 0.0074754853580998315,
+      "max_abs_delta_E": 0.007021475901638041,
+      "relative_rms_delta_E": 2.219040782022959e-06,
+      "relative_peak_to_peak_E": 3.5070004277294195e-06,
+      "linear_drift_kjmol_per_ps": -0.007866601781099648,
+      "linear_fit_intercept": 2131.587143974689,
+      "linear_drift_span_kjmol": -0.003933300890549824,
+      "relative_linear_drift_span": 1.845243117304829e-06,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": 2131.5885791559767,
+      "last_block_mean_E": 2131.584747457688,
+      "block_mean_drift_kjmol": -0.0038316982886499318,
+      "relative_block_mean_drift": 1.7975779355470635e-06,
+      "drift_span_over_rms_delta": 0.8100698058862738,
+      "dt_ps": 0.001,
+      "steps": 500,
+      "log_interval_steps": 10,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p001/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p001/run.log"
+    },
+    {
+      "samples": 51,
+      "duration_ps": 0.5,
+      "E0": 2131.5895199191,
+      "E_mean": 2131.588720194645,
+      "energy_scale": 2131.5895199191,
+      "rms_delta_E": 0.0009954965872001104,
+      "centered_rms_E": 0.0005928357704975798,
+      "peak_to_peak_E": 0.002618851233364694,
+      "max_abs_delta_E": 0.0020740292666232563,
+      "relative_rms_delta_E": 4.670207738860962e-07,
+      "relative_peak_to_peak_E": 1.2285907811481862e-06,
+      "linear_drift_kjmol_per_ps": -0.002035261341675985,
+      "linear_fit_intercept": 2131.58922900998,
+      "linear_drift_span_kjmol": -0.0010176306708379924,
+      "relative_linear_drift_span": 4.774046134720227e-07,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": 2131.5895416751882,
+      "last_block_mean_E": 2131.588613328962,
+      "block_mean_drift_kjmol": -0.0009283462263738329,
+      "relative_block_mean_drift": 4.355182917248844e-07,
+      "drift_span_over_rms_delta": 0.932545865360381,
+      "dt_ps": 0.0005,
+      "steps": 1000,
+      "log_interval_steps": 20,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p0005/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p0005/run.log"
+    }
+  ],
+  "certification": {
+    "pass": true,
+    "scaling_pass": true,
+    "drift_pass": true,
+    "thresholds": {
+      "slope_min": 1.7,
+      "slope_max": 2.3,
+      "min_loglog_r2": 0.97,
+      "max_relative_block_mean_drift": 0.0001
+    },
+    "scaling": {
+      "exponent_p": 2.1473863535568105,
+      "prefactor_C": 12495.69264008823,
+      "loglog_r2": 0.9992632751055918,
+      "adjacent_ratios": [
+        {
+          "dt_low_ps": 0.0005,
+          "dt_high_ps": 0.001,
+          "dt_ratio": 2.0,
+          "observed_rms_ratio": 4.751481959909926,
+          "quadratic_expected_ratio": 4.0
+        },
+        {
+          "dt_low_ps": 0.001,
+          "dt_high_ps": 0.002,
+          "dt_ratio": 2.0,
+          "observed_rms_ratio": 4.130725395613507,
+          "quadratic_expected_ratio": 4.0
+        }
+      ]
+    },
+    "drift_failures": []
+  }
+}
