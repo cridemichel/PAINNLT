@@ -15,6 +15,7 @@ from framework_utils import (
     validate_model_manifest,
     validate_wca_exclusion_policy,
     wca_topology_exclusion_pairs,
+    wca_direct_bonded_site_exclusions,
 )
 
 from espresso_interactions import make_analytic_morse_bond
@@ -146,13 +147,30 @@ for pids in mol_to_vs.values():
 
 validate_wca_exclusion_policy(priors)
 wca_direct_pairs, wca_one_three_pairs = wca_topology_exclusion_pairs(priors, num_molecules)
-for mol_i, mol_j in sorted(wca_direct_pairs | wca_one_three_pairs):
+direct_site_exclusions = wca_direct_bonded_site_exclusions(priors, num_molecules)
+
+for mol_i, mol_j in sorted(wca_one_three_pairs):
     for pid_i in mol_to_vs.get(mol_i, []):
         for pid_j in mol_to_vs.get(mol_j, []):
             system.part.by_id(pid_i).add_exclusion(pid_j)
+
+applied_direct_site_exclusions = 0
+for (mol_i, mol_j), site_pairs in sorted(direct_site_exclusions.items()):
+    for site_i, site_j in sorted(site_pairs):
+        pid_i = mol_vs_parts.get((mol_i, site_i))
+        pid_j = mol_vs_parts.get((mol_j, site_j))
+        if pid_i is None or pid_j is None:
+            raise RuntimeError(
+                "WCA policy v3 references a missing bonded virtual site: "
+                f"mol/site {mol_i}:{site_i} <-> {mol_j}:{site_j}"
+            )
+        system.part.by_id(pid_i).add_exclusion(pid_j)
+        applied_direct_site_exclusions += 1
+
 print(
-    f"[INFO] WCA topology exclusions active: {len(wca_direct_pairs)} 1-2 pairs, "
-    f"{len(wca_one_three_pairs)} 1-3 pairs."
+    f"[INFO] WCA topology exclusions active: {len(wca_direct_pairs)} 1-2 molecule pairs "
+    f"with {applied_direct_site_exclusions} bonded site-pair exclusions; "
+    f"{len(wca_one_three_pairs)} 1-3 all-sites exclusions (policy v3)."
 )
 
 

@@ -87,40 +87,25 @@ The diagnostic reconstructs the same runtime particle-ID order as
 `simulation/run_cg_md.py`, maps the closest PIDs to molecule/site/type, classifies
 the molecule pair as `1-2`, `1-3`, or `nonbonded` using the explicit lists in
 `cg_priors.json`, and reports the nominal pair-specific WCA energy and force at
-the observed distance. For an excluded pair those WCA values are explicitly
-reported as counterfactual: the runtime WCA is not applied to that molecule pair.
-This is a post-processing test only and does not modify the Hamiltonian.
+the observed distance. Under policy v3 a `1-2` contact is excluded only when the
+specific virtual-site pair is explicitly bonded; other `1-2` site pairs retain
+WCA. For an excluded site pair the nominal WCA values are reported as
+counterfactual. This is a post-processing test only and does not modify the
+Hamiltonian.
 
-## 6c. A/B test the 1-2 WCA exclusion scope
+## WCA topology policy v3: selective 1-2 exclusions
 
-If `06b_diagnose_short_range.sh` shows that the short-range contact is a
-`1-2` molecule pair whose WCA is excluded by the production all-sites policy,
-run the causal A/B diagnostic:
+The production WCA decomposition now uses the same site-aware rule in dataset
+construction, equilibration, and MD:
 
-```bash
-WCA12_TEST_OVERWRITE=1 \
-PYRESSO=../../espresso/build/pypresso \
-bash 06c_test_selective_wca12.sh
-```
+- intra-rigid-body virtual-site pairs are excluded;
+- for topological 1-2 molecule pairs, only the explicitly bonded virtual-site
+  pair(s) are excluded from WCA; all other cross-body site pairs retain WCA;
+- topological 1-3 molecule pairs retain the all-sites exclusion.
 
-Defaults are `dt = 0.005 ps` and `1.3 ps`, matching the TEL22 short-range
-failure window. This mode deliberately changes **runtime only**:
-
-- intra-rigid-body WCA exclusions are unchanged;
-- `1-3` molecule pairs remain excluded for every cross-site pair;
-- `1-2` molecule pairs retain WCA for cross-site contacts, except for the
-  explicit virtual-site pair(s) directly used by a bonded prior with
-  `exclude_wca=true`.
-
-For the current TEL22 priors the 210 direct backbone pairs are all explicit
-`site0-site0` bonds, so only those 210 site pairs remain excluded in this A/B
-mode. The script writes to the separate `wca12_selective_ab/` directory and
-prints the global minimum distance and the PID/type pair that reaches it.
-
-This is **not** a production Hamiltonian and is **not** consistent with the WCA
-subtraction used to build the training targets. Its sole purpose is causal: if
-the baseline trajectory aborts near 1.2 ps but the selective-1-2 trajectory
-completes 1.3 ps without the `B2/B3` collapse, the molecule-level all-sites 1-2
-exclusion is identified as the mechanism that permits the short-range contact.
-A permanent policy change would then have to be implemented consistently in
-both preprocessing and runtime, followed by dataset regeneration and retraining.
+This changes the Hamiltonian decomposition relative to older `cg_priors.json`
+files (`explicit_topology_pairs_v2`).  Old priors are intentionally rejected.
+After applying this patch, regenerate `tel22_dataset.bin`, `cg_priors.json`, and
+`rigid_bodies_info.json` with `02_build_dataset.sh`, retrain with
+`03_train_model.sh`, and create a new `equilibrated.npz` with
+`04_equilibrate.sh` before running production MD or NVE certification.

@@ -59,11 +59,15 @@ class ShortRangeDiagnosticTests(unittest.TestCase):
             "wca_exclusions": {
                 "exclude_12": True,
                 "exclude_13": True,
-                "scope": "molecule_pair_all_sites",
-                "pair_source": "explicit_topology_pairs_v2",
+                "policy_version": 3,
+                "direct_scope": "bonded_site_pairs_only",
+                "one_three_scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v3",
                 "direct_pairs": [[0, 1]],
+                "direct_site_pairs": [[0, 1, 0, 0]],
                 "one_three_pairs": [[0, 2]],
                 "direct_pair_count": 1,
+                "direct_site_pair_count": 1,
                 "one_three_pair_count": 1,
             },
             "bonds": [
@@ -86,6 +90,24 @@ class ShortRangeDiagnosticTests(unittest.TestCase):
         self.assertTrue(item["topology"]["wca_excluded_by_topology"])
         self.assertFalse(item["wca_runtime_expected_active"])
         self.assertGreater(item["wca_nominal_at_observed_distance"]["force_magnitude_kjmol_nm"], 0.0)
+
+    def test_direct_nonbonded_site_pair_retains_wca_under_v3(self):
+        ctx = DIAG.topology_context(self.prior_data, 0, 1, 1, 1)
+        self.assertEqual(ctx["classification"], "1-2")
+        self.assertFalse(ctx["wca_excluded_by_topology"])
+
+    def test_legacy_v2_direct_pair_remains_all_sites_excluded_in_diagnostic(self):
+        legacy = json.loads(json.dumps(self.prior_data))
+        meta = legacy["wca_exclusions"]
+        meta.pop("policy_version")
+        meta.pop("direct_scope")
+        meta.pop("one_three_scope")
+        meta.pop("direct_site_pairs")
+        meta.pop("direct_site_pair_count")
+        meta["scope"] = "molecule_pair_all_sites"
+        meta["pair_source"] = "explicit_topology_pairs_v2"
+        ctx = DIAG.topology_context(legacy, 0, 1, 1, 1)
+        self.assertTrue(ctx["wca_excluded_by_topology"])
 
     def test_one_three_pair_is_classified_as_excluded_13(self):
         # PID 1 = mol 0 type 4; PID 5 = mol 2 type 5.

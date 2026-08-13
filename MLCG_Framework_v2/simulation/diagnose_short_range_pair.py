@@ -4,7 +4,7 @@
 The script is deliberately post-processing only: it does not import ESPResSo and
 never changes a trajectory.  It reconstructs the particle-ID layout used by
 run_cg_md.py from the first dataset frame, combines it with the explicit
-molecule-pair WCA exclusions stored in cg_priors.json, and analyzes the
+site-aware WCA exclusions stored in cg_priors.json, and analyzes the
 ``min_pids``/``min_pair`` columns written to an NVE energy CSV.
 """
 from __future__ import annotations
@@ -220,11 +220,23 @@ def wca_energy_force(distance_nm: float, params: dict[str, Any] | None) -> dict[
     }
 
 
-def topology_context(priors: dict[str, Any], mol_i: int, mol_j: int) -> dict[str, Any]:
+def topology_context(
+    priors: dict[str, Any], mol_i: int, site_i: int, mol_j: int, site_j: int
+) -> dict[str, Any]:
     pair = (min(mol_i, mol_j), max(mol_i, mol_j))
     meta = priors.get("wca_exclusions", {})
     direct = _pair_set(meta.get("direct_pairs"))
     one_three = _pair_set(meta.get("one_three_pairs"))
+
+    direct_site_records = set()
+    for raw in meta.get("direct_site_pairs", []):
+        if not isinstance(raw, (list, tuple)) or len(raw) != 4:
+            continue
+        mi, mj, si, sj = map(int, raw)
+        direct_site_records.add(
+            (mi, mj, si, sj) if mi < mj else (mj, mi, sj, si)
+        )
+    site_record = (mol_i, mol_j, site_i, site_j) if mol_i < mol_j else (mol_j, mol_i, site_j, site_i)
 
     if mol_i == mol_j:
         classification = "same_molecule"
@@ -232,12 +244,21 @@ def topology_context(priors: dict[str, Any], mol_i: int, mol_j: int) -> dict[str
         exclusion_reason = "intra-rigid-body virtual-site exclusion"
     elif pair in direct:
         classification = "1-2"
-        excluded = True
-        exclusion_reason = "explicit molecule-pair 1-2 WCA exclusion"
+        if meta.get("pair_source") == "explicit_topology_pairs_v2":
+            # Historical policy: every cross-site pair of a 1-2 molecule pair was excluded.
+            excluded = True
+            exclusion_reason = "legacy v2 molecule-pair 1-2 all-sites WCA exclusion"
+        else:
+            excluded = site_record in direct_site_records
+            exclusion_reason = (
+                "explicit bonded-site 1-2 WCA exclusion"
+                if excluded else
+                "1-2 molecule pair, but this virtual-site pair retains WCA under policy v3"
+            )
     elif pair in one_three:
         classification = "1-3"
         excluded = True
-        exclusion_reason = "explicit molecule-pair 1-3 WCA exclusion"
+        exclusion_reason = "explicit molecule-pair 1-3 all-sites WCA exclusion"
     else:
         classification = "nonbonded"
         excluded = False
@@ -272,6 +293,7 @@ def topology_context(priors: dict[str, Any], mol_i: int, mol_j: int) -> dict[str
 
     return {
         "molecule_pair": list(pair),
+        "site_pair": [int(site_i), int(site_j)],
         "classification": classification,
         "wca_excluded_by_topology": excluded,
         "exclusion_reason": exclusion_reason,
@@ -314,8 +336,8 @@ def diagnose_row(
 
     top = topology_context(
         priors,
-        int(part_i["runtime_mol_idx"]),
-        int(part_j["runtime_mol_idx"]),
+        int(part_i["runtime_mol_idx"]), int(part_i["site_index"]),
+        int(part_j["runtime_mol_idx"]), int(part_j["site_index"]),
     )
     wca = find_wca_pair(priors, *mapped_types)
     nominal = wca_energy_force(float(row["distance_nm"]), wca)
@@ -339,7 +361,7 @@ def diagnose_row(
     if nominal is not None and top["wca_excluded_by_topology"]:
         result["wca_nominal_note"] = (
             "Counterfactual only: this is the WCA energy/force that the type pair would have "
-            "if the molecule-pair topology exclusion were absent."
+            "if this site-level topology exclusion were absent."
         )
     elif nominal is not None:
         result["wca_nominal_note"] = (
@@ -403,10 +425,10 @@ def build_report(
     conclusion: str
     if primary["topology"]["wca_excluded_by_topology"]:
         conclusion = (
-            "The closest pair is covered by a WCA type prior but that molecule pair is explicitly "
+            "The closest pair is covered by a WCA type prior but this specific site pair is explicitly "
             "excluded by topology, so the nominal WCA repulsion is not applied to this contact."
             if primary["wca_pair_present"] else
-            "The closest molecule pair is explicitly excluded by topology and no WCA type prior is present."
+            "The closest site pair is explicitly excluded by topology and no WCA type prior is present."
         )
     elif primary["wca_pair_present"]:
         conclusion = (

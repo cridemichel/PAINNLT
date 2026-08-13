@@ -44,16 +44,6 @@ parser.add_argument("--device", type=str, default="auto", help="Device for ML (c
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
-parser.add_argument(
-    "--diagnostic_selective_wca_12",
-    action="store_true",
-    help=(
-        "DIAGNOSTIC ONLY: for topological 1-2 molecule pairs, keep WCA on all "
-        "virtual-site cross pairs except the explicitly bonded site pair(s). "
-        "The normal production/preprocessing policy excludes all 1-2 site pairs."
-    ),
-)
-
 parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
 parser.add_argument("--allow_missing_model_manifest", action="store_true", help="Allow legacy .pt files without the patched training manifest")
 parser.add_argument("--allow_legacy_checkpoint", action="store_true", help="Allow checkpoints without provenance metadata")
@@ -250,10 +240,10 @@ for m_idx, pids in mol_to_vs.items():
 
 validate_wca_exclusion_policy(priors)
 wca_direct_pairs, wca_one_three_pairs = wca_topology_exclusion_pairs(priors, num_molecules)
+direct_site_exclusions = wca_direct_bonded_site_exclusions(priors, num_molecules)
 
-# 1-3 exclusions always retain the production all-sites policy.  The optional
-# diagnostic below narrows only 1-2 exclusions so we can test whether the
-# all-sites 1-2 policy is responsible for short-range collapse.
+# Policy v3: 1-3 remains an all-sites exclusion.  For 1-2 pairs WCA stays
+# active across the two rigid bodies except for explicitly bonded site pairs.
 for mol_i, mol_j in sorted(wca_one_three_pairs):
     for pid_i in mol_to_vs.get(mol_i, []):
         for pid_j in mol_to_vs.get(mol_j, []):
@@ -262,42 +252,26 @@ for mol_i, mol_j in sorted(wca_one_three_pairs):
             except Exception:
                 pass
 
-if args.diagnostic_selective_wca_12:
-    direct_site_exclusions = wca_direct_bonded_site_exclusions(priors, num_molecules)
-    applied_direct_site_exclusions = 0
-    for (mol_i, mol_j), site_pairs in sorted(direct_site_exclusions.items()):
-        for site_i, site_j in sorted(site_pairs):
-            pid_i = mol_vs_parts.get((mol_i, site_i))
-            pid_j = mol_vs_parts.get((mol_j, site_j))
-            if pid_i is None or pid_j is None:
-                raise RuntimeError(
-                    "Selective 1-2 WCA diagnostic references a missing virtual site: "
-                    f"mol/site {mol_i}:{site_i} <-> {mol_j}:{site_j}"
-                )
-            try:
-                system.part.by_id(pid_i).add_exclusion(system.part.by_id(pid_j))
-            except Exception:
-                pass
-            applied_direct_site_exclusions += 1
-    print(
-        "[WARNING] DIAGNOSTIC selective 1-2 WCA override ACTIVE: production/training "
-        "priors are unchanged. WCA remains active between 1-2 rigid bodies except for "
-        f"{applied_direct_site_exclusions} explicitly bonded virtual-site pair(s). "
-        "Do not use this trajectory for production or model certification."
-    )
-else:
-    for mol_i, mol_j in sorted(wca_direct_pairs):
-        for pid_i in mol_to_vs.get(mol_i, []):
-            for pid_j in mol_to_vs.get(mol_j, []):
-                try:
-                    system.part.by_id(pid_i).add_exclusion(system.part.by_id(pid_j))
-                except Exception:
-                    pass
+applied_direct_site_exclusions = 0
+for (mol_i, mol_j), site_pairs in sorted(direct_site_exclusions.items()):
+    for site_i, site_j in sorted(site_pairs):
+        pid_i = mol_vs_parts.get((mol_i, site_i))
+        pid_j = mol_vs_parts.get((mol_j, site_j))
+        if pid_i is None or pid_j is None:
+            raise RuntimeError(
+                "WCA policy v3 references a missing bonded virtual site: "
+                f"mol/site {mol_i}:{site_i} <-> {mol_j}:{site_j}"
+            )
+        try:
+            system.part.by_id(pid_i).add_exclusion(system.part.by_id(pid_j))
+        except Exception:
+            pass
+        applied_direct_site_exclusions += 1
 
 print(
-    f"[INFO] WCA topology exclusions active: {len(wca_direct_pairs)} 1-2 pairs, "
-    f"{len(wca_one_three_pairs)} 1-3 pairs; "
-    f"1-2 mode={'bonded-sites-only DIAGNOSTIC' if args.diagnostic_selective_wca_12 else 'all-sites production'}."
+    f"[INFO] WCA topology exclusions active: {len(wca_direct_pairs)} 1-2 molecule pairs "
+    f"with {applied_direct_site_exclusions} bonded site-pair exclusions; "
+    f"{len(wca_one_three_pairs)} 1-3 all-sites exclusions (policy v3)."
 )
 
 
