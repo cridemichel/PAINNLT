@@ -104,6 +104,17 @@ class NVECertificationTests(unittest.TestCase):
         self.assertIn('--ml_precision', runner_source)
         self.assertIn('precision=args.ml_precision', runner_source)
 
+    def test_neighbor_search_switch_is_propagated(self):
+        certify_source = (SIMULATION / "certify_nve.py").read_text(encoding="utf-8")
+        runner_source = (SIMULATION / "run_cg_md.py").read_text(encoding="utf-8")
+        equilibrate_source = (SIMULATION / "equilibrate.py").read_text(encoding="utf-8")
+        self.assertIn('--neighbor-search', certify_source)
+        self.assertIn('"--neighbor_search", args.neighbor_search', certify_source)
+        self.assertIn('--neighbor_search', runner_source)
+        self.assertIn('configure_neighbor_search(system, args.neighbor_search)', runner_source)
+        self.assertIn('--neighbor_search', equilibrate_source)
+        self.assertIn('configure_neighbor_search(system, args.neighbor_search)', equilibrate_source)
+
 
 
 if __name__ == "__main__":

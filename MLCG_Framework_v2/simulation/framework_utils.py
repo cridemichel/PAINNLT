@@ -444,6 +444,31 @@ def validate_checkpoint(
     return metadata
 
 
+def configure_neighbor_search(system: Any, mode: str) -> None:
+    """Select the regular-decomposition pair traversal explicitly.
+
+    ``verlet`` keeps ESPResSo's default Verlet-list traversal. ``link-cell``
+    keeps the same regular spatial decomposition but disables Verlet lists,
+    avoiding an automatic overflow/fallback on dense local environments.
+    """
+    normalized = str(mode).strip().lower()
+    if normalized == "verlet":
+        use_verlet_lists = True
+    elif normalized == "link-cell":
+        use_verlet_lists = False
+    else:
+        raise ValueError(
+            f"Unknown neighbor-search mode {mode!r}; expected 'verlet' or 'link-cell'"
+        )
+    system.cell_system.set_regular_decomposition(
+        use_verlet_lists=use_verlet_lists
+    )
+    print(
+        "[INFO] Neighbor search: "
+        + ("verlet (regular decomposition)" if use_verlet_lists else "link-cell (regular decomposition)")
+    )
+
+
 def ensure_single_rank(system: Any, *, allow_unsafe_mpi: bool = False) -> None:
     try:
         node_grid = tuple(int(v) for v in system.cell_system.node_grid)
