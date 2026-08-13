@@ -6,7 +6,7 @@ from libcpp.memory cimport make_shared, shared_ptr
 # Dichiara l'interfaccia C++
 cdef extern from "core/nonbonded_interactions/PaiNN_ML_Potential.hpp":
     cdef cppclass PaiNN_ML_Potential:
-        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const string& device_str)
+        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const string& device_str, const string& precision_str)
         double get_cutoff()
         double get_last_energy()
         
@@ -18,7 +18,7 @@ def get_painn_energy():
         return global_painn_potential.get().get_last_energy()
     return 0.0
 
-def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float, device: str = "auto"):
+def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float, device: str = "auto", precision: str = "float32"):
     """
     Attiva il potenziale globale PaiNN in ESPResSo.
     
@@ -29,6 +29,7 @@ def activate_painn_potential(model_path: str, num_species: int, hidden_channels:
     :param num_rbf: Number of gaussian bases
     :param cutoff: cutoff radius
     :param device: "auto", "cpu", "cuda", "mps"
+    :param precision: "float32" (production default) or "float64" (CPU diagnostic)
     """
     global global_painn_potential
     
@@ -36,13 +37,14 @@ def activate_painn_potential(model_path: str, num_species: int, hidden_channels:
     cdef double c_cutoff = cutoff
     cdef double c_toxvaerd_alpha = toxvaerd_alpha
     cdef string cpp_device = device.encode('utf-8')
+    cdef string cpp_precision = precision.encode('utf-8')
     cdef int c_num_species = num_species
     cdef int c_hidden_channels = hidden_channels
     cdef int c_n_layers = n_layers
     cdef int c_num_rbf = num_rbf
     
     global_painn_potential = make_shared[PaiNN_ML_Potential](
-        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, c_toxvaerd_alpha, cpp_device
+        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, c_toxvaerd_alpha, cpp_device, cpp_precision
     )
     
-    print(f"PaiNN ML Potential attivato: {model_path} (cutoff={cutoff}, device={device})")
+    print(f"PaiNN ML Potential attivato: {model_path} (cutoff={cutoff}, device={device}, precision={precision})")

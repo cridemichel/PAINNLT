@@ -96,15 +96,6 @@ class NVECertificationTests(unittest.TestCase):
             self.assertIn('for j in range(i, nn_config["num_species"]):', source)
             self.assertNotIn('range(nn_config["num_species"] + 2)', source)
 
-    def test_nve_precision_switch_is_propagated(self):
-        certify_source = (SIMULATION / "certify_nve.py").read_text(encoding="utf-8")
-        runner_source = (SIMULATION / "run_cg_md.py").read_text(encoding="utf-8")
-        self.assertIn('--ml-precision', certify_source)
-        self.assertIn('"--ml_precision", args.ml_precision', certify_source)
-        self.assertIn('--ml_precision', runner_source)
-        self.assertIn('precision=args.ml_precision', runner_source)
-
-
 
 if __name__ == "__main__":
     unittest.main()

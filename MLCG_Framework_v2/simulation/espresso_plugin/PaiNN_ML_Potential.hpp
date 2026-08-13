@@ -14,7 +14,7 @@
 
 class PaiNN_ML_Potential {
 public:
-    PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str = "auto");
+    PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str = "auto", const std::string& precision_str = "float32");
 
     // Evaluates the ML potential and adds forces to particles
     void calculate_forces(CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion);
@@ -30,6 +30,7 @@ private:
     int m_num_species;
     double m_last_energy = 0.0;
     torch::Device m_device{torch::kCPU};
+    torch::Dtype m_dtype{torch::kFloat32};
 };
 
 // Global instance to be used in integrate.cpp or forces.cpp
