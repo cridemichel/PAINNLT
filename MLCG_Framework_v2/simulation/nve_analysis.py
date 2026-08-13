@@ -174,3 +174,17 @@ def certify_metrics(
         "scaling": scaling,
         "drift_failures": drift_failures,
     }
+
+
+def energy_standard_deviation(energies):
+    """Population standard deviation of the sampled total energy time series.
+
+    For a fixed physical NVE trajectory duration this is the primary quantity
+    used for the velocity-Verlet timestep-scaling test, sigma_E ~ dt**2.
+    """
+    values = np.asarray(energies, dtype=np.float64)
+    if values.ndim != 1 or values.size < 3:
+        raise ValueError("At least three energy samples are required")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("Energy series contains NaN or Inf")
+    return float(np.std(values, ddof=0))

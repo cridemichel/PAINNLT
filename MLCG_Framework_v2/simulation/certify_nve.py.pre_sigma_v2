@@ -14,7 +14,7 @@ import sys
 from typing import Any
 
 from framework_utils import nonconservative_prior_entries
-from nve_analysis import analyze_energy_series, certify_metrics, read_energy_csv, energy_standard_deviation
+from nve_analysis import analyze_energy_series, certify_metrics, read_energy_csv
 
 
 def sha256_file(path: Path) -> str:
@@ -77,7 +77,7 @@ def main() -> int:
         "--dts",
         nargs="+",
         type=float,
-        default=[0.001, 0.002, 0.005, 0.01],
+        default=[0.002, 0.001, 0.0005, 0.00025],
         help="Time steps in ps (default: 0.002 0.001 0.0005 0.00025)",
     )
     parser.add_argument("--duration-ps", type=float, default=5.0, help="Physical duration of each NVE run")
@@ -198,7 +198,6 @@ def main() -> int:
         }
         run_plan.append(plan_item)
         print(
-            log_every = 1  # NVE certification: sample energy every integration step
             f"[PLAN] dt={dt:g} ps steps={steps} duration={actual_duration:g} ps "
             f"log_every={log_steps} steps"
         )
@@ -226,7 +225,6 @@ def main() -> int:
 
         times, energies = read_energy_csv(energy_csv)
         metrics = analyze_energy_series(times, energies)
-        metrics["sigma_E"] = energy_standard_deviation(energies)
         metrics.update({
             "dt_ps": dt,
             "steps": steps,
@@ -236,7 +234,7 @@ def main() -> int:
         })
         run_metrics.append(metrics)
         print(
-            f"[RESULT] dt={dt:g} sigma_E={metrics['rms_delta_E']:.6g} "
+            f"[RESULT] dt={dt:g} rms_dE={metrics['rms_delta_E']:.6g} "
             f"rel_block_drift={metrics['relative_block_mean_drift']:.3e}"
         )
 
