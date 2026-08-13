@@ -140,6 +140,7 @@ def main() -> int:
     )
     parser.add_argument("--device", default="cpu", help="PaiNN device; CPU is the certification reference")
     parser.add_argument("--ml-precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is for the FP32 noise-floor A/B diagnostic")
+    parser.add_argument("--neighbor-search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal used by the ESPResSo runner")
     parser.add_argument("--allow-nonreference-device", action="store_true")
     parser.add_argument("--output-dir", default="nve_certification")
     parser.add_argument("--overwrite", action="store_true")
@@ -262,6 +263,7 @@ def main() -> int:
             "--log_interval", str(log_every),
             "--device", args.device,
             "--ml_precision", args.ml_precision,
+            "--neighbor_search", args.neighbor_search,
             "--nve",
             "--no_vtf",
             "--energy_file", "energy.csv",
@@ -350,10 +352,12 @@ def main() -> int:
             "thermostat": "off (--nve)",
             "force_cap": 0.0,
             "reference_device": "cpu",
+            "neighbor_search": args.neighbor_search,
         },
         "inputs_sha256": input_hashes,
         "checkpoint_motion": checkpoint_motion,
         "device": args.device,
+        "neighbor_search": args.neighbor_search,
         "runs": run_metrics,
         "certification": certification,
     }

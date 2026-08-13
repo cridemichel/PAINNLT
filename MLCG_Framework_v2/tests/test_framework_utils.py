@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "simulation"))
 
 from framework_utils import (  # noqa: E402
+    configure_neighbor_search,
     input_hashes,
     nonconservative_prior_entries,
     particle_is_virtual,
@@ -62,6 +63,21 @@ class FakeParticleList:
         return self._particles[pid]
 
 
+
+
+class FakeCellSystem:
+    def __init__(self):
+        self.calls = []
+
+    def set_regular_decomposition(self, **kwargs):
+        self.calls.append(kwargs)
+
+
+class FakeNeighborSystem:
+    def __init__(self):
+        self.cell_system = FakeCellSystem()
+
+
 class FakeSystem:
     def __init__(self):
         self.box_l = np.asarray([4.0, 5.0, 6.0])
@@ -83,6 +99,17 @@ def quat_to_body_to_space_matrix(q):
 
 
 class FrameworkUtilsTests(unittest.TestCase):
+    def test_configure_neighbor_search_modes(self):
+        system = FakeNeighborSystem()
+        configure_neighbor_search(system, "verlet")
+        configure_neighbor_search(system, "link-cell")
+        self.assertEqual(
+            system.cell_system.calls,
+            [{"use_verlet_lists": True}, {"use_verlet_lists": False}],
+        )
+        with self.assertRaises(ValueError):
+            configure_neighbor_search(system, "bogus")
+
     def test_particle_is_virtual_compatibility(self):
         self.assertFalse(particle_is_virtual(FakeParticle(0, 4, 0, False)))
         self.assertTrue(particle_is_virtual(FakeParticle(1, 0, 0, True)))

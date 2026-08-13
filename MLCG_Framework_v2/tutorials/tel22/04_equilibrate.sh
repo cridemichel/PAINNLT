@@ -12,6 +12,7 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 DEVICE="${DEVICE:-auto}"
 VELOCITY_SEED="${VELOCITY_SEED:-314159}"
+NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
 
 cd "${SCRIPT_DIR}"
 
@@ -30,6 +31,7 @@ done
     --dataset tel22_dataset.bin \
     --out_checkpoint equilibrated.npz \
     --device "${DEVICE}" \
+    --neighbor_search "${NEIGHBOR_SEARCH}" \
     --kT 2.49 \
     --velocity_seed "${VELOCITY_SEED}"
 

@@ -7,6 +7,7 @@ import struct
 import os
 
 from framework_utils import (
+    configure_neighbor_search,
     ensure_single_rank,
     get_rb_data_by_sites,
     input_hashes,
@@ -30,6 +31,7 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--out_checkpoint", type=str, default="equilibrated.npz", help="Output checkpoint file")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
+parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal in ESPResSo regular decomposition")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps for Phase 1 Steepest Descent (default 5000)")
 parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 classical MD warmup")
@@ -311,7 +313,7 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
 # Zero-strength interactions make the ML cutoff visible to ESPResSo's
-# neighbor-list machinery for every particle-type pair.
+# neighbor-search machinery for every particle-type pair.
 ml_cutoff = float(nn_config.get("cutoff", 5.0))
 # Only ML site types participate in PaiNN. Do not activate the dummy
 # zero-strength SoftSphere for COM particle types: single-site molecules place
@@ -323,6 +325,8 @@ for i in range(nn_config["num_species"]):
         system.non_bonded_inter[i, j].soft_sphere.set_params(
             a=0.0, n=1, cutoff=ml_cutoff, offset=0.0
         )
+
+configure_neighbor_search(system, args.neighbor_search)
 
 
 def run_chunks(total_steps, chunk_size, phase_name, after_chunk=None):

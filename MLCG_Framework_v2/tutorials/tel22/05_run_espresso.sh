@@ -13,6 +13,7 @@ PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 DEVICE="${DEVICE:-auto}"
 CG_STEPS="${CG_STEPS:-20000}"
 CG_DT="${CG_DT:-0.001}"
+NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
 
 cd "${SCRIPT_DIR}"
 
@@ -33,4 +34,5 @@ done
     --steps "${CG_STEPS}" \
     --dt "${CG_DT}" \
     --kT 2.49 \
-    --device "${DEVICE}"
+    --device "${DEVICE}" \
+    --neighbor_search "${NEIGHBOR_SEARCH}"

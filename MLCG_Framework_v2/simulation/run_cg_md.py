@@ -12,6 +12,7 @@ import os
 from contextlib import ExitStack
 
 from framework_utils import (
+    configure_neighbor_search,
     ensure_single_rank,
     get_rb_data_by_sites,
     input_hashes,
@@ -43,6 +44,7 @@ parser.add_argument("--trajectory_file", type=str, default="cg_trajectory.vtf", 
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
+parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal in ESPResSo regular decomposition")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
@@ -408,7 +410,7 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
-print("[INFO] Setting up dummy interactions for Verlet lists...")
+print("[INFO] Setting up dummy interactions for neighbor search...")
 # Only ML site types participate in PaiNN. Do not activate the dummy
 # zero-strength SoftSphere for COM particle types: single-site molecules place
 # their virtual ML site exactly at the COM, so a SoftSphere pair at r=0 would
@@ -419,6 +421,8 @@ for i in range(nn_config["num_species"]):
         ml_cutoff = nn_config["cutoff"] if "cutoff" in nn_config else 5.0
         system.non_bonded_inter[i, j].soft_sphere.set_params(
             a=0.0, n=1, cutoff=ml_cutoff, offset=0.0)
+
+configure_neighbor_search(system, args.neighbor_search)
 
 if args.model:
     print("[INFO] Activating ML Potential...")
