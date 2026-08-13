@@ -39,12 +39,27 @@ class TestNVESigmaScaling(unittest.TestCase):
         p = float(np.polyfit(np.log(dts), np.log(sigmas), 1)[0])
         self.assertAlmostEqual(p, 2.0, places=8)
 
+
+    def test_fit_uses_sigma_not_rms_delta(self):
+        runs = [
+            {"dt_ps": 0.001, "sigma_E": 1.0e-6, "rms_delta_E": 3.0},
+            {"dt_ps": 0.002, "sigma_E": 4.0e-6, "rms_delta_E": 3.0},
+            {"dt_ps": 0.005, "sigma_E": 25.0e-6, "rms_delta_E": 3.0},
+            {"dt_ps": 0.010, "sigma_E": 100.0e-6, "rms_delta_E": 3.0},
+        ]
+        scaling = NVE.fit_timestep_scaling(runs)
+        self.assertEqual(scaling["observable"], "sigma_E")
+        self.assertAlmostEqual(scaling["exponent_p"], 2.0, places=12)
+        self.assertGreater(scaling["loglog_r2"], 0.999999999999)
+
     def test_certifier_overrides_sampling_every_step(self):
         source = (ROOT / "simulation" / "certify_nve.py").read_text(encoding="utf-8")
         self.assertIn(
             "log_every = 1  # NVE certification: sample energy every integration step",
             source,
         )
+        self.assertIn('"--log_interval", str(log_every)', source)
+        self.assertNotIn("log_steps", source)
         self.assertIn("sigma_E", source)
 
 

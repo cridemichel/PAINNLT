@@ -34,21 +34,29 @@ After equilibration, certify the complete conservative Hamiltonian from the same
 PYRESSO=../../espresso/build/pypresso bash 06_certify_nve.sh
 ```
 
-The wrapper defaults to CPU and runs the same physical duration at
-`dt = 0.002, 0.001, 0.0005, 0.00025 ps`. It writes
+The wrapper defaults to CPU, uses the same physical duration for every
+timestep, and samples total energy at **every integration step**. The current
+default grid is
+`dt = 0.001, 0.002, 0.005, 0.01 ps` with `5 ps` per run. It writes
 `nve_certification/nve_certification_report.json` and returns a non-zero exit
 status unless both conditions pass:
 
-1. the RMS total-energy error follows `RMS(dE) ~ dt^p` with the configured
-   exponent/r-squared guardrails (defaults: `1.7 <= p <= 2.3`, `R^2 >= 0.97`);
+1. the population standard deviation of total energy follows
+   `sigma_E = std(E_tot) ~ dt^p` with the configured exponent/r-squared
+   guardrails (defaults: `1.7 <= p <= 2.3`, `R^2 >= 0.97`);
 2. the difference between the mean total energy in the final and initial 20%
    blocks is below the configured relative threshold (default `1e-4`).
+
+`RMS(E_tot-E_tot(0))` is retained only as a secondary diagnostic and is not the
+quantity fitted for the certification order. The `0.01 ps` point is a useful
+stress point and may lie outside the asymptotic regime for a stiff model; steps
+much below `0.001 ps` can instead become roundoff-limited.
 
 Useful overrides:
 
 ```bash
 NVE_DURATION_PS=10 \
-NVE_DTS="0.002 0.001 0.0005 0.00025" \
+NVE_DTS="0.001 0.002 0.005 0.01" \
 NVE_MAX_RELATIVE_DRIFT=1e-5 \
 PYRESSO=../../espresso/build/pypresso \
 bash 06_certify_nve.sh --overwrite

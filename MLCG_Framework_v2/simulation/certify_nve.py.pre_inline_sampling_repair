@@ -14,7 +14,7 @@ import sys
 from typing import Any
 
 from framework_utils import nonconservative_prior_entries
-from nve_analysis import analyze_energy_series, certify_metrics, read_energy_csv
+from nve_analysis import analyze_energy_series, certify_metrics, read_energy_csv, energy_standard_deviation
 
 
 def sha256_file(path: Path) -> str:
@@ -58,7 +58,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Certify a conservative CG Hamiltonian by running the same checkpoint at "
-            "multiple Velocity-Verlet time steps and fitting sigma_E = std(E_total) ~ dt^p."
+            "multiple Velocity-Verlet time steps and fitting RMS energy error ~ dt^p."
         )
     )
     parser.add_argument("--pypresso", default="pypresso", help="ESPResSo pypresso executable")
@@ -78,18 +78,10 @@ def main() -> int:
         nargs="+",
         type=float,
         default=[0.001, 0.002, 0.005, 0.01],
-        help="Time steps in ps (default: 0.001 0.002 0.005 0.01)",
+        help="Time steps in ps (default: 0.002 0.001 0.0005 0.00025)",
     )
     parser.add_argument("--duration-ps", type=float, default=5.0, help="Physical duration of each NVE run")
-    parser.add_argument(
-        "--log-interval-ps",
-        type=float,
-        default=None,
-        help=(
-            "Deprecated compatibility option; the certification protocol always samples "
-            "energy every integration step."
-        ),
-    )
+    parser.add_argument("--log-interval-ps", type=float, default=0.01, help="Energy sampling interval")
     parser.add_argument("--device", default="cpu", help="PaiNN device; CPU is the certification reference")
     parser.add_argument("--allow-nonreference-device", action="store_true")
     parser.add_argument("--output-dir", default="nve_certification")
@@ -108,10 +100,8 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Print run plan without launching ESPResSo")
     args = parser.parse_args()
 
-    if args.duration_ps <= 0.0:
-        raise ValueError("--duration-ps must be positive")
-    if args.log_interval_ps is not None and args.log_interval_ps <= 0.0:
-        raise ValueError("--log-interval-ps must be positive when provided")
+    if args.duration_ps <= 0.0 or args.log_interval_ps <= 0.0:
+        raise ValueError("--duration-ps and --log-interval-ps must be positive")
     if len(args.dts) < 3 or any(dt <= 0.0 for dt in args.dts):
         raise ValueError("Provide at least three positive --dts")
     if len(set(args.dts)) != len(args.dts):
@@ -170,7 +160,7 @@ def main() -> int:
         if steps < 2:
             raise ValueError(f"duration {args.duration_ps} ps is too short for dt={dt} ps")
         actual_duration = steps * dt
-        log_every = 1  # NVE certification: sample energy every integration step
+        log_steps = max(1, int(round(args.log_interval_ps / dt)))
         run_dir = output_dir / f"dt_{dt:.8g}".replace(".", "p")
         energy_csv = run_dir / "energy.csv"
         log_file = run_dir / "run.log"
@@ -184,7 +174,7 @@ def main() -> int:
             "--checkpoint", str(checkpoint),
             "--dt", f"{dt:.17g}",
             "--steps", str(steps),
-            "--log_interval", str(log_every),
+            "--log_interval", str(log_steps),
             "--device", args.device,
             "--nve",
             "--no_vtf",
@@ -202,14 +192,15 @@ def main() -> int:
             "steps": steps,
             "requested_duration_ps": args.duration_ps,
             "actual_duration_ps": actual_duration,
-            "log_interval_steps": log_every,
+            "log_interval_steps": log_steps,
             "run_dir": str(run_dir),
             "command": command,
         }
         run_plan.append(plan_item)
         print(
+            log_every = 1  # NVE certification: sample energy every integration step
             f"[PLAN] dt={dt:g} ps steps={steps} duration={actual_duration:g} ps "
-            f"log_every={log_every} steps"
+            f"log_every={log_steps} steps"
         )
         if args.dry_run:
             continue
@@ -235,16 +226,17 @@ def main() -> int:
 
         times, energies = read_energy_csv(energy_csv)
         metrics = analyze_energy_series(times, energies)
+        metrics["sigma_E"] = energy_standard_deviation(energies)
         metrics.update({
             "dt_ps": dt,
             "steps": steps,
-            "log_interval_steps": log_every,
+            "log_interval_steps": log_steps,
             "energy_csv": str(energy_csv),
             "run_log": str(log_file),
         })
         run_metrics.append(metrics)
         print(
-            f"[RESULT] dt={dt:g} sigma_E={metrics['sigma_E']:.6g} "
+            f"[RESULT] dt={dt:g} sigma_E={metrics['rms_delta_E']:.6g} "
             f"rel_block_drift={metrics['relative_block_mean_drift']:.3e}"
         )
 
@@ -263,10 +255,8 @@ def main() -> int:
     )
     report = {
         "definition": {
-            "quantity": "Population standard deviation sigma_E = std(E_total) over fixed physical duration",
-            "scaling_model": "sigma_E = C * dt^p",
-            "secondary_diagnostic": "rms_delta_E = RMS(E_total(t)-E_total(0))",
-            "energy_sampling": "every integration step, including the initial state",
+            "quantity": "RMS of E_total(t)-E_total(0) over fixed physical duration",
+            "scaling_model": "RMS_dE = C * dt^p",
             "drift_metric": "abs(mean(last 20% E)-mean(first 20% E)) / characteristic_abs_energy",
             "linear_fit": "reported as an additional diagnostic, not used as the pass/fail drift metric",
             "same_initial_state": "all runs load the identical checkpoint file",
@@ -288,7 +278,7 @@ def main() -> int:
         writer = csv.DictWriter(
             handle,
             fieldnames=[
-                "dt_ps", "steps", "duration_ps", "samples", "sigma_E", "rms_delta_E",
+                "dt_ps", "steps", "duration_ps", "samples", "rms_delta_E",
                 "relative_rms_delta_E", "peak_to_peak_E", "linear_drift_kjmol_per_ps",
                 "relative_linear_drift_span", "relative_block_mean_drift", "drift_span_over_rms_delta",
             ],
@@ -300,7 +290,6 @@ def main() -> int:
                 "steps": item["steps"],
                 "duration_ps": item["duration_ps"],
                 "samples": item["samples"],
-                "sigma_E": item["sigma_E"],
                 "rms_delta_E": item["rms_delta_E"],
                 "relative_rms_delta_E": item["relative_rms_delta_E"],
                 "peak_to_peak_E": item["peak_to_peak_E"],
