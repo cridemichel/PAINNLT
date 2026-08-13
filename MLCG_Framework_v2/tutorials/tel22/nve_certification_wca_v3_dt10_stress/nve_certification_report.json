@@ -25,6 +25,35 @@
   "device": "cpu",
   "runs": [
     {
+      "samples": 101,
+      "duration_ps": 1.0,
+      "E0": 2301.2809112696414,
+      "E_mean": 2300.7589117227803,
+      "energy_scale": 2301.2809112696414,
+      "rms_delta_E": 0.539379209074309,
+      "centered_rms_E": 0.135817540320979,
+      "sigma_E": 0.135817540320979,
+      "peak_to_peak_E": 0.6610361896573522,
+      "max_abs_delta_E": 0.6610361896573522,
+      "relative_rms_delta_E": 0.0002343821679625925,
+      "relative_peak_to_peak_E": 0.0002872470659362709,
+      "linear_drift_kjmol_per_ps": -0.22691470514676393,
+      "linear_fit_intercept": 2300.872369075354,
+      "linear_drift_span_kjmol": -0.22691470514676393,
+      "relative_linear_drift_span": 9.860365331130855e-05,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": 2300.928266566722,
+      "last_block_mean_E": 2300.696366029934,
+      "block_mean_drift_kjmol": -0.23190053678808908,
+      "relative_block_mean_drift": 0.00010077019961033226,
+      "drift_span_over_rms_delta": 0.4299397026928056,
+      "dt_ps": 0.01,
+      "steps": 100,
+      "log_interval_steps": 1,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p01/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p01/run.log"
+    },
+    {
       "samples": 201,
       "duration_ps": 1.0,
       "E0": 2301.2809112696414,
@@ -113,9 +142,9 @@
     }
   ],
   "certification": {
-    "pass": true,
+    "pass": false,
     "scaling_pass": true,
-    "drift_pass": true,
+    "drift_pass": false,
     "thresholds": {
       "slope_min": 1.7,
       "slope_max": 2.3,
@@ -125,9 +154,9 @@
     "scaling": {
       "observable": "sigma_E",
       "model": "sigma_E = C * dt^p",
-      "exponent_p": 1.9641343832999152,
-      "prefactor_C": 1077.6341369744484,
-      "loglog_r2": 0.9996842918248403,
+      "exponent_p": 1.9889568740120365,
+      "prefactor_C": 1263.9092404321966,
+      "loglog_r2": 0.9997544597162931,
       "adjacent_ratios": [
         {
           "dt_low_ps": 0.001,
@@ -142,9 +171,21 @@
           "dt_ratio": 2.5,
           "observed_sigma_ratio": 6.335192770022592,
           "quadratic_expected_ratio": 6.25
+        },
+        {
+          "dt_low_ps": 0.005,
+          "dt_high_ps": 0.01,
+          "dt_ratio": 2.0,
+          "observed_sigma_ratio": 4.111026168435676,
+          "quadratic_expected_ratio": 4.0
         }
       ]
     },
-    "drift_failures": []
+    "drift_failures": [
+      {
+        "dt_ps": 0.01,
+        "relative_block_mean_drift": 0.00010077019961033226
+      }
+    ]
   }
 }

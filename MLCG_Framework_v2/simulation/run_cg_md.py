@@ -15,6 +15,7 @@ from framework_utils import (
     ensure_single_rank,
     get_rb_data_by_sites,
     input_hashes,
+    particle_is_virtual,
     nonconservative_prior_entries,
     rigid_body_quaternion,
     validate_checkpoint,
@@ -193,7 +194,7 @@ if args.checkpoint:
         # Virtual sites positions/velocities are strictly tied to COM.
         # We only set the properties of the real (COM) particles, and the
         # virtual sites will follow automatically based on their auto-relation.
-        if not p.is_virtual:
+        if not particle_is_virtual(p):
             p.pos = pos[i]
             p.v = vel[i]
             if quat is not None:
@@ -204,7 +205,7 @@ if args.checkpoint:
 if args.init_kT is not None:
     print(f"[INFO] Initializing velocities to kT={args.init_kT}...")
     for p in system.part:
-        if not p.is_virtual:
+        if not particle_is_virtual(p):
             mass = p.mass
             # Translational velocity
             p.v = np.sqrt(args.init_kT / mass) * np.random.randn(3)
@@ -453,7 +454,7 @@ def log_diagnostics(step):
     forces = []
     pids = []
     for p in system.part:
-        if p.is_virtual:
+        if particle_is_virtual(p):
             pos.append(p.pos)
             types.append(p.type)
             mol_ids.append(p.mol_id)

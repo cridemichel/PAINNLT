@@ -109,3 +109,29 @@ After applying this patch, regenerate `tel22_dataset.bin`, `cg_priors.json`, and
 `rigid_bodies_info.json` with `02_build_dataset.sh`, retrain with
 `03_train_model.sh`, and create a new `equilibrated.npz` with
 `04_equilibrate.sh` before running production MD or NVE certification.
+
+## TEL22 WCA v3 validation history
+
+The site-aware 1-2 policy was introduced after a reproducible short-range failure under the legacy molecule-level exclusion. The closest pair was a non-bonded `CG_DG_B2/CG_DG_B3` site pair belonging to adjacent backbone residues: the actual backbone bond was `site0-site0`, but the old all-sites 1-2 exclusion also removed WCA from the B2/B3 cross-pair. Runs at different timesteps reached essentially the same short-range event at the same physical time, which identified it as a Hamiltonian/topology problem rather than a Velocity-Verlet instability.
+
+A selective A/B runtime test retained WCA on 1-2 cross-pairs while excluding only the explicit bonded site pair. It passed beyond the previous failure time. The permanent v3 implementation then applied that same decomposition in preprocessing, equilibration, and production. After rebuilding priors/dataset, retraining, and re-equilibrating, a 2 ps smoke trajectory completed successfully without the old 1-2 collapse.
+
+The lesson is general: **do not infer an all-sites nonbonded exclusion from a molecule-level bonded relation when the CG objects are multi-site rigid bodies**. Store and apply the exclusion at the same resolution as the actual bonded coordinate.
+
+## Morse contacts and TEL22 unfolding
+
+TEL22 uses harmonic site-0 bonds and harmonic backbone angles to preserve covalent-chain connectivity, while the G-quartet tertiary contacts are represented by Morse terms. In the current topology each 22-residue copy contains 18 Morse contacts: three groups of four guanines, with six pair contacts per group. There are no dihedral priors.
+
+The Morse contacts are COM-COM restraints and have no explicit `exclude_wca=true`; by policy they therefore do not remove WCA. They can stretch into the asymptotic region and later reform, so the framework can represent **reversible loss and recovery of tertiary contacts without chain scission**. The bonded interaction remains registered internally; "broken" should therefore be defined from distance/contact observables, not by expecting the ESPResSo bond record to disappear.
+
+The current TEL22 parameters are intentionally strong and broad:
+
+```text
+D = 50 kJ/mol
+a = 0.3 nm^-1
+1/a = 3.33 nm
+```
+
+At 300 K, one Morse plateau `D` is about 20 `kBT`. Fully separating all six pair contacts of one idealized quartet plane raises the Morse component by about `6D = 300 kJ/mol` (about 120 `kBT`) before accounting for entropy, the ML residual, backbone priors, and other interactions. Consequently, unfolding is **allowed by the topology**, but spontaneous unfolding may be extremely rare on short CG trajectories with these parameters. `D` and `a` should be calibrated against the desired thermodynamics/kinetics rather than interpreted as a guarantee that unfolding will be sampled.
+
+Do not use the current Morse `r_cut` as an unfolding criterion. The analytic interaction is intended to operate far inside that cutoff; contact rupture should be diagnosed from distance/contact-state thresholds and free-energy/kinetic analysis.

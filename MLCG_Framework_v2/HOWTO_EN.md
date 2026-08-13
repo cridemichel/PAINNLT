@@ -487,6 +487,16 @@ Parameters have the following roles:
 Morse is implemented as an analytic C++ ESPResSo bonded interaction. There is no silent fallback to
 independently interpolated energy/force tables. This is essential for a strict NVE test.
 
+### Dissociation, rebinding, and topology semantics
+
+`MorseBond` is **energetically dissociative**, but the interaction is not dynamically removed from the bonded list. For `r > r0` the attractive force decays toward zero while the energy approaches `D`; if the bodies approach again, the contact can reform automatically. This is appropriate for reversible folding/unfolding contacts, not irreversible graph deletion.
+
+Morse defaults to `exclude_wca=false`: merely adding a Morse restraint does **not** create a topological 1-2 WCA exclusion, so the short-range repulsive core between its virtual sites remains active. Harmonic/FENE terms used for covalent connectivity default to `exclude_wca=true`; under WCA policy v3 only the explicitly bonded site pair is excluded.
+
+`D` is the energy scale of one contact, not directly the free energy of unfolding of the complete structure. Cooperative Morse networks add multiple contributions and compete with entropy, other bonded priors, WCA, and the ML residual. The width parameter matters just as much: the characteristic length is approximately `1/a`, so small `a` produces a very broad attractive interaction.
+
+Do not use `r_cut` as a physical bond-breaking threshold. In the current implementation energy and force are omitted for `r >= r_cut`, so actually crossing the cutoff would create an energy discontinuity. For strict NVE and reversible unfolding, keep `r_cut` far beyond all reachable bonded distances, or use a future explicitly shifted/smoothed cutoff form.
+
 ## 7.4 Harmonic angle
 
 For angle \(\theta\),
@@ -571,19 +581,32 @@ The current recommended route is **pair-specific automatic WCA fitting**, enable
 
 rather than one global hard-core diameter for every site type pair.
 
-## 8.1 Topological exclusions
+## 8.1 Topological exclusions — policy v3
 
-Not every geometrically close pair should receive WCA. The builder records explicit exclusions,
-including:
+The current policy separates the **molecule-level topological relation** from the **specific site pair that should lose the WCA core**:
 
-- virtual sites within the same rigid body;
-- selected 1–2 bonded pairs when `exclude_wca=true`;
-- selected 1–3 angle pairs when `exclude_wca=true`.
+- all virtual-site pairs within one rigid body are excluded;
+- for a topological 1-2 pair with `exclude_wca=true`, only the explicitly bonded virtual-site pair(s) are excluded; all other cross-body site pairs retain WCA;
+- a COM-COM 1-2 bond does not automatically suppress WCA for any virtual-site pair;
+- explicit 1-3 angle endpoints retain the all-sites exclusion under policy v3;
+- Morse defaults to `exclude_wca=false`, because it is typically a dissociative contact/restraint rather than covalent connectivity.
 
-Morse bonds default to `exclude_wca=false` in the current policy unless configured otherwise.
+The policy is serialized in `cg_priors.json` and the runtime explicitly requires:
 
-These exclusions must be reproduced at runtime. Otherwise the prior subtracted during dataset
-construction differs from the prior applied during MD.
+```text
+policy_version = 3
+direct_scope = bonded_site_pairs_only
+one_three_scope = molecule_pair_all_sites
+pair_source = explicit_topology_pairs_v3
+```
+
+Both `direct_pairs` and `direct_site_pairs` are stored. Runtime cross-checks those records against the bonded priors and rejects legacy or inconsistent prior files.
+
+### Why 1-2 exclusions must be site-aware
+
+Applying a 1-2 exclusion to **every** cross-site pair between two rigid bodies is generally too broad. A bonded `site0-site0` pair does not imply that, for example, `site2-site3` should be allowed to interpenetrate without repulsion. In the TEL22 case, the legacy all-sites 1-2 policy produced a reproducible short-range collapse of non-bonded sites on backbone-adjacent residues. An A/B run that retained WCA on all 1-2 cross-pairs except the actually bonded site pair removed that failure mode.
+
+The correction must be **symmetric between preprocessing and runtime**. Changing exclusions only during MD changes the Hamiltonian relative to the priors subtracted from training targets. After a WCA-policy change, regenerate dataset/priors, retrain, re-equilibrate, and repeat NVE certification.
 
 ## 8.2 Automatic pair-specific fit
 
@@ -1353,10 +1376,9 @@ a
 r0
 ```
 
-and, where exposed by the current config/runtime, an optional Morse cutoff.
+and an optional `r_cut`. Morse defaults to `exclude_wca=false`, while harmonic/FENE defaults to `true`. Under WCA policy v3, a site-site harmonic/FENE bond with `exclude_wca=true` suppresses WCA only for its explicit `(site_i, site_j)` pair.
 
-`site_i=-1` or equivalent configured COM selection means the bonded coordinate is attached to the
-body COM rather than a virtual site.
+`site_i=-1` or equivalent configured COM selection means the bonded coordinate is attached to the body COM rather than a virtual site; such a COM-COM bond does not create a virtual-site WCA exclusion. For a dissociative Morse contact, keep `r_cut` far outside the physically explored distance range rather than using it as a break threshold.
 
 ## 19.7 `angles`
 

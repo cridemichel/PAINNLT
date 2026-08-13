@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -11,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SIMULATION = ROOT / "simulation"
 sys.path.insert(0, str(SIMULATION))
 
+from certify_nve import checkpoint_motion_summary  # noqa: E402
 from nve_analysis import analyze_energy_series, certify_metrics, fit_timestep_scaling  # noqa: E402
 
 
@@ -52,6 +54,40 @@ class NVECertificationTests(unittest.TestCase):
         self.assertNotIn("while completed <= args.steps", source)
         self.assertIn("system.integrator.run(0, recalc_forces=True)", source)
         self.assertIn('"Time_ps"', source)
+
+
+    def test_checkpoint_motion_summary_distinguishes_cold_and_thermal_states(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            cold = tmp / "cold.npz"
+            warm = tmp / "warm.npz"
+            virtual = np.array([False, False, True])
+            np.savez_compressed(
+                cold,
+                v=np.zeros((3, 3)),
+                omega=np.zeros((3, 3)),
+                particle_is_virtual=virtual,
+            )
+            warm_v = np.zeros((3, 3))
+            warm_v[0, 0] = 0.25
+            np.savez_compressed(
+                warm,
+                v=warm_v,
+                omega=np.zeros((3, 3)),
+                particle_is_virtual=virtual,
+            )
+            cold_summary = checkpoint_motion_summary(cold)
+            warm_summary = checkpoint_motion_summary(warm)
+            self.assertEqual(cold_summary["real_particles"], 2)
+            self.assertEqual(cold_summary["velocity_rms"], 0.0)
+            self.assertEqual(cold_summary["omega_rms"], 0.0)
+            self.assertGreater(warm_summary["velocity_rms"], 0.0)
+
+    def test_equilibration_source_enforces_thermal_checkpoint(self):
+        source = (SIMULATION / "equilibrate.py").read_text(encoding="utf-8")
+        self.assertIn("initialize_thermal_velocities()", source)
+        self.assertIn("Refusing to save an equilibrated checkpoint with zero/non-finite kinetic energy", source)
+        self.assertIn("system.thermostat.turn_off()", source)
 
     def test_dummy_neighbor_interactions_exclude_com_types(self):
         for name in ("run_cg_md.py", "equilibrate.py"):
