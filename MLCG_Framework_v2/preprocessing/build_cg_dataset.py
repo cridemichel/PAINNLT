@@ -173,8 +173,9 @@ def build_wca_topology_exclusions(bonds, angles, num_molecules):
     WCA exclusions are determined by explicit topology semantics, not merely by
     the presence of an analytic restraint between two molecules. Distance
     restraints such as Morse terms therefore need not suppress the short-range
-    WCA core. Every virtual-site cross pair between a selected molecule pair is
-    excluded from WCA.
+    WCA core. 1-2 molecule pairs are retained for topology classification,
+    while only explicitly bonded virtual-site pairs are excluded from WCA;
+    explicit 1-3 angle endpoints remain all-sites exclusions.
     """
     direct_pairs = set()
     for bond in bonds:
@@ -200,6 +201,54 @@ def build_wca_topology_exclusions(bonds, angles, num_molecules):
                 one_three_pairs.add(key)
 
     return direct_pairs, one_three_pairs
+
+
+def build_wca_direct_site_exclusions(bonds, num_molecules):
+    """Return normalized (mol_i, mol_j, site_i, site_j) 1-2 exclusions.
+
+    Only the virtual-site pair explicitly referenced by a bonded prior is
+    excluded.  COM-level bonds still define a topological 1-2 relation but do
+    not suppress WCA between any virtual-site cross pair.
+    """
+    result = set()
+    for bond in bonds:
+        if not _bond_excludes_wca(bond):
+            continue
+        if isinstance(bond, dict):
+            mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
+            si, sj = int(bond.get("site_i", -1)), int(bond.get("site_j", -1))
+        elif isinstance(bond, (list, tuple)) and len(bond) >= 2:
+            mi, mj = int(bond[0]), int(bond[1])
+            si = int(bond[2]) if len(bond) > 2 else -1
+            sj = int(bond[3]) if len(bond) > 3 else -1
+        else:
+            continue
+        if not (0 <= mi < num_molecules and 0 <= mj < num_molecules and mi != mj):
+            continue
+        if si < 0 or sj < 0:
+            continue
+        if mi < mj:
+            result.add((mi, mj, si, sj))
+        else:
+            result.add((mj, mi, sj, si))
+    return result
+
+
+def _direct_site_excluded_mask(
+    pair_i, pair_j, flat_mols, flat_sites, direct_site_exclusions, num_molecules
+):
+    """Vectorized membership mask for explicit bonded virtual-site pairs."""
+    if not direct_site_exclusions or len(pair_i) == 0:
+        return np.zeros(len(pair_i), dtype=bool)
+    site_stride = int(np.max(flat_sites)) + 1
+    site_codes = flat_mols.astype(np.int64) * site_stride + flat_sites.astype(np.int64)
+    pair_base = int(num_molecules) * site_stride + 1
+    pair_codes = site_codes[pair_i] * pair_base + site_codes[pair_j]
+    excluded_codes = np.asarray([
+        (mi * site_stride + si) * pair_base + (mj * site_stride + sj)
+        for mi, mj, si, sj in sorted(direct_site_exclusions)
+    ], dtype=np.int64)
+    return np.isin(pair_codes, excluded_codes, assume_unique=False)
 
 def get_unwrapped_positions(positions, box_dim):
     unwrapped = np.copy(positions)
@@ -284,7 +333,8 @@ def reconstruct_rigid_sites_for_frame(
 def accumulate_wca_distance_samples(
     frame_sites,
     box_dim,
-    wca_excluded_mol_matrix,
+    wca_direct_site_exclusions,
+    wca_one_three_mol_matrix,
     all_pairwise_distances,
     exact_pair_min,
     sample_limit=1000,
@@ -297,15 +347,18 @@ def accumulate_wca_distance_samples(
     flat_pos = []
     flat_types = []
     flat_mols = []
+    flat_sites = []
     for m_idx, mol_sites in enumerate(frame_sites):
-        for site_type, site_pos in mol_sites:
+        for site_idx, (site_type, site_pos) in enumerate(mol_sites):
             flat_pos.append(site_pos)
             flat_types.append(int(site_type))
             flat_mols.append(m_idx)
+            flat_sites.append(site_idx)
 
     flat_pos = np.asarray(flat_pos, dtype=float)
     flat_types = np.asarray(flat_types, dtype=np.int32)
     flat_mols = np.asarray(flat_mols, dtype=np.int32)
+    flat_sites = np.asarray(flat_sites, dtype=np.int32)
 
     dist_matrix = minimum_image_distance_matrix(flat_pos, box_dim)
     same_mol_mask = flat_mols[:, None] == flat_mols[None, :]
@@ -313,9 +366,12 @@ def accumulate_wca_distance_samples(
 
     i_idx, j_idx = np.triu_indices(len(flat_pos), k=1)
     valid_dist = dist_matrix[i_idx, j_idx]
-    topology_excluded = wca_excluded_mol_matrix[
+    topology_excluded = wca_one_three_mol_matrix[
         flat_mols[i_idx], flat_mols[j_idx]
     ]
+    topology_excluded |= _direct_site_excluded_mask(
+        i_idx, j_idx, flat_mols, flat_sites, wca_direct_site_exclusions, len(frame_sites)
+    )
 
     types_i = flat_types[i_idx]
     types_j = flat_types[j_idx]
@@ -499,8 +555,10 @@ box_dim_history = []
 sites_data_history = []
 mol_site_indices = {}
 wca_direct_mol_pairs = set()
+wca_direct_site_pairs = set()
 wca_one_three_mol_pairs = set()
-wca_excluded_mol_matrix = None
+wca_direct_mol_matrix = None
+wca_one_three_mol_matrix = None
 
 for ts_idx, ts in enumerate(u.trajectory):
     if ts_idx % 100 == 0:
@@ -520,15 +578,23 @@ for ts_idx, ts in enumerate(u.trajectory):
         wca_direct_mol_pairs, wca_one_three_mol_pairs = build_wca_topology_exclusions(
             WCA_TOPOLOGY_BONDS, WCA_TOPOLOGY_ANGLES, len(mol_resnames)
         )
-        wca_excluded_mol_matrix = np.zeros(
+        wca_direct_site_pairs = build_wca_direct_site_exclusions(
+            WCA_TOPOLOGY_BONDS, len(mol_resnames)
+        )
+        wca_direct_mol_matrix = np.zeros(
             (len(mol_resnames), len(mol_resnames)), dtype=bool
         )
-        for mi, mj in wca_direct_mol_pairs | wca_one_three_mol_pairs:
-            wca_excluded_mol_matrix[mi, mj] = True
-            wca_excluded_mol_matrix[mj, mi] = True
+        wca_one_three_mol_matrix = np.zeros_like(wca_direct_mol_matrix)
+        for mi, mj in wca_direct_mol_pairs:
+            wca_direct_mol_matrix[mi, mj] = True
+            wca_direct_mol_matrix[mj, mi] = True
+        for mi, mj in wca_one_three_mol_pairs:
+            wca_one_three_mol_matrix[mi, mj] = True
+            wca_one_three_mol_matrix[mj, mi] = True
         print(
-            f"\n[INFO] WCA topology exclusions: {len(wca_direct_mol_pairs)} 1-2 pairs, "
-            f"{len(wca_one_three_mol_pairs)} 1-3 pairs (all virtual-site cross pairs excluded)."
+            f"\n[INFO] WCA topology policy v3: {len(wca_direct_mol_pairs)} 1-2 molecule pairs "
+            f"with {len(wca_direct_site_pairs)} explicitly bonded site-pair exclusions; "
+            f"{len(wca_one_three_mol_pairs)} 1-3 all-sites exclusions."
         )
         
     for mol_id, residue in enumerate(valid_residues):
@@ -720,6 +786,16 @@ for resname, info in rigid_bodies_info.items():
         "siti salvati nel frame degli assi principali."
     )
 
+# Validate site-level 1-2 exclusions against the actual mapped CG layout before
+# collecting WCA statistics.  A bad site index must never silently turn into an
+# active WCA pair.
+for _mi, _mj, _si, _sj in sorted(wca_direct_site_pairs):
+    if _si >= len(sites_data_history[0][_mi]) or _sj >= len(sites_data_history[0][_mj]):
+        raise RuntimeError(
+            "WCA bonded-site exclusion references an out-of-range CG site: "
+            f"{_mi}:{_si} <-> {_mj}:{_sj}"
+        )
+
 # Collect every geometry-derived prior statistic on the same effective CG
 # geometry used by Pass 2/runtime.  This is essential for rigid multi-site
 # bodies: fitting on raw mapped sites and applying on ideal rigid sites would
@@ -787,7 +863,8 @@ for ts_idx, raw_frame_sites in enumerate(sites_data_history):
         accumulate_wca_distance_samples(
             rigid_frame_sites,
             box_dim,
-            wca_excluded_mol_matrix,
+            wca_direct_site_pairs,
+            wca_one_three_mol_matrix,
             all_pairwise_distances,
             exact_pair_min,
         )
@@ -986,16 +1063,39 @@ if args.priors:
     derived_priors = _preloaded_priors
     exclusion_meta = derived_priors.get("wca_exclusions", {})
     if not (
-        exclusion_meta.get("exclude_12") is True
+        exclusion_meta.get("policy_version") == 3
+        and exclusion_meta.get("exclude_12") is True
         and exclusion_meta.get("exclude_13") is True
-        and exclusion_meta.get("scope") == "molecule_pair_all_sites"
-        and exclusion_meta.get("pair_source") == "explicit_topology_pairs_v2"
+        and exclusion_meta.get("direct_scope") == "bonded_site_pairs_only"
+        and exclusion_meta.get("one_three_scope") == "molecule_pair_all_sites"
+        and exclusion_meta.get("pair_source") == "explicit_topology_pairs_v3"
         and isinstance(exclusion_meta.get("direct_pairs"), list)
+        and isinstance(exclusion_meta.get("direct_site_pairs"), list)
         and isinstance(exclusion_meta.get("one_three_pairs"), list)
     ):
         raise RuntimeError(
-            "The supplied priors predate the explicit topological WCA-pair policy. "
-            "Rebuild cg_priors.json from the physical trajectory before reusing --priors."
+            "The supplied priors do not use WCA policy v3 "
+            "(1-2 bonded-site-only, 1-3 all-sites). Rebuild cg_priors.json from "
+            "the physical trajectory before reusing --priors."
+        )
+    _meta_direct = {tuple(sorted(map(int, pair))) for pair in exclusion_meta["direct_pairs"]}
+    _meta_one_three = {tuple(sorted(map(int, pair))) for pair in exclusion_meta["one_three_pairs"]}
+    _meta_direct_sites = set()
+    for _raw in exclusion_meta["direct_site_pairs"]:
+        if not isinstance(_raw, (list, tuple)) or len(_raw) != 4:
+            raise RuntimeError(f"Invalid direct_site_pairs entry in supplied priors: {_raw!r}")
+        _mi, _mj, _si, _sj = map(int, _raw)
+        _meta_direct_sites.add(
+            (_mi, _mj, _si, _sj) if _mi < _mj else (_mj, _mi, _sj, _si)
+        )
+    if (
+        _meta_direct != wca_direct_mol_pairs
+        or _meta_one_three != wca_one_three_mol_pairs
+        or _meta_direct_sites != wca_direct_site_pairs
+    ):
+        raise RuntimeError(
+            "The supplied wca_exclusions metadata disagrees with its bonded topology. "
+            "Rebuild cg_priors.json instead of reusing inconsistent priors."
         )
     wca_info = derived_priors.get("wca", {})
     WCA_SIGMA_VAL = float(wca_info.get("sigma", 0.0))
@@ -1109,13 +1209,17 @@ if derived_priors is None:
         derived_priors["wca_pairs"] = wca_prior_dict
 
     derived_priors["wca_exclusions"] = {
+        "policy_version": 3,
         "exclude_12": True,
         "exclude_13": True,
-        "scope": "molecule_pair_all_sites",
-        "pair_source": "explicit_topology_pairs_v2",
+        "direct_scope": "bonded_site_pairs_only",
+        "one_three_scope": "molecule_pair_all_sites",
+        "pair_source": "explicit_topology_pairs_v3",
         "direct_pairs": [list(pair) for pair in sorted(wca_direct_mol_pairs)],
+        "direct_site_pairs": [list(record) for record in sorted(wca_direct_site_pairs)],
         "one_three_pairs": [list(pair) for pair in sorted(wca_one_three_mol_pairs)],
         "direct_pair_count": len(wca_direct_mol_pairs),
+        "direct_site_pair_count": len(wca_direct_site_pairs),
         "one_three_pair_count": len(wca_one_three_mol_pairs),
     }
         
@@ -1135,7 +1239,14 @@ if not wca_prior_dict:
 _final_direct, _final_one_three = build_wca_topology_exclusions(
     derived_priors.get("bonds", []), derived_priors.get("angles", []), len(mol_resnames)
 )
-if _final_direct != wca_direct_mol_pairs or _final_one_three != wca_one_three_mol_pairs:
+_final_direct_sites = build_wca_direct_site_exclusions(
+    derived_priors.get("bonds", []), len(mol_resnames)
+)
+if (
+    _final_direct != wca_direct_mol_pairs
+    or _final_direct_sites != wca_direct_site_pairs
+    or _final_one_three != wca_one_three_mol_pairs
+):
     raise RuntimeError(
         "WCA topology exclusions derived in Pass 1 do not match the final bonded priors."
     )
@@ -1169,13 +1280,16 @@ wca_active_classes_by_pair = {key: [] for key in wca_prior_dict}
 # loops that previously rebuilt sigma/epsilon/cutoff matrices at each frame.
 if wca_prior_dict:
     flat_mol_template = []
+    flat_site_template = []
     flat_type_template = []
     for m_idx, sites in enumerate(sites_data_history[0]):
-        for s_type, _ in sites:
+        for site_idx, (s_type, _) in enumerate(sites):
             flat_mol_template.append(m_idx)
+            flat_site_template.append(site_idx)
             flat_type_template.append(int(s_type))
 
     flat_mol_template = np.asarray(flat_mol_template, dtype=np.int32)
+    flat_site_template = np.asarray(flat_site_template, dtype=np.int32)
     flat_type_template = np.asarray(flat_type_template, dtype=np.int32)
 
     max_prior_type = max(
@@ -1202,10 +1316,14 @@ if wca_prior_dict:
     pair_mol_i = flat_mol_template[pair_i_all]
     pair_mol_j = flat_mol_template[pair_j_all]
     inter_mol = pair_mol_i != pair_mol_j
-    topology_allowed = ~wca_excluded_mol_matrix[pair_mol_i, pair_mol_j]
-    nonbonded = inter_mol & topology_allowed
-    pair_i_all = pair_i_all[nonbonded]
-    pair_j_all = pair_j_all[nonbonded]
+    topology_excluded = wca_one_three_mol_matrix[pair_mol_i, pair_mol_j].copy()
+    topology_excluded |= _direct_site_excluded_mask(
+        pair_i_all, pair_j_all, flat_mol_template, flat_site_template,
+        wca_direct_site_pairs, len(mol_resnames)
+    )
+    wca_candidate = inter_mol & (~topology_excluded)
+    pair_i_all = pair_i_all[wca_candidate]
+    pair_j_all = pair_j_all[wca_candidate]
 
     pair_type_i = flat_type_template[pair_i_all]
     pair_type_j = flat_type_template[pair_j_all]
@@ -1231,20 +1349,25 @@ if wca_prior_dict:
         for tj in range(ti, n_wca_types)
         if wca_cutoff_sq_matrix[ti, tj] > 0.0
     }
-    # All 1-2/1-3 molecule pairs were removed above; keep an explicit class
-    # vector so diagnostics verify that only genuinely non-bonded contacts
-    # ever reach the WCA kernel.
-    pair_topology_class_all = np.full(pair_i_all.size, 2, dtype=np.int8)
+    # Allowed 1-2 site pairs now reach the WCA kernel; 1-3 pairs must never do so.
     pair_mol_i_all = flat_mol_template[pair_i_all]
     pair_mol_j_all = flat_mol_template[pair_j_all]
-    if np.any(wca_excluded_mol_matrix[pair_mol_i_all, pair_mol_j_all]):
-        raise RuntimeError("A 1-2/1-3 pair leaked into the WCA candidate list.")
+    pair_topology_class_all = np.where(
+        wca_direct_mol_matrix[pair_mol_i_all, pair_mol_j_all], 0, 2
+    ).astype(np.int8)
+    if np.any(wca_one_three_mol_matrix[pair_mol_i_all, pair_mol_j_all]):
+        raise RuntimeError("A 1-3 pair leaked into the WCA candidate list.")
+    if np.any(_direct_site_excluded_mask(
+        pair_i_all, pair_j_all, flat_mol_template, flat_site_template,
+        wca_direct_site_pairs, len(mol_resnames)
+    )):
+        raise RuntimeError("An explicitly bonded 1-2 site pair leaked into the WCA candidate list.")
 
     wca_global_cutoff_sq = float(np.max(pair_cutoff_sq_all))
 
     print(
         f"[INFO] WCA vectorized kernel: {flat_type_template.size} sites, "
-        f"{pair_i_all.size} nonbonded candidate pairs, "
+        f"{pair_i_all.size} WCA candidate pairs (nonbonded + allowed 1-2), "
         f"global cutoff={np.sqrt(wca_global_cutoff_sq):.4f} nm"
     )
 

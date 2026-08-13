@@ -190,11 +190,15 @@ class FrameworkUtilsTests(unittest.TestCase):
             "wca_exclusions": {
                 "exclude_12": True,
                 "exclude_13": True,
-                "scope": "molecule_pair_all_sites",
-                "pair_source": "explicit_topology_pairs_v2",
+                "policy_version": 3,
+                "direct_scope": "bonded_site_pairs_only",
+                "one_three_scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v3",
                 "direct_pairs": [[0, 1], [1, 2], [2, 3]],
+                "direct_site_pairs": [],
                 "one_three_pairs": [[0, 2], [1, 3]],
                 "direct_pair_count": 3,
+                "direct_site_pair_count": 0,
                 "one_three_pair_count": 2,
             },
         }
@@ -219,11 +223,15 @@ class FrameworkUtilsTests(unittest.TestCase):
             "wca_exclusions": {
                 "exclude_12": True,
                 "exclude_13": True,
-                "scope": "molecule_pair_all_sites",
-                "pair_source": "explicit_topology_pairs_v2",
+                "policy_version": 3,
+                "direct_scope": "bonded_site_pairs_only",
+                "one_three_scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v3",
                 "direct_pairs": [[0, 1], [1, 2]],
+                "direct_site_pairs": [[0, 1, 2, 3], [1, 2, 4, 5]],
                 "one_three_pairs": [],
                 "direct_pair_count": 2,
+                "direct_site_pair_count": 2,
                 "one_three_pair_count": 0,
             },
         }
@@ -243,27 +251,35 @@ class FrameworkUtilsTests(unittest.TestCase):
             "wca_exclusions": {
                 "exclude_12": True,
                 "exclude_13": True,
-                "scope": "molecule_pair_all_sites",
-                "pair_source": "explicit_topology_pairs_v2",
+                "policy_version": 3,
+                "direct_scope": "bonded_site_pairs_only",
+                "one_three_scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v3",
                 "direct_pairs": [[0, 1]],
+                "direct_site_pairs": [],
                 "one_three_pairs": [],
                 "direct_pair_count": 1,
+                "direct_site_pair_count": 0,
                 "one_three_pair_count": 0,
             },
         }
-        with self.assertRaisesRegex(ValueError, "site_i/site_j"):
-            wca_direct_bonded_site_exclusions(priors, 2)
+        # A COM-level 1-2 bond has no virtual-site exclusion under policy v3.
+        self.assertEqual(wca_direct_bonded_site_exclusions(priors, 2), {(0, 1): set()})
 
     def test_wca_topology_exclusion_pair_count_is_validated(self):
         priors = {
             "wca_exclusions": {
                 "exclude_12": True,
                 "exclude_13": True,
-                "scope": "molecule_pair_all_sites",
-                "pair_source": "explicit_topology_pairs_v2",
+                "policy_version": 3,
+                "direct_scope": "bonded_site_pairs_only",
+                "one_three_scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v3",
                 "direct_pairs": [[0, 1]],
+                "direct_site_pairs": [],
                 "one_three_pairs": [],
                 "direct_pair_count": 2,
+                "direct_site_pair_count": 0,
                 "one_three_pair_count": 0,
             },
         }
@@ -273,6 +289,21 @@ class FrameworkUtilsTests(unittest.TestCase):
     def test_wca_exclusion_policy_rejects_legacy_priors(self):
         with self.assertRaises(ValueError):
             validate_wca_exclusion_policy({"bonds": []})
+
+        legacy_v2 = {
+            "wca_exclusions": {
+                "exclude_12": True,
+                "exclude_13": True,
+                "scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v2",
+                "direct_pairs": [[0, 1]],
+                "one_three_pairs": [],
+                "direct_pair_count": 1,
+                "one_three_pair_count": 0,
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "policy v3"):
+            validate_wca_exclusion_policy(legacy_v2)
 
 
 if __name__ == "__main__":

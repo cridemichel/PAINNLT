@@ -22,38 +22,45 @@ PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
 
 
 def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
-    """Require the WCA prior to use molecule-level 1-2/1-3 exclusions."""
+    """Require the selective 1-2 / all-sites 1-3 WCA policy (schema v3)."""
     meta = priors.get("wca_exclusions", {})
     if not (
-        meta.get("exclude_12") is True
+        meta.get("policy_version") == 3
+        and meta.get("exclude_12") is True
         and meta.get("exclude_13") is True
-        and meta.get("scope") == "molecule_pair_all_sites"
-        and meta.get("pair_source") == "explicit_topology_pairs_v2"
+        and meta.get("direct_scope") == "bonded_site_pairs_only"
+        and meta.get("one_three_scope") == "molecule_pair_all_sites"
+        and meta.get("pair_source") == "explicit_topology_pairs_v3"
         and isinstance(meta.get("direct_pairs"), list)
+        and isinstance(meta.get("direct_site_pairs"), list)
         and isinstance(meta.get("one_three_pairs"), list)
     ):
         raise ValueError(
-            "cg_priors.json does not declare explicit topological WCA 1-2/1-3 pair lists. "
-            "Rebuild the dataset and cg_priors.json with the patched preprocessing step."
+            "cg_priors.json does not declare the WCA policy v3 "
+            "(1-2 bonded-site-only, 1-3 all-sites). Rebuild the dataset and "
+            "cg_priors.json, retrain the model, and re-equilibrate before runtime use."
         )
 
 
 def wca_topology_exclusion_pairs(
     priors: dict[str, Any], num_molecules: int
 ) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
-    """Return the explicit molecule-pair WCA exclusions stored in cg_priors."""
+    """Return explicit topological 1-2 and 1-3 molecule pairs from cg_priors."""
     validate_wca_exclusion_policy(priors)
     meta = priors["wca_exclusions"]
 
     def parse_pairs(name: str) -> set[tuple[int, int]]:
         result: set[tuple[int, int]] = set()
-        for raw in meta.get(name, []):
+        raw_pairs = meta.get(name, [])
+        for raw in raw_pairs:
             if not isinstance(raw, (list, tuple)) or len(raw) != 2:
                 raise ValueError(f"Invalid WCA exclusion pair in {name}: {raw!r}")
             mi, mj = int(raw[0]), int(raw[1])
             if not (0 <= mi < num_molecules and 0 <= mj < num_molecules and mi != mj):
                 raise ValueError(f"Out-of-range WCA exclusion pair in {name}: {(mi, mj)}")
             result.add((min(mi, mj), max(mi, mj)))
+        if len(result) != len(raw_pairs):
+            raise ValueError(f"Duplicate WCA exclusion pair in {name}")
         return result
 
     direct_pairs = parse_pairs("direct_pairs")
@@ -66,78 +73,83 @@ def wca_topology_exclusion_pairs(
         raise ValueError("WCA one_three_pair_count does not match explicit one_three_pairs")
     return direct_pairs, one_three_pairs
 
+
 def wca_direct_bonded_site_exclusions(
     priors: dict[str, Any], num_molecules: int
 ) -> dict[tuple[int, int], set[tuple[int, int]]]:
-    """Return the explicit virtual-site exclusions for diagnostic selective 1-2 WCA.
+    """Return production 1-2 virtual-site exclusions stored in cg_priors.
 
-    The production preprocessing policy excludes every virtual-site cross pair
-    between topological 1-2 molecule pairs.  For the runtime A/B diagnostic we
-    instead need the narrower set of *actually bonded* site pairs.  This helper
-    reconstructs that mapping from bonds marked ``exclude_wca=true`` and refuses
-    to guess when an explicit 1-2 pair cannot be traced to site indices.
-
-    Returned site tuples are oriented consistently with the sorted molecule-pair
-    key: ``(site_on_lower_mol, site_on_upper_mol)``.
+    Under policy v3, topological 1-2 molecule pairs retain WCA on every
+    cross-body virtual-site pair except the site pair(s) that are explicitly
+    bonded with ``exclude_wca=true``.  The metadata is authoritative at runtime
+    and is cross-checked against the bonded priors when those records are
+    available.
     """
     direct_pairs, _ = wca_topology_exclusion_pairs(priors, num_molecules)
+    meta = priors["wca_exclusions"]
     result: dict[tuple[int, int], set[tuple[int, int]]] = {pair: set() for pair in direct_pairs}
-    seen_bond_record: set[tuple[int, int]] = set()
+    raw_records = meta.get("direct_site_pairs", [])
+    seen_records: set[tuple[int, int, int, int]] = set()
 
-    for bond in priors.get("bonds", []):
-        if not isinstance(bond, dict):
-            continue
-        excludes_wca = bool(
-            bond.get("exclude_wca", str(bond.get("type", "harmonic")).lower() != "morse")
-        )
-        if not excludes_wca:
-            continue
-        if "mol_i" not in bond or "mol_j" not in bond:
-            continue
-        mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
-        pair = (min(mi, mj), max(mi, mj))
-        if pair not in result:
-            continue
-        seen_bond_record.add(pair)
-        if "site_i" not in bond or "site_j" not in bond:
-            continue
-        si, sj = int(bond["site_i"]), int(bond["site_j"])
-        # A negative site index denotes a COM-level bonded term.  Such a bond
-        # has no directly bonded virtual-site pair to exclude from WCA.
+    for raw in raw_records:
+        if not isinstance(raw, (list, tuple)) or len(raw) != 4:
+            raise ValueError(f"Invalid WCA direct_site_pairs record: {raw!r}")
+        mi, mj, si, sj = map(int, raw)
+        if not (0 <= mi < num_molecules and 0 <= mj < num_molecules and mi != mj):
+            raise ValueError(f"Out-of-range WCA direct site-pair molecule indices: {raw!r}")
         if si < 0 or sj < 0:
-            continue
-        if mi <= mj:
-            result[pair].add((si, sj))
+            raise ValueError(f"WCA direct_site_pairs requires non-negative site indices: {raw!r}")
+        if mi < mj:
+            record = (mi, mj, si, sj)
         else:
-            result[pair].add((sj, si))
+            record = (mj, mi, sj, si)
+        pair = record[:2]
+        if pair not in direct_pairs:
+            raise ValueError(
+                f"WCA direct site-pair {record!r} does not belong to an explicit direct_pair"
+            )
+        if record in seen_records:
+            raise ValueError(f"Duplicate WCA direct site-pair record: {record!r}")
+        seen_records.add(record)
+        result[pair].add(record[2:])
 
-    missing_records = sorted(pair for pair in direct_pairs if pair not in seen_bond_record)
-    ambiguous_records = sorted(
-        pair
-        for pair in direct_pairs
-        if pair in seen_bond_record
-        and not result[pair]
-        and not any(
-            isinstance(bond, dict)
-            and bool(bond.get("exclude_wca", str(bond.get("type", "harmonic")).lower() != "morse"))
-            and (min(int(bond.get("mol_i", -1)), int(bond.get("mol_j", -1))),
-                 max(int(bond.get("mol_i", -1)), int(bond.get("mol_j", -1)))) == pair
-            and "site_i" in bond and "site_j" in bond
-            for bond in priors.get("bonds", [])
-        )
-    )
-    if missing_records or ambiguous_records:
-        details = []
-        if missing_records:
-            details.append(f"no matching bonded prior for {missing_records[:8]}")
-        if ambiguous_records:
-            details.append(f"missing explicit site_i/site_j for {ambiguous_records[:8]}")
+    if len(seen_records) != int(meta.get("direct_site_pair_count", -1)):
         raise ValueError(
-            "Selective 1-2 WCA diagnostic requires traceable bonded-site metadata for every "
-            "explicit direct_pair; " + "; ".join(details)
+            "WCA direct_site_pair_count does not match explicit direct_site_pairs"
+        )
+
+    # Cross-check the stored site-level policy against the bonded priors.  COM-level
+    # bonds (negative/missing site indices) create a 1-2 topology relation but do
+    # not suppress WCA between any virtual-site pair.
+    expected: set[tuple[int, int, int, int]] = set()
+    for bond in priors.get("bonds", []):
+        if isinstance(bond, dict):
+            excludes = bool(
+                bond.get("exclude_wca", str(bond.get("type", "harmonic")).lower() != "morse")
+            )
+            if not excludes or "mol_i" not in bond or "mol_j" not in bond:
+                continue
+            mi, mj = int(bond["mol_i"]), int(bond["mol_j"])
+            si, sj = int(bond.get("site_i", -1)), int(bond.get("site_j", -1))
+        elif isinstance(bond, (list, tuple)) and len(bond) >= 2:
+            mi, mj = int(bond[0]), int(bond[1])
+            si = int(bond[2]) if len(bond) > 2 else -1
+            sj = int(bond[3]) if len(bond) > 3 else -1
+        else:
+            continue
+        pair = (min(mi, mj), max(mi, mj))
+        if pair not in direct_pairs or si < 0 or sj < 0:
+            continue
+        expected.add((mi, mj, si, sj) if mi < mj else (mj, mi, sj, si))
+
+    if expected != seen_records:
+        missing = sorted(expected - seen_records)[:8]
+        extra = sorted(seen_records - expected)[:8]
+        raise ValueError(
+            "WCA direct_site_pairs metadata disagrees with bonded priors; "
+            f"missing={missing}, extra={extra}. Rebuild cg_priors.json."
         )
     return result
-
 
 def sha256_file(path: str | Path) -> str:
     path = Path(path)
