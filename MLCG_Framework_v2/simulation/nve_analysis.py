@@ -82,6 +82,7 @@ def analyze_energy_series(times_ps: Iterable[float], energies: Iterable[float]) 
         "energy_scale": energy_scale,
         "rms_delta_E": rms_delta,
         "centered_rms_E": centered_rms,
+        "sigma_E": centered_rms,
         "peak_to_peak_E": peak_to_peak,
         "max_abs_delta_E": max_abs_delta,
         "relative_rms_delta_E": relative_rms,
@@ -100,18 +101,18 @@ def analyze_energy_series(times_ps: Iterable[float], energies: Iterable[float]) 
 
 
 def fit_timestep_scaling(run_metrics: Iterable[dict[str, Any]]) -> dict[str, Any]:
-    """Fit RMS energy error = C * dt**p across multiple NVE runs."""
+    """Fit sigma_E = C * dt**p across multiple fixed-duration NVE runs."""
     runs = sorted(run_metrics, key=lambda item: float(item["dt_ps"]))
     if len(runs) < 3:
         raise ValueError("At least three time steps are required for scaling certification")
 
     dts = np.asarray([float(item["dt_ps"]) for item in runs], dtype=float)
-    rms = np.asarray([float(item["rms_delta_E"]) for item in runs], dtype=float)
-    if np.any(dts <= 0.0) or np.any(rms <= 0.0) or not np.isfinite(rms).all():
-        raise ValueError("Time steps and RMS energy errors must be finite and positive")
+    sigma = np.asarray([float(item["sigma_E"]) for item in runs], dtype=float)
+    if np.any(dts <= 0.0) or np.any(sigma <= 0.0) or not np.isfinite(sigma).all():
+        raise ValueError("Time steps and sigma_E values must be finite and positive")
 
     x = np.log(dts)
-    y = np.log(rms)
+    y = np.log(sigma)
     slope, intercept = np.polyfit(x, y, 1)
     predicted = slope * x + intercept
     ss_res = float(np.sum((y - predicted) ** 2))
@@ -121,16 +122,18 @@ def fit_timestep_scaling(run_metrics: Iterable[dict[str, Any]]) -> dict[str, Any
     adjacent = []
     for lo, hi in zip(runs[:-1], runs[1:]):
         dt_ratio = float(hi["dt_ps"]) / float(lo["dt_ps"])
-        observed = float(hi["rms_delta_E"]) / float(lo["rms_delta_E"])
+        observed = float(hi["sigma_E"]) / float(lo["sigma_E"])
         adjacent.append({
             "dt_low_ps": float(lo["dt_ps"]),
             "dt_high_ps": float(hi["dt_ps"]),
             "dt_ratio": dt_ratio,
-            "observed_rms_ratio": observed,
+            "observed_sigma_ratio": observed,
             "quadratic_expected_ratio": dt_ratio * dt_ratio,
         })
 
     return {
+        "observable": "sigma_E",
+        "model": "sigma_E = C * dt^p",
         "exponent_p": float(slope),
         "prefactor_C": float(math.exp(intercept)),
         "loglog_r2": float(r2),

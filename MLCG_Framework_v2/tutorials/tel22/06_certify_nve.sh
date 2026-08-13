@@ -13,7 +13,6 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 NVE_DEVICE="${NVE_DEVICE:-cpu}"
 NVE_DURATION_PS="${NVE_DURATION_PS:-5.0}"
-NVE_LOG_INTERVAL_PS="${NVE_LOG_INTERVAL_PS:-0.01}"
 NVE_OUTPUT_DIR="${NVE_OUTPUT_DIR:-nve_certification}"
 NVE_DTS="${NVE_DTS:-0.001 0.002 0.005 0.01}"
 NVE_SLOPE_MIN="${NVE_SLOPE_MIN:-1.7}"
@@ -42,7 +41,6 @@ python3 "${FRAMEWORK_ROOT}/simulation/certify_nve.py" \
     --checkpoint equilibrated.npz \
     --dts "${DT_ARGS[@]}" \
     --duration-ps "${NVE_DURATION_PS}" \
-    --log-interval-ps "${NVE_LOG_INTERVAL_PS}" \
     --device "${NVE_DEVICE}" \
     --output-dir "${NVE_OUTPUT_DIR}" \
     --slope-min "${NVE_SLOPE_MIN}" \
