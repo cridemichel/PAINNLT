@@ -3,7 +3,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRAMEWORK_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-PYRESSO="${PYRESSO:-pypresso}"
+if [[ -x "${FRAMEWORK_ROOT}/espresso/build/pypresso" ]]; then
+    DEFAULT_PYPRESSO="${FRAMEWORK_ROOT}/espresso/build/pypresso"
+else
+    DEFAULT_PYPRESSO="pypresso"
+fi
+
+PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 DEVICE="${DEVICE:-auto}"
 
 cd "${SCRIPT_DIR}"
