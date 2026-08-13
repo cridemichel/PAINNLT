@@ -484,6 +484,16 @@ Parametri:
 
 Il Morse non viene più approssimato mediante interpolazioni indipendenti di energia e forza. Questa modifica è essenziale per una certificazione NVE rigorosa.
 
+### Dissociazione, rebinding e semantica topologica
+
+Il `MorseBond` è **dissociativo dal punto di vista energetico**, ma non viene rimosso dinamicamente dalla lista dei bonded interactions. Per `r > r0` la forza attrattiva tende gradualmente a zero e l'energia tende a `D`; se i due corpi tornano vicini, il contatto può riformarsi automaticamente. Questa è la semantica adatta a un contatto reversibile di folding/unfolding, non a una rottura irreversibile della connettività.
+
+Per default un bond Morse ha `exclude_wca=false`: la sola presenza del restraint Morse **non** crea una topological 1-2 WCA exclusion. Il core repulsivo tra i relativi virtual sites resta quindi attivo. Bond harmonic/FENE usati per la connettività covalente hanno invece default `exclude_wca=true`; con la policy WCA v3 viene esclusa soltanto la site-pair esplicitamente bonded.
+
+`D` è una scala energetica del singolo contatto, non direttamente una free-energy di unfolding dell'intera struttura. Se più Morse devono dissociarsi cooperativamente, i loro contributi si sommano e competono con entropia, prior bonded, WCA e residuo ML. Anche `a` è cruciale: la lunghezza caratteristica è circa `1/a`, quindi valori piccoli producono attrazioni molto larghe.
+
+Il cutoff non deve essere usato come meccanismo di bond breaking. Nell'implementazione corrente energia e forza vengono omesse per `r >= r_cut`; un attraversamento effettivo del cutoff introdurrebbe una discontinuità energetica. Per NVE e per unfolding reversibile usare quindi un `r_cut` molto oltre tutte le distanze raggiungibili, oppure una futura forma di cutoff esplicitamente shiftata/smoothed.
+
 ## 7.4 Harmonic angle
 
 \[
@@ -594,17 +604,32 @@ F(r)
 \right].
 \]
 
-## 8.1 Esclusioni topologiche
+## 8.1 Esclusioni topologiche — policy v3
 
-Le esclusioni sono a livello di coppia di molecole:
+La policy corrente distingue la **relazione topologica tra molecole** dalla **site-pair che deve realmente perdere il core WCA**:
 
-- tutte le coppie di virtual sites interne allo stesso rigid body;
-- tutte le cross-pair tra molecole 1–2 marcate `exclude_wca=true`;
-- tutte le cross-pair 1–3 definite da angle con `exclude_wca=true`.
+- tutte le coppie di virtual sites interne allo stesso rigid body sono escluse;
+- per una coppia topologica 1–2 con `exclude_wca=true`, vengono escluse **solo le virtual-site pair esplicitamente bonded**; tutte le altre cross-pair tra i due rigid bodies mantengono WCA;
+- una relazione 1–2 definita da un bond COM-COM non esclude automaticamente alcuna virtual-site pair;
+- le coppie 1–3 definite dagli endpoint di angle con `exclude_wca=true` mantengono, nella policy v3, l'esclusione **all-sites**;
+- un Morse ha default `exclude_wca=false`, perché rappresenta tipicamente un contatto/restraint dissociativo e non la connettività covalente.
 
-La policy viene serializzata in `cg_priors.json` come `wca_exclusions`.
+La policy viene serializzata in `cg_priors.json` come `wca_exclusions` e il runtime richiede esplicitamente:
 
-Un Morse ha default `exclude_wca=false`, perché può essere un restraint di distanza e non necessariamente un vero legame topologico.
+```text
+policy_version = 3
+direct_scope = bonded_site_pairs_only
+one_three_scope = molecule_pair_all_sites
+pair_source = explicit_topology_pairs_v3
+```
+
+I metadata contengono sia `direct_pairs` sia `direct_site_pairs`. Il runtime li cross-checka con i bonded priors e rifiuta priors legacy/incoerenti.
+
+### Perché l'esclusione 1–2 deve essere site-aware
+
+Un'esclusione 1–2 applicata a **tutte** le cross-site pair di due rigid bodies è in generale troppo ampia: il fatto che, per esempio, `site0-site0` sia legata non implica che `site2-site3` debba poter interpenetrare senza repulsione. Nel caso TEL22 questa policy legacy ha prodotto un collasso riproducibile di siti non bonded appartenenti a residui backbone-adjacent. Un test A/B che riattivava WCA su tutte le cross-pair 1–2 salvo la site-pair realmente bonded ha eliminato il failure mode.
+
+La correzione deve essere **simmetrica tra preprocessing e runtime**. Cambiare soltanto le esclusioni durante MD modifica l'Hamiltoniana rispetto a quella usata per sottrarre i prior dai target di training. Dopo un cambio di policy WCA bisogna quindi rigenerare dataset/priors, riaddestrare, riequilibrare e ricertificare NVE.
 
 ## 8.2 Fit automatico
 
@@ -1424,7 +1449,9 @@ Per Morse:
 D, a, r0
 ```
 
-e opzionalmente cutoff Morse se supportato dalla build corrente.
+e opzionalmente `r_cut`. Il default di `exclude_wca` per Morse è `false`; per harmonic/FENE è `true`. Con WCA policy v3, un harmonic/FENE site-site con `exclude_wca=true` sopprime WCA soltanto sulla specifica coppia `(site_i, site_j)`. Un bond COM-COM può definire semantica bonded ma non crea una virtual-site exclusion.
+
+Per un Morse dissociativo, `r_cut` deve restare molto oltre le distanze fisicamente esplorate: non usarlo come soglia di rottura.
 
 ## 19.7 `angles`
 
@@ -2822,12 +2849,16 @@ Per certificazione energetica usare CPU, dove il plugin può usare accumulo più
 
 4. **Bonded topology**
    - definire bond/angle/dihedral;
-   - separare legami topologici da restraint Morse con `exclude_wca`.
+   - separare connettività covalente e contatti dissociativi: harmonic/FENE tipicamente `exclude_wca=true`, Morse tipicamente `exclude_wca=false`;
+   - per un contatto Morse verificare che `D`, `a` e il numero di contatti cooperativi consentano davvero la scala di unfolding desiderata.
 
 5. **WCA**
    - usare `wca_sigma="auto"`;
+   - per 1–2 usare la policy v3 `bonded_site_pairs_only`, non un'esclusione all-sites;
+   - mantenere identica la policy tra preprocessing, equilibration e produzione;
    - ispezionare la tabella diagnostica WCA;
-   - verificare `r_guard < r_min`.
+   - verificare `r_guard < r_min`;
+   - dopo ogni cambio di policy rigenerare priors/dataset, retrain, re-equilibrate e rifare NVE.
 
 6. **Dataset**
    - nessun NaN;

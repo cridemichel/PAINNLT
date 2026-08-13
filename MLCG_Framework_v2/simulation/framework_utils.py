@@ -21,6 +21,28 @@ ENERGY_GAUGE = "isolated_species_zero_v1"
 PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
 
 
+def particle_is_virtual(particle: Any) -> bool:
+    """Return whether an ESPResSo particle is virtual across API versions.
+
+    ESPResSo 5 exposes ``ParticleHandle.is_virtual()`` as a method, while
+    older releases exposed virtual-state information as a boolean attribute.
+    Treating the method object itself as a boolean makes every particle appear
+    virtual, so all runtime code must go through this compatibility helper.
+    """
+    marker = getattr(particle, "is_virtual", None)
+    if marker is not None:
+        return bool(marker() if callable(marker) else marker)
+
+    marker = getattr(particle, "virtual", None)
+    if marker is not None:
+        return bool(marker() if callable(marker) else marker)
+
+    raise AttributeError(
+        f"Particle {getattr(particle, 'id', '<unknown>')} exposes neither "
+        "is_virtual nor virtual"
+    )
+
+
 def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
     """Require the selective 1-2 / all-sites 1-3 WCA policy (schema v3)."""
     meta = priors.get("wca_exclusions", {})
@@ -295,7 +317,7 @@ def particle_signature(system: Any) -> dict[str, np.ndarray]:
         "particle_ids": np.asarray([int(p.id) for p in particles], dtype=np.int64),
         "particle_types": np.asarray([int(p.type) for p in particles], dtype=np.int64),
         "particle_mol_ids": np.asarray([int(p.mol_id) for p in particles], dtype=np.int64),
-        "particle_is_virtual": np.asarray([bool(p.is_virtual) for p in particles], dtype=np.bool_),
+        "particle_is_virtual": np.asarray([particle_is_virtual(p) for p in particles], dtype=np.bool_),
     }
 
 

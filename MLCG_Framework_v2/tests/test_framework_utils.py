@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "simulation"))
 from framework_utils import (  # noqa: E402
     input_hashes,
     nonconservative_prior_entries,
+    particle_is_virtual,
     rigid_body_quaternion,
     save_checkpoint,
     sha256_file,
@@ -32,6 +33,22 @@ class FakeParticle:
         self.type = ptype
         self.mol_id = mol_id
         self.is_virtual = is_virtual
+
+
+class FakeMethodParticle:
+    def __init__(self, value):
+        self.id = 99
+        self._value = bool(value)
+
+    def is_virtual(self):
+        return self._value
+
+
+class FakeLegacyVirtualParticle:
+    def __init__(self, value):
+        self.id = 100
+        self.virtual = bool(value)
+
 
 
 class FakeParticleList:
@@ -66,6 +83,14 @@ def quat_to_body_to_space_matrix(q):
 
 
 class FrameworkUtilsTests(unittest.TestCase):
+    def test_particle_is_virtual_compatibility(self):
+        self.assertFalse(particle_is_virtual(FakeParticle(0, 4, 0, False)))
+        self.assertTrue(particle_is_virtual(FakeParticle(1, 0, 0, True)))
+        self.assertFalse(particle_is_virtual(FakeMethodParticle(False)))
+        self.assertTrue(particle_is_virtual(FakeMethodParticle(True)))
+        self.assertFalse(particle_is_virtual(FakeLegacyVirtualParticle(False)))
+        self.assertTrue(particle_is_virtual(FakeLegacyVirtualParticle(True)))
+
     def test_principal_frame_orientation_roundtrip(self):
         body = np.asarray([
             [0.20, 0.00, 0.00],

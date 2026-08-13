@@ -10,6 +10,7 @@ from framework_utils import (
     ensure_single_rank,
     get_rb_data_by_sites,
     input_hashes,
+    particle_is_virtual,
     rigid_body_quaternion,
     save_checkpoint,
     validate_model_manifest,
@@ -35,6 +36,12 @@ parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps 
 parser.add_argument("--steps_ml_capped", type=int, default=2000, help="ML warmup steps with an ESPResSo force cap")
 parser.add_argument("--steps_ml_uncapped", type=int, default=2000, help="Final NVT steps with the production Hamiltonian and no force cap")
 parser.add_argument("--warmup_chunk", type=int, default=100, help="Progress-reporting chunk size")
+parser.add_argument(
+    "--velocity_seed",
+    type=int,
+    default=314159,
+    help="Seed for deterministic Maxwell-Boltzmann COM velocities before NVT warmup",
+)
 
 parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
 parser.add_argument("--allow_missing_model_manifest", action="store_true", help="Allow legacy .pt files without the patched training manifest")
@@ -60,6 +67,8 @@ validate_model_manifest(
 
 if args.dt <= 0:
     raise ValueError("--dt must be positive")
+if args.kT <= 0.0:
+    raise ValueError("--kT must be positive for an equilibrated thermal checkpoint")
 if min(args.steps_sd, args.steps_md, args.steps_ml_capped, args.steps_ml_uncapped) < 0:
     raise ValueError("equilibration step counts must be non-negative")
 if args.warmup_chunk <= 0:
@@ -333,6 +342,71 @@ def run_chunks(total_steps, chunk_size, phase_name, after_chunk=None):
         print(flush=True)
 
 
+def real_particle_kinetic_energy():
+    e_trans = 0.0
+    e_rot = 0.0
+    real_particles = [p for p in system.part if not particle_is_virtual(p)]
+    for p in real_particles:
+        velocity = np.asarray(p.v, dtype=float)
+        omega = np.asarray(p.omega_body, dtype=float)
+        inertia = np.asarray(p.rinertia, dtype=float)
+        e_trans += 0.5 * float(p.mass) * float(np.dot(velocity, velocity))
+        e_rot += 0.5 * float(np.dot(inertia, omega * omega))
+    return e_trans, e_rot
+
+
+def initialize_thermal_velocities():
+    """Give real COM particles a reproducible Maxwell-Boltzmann state.
+
+    Langevin dynamics does not need this mathematically, but an explicit thermal
+    initialization makes the checkpoint contract unambiguous and prevents a
+    nominally equilibrated checkpoint from being saved with exactly zero kinetic
+    energy. Virtual-site velocities remain derived from their parent COMs.
+    """
+    rng = np.random.default_rng(args.velocity_seed)
+    real_particles = [p for p in system.part if not particle_is_virtual(p)]
+    if not real_particles:
+        raise RuntimeError("No real particles are available for velocity initialization")
+
+    for p in real_particles:
+        mass = float(p.mass)
+        if not np.isfinite(mass) or mass <= 0.0:
+            raise ValueError(f"Invalid particle mass for particle {p.id}: {mass}")
+        p.v = np.sqrt(args.kT / mass) * rng.standard_normal(3)
+
+        omega = np.zeros(3, dtype=float)
+        inertia = np.asarray(p.rinertia, dtype=float)
+        rotation = np.asarray(p.rotation, dtype=bool)
+        for axis in range(3):
+            if rotation[axis]:
+                if not np.isfinite(inertia[axis]) or inertia[axis] <= 0.0:
+                    raise ValueError(
+                        f"Invalid active rotational inertia for particle {p.id}, "
+                        f"axis {axis}: {inertia[axis]}"
+                    )
+                omega[axis] = np.sqrt(args.kT / inertia[axis]) * rng.standard_normal()
+        p.omega_body = omega
+
+    # Remove net translational COM drift. This preserves a thermal distribution
+    # apart from the expected removal of the three global momentum degrees of freedom.
+    total_mass = sum(float(p.mass) for p in real_particles)
+    com_velocity = sum(
+        (float(p.mass) * np.asarray(p.v, dtype=float) for p in real_particles),
+        start=np.zeros(3, dtype=float),
+    ) / total_mass
+    for p in real_particles:
+        p.v = np.asarray(p.v, dtype=float) - com_velocity
+
+    e_trans, e_rot = real_particle_kinetic_energy()
+    e_total = e_trans + e_rot
+    if not np.isfinite(e_total) or e_total <= 0.0:
+        raise RuntimeError("Thermal velocity initialization produced zero/non-finite kinetic energy")
+    print(
+        f"[INFO] Initialized thermal velocities: seed={args.velocity_seed} "
+        f"E_kin={e_total:.6f} (trans={e_trans:.6f}, rot={e_rot:.6f})"
+    )
+
+
 if args.steps_sd > 0:
     print("[INFO] Phase 1: Steepest Descent with classical potentials...")
     system.integrator.set_steepest_descent(
@@ -344,6 +418,7 @@ else:
 
 system.integrator.set_vv()
 system.time_step = args.dt
+initialize_thermal_velocities()
 
 if args.steps_md > 0:
     print("[INFO] Phase 2: Classical NVT warmup with force cap...", flush=True)
@@ -411,7 +486,20 @@ else:
 print("[INFO] Warm-up terminato. Preparazione del salvataggio...")
 
 print(f"[INFO] Saving equilibrated state to {args.out_checkpoint}...")
+# The checkpoint stores a pure mechanical state. The thermostat is not part of
+# that state and NVE consumers must start from the saved finite velocities.
+system.thermostat.turn_off()
 system.integrator.run(0, recalc_forces=True)
+final_e_trans, final_e_rot = real_particle_kinetic_energy()
+final_e_kin = final_e_trans + final_e_rot
+if not np.isfinite(final_e_kin) or final_e_kin <= 1.0e-12:
+    raise RuntimeError(
+        "Refusing to save an equilibrated checkpoint with zero/non-finite kinetic energy"
+    )
+print(
+    f"[INFO] Checkpoint kinetic energy: E_kin={final_e_kin:.6f} "
+    f"(trans={final_e_trans:.6f}, rot={final_e_rot:.6f})"
+)
 pos = []
 vel = []
 quat = []

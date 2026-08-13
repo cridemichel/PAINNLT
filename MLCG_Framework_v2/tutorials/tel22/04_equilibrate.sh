@@ -11,6 +11,7 @@ fi
 
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 DEVICE="${DEVICE:-auto}"
+VELOCITY_SEED="${VELOCITY_SEED:-314159}"
 
 cd "${SCRIPT_DIR}"
 
@@ -29,6 +30,7 @@ done
     --dataset tel22_dataset.bin \
     --out_checkpoint equilibrated.npz \
     --device "${DEVICE}" \
-    --kT 2.49
+    --kT 2.49 \
+    --velocity_seed "${VELOCITY_SEED}"
 
 echo "[DONE] equilibrated.npz"

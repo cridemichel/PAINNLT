@@ -13,6 +13,8 @@ import subprocess
 import sys
 from typing import Any
 
+import numpy as np
+
 from framework_utils import nonconservative_prior_entries
 from nve_analysis import analyze_energy_series, certify_metrics, read_energy_csv
 
@@ -52,6 +54,52 @@ def tail(path: Path, n: int = 30) -> str:
     except Exception:
         return ""
     return "\n".join(lines[-n:])
+
+
+def checkpoint_motion_summary(path: Path) -> dict[str, float | int]:
+    """Inspect saved real-particle velocities without requiring ESPResSo.
+
+    This is intentionally a motion check rather than a kinetic-energy estimate:
+    masses and inertias belong to the runtime topology. The certification only
+    needs to reject an accidentally cold checkpoint before launching every dt.
+    """
+    with np.load(path, allow_pickle=False) as checkpoint:
+        if "v" not in checkpoint.files:
+            raise ValueError(f"Checkpoint has no velocity array 'v': {path}")
+        velocities = np.asarray(checkpoint["v"], dtype=float)
+        if velocities.ndim != 2 or velocities.shape[1] != 3:
+            raise ValueError(f"Checkpoint velocity array must have shape (N, 3): {velocities.shape}")
+
+        if "particle_is_virtual" in checkpoint.files:
+            is_virtual = np.asarray(checkpoint["particle_is_virtual"], dtype=bool)
+            if is_virtual.shape != (velocities.shape[0],):
+                raise ValueError("Checkpoint particle_is_virtual shape does not match velocities")
+            real_mask = ~is_virtual
+        else:
+            real_mask = np.ones(velocities.shape[0], dtype=bool)
+
+        if not np.any(real_mask):
+            raise ValueError("Checkpoint contains no real particles")
+        real_velocities = velocities[real_mask]
+        if not np.isfinite(real_velocities).all():
+            raise ValueError("Checkpoint contains non-finite real-particle velocities")
+        velocity_rms = float(np.sqrt(np.mean(np.sum(real_velocities**2, axis=1))))
+
+        omega_rms = 0.0
+        if "omega" in checkpoint.files:
+            omega = np.asarray(checkpoint["omega"], dtype=float)
+            if omega.shape != velocities.shape:
+                raise ValueError("Checkpoint omega shape does not match velocities")
+            real_omega = omega[real_mask]
+            if not np.isfinite(real_omega).all():
+                raise ValueError("Checkpoint contains non-finite real-particle angular velocities")
+            omega_rms = float(np.sqrt(np.mean(np.sum(real_omega**2, axis=1))))
+
+    return {
+        "real_particles": int(np.count_nonzero(real_mask)),
+        "velocity_rms": velocity_rms,
+        "omega_rms": omega_rms,
+    }
 
 
 def main() -> int:
@@ -105,6 +153,11 @@ def main() -> int:
     )
     parser.add_argument("--allow-missing-model-manifest", action="store_true")
     parser.add_argument("--allow-legacy-checkpoint", action="store_true")
+    parser.add_argument(
+        "--allow-zero-kinetic-checkpoint",
+        action="store_true",
+        help="Allow an explicitly cold checkpoint; disabled by default for NVE certification",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print run plan without launching ESPResSo")
     args = parser.parse_args()
 
@@ -131,6 +184,25 @@ def main() -> int:
     dataset = existing_file(args.dataset, "dataset")
     checkpoint = existing_file(args.checkpoint, "checkpoint")
     assert runner and config and priors and rb_info and dataset and checkpoint
+
+    checkpoint_motion = checkpoint_motion_summary(checkpoint)
+    motion_scale = max(
+        float(checkpoint_motion["velocity_rms"]),
+        float(checkpoint_motion["omega_rms"]),
+    )
+    print(
+        "[CHECK] checkpoint motion: "
+        f"real_particles={checkpoint_motion['real_particles']} "
+        f"v_rms={checkpoint_motion['velocity_rms']:.6g} "
+        f"omega_rms={checkpoint_motion['omega_rms']:.6g}"
+    )
+    if motion_scale <= 1.0e-12 and not args.allow_zero_kinetic_checkpoint:
+        raise RuntimeError(
+            "NVE certification refuses an exactly cold checkpoint. Regenerate the "
+            "equilibrated checkpoint (tutorial step 04) so that it contains thermal "
+            "translational/rotational velocities, or pass --allow-zero-kinetic-checkpoint "
+            "only for a deliberate cold-start diagnostic."
+        )
 
     prior_data = json.loads(priors.read_text(encoding="utf-8"))
     unsafe = nonconservative_prior_entries(prior_data)
@@ -276,6 +348,7 @@ def main() -> int:
             "reference_device": "cpu",
         },
         "inputs_sha256": input_hashes,
+        "checkpoint_motion": checkpoint_motion,
         "device": args.device,
         "runs": run_metrics,
         "certification": certification,
