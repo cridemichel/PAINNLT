@@ -22,6 +22,7 @@ from framework_utils import (  # noqa: E402
     validate_model_manifest,
     validate_wca_exclusion_policy,
     wca_topology_exclusion_pairs,
+    wca_direct_bonded_site_exclusions,
 )
 
 
@@ -202,6 +203,56 @@ class FrameworkUtilsTests(unittest.TestCase):
         self.assertEqual(direct, {(0, 1), (1, 2), (2, 3)})
         self.assertEqual(one_three, {(0, 2), (1, 3)})
         self.assertNotIn((0, 3), direct)
+
+    def test_selective_wca_12_maps_only_explicit_bonded_sites(self):
+        priors = {
+            "bonds": [
+                {
+                    "mol_i": 0, "mol_j": 1, "site_i": 2, "site_j": 3,
+                    "type": "harmonic", "exclude_wca": True,
+                },
+                {
+                    "mol_i": 2, "mol_j": 1, "site_i": 5, "site_j": 4,
+                    "type": "harmonic", "exclude_wca": True,
+                },
+            ],
+            "wca_exclusions": {
+                "exclude_12": True,
+                "exclude_13": True,
+                "scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v2",
+                "direct_pairs": [[0, 1], [1, 2]],
+                "one_three_pairs": [],
+                "direct_pair_count": 2,
+                "one_three_pair_count": 0,
+            },
+        }
+        mapped = wca_direct_bonded_site_exclusions(priors, 3)
+        self.assertEqual(mapped[(0, 1)], {(2, 3)})
+        # Bond was stored as mol 2 -> mol 1, so site ordering is normalized.
+        self.assertEqual(mapped[(1, 2)], {(4, 5)})
+
+    def test_selective_wca_12_refuses_untraceable_direct_pair(self):
+        priors = {
+            "bonds": [
+                {
+                    "mol_i": 0, "mol_j": 1,
+                    "type": "harmonic", "exclude_wca": True,
+                }
+            ],
+            "wca_exclusions": {
+                "exclude_12": True,
+                "exclude_13": True,
+                "scope": "molecule_pair_all_sites",
+                "pair_source": "explicit_topology_pairs_v2",
+                "direct_pairs": [[0, 1]],
+                "one_three_pairs": [],
+                "direct_pair_count": 1,
+                "one_three_pair_count": 0,
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "site_i/site_j"):
+            wca_direct_bonded_site_exclusions(priors, 2)
 
     def test_wca_topology_exclusion_pair_count_is_validated(self):
         priors = {
