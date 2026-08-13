@@ -32,7 +32,7 @@ torch::Tensor sum_atom_energies_for_hamiltonian(torch::Tensor const &atom_energi
 
 } // namespace
 
-PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str) 
+PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str, const std::string& precision_str) 
     : m_cutoff(cutoff), m_num_species(num_species) {
     
     // Inizializza il modello C++ con i parametri di architettura
@@ -68,7 +68,28 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
                 std::cout << "[PaiNN] GPU non trovata o device_str invalido. Esecuzione su CPU (Auto).\n";
             }
         }
+        if (precision_str == "float32") {
+            m_dtype = torch::kFloat32;
+        } else if (precision_str == "float64") {
+            if (!m_device.is_cpu()) {
+                throw std::runtime_error(
+                    "PaiNN float64 diagnostic mode is certified on CPU only; use device=cpu.");
+            }
+            m_dtype = torch::kFloat64;
+        } else {
+            throw std::invalid_argument(
+                "Unsupported PaiNN precision '" + precision_str +
+                "' (expected float32 or float64)");
+        }
+
+        // Convert both parameters and floating buffers (including energy_scale)
+        // before moving the model to its execution device.  The float64 mode is
+        // diagnostic: it promotes the trained FP32 weights and removes FP32
+        // roundoff from the forward/autograd evaluation without retraining.
+        model->to(m_dtype);
         model->to(m_device);
+        std::cout << "[PaiNN] Inference precision: "
+                  << (m_dtype == torch::kFloat64 ? "float64" : "float32") << "\n";
 
         // Report the raw, unconstrained isolated-species offsets.  They are
         // subtracted inside every forward pass by the fixed energy gauge and
@@ -143,7 +164,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     }
 
     using PairKey = std::pair<int, int>;
-    using Displacement = std::array<float, 3>;
+    using Displacement = std::array<double, 3>;
     std::map<PairKey, Displacement> physical_pairs;
 
     auto painn_kernel = [&](Particle const& p1, Particle const& p2, Distance const& d) {
@@ -184,14 +205,14 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         Displacement r_low_minus_high{};
         if (idx1 == low) {
             r_low_minus_high = {
-                static_cast<float>(d.vec21[0]),
-                static_cast<float>(d.vec21[1]),
-                static_cast<float>(d.vec21[2])};
+                static_cast<double>(d.vec21[0]),
+                static_cast<double>(d.vec21[1]),
+                static_cast<double>(d.vec21[2])};
         } else {
             r_low_minus_high = {
-                static_cast<float>(-d.vec21[0]),
-                static_cast<float>(-d.vec21[1]),
-                static_cast<float>(-d.vec21[2])};
+                static_cast<double>(-d.vec21[0]),
+                static_cast<double>(-d.vec21[1]),
+                static_cast<double>(-d.vec21[2])};
         }
 
         const auto [it, inserted] = physical_pairs.emplace(
@@ -215,7 +236,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
 
     std::vector<int64_t> edge_rows;
     std::vector<int64_t> edge_cols;
-    std::vector<float> r_ij_data;
+    std::vector<double> r_ij_data;
     edge_rows.reserve(2 * physical_pairs.size());
     edge_cols.reserve(2 * physical_pairs.size());
     r_ij_data.reserve(6 * physical_pairs.size());
@@ -247,7 +268,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         t_edge_index = torch::empty(
             {2, 0}, torch::TensorOptions().dtype(torch::kInt64).device(m_device));
         t_r_ij = torch::empty(
-            {0, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(m_device));
+            {0, 3}, torch::TensorOptions().dtype(m_dtype).device(m_device));
 
         // The isolated-species gauge makes this energy exactly zero while
         // retaining a complete forward path and exactly zero forces.
@@ -268,7 +289,7 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
             .to(m_device);
 
     t_r_ij =
-        torch::tensor(r_ij_data, torch::TensorOptions().dtype(torch::kFloat32))
+        torch::tensor(r_ij_data, torch::TensorOptions().dtype(m_dtype))
             .reshape({num_edges, 3})
             .to(m_device);
     t_r_ij.set_requires_grad(true);
@@ -283,15 +304,18 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     m_last_energy = total_energy.item<double>();
     auto grads = torch::autograd::grad(
         {total_energy}, {t_r_ij}, {torch::ones_like(total_energy)}, false, false);
-    const torch::Tensor f_r_ij = -grads[0].cpu();
-    auto f_r_ij_acc = f_r_ij.accessor<float, 2>();
+    // Convert only after autograd has finished.  In float64 mode the full
+    // forward and force derivative therefore remain FP64; in float32 mode
+    // this is merely an exact promotion of the already-computed FP32 force.
+    const torch::Tensor f_r_ij = -grads[0].to(torch::kCPU).to(torch::kFloat64);
+    auto f_r_ij_acc = f_r_ij.accessor<double, 2>();
 
     for (int e = 0; e < num_edges; ++e) {
         const int row = static_cast<int>(edge_rows[e]);
         const int col = static_cast<int>(edge_cols[e]);
-        const float fx = f_r_ij_acc[e][0];
-        const float fy = f_r_ij_acc[e][1];
-        const float fz = f_r_ij_acc[e][2];
+        const double fx = f_r_ij_acc[e][0];
+        const double fy = f_r_ij_acc[e][1];
+        const double fz = f_r_ij_acc[e][2];
 
         idx_to_particle[row]->force()[0] += fx;
         idx_to_particle[row]->force()[1] += fy;

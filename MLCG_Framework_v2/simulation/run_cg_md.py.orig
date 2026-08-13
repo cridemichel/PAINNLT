@@ -42,7 +42,6 @@ parser.add_argument("--energy_file", type=str, default="energy.csv", help="Energ
 parser.add_argument("--trajectory_file", type=str, default="cg_trajectory.vtf", help="VTF trajectory output path")
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
-parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
@@ -430,8 +429,7 @@ if args.model:
         num_rbf=nn_config["num_rbf"],
         cutoff=nn_config["cutoff"],
         toxvaerd_alpha=args.toxvaerd_alpha,
-        device=args.device,
-        precision=args.ml_precision
+        device=args.device
     )
 else:
     print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")

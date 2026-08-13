@@ -139,7 +139,6 @@ def main() -> int:
         ),
     )
     parser.add_argument("--device", default="cpu", help="PaiNN device; CPU is the certification reference")
-    parser.add_argument("--ml-precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is for the FP32 noise-floor A/B diagnostic")
     parser.add_argument("--allow-nonreference-device", action="store_true")
     parser.add_argument("--output-dir", default="nve_certification")
     parser.add_argument("--overwrite", action="store_true")
@@ -170,8 +169,6 @@ def main() -> int:
         raise ValueError("Provide at least three positive --dts")
     if len(set(args.dts)) != len(args.dts):
         raise ValueError("--dts must be unique")
-    if args.ml_precision == "float64" and args.device.lower() != "cpu":
-        raise RuntimeError("--ml-precision float64 requires --device cpu")
     if args.device.lower() != "cpu" and not args.allow_nonreference_device:
         raise RuntimeError(
             "NVE certification defaults to CPU because it is the reference numerical path. "
@@ -261,7 +258,6 @@ def main() -> int:
             "--steps", str(steps),
             "--log_interval", str(log_every),
             "--device", args.device,
-            "--ml_precision", args.ml_precision,
             "--nve",
             "--no_vtf",
             "--energy_file", "energy.csv",

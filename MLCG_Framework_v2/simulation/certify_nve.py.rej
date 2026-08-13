@@ -1,0 +1,12 @@
+@@ -341,9 +345,11 @@
+             "thermostat": "off (--nve)",
+             "force_cap": 0.0,
+             "reference_device": "cpu",
++            "ml_precision": args.ml_precision,
+         },
+         "inputs_sha256": input_hashes,
+         "device": args.device,
++        "ml_precision": args.ml_precision,
+         "runs": run_metrics,
+         "certification": certification,
+     }

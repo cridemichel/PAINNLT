@@ -12,6 +12,7 @@ fi
 
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 NVE_DEVICE="${NVE_DEVICE:-cpu}"
+NVE_ML_PRECISION="${NVE_ML_PRECISION:-float32}"
 NVE_DURATION_PS="${NVE_DURATION_PS:-5.0}"
 NVE_OUTPUT_DIR="${NVE_OUTPUT_DIR:-nve_certification}"
 NVE_DTS="${NVE_DTS:-0.001 0.002 0.005 0.01}"
@@ -42,6 +43,7 @@ python3 "${FRAMEWORK_ROOT}/simulation/certify_nve.py" \
     --dts "${DT_ARGS[@]}" \
     --duration-ps "${NVE_DURATION_PS}" \
     --device "${NVE_DEVICE}" \
+    --ml-precision "${NVE_ML_PRECISION}" \
     --output-dir "${NVE_OUTPUT_DIR}" \
     --slope-min "${NVE_SLOPE_MIN}" \
     --slope-max "${NVE_SLOPE_MAX}" \
