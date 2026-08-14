@@ -150,3 +150,23 @@ Dopo la ricompilazione di ESPResSo, esegui lo smoke test con il launcher ricompi
 ```
 
 Il test crea un singolo Morse bond e verifica che energia bonded e forze sulle particelle coincidano con l'espressione analitica.
+
+## Prior bonded conservative spline (IBI fase 2)
+
+I prior IBI di bond e angle possono essere convertiti nella rappresentazione
+`conservative_spline` a singola sorgente del framework. Installare e validare
+l'estensione ESPResSo dal workflow TEL22 IBI con:
+
+```bash
+cd tutorials/tel22_IBI
+bash ./20_install_conservative_spline.sh
+```
+
+Il comando non e' soltanto un controllo di build: dopo aver verificato che
+`ConservativeSplineDistance` e `ConservativeSplineAngle` siano esposti a
+Python, esegue `simulation/smoke_conservative_spline_runtime.py` con il
+`pypresso` appena ricompilato. Lo smoke test crea spline sintetiche per bond e
+angle e verifica che le forze runtime coincidano con il gradiente cartesiano
+negativo, calcolato per differenze finite, dell'energia bonded restituita dallo
+stesso ESPResSo. Il successivo `22_validate_conservative_spline.sh` esegue il
+controllo di parita' corrispondente sulle tabelle IBI convertite reali.

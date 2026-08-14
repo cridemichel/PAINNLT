@@ -184,6 +184,46 @@ def _patch_python_enum(path: Path) -> bool:
     return True
 
 
+def _ensure_python_default_params(path: Path) -> bool:
+    """Implement BondedInteraction's abstract default-parameter hook.
+
+    ESPResSo 5 declares ``BondedInteraction.get_default_params`` abstract.
+    Conservative splines intentionally have no implicit defaults: min, max,
+    energy and derivative are all required, so the concrete classes return an
+    empty mapping.  The repair logic is idempotent and also upgrades trees
+    patched by older installer revisions.
+    """
+    text = _read(path)
+    changed = False
+    for enum_name in (
+        "CONSERVATIVE_SPLINE_DISTANCE",
+        "CONSERVATIVE_SPLINE_ANGLE",
+    ):
+        anchor = f"    _type_number = BONDED_IA.{enum_name}\n"
+        if text.count(anchor) != 1:
+            raise RuntimeError(
+                f"Could not uniquely locate Python conservative spline class "
+                f"for BONDED_IA.{enum_name} in {path}"
+            )
+        start = text.index(anchor)
+        next_class = text.find("\n@script_interface_register\nclass ", start + len(anchor))
+        end = len(text) if next_class < 0 else next_class
+        body = text[start:end]
+        if "def get_default_params(self):" in body:
+            continue
+        replacement = (
+            anchor
+            + "\n"
+            + "    def get_default_params(self):\n"
+            + "        return {}\n"
+        )
+        text = text[:start] + text[start:].replace(anchor, replacement, 1)
+        changed = True
+    if changed:
+        path.write_text(text)
+    return changed
+
+
 def install(root: Path, source_header: Path) -> list[str]:
     paths = required_paths(root)
     for key, path in paths.items():
@@ -321,12 +361,18 @@ class ConservativeSplineDistance(BondedInteraction):
     _so_name = "Interactions::ConservativeSplineDistanceBond"
     _type_number = BONDED_IA.CONSERVATIVE_SPLINE_DISTANCE
 
+    def get_default_params(self):
+        return {}
+
 
 @script_interface_register
 class ConservativeSplineAngle(BondedInteraction):
     """Conservative cubic-Hermite angle potential from U and dU/dtheta nodes."""
     _so_name = "Interactions::ConservativeSplineAngleBond"
     _type_number = BONDED_IA.CONSERVATIVE_SPLINE_ANGLE
+
+    def get_default_params(self):
+        return {}
 
 
 '''
@@ -337,6 +383,8 @@ class ConservativeSplineAngle(BondedInteraction):
         "class ConservativeSplineDistance(BondedInteraction)",
     ):
         changed.append("Python classes")
+    if _ensure_python_default_params(paths["python"]):
+        changed.append("Python get_default_params")
     return changed
 
 
@@ -363,6 +411,16 @@ def check(root: Path, source_header: Path) -> None:
         "registration": "Interactions::ConservativeSplineDistanceBond" in _read(p["script_init"]),
         "python distance": "class ConservativeSplineDistance(BondedInteraction)" in _read(p["python"]),
         "python angle": "class ConservativeSplineAngle(BondedInteraction)" in _read(p["python"]),
+        "python distance defaults": (
+            "_type_number = BONDED_IA.CONSERVATIVE_SPLINE_DISTANCE\n\n"
+            "    def get_default_params(self):\n"
+            "        return {}"
+        ) in _read(p["python"]),
+        "python angle defaults": (
+            "_type_number = BONDED_IA.CONSERVATIVE_SPLINE_ANGLE\n\n"
+            "    def get_default_params(self):\n"
+            "        return {}"
+        ) in _read(p["python"]),
     }
     failed = [name for name, ok in checks.items() if not ok]
     if failed:

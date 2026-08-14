@@ -23,3 +23,6 @@ for name in ("ConservativeSplineDistance", "ConservativeSplineAngle"):
         raise SystemExit(f"missing espressomd.interactions.{name} after rebuild")
 print("[PASS] ESPResSo exposes ConservativeSplineDistance and ConservativeSplineAngle.")
 PY
+
+"${ESPRESSO_ROOT}/build/pypresso" \
+    "${FRAMEWORK_ROOT}/simulation/smoke_conservative_spline_runtime.py"
