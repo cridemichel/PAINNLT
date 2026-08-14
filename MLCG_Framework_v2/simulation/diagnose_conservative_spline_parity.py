@@ -9,6 +9,7 @@ energy against the preprocessing implementation of the same Hermite kernel.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -28,6 +29,39 @@ from conservative_spline import (  # noqa: E402
     load_conservative_spline,
 )
 from conservative_spline_runtime import create_conservative_spline_interaction  # noqa: E402
+
+
+SCHEMA_VERSION = 1
+FRAMEWORK = "MLCG_Framework_v2"
+KIND = "ibi_conservative_spline_runtime_parity"
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def referenced_prior_artifacts(priors_path: Path) -> dict[str, str]:
+    priors_path = priors_path.expanduser().resolve()
+    data = json.loads(priors_path.read_text())
+    hashes = {str(priors_path): sha256_file(priors_path)}
+    for key in ("bonds", "angles", "dihedrals"):
+        for idx, entry in enumerate(data.get(key, [])):
+            if str(entry.get("type", "")).lower() not in {"tabulated", "conservative_spline"}:
+                continue
+            if "file" not in entry:
+                raise ValueError(f"Referenced prior {key}[{idx}] is missing 'file'")
+            table = Path(str(entry["file"])).expanduser()
+            if not table.is_absolute():
+                table = priors_path.parent / table
+            table = table.resolve()
+            if not table.is_file():
+                raise FileNotFoundError(table)
+            hashes[str(table)] = sha256_file(table)
+    return dict(sorted(hashes.items()))
 
 
 def system_singleton():
@@ -120,6 +154,7 @@ def main():
     parser.add_argument("--priors", required=True, type=Path)
     parser.add_argument("--force-atol", type=float, default=1.0e-9)
     parser.add_argument("--energy-atol", type=float, default=1.0e-10)
+    parser.add_argument("--report", type=Path, default=None)
     args = parser.parse_args()
 
     priors_path = args.priors.expanduser().resolve()
@@ -145,14 +180,23 @@ def main():
             df, de = probe_bond(system, priors_path, entry, table)
         else:
             df, de = probe_angle(system, priors_path, entry, table)
-        results.append((kind, str(entry["file"]), df, de))
+        results.append({
+            "kind": kind,
+            "file": str(entry["file"]),
+            "max_force_abs_error": df,
+            "max_energy_abs_error": de,
+        })
         worst_f = max(worst_f, df)
         worst_e = max(worst_e, de)
 
     print("[CONSERVATIVE SPLINE RUNTIME/PREPROCESSING PARITY]")
     print(f"priors: {priors_path}")
-    for kind, filename, df, de in results:
-        print(f"{kind:5s} {filename}: max |dF|={df:.3e} |dE|={de:.3e}")
+    for item in results:
+        print(
+            f"{item['kind']:5s} {item['file']}: "
+            f"max |dF|={item['max_force_abs_error']:.3e} "
+            f"|dE|={item['max_energy_abs_error']:.3e}"
+        )
     print(f"worst: max |dF|={worst_f:.3e} |dE|={worst_e:.3e}")
     if (
         not np.isfinite(worst_f + worst_e)
@@ -163,6 +207,25 @@ def main():
             "Conservative spline runtime parity failed: "
             f"max|dF|={worst_f:.6g}, max|dE|={worst_e:.6g}"
         )
+    report = {
+        "schema_version": SCHEMA_VERSION,
+        "framework": FRAMEWORK,
+        "kind": KIND,
+        "priors": str(priors_path),
+        "priors_sha256": sha256_file(priors_path),
+        "prior_artifact_sha256": referenced_prior_artifacts(priors_path),
+        "force_atol": float(args.force_atol),
+        "energy_atol": float(args.energy_atol),
+        "results": results,
+        "worst_force_abs_error": float(worst_f),
+        "worst_energy_abs_error": float(worst_e),
+        "pass": True,
+    }
+    if args.report is not None:
+        report_path = args.report.expanduser().resolve()
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        print(f"report: {report_path}")
     print("[PASS] ESPResSo and preprocessing evaluate the same conservative Hermite energy/force kernel on every unique converted table.")
 
 

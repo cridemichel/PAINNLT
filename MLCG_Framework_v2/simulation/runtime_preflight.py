@@ -206,14 +206,36 @@ def check_runtime_preflight(
         "prior_artifact_sha256": prior_hashes,
         "model_best_validation_loss": float(model_manifest["best_validation_loss"]),
         "architecture": _architecture_from_config(runtime_config),
-        "residual_validation_mean_l1": float(
-            residual["build_inputs"]["ibi_validation_mean_l1"]
-        ),
-        "residual_validation_max_l1": float(
-            residual["build_inputs"]["ibi_validation_max_l1"]
-        ),
         "pass": True,
     }
+    validation_mode = residual["build_inputs"].get(
+        "ibi_validation_mode", "read_only_validation"
+    )
+    if validation_mode == "read_only_validation":
+        report["residual_validation"] = {
+            "mode": validation_mode,
+            "mean_l1": float(residual["build_inputs"]["ibi_validation_mean_l1"]),
+            "max_l1": float(residual["build_inputs"]["ibi_validation_max_l1"]),
+        }
+        # Keep the original scalar fields for downstream consumers of the
+        # pre-conservative report schema.
+        report["residual_validation_mean_l1"] = report["residual_validation"]["mean_l1"]
+        report["residual_validation_max_l1"] = report["residual_validation"]["max_l1"]
+    elif validation_mode == "conservative_spline_validation":
+        report["residual_validation"] = {
+            "mode": validation_mode,
+            "max_abs_dU_dq_error": float(
+                residual["build_inputs"]["conservative_fd_max_abs_dU_dq_error"]
+            ),
+            "runtime_max_force_abs_error": float(
+                residual["build_inputs"]["conservative_runtime_max_force_abs_error"]
+            ),
+            "runtime_max_energy_abs_error": float(
+                residual["build_inputs"]["conservative_runtime_max_energy_abs_error"]
+            ),
+        }
+    else:
+        raise ValueError(f"Unsupported residual IBI validation mode: {validation_mode}")
     if output is not None:
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)

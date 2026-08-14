@@ -120,8 +120,8 @@ def analyze_nvt_smoke(
         "pass": True,
         "energy_conservation_certified": False,
         "note": (
-            "NVT stability diagnostic only. Total-energy drift is not a certification metric, "
-            "and tabulated priors are not treated as an NVE-conservative representation."
+            "NVT stability diagnostic only. Total-energy drift is not a certification metric; "
+            "use the dedicated NVE certification workflow for energy-conservation claims."
         ),
     }
     if output is not None:
@@ -134,7 +134,7 @@ def analyze_nvt_smoke(
     print(f"min_dist={observed_min_dist:.6g} nm max_force={observed_max_force:.6g} max_torque={observed_max_torque:.6g}")
     print(f"max_Ekin={observed_max_kinetic:.6g} E_tot_span={report['total_energy_span']:.6g}")
     print("[PASS] NVT completed with finite energies/forces/torques and without runtime safety-threshold violations.")
-    print("[NOTE] This is not an NVE energy-conservation certification for tabulated priors.")
+    print("[NOTE] This is an NVT stability diagnostic, not an NVE energy-conservation certification.")
     return report
 
 

@@ -19,6 +19,8 @@ DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
 RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
 if [[ -n "${IBI_PRIORS:-}" ]]; then
     PRIORS="${IBI_PRIORS}"
+elif [[ -f "ibi_conservative/cg_priors.json" ]]; then
+    PRIORS="ibi_conservative/cg_priors.json"
 elif [[ -f "ibi_run_16ps_continue/best/cg_priors.json" ]]; then
     PRIORS="ibi_run_16ps_continue/best/cg_priors.json"
 else
@@ -234,5 +236,5 @@ A report  : ${OUTDIR}/ibi_only/runtime_structure_report.json
 B report  : ${OUTDIR}/ibi_plus_ml/runtime_structure_report.json
 comparison: ${COMPARISON}
 [PASS] Both branches completed from the same provenance-validated checkpoint with identical NVT seed and sampling schedule.
-[NOTE] Structural L1 is diagnostic. This A/B gate isolates the effect of PaiNN before conservative-IBI conversion.
+[NOTE] Structural L1 is diagnostic. This A/B gate isolates the effect of PaiNN for the selected provenance-bound priors.
 EOF

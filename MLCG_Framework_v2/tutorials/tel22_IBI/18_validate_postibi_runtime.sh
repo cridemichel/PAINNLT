@@ -19,6 +19,8 @@ DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
 RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
 if [[ -n "${IBI_PRIORS:-}" ]]; then
     PRIORS="${IBI_PRIORS}"
+elif [[ -f "ibi_conservative/cg_priors.json" ]]; then
+    PRIORS="ibi_conservative/cg_priors.json"
 elif [[ -f "ibi_run_16ps_continue/best/cg_priors.json" ]]; then
     PRIORS="ibi_run_16ps_continue/best/cg_priors.json"
 else
@@ -149,5 +151,5 @@ structure : ${STRUCTURE_REPORT}
 energy csv: ${ENERGY_CSV}
 logs      : ${EQ_LOG}, ${NVT_LOG}
 [PASS] Provenance-consistent IBI+PaiNN Hamiltonian completed the NVT smoke validation.
-[NOTE] No formal NVE conservation claim is made for explicit tabulated priors.
+[NOTE] This NVT smoke is not an NVE conservation certification; use the dedicated NVE gate afterwards.
 EOF
