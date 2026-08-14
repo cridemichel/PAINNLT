@@ -26,7 +26,11 @@ from framework_utils import (
     wca_direct_bonded_site_exclusions,
 )
 
-from espresso_interactions import make_analytic_morse_bond
+from espresso_interactions import (
+    com_runtime_type,
+    configure_pair_specific_morse,
+    prepare_pair_specific_morse,
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
@@ -79,7 +83,7 @@ unsafe_tables = nonconservative_prior_entries(priors)
 if args.nve and unsafe_tables and not args.allow_nonconservative_tables:
     raise RuntimeError(
         "NVE certification is disabled for explicitly tabulated priors because ESPResSo "
-        "interpolates energy and force separately. Analytic Morse bonds are NVE-safe. "
+        "interpolates energy and force separately. Reversible analytic Morse priors are conservative. "
         "Offending entries: " + ", ".join(unsafe_tables)
         + ". Pass --allow_nonconservative_tables only for a deliberate diagnostic run."
     )
@@ -91,7 +95,11 @@ if args.steps < 0:
 if args.log_interval <= 0:
     raise ValueError("--log_interval must be positive")
 
-# The dummy particle type for COMs should be higher than the max ML species type
+# Plan pair-specific reversible Morse contacts before creating COM particles.
+# ML site types are untouched; only COM bookkeeping types are remapped.
+morse_com_types, morse_contacts = prepare_pair_specific_morse(
+    priors, nn_config["num_species"]
+)
 DUMMY_COM_TYPE = nn_config["num_species"] + 1
 
 # Setup ESPResSo System
@@ -148,7 +156,7 @@ with open(args.dataset, "rb") as f:
         body_quat = rigid_body_quaternion(center, site_positions, box_dim, rb_data)
         
         p_com = system.part.add(
-            pos=center, type=DUMMY_COM_TYPE,
+            pos=center, type=com_runtime_type(mol_idx, morse_com_types, nn_config["num_species"]),
             mass=mass, rinertia=inertia, quat=body_quat,
             rotation=[True, True, True] if num_sites > 1 else [False, False, False],
             mol_id=mol_idx
@@ -306,10 +314,18 @@ if os.path.exists(cg_priors_path):
 else:
     print(f"[WARNING] {cg_priors_path} not found! No WCA will be applied.")
 
+configure_pair_specific_morse(system, morse_contacts, morse_com_types)
+for contact in morse_contacts:
+    print(
+        "[INFO] Added reversible non-bonded Morse contact "
+        f"{contact['index']}: mol {contact['mol_i']} <-> mol {contact['mol_j']} "
+        f"(r_switch={contact['r_switch']:.6g}, r_cut={contact['r_cut']:.6g})"
+    )
+
 # No additional COM-COM hard core is added: runtime interactions must match
 # the priors subtracted during preprocessing.
 
-# Bonds (Harmonic, FENE, Morse)
+# Structural bonds (Morse contacts were configured above as reversible non-bonded priors)
 for idx, b in enumerate(priors.get("bonds", [])):
     b_type = b.get("type", "harmonic")
     if b_type == "harmonic":
@@ -317,7 +333,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "fene":
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
     elif b_type == "morse":
-        bond = make_analytic_morse_bond(espressomd.interactions, b)
+        continue
     elif b_type == "tabulated":
         data = np.loadtxt(b["file"])
         rmin_tab = float(b["min"])
@@ -422,7 +438,16 @@ for i in range(nn_config["num_species"]):
         system.non_bonded_inter[i, j].soft_sphere.set_params(
             a=0.0, n=1, cutoff=ml_cutoff, offset=0.0)
 
-configure_neighbor_search(system, args.neighbor_search)
+regular_cutoff = max(
+    float(nn_config.get("cutoff", 0.0)),
+    max((float(item.get("cutoff_nm", 0.0)) for item in priors.get("wca_pairs", {}).values()), default=0.0),
+)
+com_n_square_types = {DUMMY_COM_TYPE, *morse_com_types.values()} if morse_contacts else None
+configure_neighbor_search(
+    system, args.neighbor_search,
+    n_square_types=com_n_square_types,
+    cutoff_regular=regular_cutoff if morse_contacts else None,
+)
 
 if args.model:
     print("[INFO] Activating ML Potential...")

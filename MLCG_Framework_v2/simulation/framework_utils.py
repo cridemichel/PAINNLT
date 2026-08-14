@@ -444,12 +444,21 @@ def validate_checkpoint(
     return metadata
 
 
-def configure_neighbor_search(system: Any, mode: str) -> None:
-    """Select the regular-decomposition pair traversal explicitly.
+def configure_neighbor_search(
+    system: Any,
+    mode: str,
+    *,
+    n_square_types: set[int] | None = None,
+    cutoff_regular: float | None = None,
+) -> None:
+    """Select ESPResSo pair traversal explicitly.
 
-    ``verlet`` keeps ESPResSo's default Verlet-list traversal. ``link-cell``
-    keeps the same regular spatial decomposition but disables Verlet lists,
-    avoiding an automatic overflow/fallback on dense local environments.
+    ``verlet`` and ``link-cell`` control whether Verlet lists are used.  When
+    ``n_square_types`` is provided, ESPResSo's hybrid decomposition is used:
+    those particle types are handled by the N-square sub-decomposition while
+    the remaining short-range particles stay in the regular decomposition.
+    This prevents a long-range COM-only prior from inflating the regular cell
+    size used by PaiNN/WCA site interactions.
     """
     normalized = str(mode).strip().lower()
     if normalized == "verlet":
@@ -460,6 +469,26 @@ def configure_neighbor_search(system: Any, mode: str) -> None:
         raise ValueError(
             f"Unknown neighbor-search mode {mode!r}; expected 'verlet' or 'link-cell'"
         )
+
+    if n_square_types:
+        if cutoff_regular is None or float(cutoff_regular) <= 0.0:
+            raise ValueError(
+                "cutoff_regular must be positive when using hybrid decomposition"
+            )
+        types = {int(value) for value in n_square_types}
+        system.cell_system.set_hybrid_decomposition(
+            n_square_types=types,
+            cutoff_regular=float(cutoff_regular),
+            use_verlet_lists=use_verlet_lists,
+        )
+        print(
+            "[INFO] Neighbor search: "
+            + ("verlet" if use_verlet_lists else "link-cell")
+            + " (hybrid decomposition; COM types in N-square, "
+            + f"regular cutoff={float(cutoff_regular):.6g})"
+        )
+        return
+
     system.cell_system.set_regular_decomposition(
         use_verlet_lists=use_verlet_lists
     )
