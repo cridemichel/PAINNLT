@@ -34,7 +34,12 @@ def validate_runtime_structure(
     ibi_config: str | Path | None = None,
     output: str | Path | None = None,
 ):
-    state = load_continuation_priors(dataset, priors, ibi_config=ibi_config)
+    state = load_continuation_priors(
+        dataset,
+        priors,
+        ibi_config=ibi_config,
+        allow_conservative_spline=True,
+    )
     selected_priors = state["priors"]
     groups = state["groups"]
     sampled = read_sampled_distributions(sample_npz, selected_priors)

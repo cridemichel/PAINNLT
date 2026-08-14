@@ -529,3 +529,55 @@ Only after these gates validate the same model/prior/dataset provenance should
 strict NVE certification be attempted. The conservative spline gate certifies
 the bonded prior kernel; it does not by itself certify the learned residual
 model or the complete production Hamiltonian.
+
+
+## 23. Strict NVE certification of the conservative IBI-only candidate
+
+When the matched step-19 A/B comparison selects the IBI-only branch over the
+PaiNN-residual branch, certify that exact conservative classical Hamiltonian:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./23_certify_conservative_ibi_nve.sh --overwrite
+```
+
+Step 23 intentionally keeps the model path only as a checkpoint-provenance
+anchor. PaiNN is disabled in every NVE trajectory via `--disable_ml`; the tested
+Hamiltonian is therefore the selected conservative IBI priors plus the other
+explicit conservative runtime priors (WCA/Morse), not IBI+PaiNN.
+
+The default checkpoint is
+`postibi_runtime_validation/equilibrated_postibi.npz`. Reusing it is safe for an
+energy-conservation test because each timestep starts from the identical state;
+its model hash is still validated because the model remains present as a
+provenance anchor. No checkpoint-mismatch escape hatch is needed.
+
+Before launching the timestep scan, the new fail-closed preflight verifies the
+current conservative `cg_priors.json`, every referenced spline table, the
+Phase-2 finite-difference validation report, and the persisted ESPResSo/runtime
+parity report. Any post-validation edit to those artifacts aborts the run.
+Legacy `tabulated` bonded priors and conservative dihedrals are rejected.
+
+Defaults:
+
+```text
+NVE_DTS="0.001 0.0015 0.002 0.003 0.004 0.005"
+NVE_DURATION_PS=5.0
+NVE_DEVICE=cpu
+NVE_NEIGHBOR_SEARCH=link-cell
+NVE_SLOPE_MIN=1.7
+NVE_SLOPE_MAX=2.3
+NVE_MIN_R2=0.97
+NVE_MAX_RELATIVE_DRIFT=1e-4
+```
+
+The output directory is `nve_certification_conservative_ibi_only/`. A strict
+pass requires both the velocity-Verlet `sigma_E ~ dt^p` scaling gate and the
+block-drift gate. The report records
+`hamiltonian_mode=conservative_classical_model_provenance_ml_disabled` and hashes
+the Phase-2 preflight/validation/parity artifacts in addition to the normal
+runtime inputs.
+
+This certification does **not** certify `IBI + PaiNN`. A future residual model
+that wins the matched A/B structural test must undergo a separate ML-active NVE
+certification.

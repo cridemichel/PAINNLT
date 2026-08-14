@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "preprocessing"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from conservative_spline import load_conservative_spline  # noqa: E402
 from geometry_io import pool_requested, read_target_distributions, requested_mode  # noqa: E402
 from ibi_core import (  # noqa: E402
     calculate_dbi_potential,
@@ -201,14 +202,17 @@ def load_continuation_priors(
     priors_path: str | Path,
     *,
     ibi_config: str | Path | None = None,
+    allow_conservative_spline: bool = False,
 ):
-    """Load an already-tabulated IBI/DBI prior set for continued sampling.
+    """Load an evaluated IBI/DBI prior set and reconstruct target histograms.
 
-    Unlike :func:`build_initial_dbi_priors`, this function never performs a new
-    Boltzmann inversion.  It reconstructs the target histograms from the mapped
-    reference dataset while preserving the exact energy/force tables supplied
-    by ``priors_path``.  This is the required initialization for a true IBI
-    continuation from a previously evaluated prior set.
+    By default only legacy ``type=tabulated`` evaluated priors are accepted,
+    preserving the fail-closed semantics required by the IBI continuation
+    driver.  Diagnostic consumers may explicitly set
+    ``allow_conservative_spline=True`` to read the post-conversion
+    ``type=conservative_spline`` representation.  That opt-in does *not* make
+    conservative splines valid restart inputs for the iterative IBI updater; it
+    only exposes their evaluated grid/energy/force data to read-only analyses.
     """
     dataset = Path(dataset).resolve()
     priors_path = Path(priors_path).resolve()
@@ -229,51 +233,81 @@ def load_continuation_priors(
         groups = pool_requested(priors, values, json_key)
         for name, group in groups.items():
             entries = [priors[json_key][idx] for idx in group["indices"]]
-            if any(str(entry.get("type", "")).lower() != "tabulated" for entry in entries):
+            representations = {str(entry.get("type", "")).lower() for entry in entries}
+            allowed_representations = {"tabulated"}
+            if allow_conservative_spline:
+                allowed_representations.add("conservative_spline")
+            if len(representations) != 1 or not representations.issubset(allowed_representations):
+                accepted = "tabulated/conservative_spline" if allow_conservative_spline else "tabulated"
                 raise ValueError(
-                    f"Continuation group {kind} {name!r} is not fully tabulated; "
+                    f"Continuation group {kind} {name!r} is not fully {accepted}; "
                     "resume from an evaluated cg_priors.json, not from the original IBI seed"
                 )
+            representation = next(iter(representations))
             if any(requested_mode(entry) != group["mode"] for entry in entries):
                 raise ValueError(f"Continuation group {kind} {name!r} has inconsistent ibi_mode values")
             if any("file" not in entry for entry in entries):
                 raise ValueError(f"Continuation group {kind} {name!r} is missing a table file")
 
-            table_paths = []
-            for entry in entries:
-                table_path = Path(str(entry["file"])).expanduser()
-                if not table_path.is_absolute():
-                    table_path = priors_path.parent / table_path
-                table_paths.append(table_path.resolve())
-            if len(set(table_paths)) != 1:
-                raise ValueError(
-                    f"Continuation group {kind} {name!r} references multiple tables: {table_paths}"
-                )
-            table_path = table_paths[0]
-            if not table_path.is_file():
-                raise FileNotFoundError(f"Missing continuation table for {kind} {name!r}: {table_path}")
+            if representation == "conservative_spline":
+                splines = [
+                    load_conservative_spline(entry, kind=kind, priors_path=priors_path)
+                    for entry in entries
+                ]
+                table_paths = [spline.path.resolve() for spline in splines]
+                if len(set(table_paths)) != 1:
+                    raise ValueError(
+                        f"Continuation group {kind} {name!r} references multiple tables: {table_paths}"
+                    )
+                spline = splines[0]
+                table_path = spline.path.resolve()
+                grid = np.asarray(spline.x, dtype=float)
+                energy = np.asarray(spline.energy, dtype=float)
+                derivative = np.asarray(spline.derivative, dtype=float)
+                if kind == "bond":
+                    force = -derivative
+                elif kind == "angle":
+                    force = derivative
+                else:
+                    raise ValueError(
+                        f"Conservative spline continuation diagnostics are certified only for bond+angle, got {kind}"
+                    )
+            else:
+                table_paths = []
+                for entry in entries:
+                    table_path = Path(str(entry["file"])).expanduser()
+                    if not table_path.is_absolute():
+                        table_path = priors_path.parent / table_path
+                    table_paths.append(table_path.resolve())
+                if len(set(table_paths)) != 1:
+                    raise ValueError(
+                        f"Continuation group {kind} {name!r} references multiple tables: {table_paths}"
+                    )
+                table_path = table_paths[0]
+                if not table_path.is_file():
+                    raise FileNotFoundError(f"Missing continuation table for {kind} {name!r}: {table_path}")
 
-            table = np.loadtxt(table_path, dtype=float)
-            if table.ndim == 1:
-                table = table.reshape(1, -1)
-            if table.ndim != 2 or table.shape[1] != 3 or table.shape[0] < 2:
-                raise ValueError(
-                    f"Continuation table must contain at least two x/energy/force rows: {table_path}"
-                )
-            if not np.isfinite(table).all():
-                raise ValueError(f"Continuation table contains non-finite values: {table_path}")
-            grid, energy, force = (np.asarray(table[:, col], dtype=float) for col in range(3))
-            spacing = np.diff(grid)
-            if np.any(spacing <= 0.0) or not np.allclose(
-                spacing, spacing[0], rtol=1.0e-10, atol=1.0e-12
-            ):
-                raise ValueError(f"Continuation table grid must be strictly increasing and uniform: {table_path}")
+                table = np.loadtxt(table_path, dtype=float)
+                if table.ndim == 1:
+                    table = table.reshape(1, -1)
+                if table.ndim != 2 or table.shape[1] != 3 or table.shape[0] < 2:
+                    raise ValueError(
+                        f"Continuation table must contain at least two x/energy/force rows: {table_path}"
+                    )
+                if not np.isfinite(table).all():
+                    raise ValueError(f"Continuation table contains non-finite values: {table_path}")
+                grid, energy, force = (np.asarray(table[:, col], dtype=float) for col in range(3))
+                spacing = np.diff(grid)
+                if np.any(spacing <= 0.0) or not np.allclose(
+                    spacing, spacing[0], rtol=1.0e-10, atol=1.0e-12
+                ):
+                    raise ValueError(f"Continuation table grid must be strictly increasing and uniform: {table_path}")
 
-            for entry in entries:
-                if "min" in entry and not np.isclose(float(entry["min"]), grid[0], rtol=0.0, atol=1.0e-10):
-                    raise ValueError(f"Continuation table minimum disagrees with prior metadata for {kind} {name!r}")
-                if "max" in entry and not np.isclose(float(entry["max"]), grid[-1], rtol=0.0, atol=1.0e-10):
-                    raise ValueError(f"Continuation table maximum disagrees with prior metadata for {kind} {name!r}")
+                for entry in entries:
+                    if "min" in entry and not np.isclose(float(entry["min"]), grid[0], rtol=0.0, atol=1.0e-10):
+                        raise ValueError(f"Continuation table minimum disagrees with prior metadata for {kind} {name!r}")
+                    if "max" in entry and not np.isclose(float(entry["max"]), grid[-1], rtol=0.0, atol=1.0e-10):
+                        raise ValueError(f"Continuation table maximum disagrees with prior metadata for {kind} {name!r}")
 
             vals, bins, _default_grid, periodic = _grid_spec(kind, settings, group["values"])
             if vals.size == 0:
@@ -304,15 +338,20 @@ def load_continuation_priors(
                 "target_counts": target_counts,
                 "table_path": table_path,
                 "periodic": periodic,
+                "representation": representation,
             }
+            label = "DIAGNOSTIC" if representation == "conservative_spline" else "RESUME"
             print(
-                f"[RESUME] {kind} {name}: N={vals.size}, mode={group['mode']}, "
+                f"[{label}] {kind} {name}: N={vals.size}, mode={group['mode']}, "
                 f"table={table_path}"
             )
             generated += 1
 
     if generated == 0:
-        raise ValueError("Continuation priors contain no tabulated entries with ibi_mode=ibi/dbi")
+        accepted = "tabulated/conservative_spline" if allow_conservative_spline else "tabulated"
+        raise ValueError(
+            f"Evaluated priors contain no {accepted} entries with ibi_mode=ibi/dbi"
+        )
 
     return {
         "priors": copy.deepcopy(priors),

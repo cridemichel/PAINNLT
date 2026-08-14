@@ -764,6 +764,44 @@ La certificazione NVE stretta appartiene solo alla fine di questa catena: prima
 servono modello residuale nuovo, provenance coerente e validazione runtime del
 medesimo Hamiltoniano `prior conservativi + PaiNN residuale`.
 
+
+#### 7.6.6.2 Certificazione NVE del candidato conservative IBI-only
+
+Se il matched A/B del passo `19` mostra che il residual PaiNN non migliora la
+struttura, il candidato fisico da certificare puo essere il ramo **IBI-only**.
+Il gate dedicato e:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./23_certify_conservative_ibi_nve.sh --overwrite
+```
+
+Il modello indicato da `IBI_MODEL` **non viene attivato** durante le traiettorie
+NVE: viene mantenuto soltanto come anchor di provenance per poter riutilizzare
+in modo fail-closed `postibi_runtime_validation/equilibrated_postibi.npz`, che e
+stato creato dal passo `18` e contiene anche l'hash del modello. Ogni run del
+certificatore passa `--disable_ml`, spegne il termostato, imposta force cap a
+zero e usa Velocity-Verlet.
+
+Prima delle traiettorie, `simulation/conservative_nve_preflight.py` ricontrolla
+che `ibi_conservative/cg_priors.json`, tutte le spline referenziate,
+`validation_report.json` e `runtime_parity_report.json` siano ancora
+byte-identici agli artefatti Phase-2 validati. I vecchi prior `tabulated` sono
+rifiutati e la certificazione conservative resta limitata a spline **bond +
+angle**; un dihedral conservative fa fallire il preflight.
+
+Il default usa 5 ps per timestep e la griglia
+`0.001 0.0015 0.002 0.003 0.004 0.005 ps`. Il criterio resta quello generale:
+fit `sigma_E ~ dt^p` con `1.7 <= p <= 2.3`, `R2 >= 0.97` e drift relativo a
+blocchi `<= 1e-4`. Gli output sono separati sotto
+`nve_certification_conservative_ibi_only/` e il report registra esplicitamente
+`hamiltonian_mode=conservative_classical_model_provenance_ml_disabled`.
+
+Questo gate certifica **solo** `WCA + Morse + bonded conservative IBI` nel range
+di stati visitato. Non promuove il residual PaiNN; se in futuro un nuovo modello
+ML supera il matched A/B, il suo Hamiltoniano completo deve essere certificato
+separatamente con PaiNN attivo.
+
 ---
 
 # 8. WCA pair-specific: costruzione, guardrail e sottrazione

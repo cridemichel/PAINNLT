@@ -15,7 +15,7 @@ from typing import Any
 
 import numpy as np
 
-from framework_utils import nonconservative_prior_entries
+from framework_utils import input_hashes as runtime_input_hashes, nonconservative_prior_entries
 from nve_analysis import analyze_energy_series, certify_metrics, read_energy_csv
 
 
@@ -54,6 +54,56 @@ def tail(path: Path, n: int = 30) -> str:
     except Exception:
         return ""
     return "\n".join(lines[-n:])
+
+
+def checkpoint_provenance_summary(
+    path: Path,
+    *,
+    dataset: Path,
+    config: Path,
+    priors: Path,
+    rb_info: Path,
+    model: Path | None,
+    allow_legacy: bool = False,
+) -> dict[str, Any] | None:
+    """Fail fast on checkpoint/runtime hash mismatches before launching ESPResSo."""
+    with np.load(path, allow_pickle=False) as checkpoint:
+        if "metadata_json" not in checkpoint.files:
+            if allow_legacy:
+                print("[WARNING] Legacy checkpoint has no metadata_json; runtime will apply legacy rules")
+                return None
+            raise ValueError(
+                "Checkpoint lacks provenance metadata_json. Regenerate it with patched equilibrate.py "
+                "or pass --allow-legacy-checkpoint only for a deliberate legacy diagnostic."
+            )
+        raw = np.asarray(checkpoint["metadata_json"])
+        if raw.shape != ():
+            raise ValueError("Checkpoint metadata_json must be a scalar string")
+        metadata = json.loads(str(raw.item()))
+
+    expected = runtime_input_hashes(
+        dataset=dataset,
+        config=config,
+        priors=priors,
+        rb_info=rb_info,
+        model=model,
+    )
+    recorded = metadata.get("input_hashes")
+    if not isinstance(recorded, dict):
+        raise ValueError("Checkpoint metadata has no input_hashes map")
+    mismatches = [
+        f"{key}: checkpoint={recorded.get(key)}, runtime={value}"
+        for key, value in expected.items()
+        if recorded.get(key) != value
+    ]
+    if mismatches:
+        raise ValueError("Checkpoint/runtime provenance mismatch:\n  - " + "\n  - ".join(mismatches))
+    print("[CHECK] checkpoint provenance hashes match selected dataset/config/priors/rb_info/model")
+    return {
+        "schema_version": metadata.get("schema_version"),
+        "input_hashes": expected,
+        "energy_gauge": metadata.get("energy_gauge"),
+    }
 
 
 def checkpoint_motion_summary(path: Path) -> dict[str, float | int]:
@@ -116,6 +166,21 @@ def main() -> int:
         help="Path to generic run_cg_md.py",
     )
     parser.add_argument("--model", default=None, help="PaiNN model; omit for a classical-only test")
+    parser.add_argument(
+        "--disable-ml",
+        action="store_true",
+        help=(
+            "Keep --model as a provenance/checkpoint anchor but disable PaiNN in every NVE run. "
+            "This is the strict conservative-IBI-only certification mode."
+        ),
+    )
+    parser.add_argument(
+        "--provenance-artifact",
+        action="append",
+        default=[],
+        metavar="NAME=PATH",
+        help="Additional validated provenance artifact to hash into run_plan/report; may be repeated",
+    )
     parser.add_argument("--config", required=True)
     parser.add_argument("--priors", required=True)
     parser.add_argument("--rb-info", required=True)
@@ -163,6 +228,9 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Print run plan without launching ESPResSo")
     args = parser.parse_args()
 
+    if args.disable_ml and not args.model:
+        raise ValueError("--disable-ml requires --model so checkpoint/model provenance remains bound")
+
     if args.duration_ps <= 0.0:
         raise ValueError("--duration-ps must be positive")
     if args.log_interval_ps is not None and args.log_interval_ps <= 0.0:
@@ -189,6 +257,27 @@ def main() -> int:
     checkpoint = existing_file(args.checkpoint, "checkpoint")
     assert runner and config and priors and rb_info and dataset and checkpoint
 
+    provenance_artifacts: dict[str, Path] = {}
+    for item in args.provenance_artifact:
+        if "=" not in item:
+            raise ValueError("--provenance-artifact must use NAME=PATH syntax")
+        name, value = item.split("=", 1)
+        name = name.strip()
+        if not name or name in provenance_artifacts:
+            raise ValueError(f"Invalid or duplicate provenance artifact name: {name!r}")
+        artifact_path = existing_file(value, f"provenance-artifact {name}")
+        assert artifact_path is not None
+        provenance_artifacts[name] = artifact_path
+
+    checkpoint_provenance = checkpoint_provenance_summary(
+        checkpoint,
+        dataset=dataset,
+        config=config,
+        priors=priors,
+        rb_info=rb_info,
+        model=model,
+        allow_legacy=args.allow_legacy_checkpoint,
+    )
     checkpoint_motion = checkpoint_motion_summary(checkpoint)
     motion_scale = max(
         float(checkpoint_motion["velocity_rms"]),
@@ -236,6 +325,8 @@ def main() -> int:
         manifest = Path(str(model) + ".manifest.json")
         if manifest.is_file():
             inputs["model_manifest"] = manifest
+    for name, artifact_path in provenance_artifacts.items():
+        inputs[f"provenance:{name}"] = artifact_path
 
     input_hashes = {name: sha256_file(path) for name, path in inputs.items()}
     run_metrics: list[dict[str, Any]] = []
@@ -270,6 +361,8 @@ def main() -> int:
         ]
         if model is not None:
             command[2:2] = ["--model", str(model)]
+        if args.disable_ml:
+            command.append("--disable_ml")
         if args.allow_missing_model_manifest:
             command.append("--allow_missing_model_manifest")
         if args.allow_legacy_checkpoint:
@@ -353,9 +446,16 @@ def main() -> int:
             "force_cap": 0.0,
             "reference_device": "cpu",
             "neighbor_search": args.neighbor_search,
+            "hamiltonian_mode": (
+                "model_active" if model is not None and not args.disable_ml
+                else "conservative_classical_model_provenance_ml_disabled" if args.disable_ml
+                else "classical_no_model"
+            ),
         },
         "inputs_sha256": input_hashes,
+        "provenance_artifacts": {name: str(path) for name, path in provenance_artifacts.items()},
         "checkpoint_motion": checkpoint_motion,
+        "checkpoint_provenance": checkpoint_provenance,
         "device": args.device,
         "neighbor_search": args.neighbor_search,
         "runs": run_metrics,
