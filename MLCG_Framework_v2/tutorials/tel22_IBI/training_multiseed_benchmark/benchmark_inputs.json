@@ -1,0 +1,25 @@
+{
+  "base_config_path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_training_config.json",
+  "base_config_sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+  "cases": [
+    {
+      "dataset_file_size_bytes": 1163824,
+      "dataset_path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+      "dataset_sha256": "40bcf2e5a23d0b75d1444730d7e1d63979e1d0198b88477c19e8fb187d5f8d9e",
+      "label": "baseline"
+    },
+    {
+      "dataset_file_size_bytes": 1163824,
+      "dataset_path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset_ibi_residual.bin",
+      "dataset_sha256": "5cda7e17b921ced65b24b1f6c937eab96f5629387f9ed55b83827b7f7c7001f9",
+      "label": "ibi"
+    }
+  ],
+  "kind": "painn_multiseed_benchmark_inputs",
+  "schema_version": 1,
+  "seeds": [
+    11,
+    42,
+    73
+  ]
+}

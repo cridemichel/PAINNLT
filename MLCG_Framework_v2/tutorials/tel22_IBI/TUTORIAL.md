@@ -322,3 +322,36 @@ model as `tel22_model_ibi.pt`.  It refuses to overwrite the pre-IBI
 training config directly; the rigid-body metadata and priors are checked here
 because they define the matching runtime Hamiltonian and must remain bound to
 the dataset used for training.
+
+## Paired multi-seed baseline vs post-IBI training benchmark
+
+A single 41/10 random train/validation split is too small to decide whether a
+small change in best normalized validation loss is systematic.  After the
+post-IBI model has trained successfully, run a paired multi-seed benchmark:
+
+```bash
+OVERWRITE=1 bash ./17_benchmark_training_multiseed.sh
+```
+
+The default seeds are `11 42 73`.  For a stronger five-seed check use:
+
+```bash
+MULTISEED_SEEDS="11 23 42 73 101" OVERWRITE=1 \
+  bash ./17_benchmark_training_multiseed.sh
+```
+
+For every seed, the generic `training/multiseed_benchmark.py` trains both the
+pre-IBI `tel22_dataset.bin` case and the post-IBI
+`tel22_dataset_ibi_residual.bin` case with the same base training configuration
+except for `split_seed`.  Each run gets its own config, model, manifest and log
+under `training_multiseed_benchmark/<case>/seed_<N>/`; existing benchmark output
+is never reused unless `OVERWRITE=1` is supplied deliberately.
+
+Before any post-IBI benchmark run starts, the wrapper repeats
+`16_check_ibi_training_inputs.sh`, so a stale residual dataset or changed IBI
+table cannot silently enter the comparison.  The benchmark writes
+`benchmark_runs.csv` and `benchmark_summary.json`, reports per-case mean/sample
+standard deviation of the best validation loss, and computes the paired
+`IBI - baseline` delta at each identical seed.  A negative paired delta favors
+the post-IBI case.  Interpret the mean paired delta together with its spread and
+win count rather than a single seed.
