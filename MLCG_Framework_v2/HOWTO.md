@@ -715,6 +715,55 @@ prior espliciti sono cambiati.  Occorre ricostruire il dataset residuale usando
 controlli strutturali matched e solo dopo eseguire la certificazione NVE stretta
 con scaling di Velocity-Verlet e drift su finestra lunga.
 
+#### 7.6.6.1 Gate post-conversione e training residuale conservativo
+
+Dopo un `[PASS]` di `22_validate_conservative_spline.sh`, il workflow TEL22 IBI
+prosegue in modo fail-closed:
+
+```bash
+bash ./13_rebuild_residual_dataset.sh
+bash ./16_check_ibi_training_inputs.sh
+```
+
+Quando `ibi_conservative/cg_priors.json` esiste, gli script `13`, `16`, `03`,
+`18` e `19` lo preferiscono automaticamente ai vecchi prior tabulati. Il rebuild
+scrive `ibi_residual_build_manifest.json`, che lega tramite SHA256 dataset
+residuale, rigid-body metadata, priors conservativi, ogni tabella spline e i
+report `validation_report.json` e `runtime_parity_report.json`. Il preflight `16`
+deve terminare con `[PASS]` prima del training.
+
+Il training residuale parte da zero sul nuovo target:
+
+```bash
+bash ./03_train_model.sh
+```
+
+Se l'output di default `tel22_model_ibi.pt` esiste già, lo script rifiuta la
+sovrascrittura o un resume implicito. Quando il dataset residuale è stato
+rigenerato per i prior conservativi, **non** usare `--resume` da un modello
+precedente: scegliere un nuovo artefatto, per esempio:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./03_train_model.sh
+```
+
+Il manifest del modello registra l'hash del dataset/config di training. Se viene
+usato un nome modello non di default, lo stesso `IBI_MODEL` va propagato ai gate
+runtime successivi, per esempio:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+```
+
+La certificazione NVE stretta appartiene solo alla fine di questa catena: prima
+servono modello residuale nuovo, provenance coerente e validazione runtime del
+medesimo Hamiltoniano `prior conservativi + PaiNN residuale`.
+
 ---
 
 # 8. WCA pair-specific: costruzione, guardrail e sottrazione

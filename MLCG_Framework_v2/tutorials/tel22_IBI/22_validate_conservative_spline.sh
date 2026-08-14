@@ -19,13 +19,15 @@ done
 "${PYTHON_BIN}" "${FRAMEWORK_ROOT}/ibi/validate_conservative_spline.py" \
     --conversion-report "${OUTDIR}/conversion_report.json"
 "${PYRESSO}" "${FRAMEWORK_ROOT}/simulation/diagnose_conservative_spline_parity.py" \
-    --priors "${OUTDIR}/cg_priors.json"
+    --priors "${OUTDIR}/cg_priors.json" \
+    --report "${OUTDIR}/runtime_parity_report.json"
 
 cat <<EOF
 [CONSERVATIVE IBI PHASE-2 GATE]
 priors     : ${OUTDIR}/cg_priors.json
 conversion : ${OUTDIR}/conversion_report.json
 validation : ${OUTDIR}/validation_report.json
+runtime    : ${OUTDIR}/runtime_parity_report.json
 [PASS] Conservative spline U/derivative consistency and ESPResSo runtime/preprocessing parity passed.
 [NEXT] Rebuild the residual dataset against these exact conservative priors, then retrain PaiNN before strict NVE certification.
 EOF

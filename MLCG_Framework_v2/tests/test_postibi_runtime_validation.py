@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import struct
 import sys
@@ -117,6 +118,91 @@ class RuntimePreflightTests(unittest.TestCase):
                     model=paths[0], config=paths[1], dataset=paths[2], priors=paths[3],
                     rb_info=paths[4], residual_manifest=paths[5],
                 )
+
+    def test_runtime_preflight_accepts_conservative_validation_provenance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            model, config, dataset, priors, rb_info, residual_manifest = self._fixture(root)
+            source_table = root / "source_bond.dat"
+            source_table.write_text("0.0 1.0 -2.0\n1.0 0.0 0.0\n")
+            source_priors = root / "source_priors.json"
+            source_priors.write_text(json.dumps({
+                "bonds": [{"type": "tabulated", "file": source_table.name}],
+                "angles": [], "dihedrals": [],
+            }) + "\n")
+            spline = root / "bond_conservative_b.dat"
+            spline.write_text("0.0 1.0 -2.0\n1.0 0.0 0.0\n")
+            priors.write_text(json.dumps({
+                "bonds": [{"type": "conservative_spline", "file": spline.name}],
+                "angles": [], "dihedrals": [],
+            }) + "\n")
+
+            def digest(path):
+                return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+            conversion = root / "conversion_report.json"
+            conversion.write_text(json.dumps({
+                "schema_version": 1,
+                "framework": "MLCG_Framework_v2",
+                "kind": "ibi_conservative_spline_conversion",
+                "source_priors": str(source_priors.resolve()),
+                "source_priors_sha256": digest(source_priors),
+                "output_priors": str(priors.resolve()),
+                "output_priors_sha256": digest(priors),
+                "records": [{
+                    "source_path": str(source_table.resolve()),
+                    "source_sha256": digest(source_table),
+                    "output_file": spline.name,
+                    "output_path": str(spline.resolve()),
+                    "output_sha256": digest(spline),
+                }],
+                "source_artifacts_unchanged": True,
+            }) + "\n")
+            validation = root / "validation_conservative.json"
+            validation.write_text(json.dumps({
+                "schema_version": 1,
+                "framework": "MLCG_Framework_v2",
+                "kind": "ibi_conservative_spline_validation",
+                "conversion_report": str(conversion.resolve()),
+                "conservative_priors": str(priors.resolve()),
+                "conservative_priors_sha256": digest(priors),
+                "finite_difference_checks": [{"max_abs_dU_dq_error": 1.0e-7}],
+                "pass": True,
+            }) + "\n")
+            parity = root / "runtime_parity_report.json"
+            parity.write_text(json.dumps({
+                "schema_version": 1,
+                "framework": "MLCG_Framework_v2",
+                "kind": "ibi_conservative_spline_runtime_parity",
+                "priors": str(priors.resolve()),
+                "priors_sha256": digest(priors),
+                "prior_artifact_sha256": referenced_prior_artifacts(priors),
+                "force_atol": 1.0e-9,
+                "energy_atol": 1.0e-10,
+                "worst_force_abs_error": 2.0e-14,
+                "worst_energy_abs_error": 3.0e-13,
+                "pass": True,
+            }) + "\n")
+            write_manifest(
+                output=residual_manifest,
+                dataset=dataset,
+                rb_info=rb_info,
+                priors=priors,
+                aa_topology=root / "aa.gro",
+                aa_trajectory=root / "aa.trr",
+                mapping_config=root / "mapping.json",
+                validation_report=validation,
+                runtime_parity_report=parity,
+            )
+
+            report = check_runtime_preflight(
+                model=model, config=config, dataset=dataset, priors=priors,
+                rb_info=rb_info, residual_manifest=residual_manifest,
+            )
+            self.assertEqual(
+                report["residual_validation"]["mode"],
+                "conservative_spline_validation",
+            )
 
 
 class NvtSmokeAnalysisTests(unittest.TestCase):

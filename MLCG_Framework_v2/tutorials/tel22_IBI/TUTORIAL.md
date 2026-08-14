@@ -266,22 +266,14 @@ with those exact evaluated tables:
 bash 13_rebuild_residual_dataset.sh
 ```
 
-By default this uses `ibi_run_16ps_continue/best/cg_priors.json` when a
-continuation result exists, otherwise it falls back to
+After Phase 2 has passed, the script preferentially selects
+`ibi_conservative/cg_priors.json`; otherwise it retains the historical fallback
+to `ibi_run_16ps_continue/best/cg_priors.json` and then
 `ibi_run_16ps/best/cg_priors.json`.  It writes
-`tel22_dataset_ibi_residual.bin`.  Override `IBI_PRIORS` explicitly if a
-different evaluated iteration is selected.  The preprocessing tabulated-force kernels
-have already been runtime-validated against ESPResSo for bond, angle and
-dihedral forces to roundoff precision.  This rebuild is mandatory before
+`tel22_dataset_ibi_residual.bin`.  Override `IBI_PRIORS` explicitly only when a
+different evaluated iteration is intended.  The rebuild is mandatory before
 training a new residual PaiNN model; using the old force-matching dataset would
 double-count the replaced bonded prior contribution.
-
-The current strict NVE-order certifier intentionally rejects explicit tabulated
-bonded priors because ESPResSo interpolates table energy and force columns
-independently.  For this first IBI layer use the runtime/preprocessing parity
-diagnostic plus NVT structural validation.  A conservative single-function
-representation suitable for strict NVE certification is a separate future
-extension.
 
 ## Independent read-only validation of the selected best IBI priors
 
@@ -303,11 +295,14 @@ After the read-only validation, rebuild the residual dataset with:
 bash ./13_rebuild_residual_dataset.sh
 ```
 
-The rebuild now also writes `ibi_residual_build_manifest.json`.  This manifest
+The rebuild also writes `ibi_residual_build_manifest.json`.  This manifest
 cryptographically binds the residual dataset and `rigid_bodies_info_ibi.json`
-to the exact validated best priors, every referenced tabulated table, the
-read-only validation report, the atomistic topology/trajectory and the mapping
-configuration used by preprocessing.
+to the exact selected priors, every referenced prior table, the atomistic
+topology/trajectory and the mapping configuration used by preprocessing.  Two
+validation modes are supported: the legacy read-only NVT validation of explicit
+tabulated IBI priors, and the Phase-2 conservative validation.  In conservative
+mode the manifest additionally binds both `validation_report.json` and the
+persisted ESPResSo/preprocessing `runtime_parity_report.json`.
 
 Before training, run the fail-closed preflight explicitly if desired:
 
@@ -316,12 +311,28 @@ bash ./16_check_ibi_training_inputs.sh
 ```
 
 It must finish with `[PASS]`.  `03_train_model.sh` runs the same preflight
-automatically and trains on `tel22_dataset_ibi_residual.bin`, writing the new
-model as `tel22_model_ibi.pt`.  It refuses to overwrite the pre-IBI
-`tel22_model.pt`.  The C++ PaiNN trainer consumes the residual dataset and
-training config directly; the rigid-body metadata and priors are checked here
-because they define the matching runtime Hamiltonian and must remain bound to
-the dataset used for training.
+automatically and trains on `tel22_dataset_ibi_residual.bin`.  With Phase 2
+artifacts present, the selected prior must resolve to
+`ibi_conservative/cg_priors.json`, and the manifest must bind the corresponding
+`validation_report.json` and `runtime_parity_report.json` as well as every
+referenced conservative spline table.
+
+The default model name is `tel22_model_ibi.pt`; `tel22_model.pt` is always
+protected. Training also fails closed if its selected output already exists,
+preventing an accidental implicit resume. If the residual target has changed --
+for example after converting the selected IBI priors to the conservative spline
+representation -- do not resume an older checkpoint. Start a new model artifact:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./03_train_model.sh
+```
+
+The C++ PaiNN trainer consumes the residual dataset and training config directly;
+the rigid-body metadata and priors are checked here because they define the
+matching runtime Hamiltonian and must remain bound to the dataset used for
+training. The resulting `${IBI_MODEL}.manifest.json` binds the model to the
+training dataset/config hashes.
 
 ## Paired multi-seed baseline vs post-IBI training benchmark
 
@@ -359,10 +370,18 @@ win count rather than a single seed.
 ## 18. Validate the complete post-IBI runtime Hamiltonian
 
 After the validated IBI priors have been used to rebuild the residual dataset and
-`tel22_model_ibi.pt` has been trained, run:
+the matching residual PaiNN model has been trained, run the runtime gate with the
+same model name used during training. For the default model:
 
 ```bash
 OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+```
+
+For a distinct conservative-residual artifact:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
 ```
 
 The script fails closed unless the model manifest proves that the model was
@@ -382,9 +401,12 @@ Outputs are written under `postibi_runtime_validation/`:
 - `equilibrate.log` and `nvt_run.log`: ESPResSo logs.
 
 The structural L1 comparison is diagnostic and does not impose a universal
-threshold in the generic core.  Likewise this NVT smoke run is **not** an NVE
-energy-conservation certification: ESPResSo tabulated bonded interactions use
-separately interpolated energy and force columns.
+threshold in the generic core. This NVT smoke run is also **not** an NVE
+energy-conservation certification. With legacy tabulated priors, strict NVE
+remains unavailable because energy and force are interpolated independently;
+with Phase-2 `conservative_spline` priors that particular obstruction has been
+removed, but the complete `conservative IBI + PaiNN residual` Hamiltonian must
+still pass its dedicated NVE timestep-scaling and drift gates.
 
 ### Matched IBI-only vs IBI+PaiNN structural A/B gate
 
@@ -402,7 +424,8 @@ Longer production can be requested without changing source code, for example:
 AB_PRODUCTION_PS=16 OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
 ```
 
-This A/B test is a structural diagnostic before converting converged IBI tables to a conservative spline representation. It does not make an NVE conservation claim for explicit tabulated priors.
+This A/B test is a structural diagnostic for the exact priors selected by the
+residual provenance.  It does not itself make an NVE conservation claim.
 
 ### Phase 2: conservative IBI spline representation
 
@@ -450,6 +473,9 @@ bash ./22_validate_conservative_spline.sh
 This performs two hard consistency checks: finite-difference verification of
 `dU/dq` against the same Hermite energy spline and ESPResSo runtime versus
 preprocessing force/energy parity for every unique converted bond/angle table.
+The latter is persisted as `ibi_conservative/runtime_parity_report.json`, with
+hashes of the conservative priors and all referenced tables, so the residual
+training provenance can fail closed if any artifact changes after the gate.
 The original tabulated-to-spline fidelity metrics remain diagnostic because a
 nonzero force change is expected when replacing independently interpolated
 energy/force columns by a genuinely conservative representation.
@@ -459,3 +485,47 @@ residual dataset must next be rebuilt against `ibi_conservative/cg_priors.json`,
 PaiNN must be retrained on that exact residual target, the matched structural
 A/B diagnostic should be repeated, and only then should strict NVE timestep
 scaling and long-window drift be measured.
+
+
+### Phase 2 post-gate sequence
+
+After step 22 passes, use the conservative artifacts for the complete residual
+training chain:
+
+```bash
+bash ./13_rebuild_residual_dataset.sh
+bash ./16_check_ibi_training_inputs.sh
+```
+
+The expected selected prior is now `ibi_conservative/cg_priors.json`. Step 13
+writes `ibi_residual_build_manifest.json`; step 16 verifies hashes of the
+residual dataset, rigid-body metadata, priors and all bound validation artifacts.
+Do not train unless step 16 ends with `[PASS]`.
+
+For a fresh conservative-residual model, use a distinct filename whenever an
+older IBI model already exists:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./03_train_model.sh
+```
+
+An existing output is intentionally an error. Do not use `--resume` merely to
+bypass that guard after the residual target has changed: a resumed model would
+mix optimization history from a different Hamiltonian decomposition.
+
+When a custom model filename is used, propagate it explicitly through the
+post-training runtime gates:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+```
+
+Only after these gates validate the same model/prior/dataset provenance should
+strict NVE certification be attempted. The conservative spline gate certifies
+the bonded prior kernel; it does not by itself certify the learned residual
+model or the complete production Hamiltonian.

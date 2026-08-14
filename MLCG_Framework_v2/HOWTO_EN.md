@@ -701,6 +701,56 @@ the explicit Hamiltonian has changed.  Rebuild the residual dataset against the
 structural checks, and only then run strict NVE timestep-scaling and long-window
 drift certification.
 
+#### 7.6.6.1 Post-conversion gate and conservative residual training
+
+After `22_validate_conservative_spline.sh` finishes with `[PASS]`, the TEL22 IBI
+workflow continues fail-closed:
+
+```bash
+bash ./13_rebuild_residual_dataset.sh
+bash ./16_check_ibi_training_inputs.sh
+```
+
+When `ibi_conservative/cg_priors.json` exists, scripts `13`, `16`, `03`, `18`,
+and `19` prefer it automatically over the historical tabulated priors. The
+rebuild writes `ibi_residual_build_manifest.json`, which SHA256-binds the
+residual dataset, rigid-body metadata, conservative priors, every referenced
+spline table, and both `validation_report.json` and
+`runtime_parity_report.json`. Preflight `16` must finish with `[PASS]` before
+training.
+
+Residual training must start from the newly defined target:
+
+```bash
+bash ./03_train_model.sh
+```
+
+If the default output `tel22_model_ibi.pt` already exists, the script refuses to
+overwrite it or to resume implicitly. When the residual dataset has been rebuilt
+for conservative priors, **do not** `--resume` from a model trained against an
+older residual target. Select a new artifact instead, for example:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./03_train_model.sh
+```
+
+The model manifest records the training dataset/config hashes. If a non-default
+model name is used, propagate the same `IBI_MODEL` to downstream runtime gates,
+for example:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+```
+
+Strict NVE certification belongs only at the end of this chain: first produce a
+new residual model, preserve matching provenance, and validate the runtime using
+the same `conservative priors + residual PaiNN` Hamiltonian.
+
 ---
 
 # 8. Pair-specific WCA: construction, guardrails, and subtraction
