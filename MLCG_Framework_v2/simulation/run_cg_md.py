@@ -28,6 +28,8 @@ from framework_utils import (
     wca_direct_bonded_site_exclusions,
 )
 
+from conservative_spline_runtime import create_conservative_spline_interaction
+
 from espresso_interactions import (
     configure_pair_specific_morse,
     create_pair_specific_morse_markers,
@@ -39,6 +41,7 @@ from espresso_interactions import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
+parser.add_argument("--disable_ml", action="store_true", help="Validate --model provenance but do not activate PaiNN; useful for matched classical/ML A/B runs")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
 parser.add_argument("--priors", type=str, required=True, help="cg_priors.json")
 parser.add_argument("--rb_info", type=str, required=True, help="rigid_bodies_info.json")
@@ -68,6 +71,10 @@ parser.add_argument("--allow_checkpoint_mismatch", action="store_true", help="Co
 parser.add_argument("--allow_unsafe_mpi", action="store_true", help="Allow the uncertified multi-rank PaiNN path")
 parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow explicitly tabulated priors during NVE despite separate energy/force interpolation")
 args = parser.parse_args()
+
+if args.disable_ml and not args.model:
+    raise ValueError("--disable_ml requires --model so the disabled branch remains bound to the same model provenance")
+ml_active = bool(args.model and not args.disable_ml)
 
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
@@ -392,6 +399,10 @@ for idx, b in enumerate(priors.get("bonds", [])):
         bond = espressomd.interactions.TabulatedDistance(
             min=rmin_tab, max=rmax_tab, energy=energy, force=force
         )
+    elif b_type == "conservative_spline":
+        bond = create_conservative_spline_interaction(
+            espressomd.interactions, b, kind="bond", priors_path=args.priors
+        )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
         continue
@@ -421,6 +432,10 @@ for idx, a in enumerate(priors.get("angles", [])):
         max_tab = float(a["max"]) # Typically pi radians
         angle = espressomd.interactions.TabulatedAngle(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    elif a_type == "conservative_spline":
+        angle = create_conservative_spline_interaction(
+            espressomd.interactions, a, kind="angle", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown angle type: {a_type}")
@@ -538,7 +553,7 @@ for contact in morse_contacts:
         f"r_cut={contact['r_cut']:.6g})"
     )
 
-if args.model:
+if ml_active:
     print("[INFO] Activating ML Potential...")
     espressomd.painn.activate_painn_potential(
         model_path=args.model,
@@ -551,6 +566,8 @@ if args.model:
         device=args.device,
         precision=args.ml_precision
     )
+elif args.disable_ml:
+    print("[INFO] PaiNN disabled by --disable_ml; --model is retained only for provenance/checkpoint validation.")
 else:
     print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")
 
@@ -658,7 +675,7 @@ def measure_energies():
 
     e_class = energies["total"]
     e_ml = 0.0
-    if args.model:
+    if ml_active:
         e_ml = espressomd.painn.get_painn_energy()
     
     e_tot = e_class + e_ml
