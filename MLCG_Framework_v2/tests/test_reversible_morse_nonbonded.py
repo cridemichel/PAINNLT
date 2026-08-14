@@ -412,6 +412,35 @@ class Other(NonBondedInteraction):
             self.assertNotIn("com_runtime_type", text)
             self.assertNotIn("bond = make_analytic_morse_bond", text)
 
+    def test_hybrid_decomposition_is_active_before_long_pair_specific_morse(self):
+        for rel in ("simulation/run_cg_md.py", "simulation/equilibrate.py"):
+            text = (ROOT / rel).read_text()
+            search_from = text.index("regular_cutoff =")
+            neighbor_call = text.index(
+                "configure_neighbor_search(\n    system, args.neighbor_search,",
+                search_from,
+            )
+            type_pair_call = text.index(
+                "configure_type_pair_morse(system, morse_type_pairs)",
+                search_from,
+            )
+            morse_call = text.index(
+                "configure_pair_specific_morse(system, morse_contacts, morse_marker_types)",
+                search_from,
+            )
+            self.assertLess(
+                neighbor_call,
+                type_pair_call,
+                f"{rel} must validate/configure the cell decomposition before "
+                "registering type-pair Morse interactions",
+            )
+            self.assertLess(
+                neighbor_call,
+                morse_call,
+                f"{rel} must activate the hybrid/N-square decomposition before "
+                "registering long-cutoff pair-specific Morse interactions",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

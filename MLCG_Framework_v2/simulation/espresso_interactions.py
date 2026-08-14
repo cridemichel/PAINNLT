@@ -330,7 +330,14 @@ def configure_pair_specific_morse(
         type_i = marker_types[endpoint_i]
         type_j = marker_types[endpoint_j]
         try:
-            system.non_bonded_inter[type_i, type_j].morse.set_params(
+            morse = system.non_bonded_inter[type_i, type_j].morse
+        except AttributeError as exc:
+            raise RuntimeError(
+                "The ESPResSo build does not expose the non-bonded Morse interaction. "
+                "Enable the MORSE build feature, rerun CMake, and rebuild ESPResSo."
+            ) from exc
+        try:
+            morse.set_params(
                 eps=contact["D"],
                 alpha=contact["a"],
                 rmin=contact["r0"],
@@ -338,9 +345,22 @@ def configure_pair_specific_morse(
                 switch_start=contact["r_switch"],
             )
         except Exception as exc:
+            message = str(exc)
+            if "switch_start" in message and (
+                "unknown" in message.lower()
+                or "parameter" in message.lower()
+                or "keyword" in message.lower()
+            ):
+                raise RuntimeError(
+                    "The ESPResSo non-bonded Morse interaction is present, but the "
+                    "MLCG switched-Morse extension exposing 'switch_start' is missing. "
+                    "Run simulation/espresso_plugin/copy_plugin_files.sh and rebuild ESPResSo. "
+                    f"Original error: {exc}"
+                ) from exc
             raise RuntimeError(
-                "Failed to configure reversible switched Morse. The ESPResSo source "
-                "must contain the MLCG switched non-bonded Morse extension; run "
-                "simulation/espresso_plugin/copy_plugin_files.sh and rebuild ESPResSo. "
-                f"Original error: {exc}"
+                "ESPResSo rejected a pair-specific switched Morse interaction after "
+                "the interaction API was found. This is a runtime/cell-system error, "
+                "not evidence that the switched-Morse plugin is missing. "
+                f"Endpoints {endpoint_i} <-> {endpoint_j}, marker types {type_i}<->{type_j}, "
+                f"r_cut={contact['r_cut']:.6g}. Original error: {exc}"
             ) from exc

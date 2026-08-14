@@ -240,24 +240,6 @@ if os.path.exists(cg_priors_path):
 else:
     print(f"[WARNING] {cg_priors_path} not found! No WCA will be applied.")
 
-configure_pair_specific_morse(system, morse_contacts, morse_marker_types)
-for contact in morse_contacts:
-    print(
-        "[INFO] Added pair-specific reversible Morse contact "
-        f"{contact['index']}: {contact['mol_i']}:{contact['site_i']} <-> "
-        f"{contact['mol_j']}:{contact['site_j']} "
-        f"(site=-1 means COM; r_switch={contact['r_switch']:.6g}, "
-        f"r_cut={contact['r_cut']:.6g})"
-    )
-
-configure_type_pair_morse(system, morse_type_pairs)
-for item in morse_type_pairs:
-    print(
-        "[INFO] Added type-pair reversible Morse interaction "
-        f"{item['index']}: site type {item['type_i']} <-> {item['type_j']} "
-        f"(r_switch={item['r_switch']:.6g}, r_cut={item['r_cut']:.6g})"
-    )
-
 # Structural bonds (Morse contacts were configured above as reversible non-bonded priors)
 for idx, b in enumerate(priors.get("bonds", [])):
     b_type = b.get("type", "harmonic")
@@ -398,6 +380,33 @@ configure_neighbor_search(
     n_square_types=morse_n_square_types,
     cutoff_regular=regular_cutoff if morse_contacts else None,
 )
+
+# Register the long-cutoff pair-specific Morse interactions only after the
+# hybrid decomposition is active. ESPResSo validates a newly configured
+# non-bonded cutoff against the current cell system; configuring the 15 nm
+# marker interaction while the default regular decomposition is still active
+# incorrectly subjects it to the regular-cell range limit.
+# Type-pair Morse acts on physical CG site types in the regular side of the
+# already configured hybrid decomposition. Configuring it here also makes the
+# explicit regular-cutoff validation below authoritative instead of letting the
+# default cell system reject the interaction first.
+configure_type_pair_morse(system, morse_type_pairs)
+for item in morse_type_pairs:
+    print(
+        "[INFO] Added type-pair reversible Morse interaction "
+        f"{item['index']}: site type {item['type_i']} <-> {item['type_j']} "
+        f"(r_switch={item['r_switch']:.6g}, r_cut={item['r_cut']:.6g})"
+    )
+
+configure_pair_specific_morse(system, morse_contacts, morse_marker_types)
+for contact in morse_contacts:
+    print(
+        "[INFO] Added pair-specific reversible Morse contact "
+        f"{contact['index']}: {contact['mol_i']}:{contact['site_i']} <-> "
+        f"{contact['mol_j']}:{contact['site_j']} "
+        f"(site=-1 means COM; r_switch={contact['r_switch']:.6g}, "
+        f"r_cut={contact['r_cut']:.6g})"
+    )
 
 
 def run_chunks(total_steps, chunk_size, phase_name, after_chunk=None):
