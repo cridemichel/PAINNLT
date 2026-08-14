@@ -12,6 +12,7 @@ from framework_utils import (
     get_rb_data_by_sites,
     input_hashes,
     particle_is_virtual,
+    resolve_referenced_path,
     rigid_body_quaternion,
     save_checkpoint,
     validate_model_manifest,
@@ -250,7 +251,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "morse":
         continue
     elif b_type == "tabulated":
-        data = np.loadtxt(b["file"])
+        data = np.loadtxt(resolve_referenced_path(b["file"], args.priors))
         rmin_tab = float(b["min"])
         rmax_tab = float(b["max"])
         r_vals = data[:, 0]
@@ -284,7 +285,7 @@ for idx, a in enumerate(priors.get("angles", [])):
         angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
     elif a_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(a["file"])
+        data = np.loadtxt(resolve_referenced_path(a["file"], args.priors))
         min_tab = float(a["min"]) # Typically 0.0 radians
         max_tab = float(a["max"]) # Typically pi radians
         angle = espressomd.interactions.TabulatedAngle(
@@ -317,7 +318,7 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
         dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
     elif d_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(d["file"])
+        data = np.loadtxt(resolve_referenced_path(d["file"], args.priors))
         min_tab = float(d.get("min", -np.pi))
         max_tab = float(d.get("max", np.pi))
         dihedral = espressomd.interactions.TabulatedDihedral(

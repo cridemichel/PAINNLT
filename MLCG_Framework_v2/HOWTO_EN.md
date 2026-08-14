@@ -16,7 +16,7 @@
 4. [Atomistic to coarse-grained mapping](#4-atomistic-to-coarse-grained-mapping)
 5. [Reference generalized forces and torques](#5-reference-generalized-forces-and-torques)
 6. [Rigid bodies: masses, inertia, Kabsch alignment, and virtual sites](#6-rigid-bodies-masses-inertia-kabsch-alignment-and-virtual-sites)
-7. [Analytic priors and Direct Boltzmann Inversion](#7-analytic-priors-and-direct-boltzmann-inversion)
+7. [Analytic priors, DBI, and bonded IBI](#7-analytic-priors-dbi-and-bonded-ibi)
 8. [Pair-specific WCA: construction, guardrails, and subtraction](#8-pair-specific-wca-construction-guardrails-and-subtraction)
 9. [Residual force-matching target](#9-residual-force-matching-target)
 10. [Implemented PaiNN architecture](#10-implemented-painn-architecture)
@@ -400,7 +400,7 @@ it is **not** an ML species and must not participate in PaiNN neighbor interacti
 
 ---
 
-# 7. Analytic priors and Direct Boltzmann Inversion
+# 7. Analytic priors, DBI, and bonded IBI
 
 Priors encode stiff/local structure explicitly and reduce what the neural network has to learn.
 Whenever a prior is fitted from an equilibrium distribution, the builder uses a Direct Boltzmann
@@ -552,6 +552,123 @@ mismatches between different analytic implementations. Runtime ESPResSo uses the
 analytic dihedral interaction.
 
 The present TEL22 tutorial priors contain no dihedrals, but the generic framework supports them.
+
+## 7.6 Tabulated bonded priors: initial DBI and iterative IBI
+
+Version 2 now provides a **bonded DBI/IBI** workflow for site-addressable distances, angles, and dihedrals. The implementation is molecule-agnostic: `ibi/` contains no TEL22-specific topology, and the same `(molecule, site)` endpoints are used to evaluate coordinates in the mapped atomistic target dataset and in sampled CG trajectories.
+
+This first IBI layer is intentionally bonded-only. It does **not** yet implement non-bonded/RDF IBI.
+
+### 7.6.1 Declaring inversion groups
+
+A bonded entry in the seed priors can be marked `type="ibi"` or `type="dbi"`:
+
+```json
+{
+  "bonds": [
+    {
+      "name": "backbone",
+      "type": "ibi",
+      "mol_i": 0, "site_i": 0,
+      "mol_j": 1, "site_j": 0
+    }
+  ]
+}
+```
+
+- `type="ibi"` creates an initial Direct Boltzmann Inversion table and updates it iteratively;
+- `type="dbi"` creates the initial table only and keeps it fixed during later iterations;
+- entries in the same bonded category that share a `name` are pooled into one target distribution and share one table;
+- endpoints may address COMs (`site=-1`) or physical CG sites (`site>=0`).
+
+While the **seed dataset** is built, `ibi/dbi` terms are not subtracted; they only declare which geometry is to be inverted. Generated entries are converted to `type="tabulated"` and retain `ibi_mode="ibi"` or `ibi_mode="dbi"`.
+
+### 7.6.2 Initial DBI only
+
+```bash
+python3 ibi/build_dbi_priors.py \
+  --dataset cg_dataset_seed.bin \
+  --priors cg_priors_seed.json \
+  --outdir ibi_priors_dbi \
+  --ibi-config ibi_settings.json
+```
+
+This command uses only coordinates from the binary dataset; residual-force columns do not enter the Boltzmann inversion. Generated table paths are relative to the output priors JSON, so the output directory remains self-contained when moved.
+
+### 7.6.3 Iterative IBI
+
+```bash
+python3 ibi/run_ibi_loop.py \
+  --dataset cg_dataset_seed.bin \
+  --priors cg_priors_seed.json \
+  --config training/cg_model_config.json \
+  --rb_info rigid_bodies_info.json \
+  --pypresso espresso/build/pypresso \
+  --iterations 5 \
+  --outdir ibi_priors \
+  --ibi-config ibi_settings.json
+```
+
+At each iteration the driver:
+
+1. starts from the current DBI/IBI table set;
+2. runs **priors-only NVT** CG sampling with `simulation/run_cg_md.py`, without PaiNN;
+3. discards burn-in and writes a structured NPZ trajectory containing COMs and physical CG sites only; technical pair-specific Morse markers are excluded;
+4. evaluates exactly the same bond/angle/dihedral coordinates used for the target;
+5. applies \(\Delta U=\alpha k_BT\ln[P_i/P_{target}]\) only to `ibi` groups;
+6. leaves `dbi` groups fixed;
+7. writes metrics and the next `cg_priors.json`.
+
+A minimal settings file is:
+
+```json
+{
+  "kT": 2.49,
+  "alpha": 0.25,
+  "simulation": {
+    "dt": 0.0005,
+    "burn_in_steps": 8000,
+    "steps": 40000,
+    "log_interval": 40
+  }
+}
+```
+
+Here `steps` is the sampled production segment after `burn_in_steps`; both values must be multiples of `log_interval`. The self-contained final file is `ibi_priors/cg_priors_final.json`, with final tables under `ibi_priors/final/`.
+
+### 7.6.4 ESPResSo table conventions
+
+Table files have `x energy force` columns, but the third column has interaction-specific semantics:
+
+- `TabulatedDistance`: `force = -dU/dr`;
+- `TabulatedAngle`: `force = +dU/dtheta`, on the exact `0..pi` domain;
+- `TabulatedDihedral`: the column is the ESPResSo **torsional force factor**, not raw `-dU/dphi`; away from the geometric singularities,
+
+\[
+\mathrm{factor}(\phi)=-\frac{dU/d\phi}{\sin\phi}.
+\]
+
+The v1 implementation treated the tabulated dihedral column as ordinary `-dU/dphi`; that convention is deliberately not carried into v2. Dihedral tables span `0..2*pi`. Because the ESPResSo torsional geometry is numerically singular at `phi=0` and `phi=pi`, dihedral targets with substantial probability or steep slopes close to those points require extra care.
+
+Run the explicit runtime/preprocessing parity diagnostic before generating residual targets with IBI tables:
+
+```bash
+espresso/build/pypresso simulation/diagnose_tabulated_prior_parity.py
+```
+
+It must finish with `[PASS]`.
+
+### 7.6.5 Mandatory post-IBI residual rebuild
+
+The final table changes the explicit prior and therefore changes the residual target that PaiNN must learn. **Do not train from the old residual dataset.** Re-run `preprocessing/build_cg_dataset.py` on the original atomistic trajectory using:
+
+```text
+--priors ibi_priors/cg_priors_final.json
+```
+
+Pass 2 then subtracts the same site-aware tabulated bond/angle/dihedral forces and torques used by the runtime. Only this regenerated dataset should be used for residual PaiNN training.
+
+ESPResSo interpolates tabulated energy and force arrays separately. The framework therefore continues to reject strict **NVE certification** by default when explicit tabulated priors are active; IBI sampling is NVT. This is separate from the already certified analytic pre-IBI baseline.
 
 ---
 

@@ -1,0 +1,270 @@
+{
+  "inputs": {
+    "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/tel22_dataset.bin",
+    "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/cg_priors.json",
+    "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification/dt_0p005/energy.csv",
+    "topology": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/tel22_topology.json"
+  },
+  "dataset_metadata": {
+    "num_frames": 51,
+    "num_molecules": 220,
+    "num_total_sites": 820,
+    "box_nm": [
+      7.929174900054932,
+      7.929174900054932,
+      7.929174900054932
+    ],
+    "num_runtime_particles": 1040
+  },
+  "threshold_nm": 0.2,
+  "energy_rows": 201,
+  "rows_at_or_below_threshold": 35,
+  "minimum_observed": {
+    "step": 110,
+    "time_ps": 0.55,
+    "distance_nm": 0.19176387825794816,
+    "logged_type_pair": [
+      4,
+      5
+    ],
+    "logged_type_names": [
+      "CG_DG_B2",
+      "CG_DG_B3"
+    ],
+    "pid_pair": [
+      110,
+      116
+    ],
+    "particle_i": {
+      "pid": 110,
+      "kind": "virtual_site",
+      "runtime_mol_idx": 23,
+      "dataset_mol_id": 23,
+      "site_index": 3,
+      "site_type": 5,
+      "position_frame0_nm": [
+        0.8744702339172363,
+        6.798003673553467,
+        6.731842994689941
+      ],
+      "molecule_site_types": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "site_type_name": "CG_DG_B3",
+      "molecule_residue_name": "DG"
+    },
+    "particle_j": {
+      "pid": 116,
+      "kind": "virtual_site",
+      "runtime_mol_idx": 24,
+      "dataset_mol_id": 24,
+      "site_index": 2,
+      "site_type": 4,
+      "position_frame0_nm": [
+        0.8672103881835938,
+        6.4870829582214355,
+        6.731320858001709
+      ],
+      "molecule_site_types": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "site_type_name": "CG_DG_B2",
+      "molecule_residue_name": "DG"
+    },
+    "topology": {
+      "molecule_pair": [
+        23,
+        24
+      ],
+      "classification": "1-2",
+      "wca_excluded_by_topology": true,
+      "exclusion_reason": "explicit molecule-pair 1-2 WCA exclusion",
+      "direct_bonds": [
+        {
+          "name": "bb_G_G",
+          "type": "harmonic",
+          "mol_i": 23,
+          "mol_j": 24,
+          "site_i": 0,
+          "site_j": 0,
+          "exclude_wca": true
+        }
+      ],
+      "endpoint_angles": []
+    },
+    "wca_pair_present": true,
+    "wca_runtime_expected_active": false,
+    "wca_parameters": {
+      "type_i": 4,
+      "type_j": 5,
+      "sigma_nm": 0.29814796106861213,
+      "epsilon_kjmol": 3.1484156126063936,
+      "cutoff_nm": 0.33465977108033756,
+      "empirical_min": 0.2731916498615001,
+      "empirical_min_source": "exact_streaming_rigid_nonbonded",
+      "histogram_min_nm": 0.2731916498615001,
+      "quantile_percent": 0.1,
+      "q_low_nm": 0.33606051980014434,
+      "r_guard_nm": 0.26772781686427005,
+      "guard_fraction": 0.8,
+      "guard_kbt": 10.0,
+      "physical_guard_margin": 0.98,
+      "cutoff_before_physical_guard_nm": 0.33606051980014434,
+      "physical_cutoff_limit_nm": 0.33465977108033756
+    },
+    "wca_nominal_at_observed_distance": {
+      "inside_cutoff": true,
+      "energy_kjmol": 2337.9152320632584,
+      "force_magnitude_kjmol_nm": 151668.39202435318
+    },
+    "wca_nominal_note": "Counterfactual only: this is the WCA energy/force that the type pair would have if the molecule-pair topology exclusion were absent."
+  },
+  "first_at_or_below_threshold": {
+    "step": 94,
+    "time_ps": 0.47000000000000003,
+    "distance_nm": 0.19944025986158134,
+    "logged_type_pair": [
+      4,
+      5
+    ],
+    "logged_type_names": [
+      "CG_DG_B2",
+      "CG_DG_B3"
+    ],
+    "pid_pair": [
+      110,
+      116
+    ],
+    "particle_i": {
+      "pid": 110,
+      "kind": "virtual_site",
+      "runtime_mol_idx": 23,
+      "dataset_mol_id": 23,
+      "site_index": 3,
+      "site_type": 5,
+      "position_frame0_nm": [
+        0.8744702339172363,
+        6.798003673553467,
+        6.731842994689941
+      ],
+      "molecule_site_types": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "site_type_name": "CG_DG_B3",
+      "molecule_residue_name": "DG"
+    },
+    "particle_j": {
+      "pid": 116,
+      "kind": "virtual_site",
+      "runtime_mol_idx": 24,
+      "dataset_mol_id": 24,
+      "site_index": 2,
+      "site_type": 4,
+      "position_frame0_nm": [
+        0.8672103881835938,
+        6.4870829582214355,
+        6.731320858001709
+      ],
+      "molecule_site_types": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "site_type_name": "CG_DG_B2",
+      "molecule_residue_name": "DG"
+    },
+    "topology": {
+      "molecule_pair": [
+        23,
+        24
+      ],
+      "classification": "1-2",
+      "wca_excluded_by_topology": true,
+      "exclusion_reason": "explicit molecule-pair 1-2 WCA exclusion",
+      "direct_bonds": [
+        {
+          "name": "bb_G_G",
+          "type": "harmonic",
+          "mol_i": 23,
+          "mol_j": 24,
+          "site_i": 0,
+          "site_j": 0,
+          "exclude_wca": true
+        }
+      ],
+      "endpoint_angles": []
+    },
+    "wca_pair_present": true,
+    "wca_runtime_expected_active": false,
+    "wca_parameters": {
+      "type_i": 4,
+      "type_j": 5,
+      "sigma_nm": 0.29814796106861213,
+      "epsilon_kjmol": 3.1484156126063936,
+      "cutoff_nm": 0.33465977108033756,
+      "empirical_min": 0.2731916498615001,
+      "empirical_min_source": "exact_streaming_rigid_nonbonded",
+      "histogram_min_nm": 0.2731916498615001,
+      "quantile_percent": 0.1,
+      "q_low_nm": 0.33606051980014434,
+      "r_guard_nm": 0.26772781686427005,
+      "guard_fraction": 0.8,
+      "guard_kbt": 10.0,
+      "physical_guard_margin": 0.98,
+      "cutoff_before_physical_guard_nm": 0.33606051980014434,
+      "physical_cutoff_limit_nm": 0.33465977108033756
+    },
+    "wca_nominal_at_observed_distance": {
+      "inside_cutoff": true,
+      "energy_kjmol": 1431.4325735610596,
+      "force_magnitude_kjmol_nm": 90166.24026781786
+    },
+    "wca_nominal_note": "Counterfactual only: this is the WCA energy/force that the type pair would have if the molecule-pair topology exclusion were absent."
+  },
+  "short_range_episodes": [
+    {
+      "pid_pair": [
+        110,
+        116
+      ],
+      "samples": 35,
+      "first_time_ps": 0.47000000000000003,
+      "last_time_ps": 0.64,
+      "minimum_distance_nm": 0.19176387825794816,
+      "type_pair": [
+        4,
+        5
+      ],
+      "type_names": [
+        "CG_DG_B2",
+        "CG_DG_B3"
+      ],
+      "molecule_pair": [
+        23,
+        24
+      ],
+      "classification": "1-2",
+      "wca_excluded_by_topology": true,
+      "wca_runtime_expected_active": false
+    }
+  ],
+  "conclusion": "The closest pair is covered by a WCA type prior but that molecule pair is explicitly excluded by topology, so the nominal WCA repulsion is not applied to this contact."
+}

@@ -16,7 +16,9 @@ from framework_utils import (
     ensure_single_rank,
     get_rb_data_by_sites,
     input_hashes,
+    mask_excluded_particle_distances,
     particle_is_virtual,
+    resolve_referenced_path,
     nonconservative_prior_entries,
     rigid_body_quaternion,
     validate_checkpoint,
@@ -48,12 +50,16 @@ parser.add_argument("--no_log", action="store_true", help="Disable energy and tr
 parser.add_argument("--no_vtf", action="store_true", help="Disable VTF trajectory output while keeping the energy log")
 parser.add_argument("--energy_file", type=str, default="energy.csv", help="Energy CSV output path")
 parser.add_argument("--trajectory_file", type=str, default="cg_trajectory.vtf", help="VTF trajectory output path")
+parser.add_argument("--sample_npz", type=str, default=None, help="Structured COM/site trajectory for analysis/IBI")
+parser.add_argument("--sample_start_step", type=int, default=0, help="First logged step included in --sample_npz")
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal in ESPResSo regular decomposition")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
+parser.add_argument("--velocity_seed", type=int, default=314159, help="Seed used by --init_kT")
+parser.add_argument("--thermostat_seed", type=int, default=42, help="Langevin thermostat seed")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
 parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
 parser.add_argument("--allow_missing_model_manifest", action="store_true", help="Allow legacy .pt files without the patched training manifest")
@@ -97,6 +103,12 @@ if args.steps < 0:
     raise ValueError("--steps must be non-negative")
 if args.log_interval <= 0:
     raise ValueError("--log_interval must be positive")
+if args.sample_start_step < 0 or args.sample_start_step > args.steps:
+    raise ValueError("--sample_start_step must lie between 0 and --steps")
+if args.sample_npz and args.sample_start_step % args.log_interval != 0:
+    raise ValueError("--sample_start_step must be a multiple of --log_interval")
+if args.init_kT is not None and args.init_kT <= 0.0:
+    raise ValueError("--init_kT must be positive")
 
 # Plan pair-specific reversible Morse contacts before creating particles.
 # Physical CG-site types remain untouched; explicit contacts are carried by
@@ -129,7 +141,7 @@ system.integrator.set_vv()
 if args.nve:
     system.thermostat.turn_off()
 else:
-    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=args.thermostat_seed)
 
 
 print(f"[INFO] Running {args.steps} integration steps...")
@@ -234,24 +246,37 @@ if args.checkpoint:
                 p.omega_body = omega[i]
 
 if args.init_kT is not None:
-    print(f"[INFO] Initializing velocities to kT={args.init_kT}...")
-    for p in system.part:
-        if not particle_is_virtual(p):
-            mass = p.mass
-            # Translational velocity
-            p.v = np.sqrt(args.init_kT / mass) * np.random.randn(3)
-            # Rotational velocity
-            if any(p.rotation):
-                I = p.rinertia
-                # Only apply to axes that are allowed to rotate
-                omega = np.zeros(3)
-                for axis in range(3):
-                    if p.rotation[axis]:
-                        omega[axis] = np.sqrt(args.init_kT / I[axis]) * np.random.randn()
-                p.omega_body = omega
+    print(f"[INFO] Initializing velocities to kT={args.init_kT} with seed={args.velocity_seed}...")
+    rng = np.random.default_rng(args.velocity_seed)
+    real_particles = [p for p in system.part if not particle_is_virtual(p)]
+    for p in real_particles:
+        mass = float(p.mass)
+        p.v = np.sqrt(args.init_kT / mass) * rng.standard_normal(3)
+        if any(p.rotation):
+            inertia = np.asarray(p.rinertia, dtype=float)
+            omega = np.zeros(3, dtype=float)
+            for axis in range(3):
+                if p.rotation[axis]:
+                    omega[axis] = np.sqrt(args.init_kT / inertia[axis]) * rng.standard_normal()
+            p.omega_body = omega
+
+    # Remove the global translational drift without changing internal thermal motion.
+    total_mass = sum(float(p.mass) for p in real_particles)
+    if total_mass > 0.0:
+        com_velocity = sum(
+            (float(p.mass) * np.asarray(p.v, dtype=float) for p in real_particles),
+            start=np.zeros(3, dtype=float),
+        ) / total_mass
+        for p in real_particles:
+            p.v = np.asarray(p.v, dtype=float) - com_velocity
 
 
 print("[INFO] Setting up WCA exclusions (intra-rigid-body + 1-2/1-3)...")
+
+# Keep the safety-distance diagnostic aligned with the actual ESPResSo
+# nonbonded topology.  Without this mask, close topologically excluded pairs
+# (especially all-site 1-3 exclusions) can falsely trigger min_dist < 0.15 nm.
+diagnostic_nonbonded_excluded_pid_pairs = set()
 
 mol_to_vs = {}
 for (m_idx, s_idx), pid in mol_vs_parts.items():
@@ -281,6 +306,9 @@ for mol_i, mol_j in sorted(wca_one_three_pairs):
         for pid_j in mol_to_vs.get(mol_j, []):
             try:
                 system.part.by_id(pid_i).add_exclusion(system.part.by_id(pid_j))
+                diagnostic_nonbonded_excluded_pid_pairs.add(
+                    (min(int(pid_i), int(pid_j)), max(int(pid_i), int(pid_j)))
+                )
             except Exception:
                 pass
 
@@ -296,6 +324,9 @@ for (mol_i, mol_j), site_pairs in sorted(direct_site_exclusions.items()):
             )
         try:
             system.part.by_id(pid_i).add_exclusion(system.part.by_id(pid_j))
+            diagnostic_nonbonded_excluded_pid_pairs.add(
+                (min(int(pid_i), int(pid_j)), max(int(pid_i), int(pid_j)))
+            )
         except Exception:
             pass
         applied_direct_site_exclusions += 1
@@ -304,6 +335,10 @@ print(
     f"[INFO] Non-bonded topology exclusions active (WCA/type-pair potentials): {len(wca_direct_pairs)} 1-2 molecule pairs "
     f"with {applied_direct_site_exclusions} bonded site-pair exclusions; "
     f"{len(wca_one_three_pairs)} 1-3 all-sites exclusions (policy v3)."
+)
+print(
+    f"[INFO] Safety min-distance diagnostic masks "
+    f"{len(diagnostic_nonbonded_excluded_pid_pairs)} excluded physical-site pairs."
 )
 
 
@@ -347,7 +382,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "morse":
         continue
     elif b_type == "tabulated":
-        data = np.loadtxt(b["file"])
+        data = np.loadtxt(resolve_referenced_path(b["file"], args.priors))
         rmin_tab = float(b["min"])
         rmax_tab = float(b["max"])
         r_vals = data[:, 0]
@@ -381,7 +416,7 @@ for idx, a in enumerate(priors.get("angles", [])):
         angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
     elif a_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(a["file"])
+        data = np.loadtxt(resolve_referenced_path(a["file"], args.priors))
         min_tab = float(a["min"]) # Typically 0.0 radians
         max_tab = float(a["max"]) # Typically pi radians
         angle = espressomd.interactions.TabulatedAngle(
@@ -414,7 +449,7 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
         dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
     elif d_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(d["file"])
+        data = np.loadtxt(resolve_referenced_path(d["file"], args.priors))
         min_tab = float(d.get("min", -np.pi))
         max_tab = float(d.get("max", np.pi))
         dihedral = espressomd.interactions.TabulatedDihedral(
@@ -556,6 +591,9 @@ def log_diagnostics(step):
     mask = mol_ids[:, None] == mol_ids[None, :]
     dist_matrix[mask] = np.inf
     np.fill_diagonal(dist_matrix, np.inf)
+    mask_excluded_particle_distances(
+        dist_matrix, pids, diagnostic_nonbonded_excluded_pid_pairs
+    )
     
     num_species = nn_config["num_species"]
     min_dists = {}
@@ -645,6 +683,26 @@ def stringify_pair(value):
     return ":".join(str(int(v)) for v in value)
 
 
+sample_steps = []
+sample_com = []
+sample_sites = []
+sample_site_keys = sorted(mol_vs_parts)
+if sorted(mol_com_parts) != list(range(num_molecules)):
+    raise RuntimeError("COM particle mapping is not contiguous in molecule-index order")
+
+
+def record_structured_sample(step):
+    if args.sample_npz is None or step < args.sample_start_step:
+        return
+    sample_steps.append(int(step))
+    sample_com.append(np.asarray([
+        system.part.by_id(mol_com_parts[mol]).pos for mol in range(num_molecules)
+    ], dtype=float))
+    sample_sites.append(np.asarray([
+        system.part.by_id(mol_vs_parts[key]).pos for key in sample_site_keys
+    ], dtype=float))
+
+
 def record_state(step, energy_writer, energy_handle, vtf_handle):
     e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml = measure_energies()
     g_dist, g_pair, g_pids, max_f = log_diagnostics(step)
@@ -683,6 +741,7 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
         vtf_handle.write(f"\ntimestep {step}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_handle)
 
+    record_structured_sample(step)
     unsafe = max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15
     return unsafe
 
@@ -752,6 +811,29 @@ with ExitStack() as stack:
             break
 
 if simulation_ok:
+    if args.sample_npz is not None:
+        if not sample_steps:
+            raise RuntimeError("Structured sampling produced no frames")
+        sample_path = os.path.abspath(args.sample_npz)
+        sample_dir = os.path.dirname(sample_path)
+        if sample_dir:
+            os.makedirs(sample_dir, exist_ok=True)
+        np.savez_compressed(
+            sample_path,
+            schema_version=np.asarray(1, dtype=np.int32),
+            complete=np.asarray(1, dtype=np.int8),
+            steps=np.asarray(sample_steps, dtype=np.int64),
+            time_ps=np.asarray(sample_steps, dtype=float) * float(args.dt),
+            com=np.asarray(sample_com, dtype=float),
+            sites=np.asarray(sample_sites, dtype=float),
+            site_molecule=np.asarray([key[0] for key in sample_site_keys], dtype=np.int32),
+            site_index=np.asarray([key[1] for key in sample_site_keys], dtype=np.int32),
+            box=np.asarray(system.box_l, dtype=float),
+        )
+        print(
+            f"[INFO] Structured sampling: {len(sample_steps)} frames written to {sample_path} "
+            f"(start step {sample_steps[0]}, end step {sample_steps[-1]})"
+        )
     print("\n[INFO] Simulation finished successfully.")
 else:
     print("\n[ERROR] Simulation terminated by a safety guardrail.")

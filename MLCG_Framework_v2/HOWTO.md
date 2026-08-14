@@ -15,7 +15,7 @@
 4. [Mapping atomistico → coarse grained](#4-mapping-atomistico--coarse-grained)
 5. [Forze e torque generalizzati di riferimento](#5-forze-e-torque-generalizzati-di-riferimento)
 6. [Rigid body: masse, inerzie, Kabsch e virtual sites](#6-rigid-body-masse-inerzie-kabsch-e-virtual-sites)
-7. [Prior analitici e Direct Boltzmann Inversion](#7-prior-analitici-e-direct-boltzmann-inversion)
+7. [Prior analitici, DBI e IBI bonded](#7-prior-analitici-dbi-e-ibi-bonded)
 8. [WCA pair-specific: costruzione, guardrail e sottrazione](#8-wca-pair-specific-costruzione-guardrail-e-sottrazione)
 9. [Target residuo del force matching](#9-target-residuo-del-force-matching)
 10. [Architettura PaiNN implementata](#10-architettura-painn-implementata)
@@ -388,7 +388,7 @@ La forza sui virtual sites viene trasferita dal meccanismo di virtual sites al c
 
 ---
 
-# 7. Prior analitici e Direct Boltzmann Inversion
+# 7. Prior analitici, DBI e IBI bonded
 
 Il builder esegue un primo pass sulla traiettoria per costruire statistiche geometriche e un secondo pass per sottrarre i prior.
 
@@ -566,6 +566,123 @@ k \approx \frac{1}{\beta\,\mathrm{Var}(\phi)}.
 \]
 
 Nel preprocessing la forza del cosine dihedral è valutata tramite differenza centrale con passo `1e-6 nm`, per evitare mismatch silenziosi di convenzione segno/indice. Se un nuovo sistema usa dihedrals, è raccomandato un test di parity esplicito con ESPResSo.
+
+## 7.6 Prior tabulati bonded: DBI iniziale e IBI iterativa
+
+La v2 supporta ora un workflow **bonded DBI/IBI** per distanze, angoli e diedri site-addressable. Il core resta generico: TEL22 non è codificato nel modulo `ibi/`, e gli stessi endpoint `(mol, site)` usati dal runtime sono usati per estrarre le distribuzioni sia dal dataset atomistico mappato sia dalle traiettorie CG campionate.
+
+Questo primo livello IBI è deliberatamente limitato ai prior bonded. **Non** implementa ancora IBI non-bonded/RDF.
+
+### 7.6.1 Dichiarare i gruppi da invertire
+
+Nel file seed dei prior, un termine bonded può essere marcato con `type="ibi"` oppure `type="dbi"`:
+
+```json
+{
+  "bonds": [
+    {
+      "name": "backbone",
+      "type": "ibi",
+      "mol_i": 0, "site_i": 0,
+      "mol_j": 1, "site_j": 0
+    }
+  ]
+}
+```
+
+- `type="ibi"`: genera il potenziale iniziale mediante Direct Boltzmann Inversion e poi lo aggiorna iterativamente;
+- `type="dbi"`: genera soltanto la tabella iniziale e la mantiene fissa durante le eventuali iterazioni;
+- entry della stessa categoria con lo stesso `name` vengono pooled nella stessa distribuzione target e condividono la stessa tabella;
+- gli endpoint possono essere COM (`site=-1`) oppure siti CG fisici (`site>=0`).
+
+Durante la costruzione del **dataset seed** i termini `ibi/dbi` non vengono sottratti: servono a dichiarare quali coordinate geometriche devono essere invertite. Dopo la generazione, tali entry vengono convertite in `type="tabulated"` e conservano `ibi_mode="ibi"` o `ibi_mode="dbi"`.
+
+### 7.6.2 Generare soltanto la DBI iniziale
+
+```bash
+python3 ibi/build_dbi_priors.py \
+  --dataset cg_dataset_seed.bin \
+  --priors cg_priors_seed.json \
+  --outdir ibi_priors_dbi \
+  --ibi-config ibi_settings.json
+```
+
+Il comando legge esclusivamente le coordinate dal dataset binario; le forze residue contenute nel dataset non entrano nella Boltzmann inversion. Le tabelle prodotte sono referenziate relativamente al JSON dei prior, quindi l'intera directory di output può essere spostata mantenendo intatti i riferimenti.
+
+### 7.6.3 Eseguire l'IBI iterativa
+
+```bash
+python3 ibi/run_ibi_loop.py \
+  --dataset cg_dataset_seed.bin \
+  --priors cg_priors_seed.json \
+  --config training/cg_model_config.json \
+  --rb_info rigid_bodies_info.json \
+  --pypresso espresso/build/pypresso \
+  --iterations 5 \
+  --outdir ibi_priors \
+  --ibi-config ibi_settings.json
+```
+
+Per ogni iterazione il driver:
+
+1. parte dalla DBI corrente;
+2. esegue una simulazione **NVT priors-only**, senza PaiNN, con `simulation/run_cg_md.py`;
+3. scarta il burn-in e salva una traiettoria NPZ strutturata di COM e soli siti CG fisici; i marker tecnici Morse pair-specific non entrano nel campionamento IBI;
+4. ricalcola le stesse coordinate bond/angle/dihedral usate sul target;
+5. applica \(\Delta U=\alpha k_BT\ln[P_i/P_{target}]\) soltanto ai gruppi `ibi`;
+6. lascia invariati i gruppi `dbi`;
+7. scrive metriche e un nuovo `cg_priors.json`.
+
+Un file di configurazione minimale è, per esempio:
+
+```json
+{
+  "kT": 2.49,
+  "alpha": 0.25,
+  "simulation": {
+    "dt": 0.0005,
+    "burn_in_steps": 8000,
+    "steps": 40000,
+    "log_interval": 40
+  }
+}
+```
+
+`steps` indica qui la parte produttiva campionata dopo `burn_in_steps`; entrambi devono essere multipli di `log_interval`. L'output finale auto-consistente è `ibi_priors/cg_priors_final.json`, con le tabelle definitive sotto `ibi_priors/final/`.
+
+### 7.6.4 Convenzioni delle tabelle ESPResSo
+
+Le tre colonne dei file sono `x energy force`, ma la terza colonna non ha la stessa semantica per ogni interazione:
+
+- `TabulatedDistance`: `force = -dU/dr`;
+- `TabulatedAngle`: `force = +dU/dtheta`, su dominio esatto `0..pi`;
+- `TabulatedDihedral`: la colonna è il **fattore torsionale ESPResSo**, non il semplice `-dU/dphi`; lontano dalle singolarità geometriche vale
+
+\[
+\mathrm{factor}(\phi)=-\frac{dU/d\phi}{\sin\phi}.
+\]
+
+La v1 trattava il diedro tabulato come se la terza colonna fosse sempre `-dU/dphi`; questa convenzione non viene portata nella v2. Le tabelle dihedrali coprono `0..2*pi`. Poiché la geometria ESPResSo è numericamente singolare a `phi=0` e `phi=pi`, un target dihedrale con forte peso o forte pendenza in prossimità di quei punti richiede particolare cautela.
+
+Il controllo runtime/preprocessing dedicato è:
+
+```bash
+espresso/build/pypresso simulation/diagnose_tabulated_prior_parity.py
+```
+
+Deve terminare con `[PASS]` prima di usare tabelle IBI per generare target residui.
+
+### 7.6.5 Passaggio obbligatorio dopo l'IBI
+
+La tabella finale cambia il prior esplicito e quindi cambia il target che PaiNN deve apprendere. **Non usare direttamente il vecchio dataset residuale.** Rilanciare `preprocessing/build_cg_dataset.py` sulla traiettoria atomistica originale usando:
+
+```text
+--priors ibi_priors/cg_priors_final.json
+```
+
+Il Pass 2 sottrae allora, per bond/angle/dihedral tabulati, le stesse forze e gli stessi torque site-aware applicati dal runtime. Solo il dataset così rigenerato deve essere usato per il training residuale.
+
+ESPResSo interpola separatamente le colonne energia e forza delle tabelle. Per questo il framework continua a rifiutare per default una **certificazione NVE stretta** quando sono attivi prior tabulati; l'IBI viene campionata in NVT. Questa limitazione è distinta dalla baseline pre-IBI analitica già certificata.
 
 ---
 
