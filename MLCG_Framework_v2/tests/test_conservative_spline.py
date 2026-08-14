@@ -30,6 +30,7 @@ from convert_to_conservative_spline import convert  # noqa: E402
 from validate_conservative_spline import validate  # noqa: E402
 from framework_utils import nonconservative_prior_entries  # noqa: E402
 from residual_input_provenance import referenced_prior_artifacts  # noqa: E402
+from conservative_spline_runtime import create_conservative_spline_interaction  # noqa: E402
 
 
 def fd_force(positions, energy_fn, eps=1.0e-7):
@@ -124,6 +125,95 @@ class ConservativeSplineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "bond\\+angle only"):
                 convert(priors, root / "out")
 
+    def test_runtime_loader_rejects_nonuniform_grid(self):
+        class DummySpline:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+        class DummyInteractions:
+            ConservativeSplineDistance = DummySpline
+            ConservativeSplineAngle = DummySpline
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            table = root / "bad.dat"
+            np.savetxt(table, np.asarray([
+                [0.4, 1.0, -1.0],
+                [0.9, 0.0, 0.0],
+                [1.5, 1.0, 1.0],
+            ]))
+            priors = root / "cg_priors.json"
+            priors.write_text("{}")
+            entry = {
+                "type": "conservative_spline",
+                "file": table.name,
+                "min": 0.4,
+                "max": 1.5,
+            }
+            with self.assertRaisesRegex(ValueError, "uniform"):
+                create_conservative_spline_interaction(
+                    DummyInteractions, entry, kind="bond", priors_path=priors
+                )
+
+    def test_runtime_loader_rejects_grid_range_mismatch(self):
+        class DummySpline:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+        class DummyInteractions:
+            ConservativeSplineDistance = DummySpline
+            ConservativeSplineAngle = DummySpline
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            table = root / "bad_range.dat"
+            x = np.linspace(0.4, 1.6, 4)
+            np.savetxt(table, np.column_stack((x, x * 0.0, x * 0.0)))
+            priors = root / "cg_priors.json"
+            priors.write_text("{}")
+            entry = {
+                "type": "conservative_spline",
+                "file": table.name,
+                "min": 0.4,
+                "max": 1.5,
+            }
+            with self.assertRaisesRegex(ValueError, "last x"):
+                create_conservative_spline_interaction(
+                    DummyInteractions, entry, kind="bond", priors_path=priors
+                )
+
+    def test_runtime_loader_accepts_valid_uniform_grid(self):
+        class DummySpline:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+        class DummyInteractions:
+            ConservativeSplineDistance = DummySpline
+            ConservativeSplineAngle = DummySpline
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            table = root / "ok.dat"
+            x = np.linspace(0.4, 1.6, 4)
+            u = (x - 1.0) ** 2
+            du = 2.0 * (x - 1.0)
+            np.savetxt(table, np.column_stack((x, u, du)))
+            priors = root / "cg_priors.json"
+            priors.write_text("{}")
+            entry = {
+                "type": "conservative_spline",
+                "file": table.name,
+                "min": float(x[0]),
+                "max": float(x[-1]),
+            }
+            interaction = create_conservative_spline_interaction(
+                DummyInteractions, entry, kind="bond", priors_path=priors
+            )
+            self.assertEqual(interaction.kwargs["min"], float(x[0]))
+            self.assertEqual(interaction.kwargs["max"], float(x[-1]))
+            self.assertEqual(len(interaction.kwargs["energy"]), len(x))
+            self.assertEqual(len(interaction.kwargs["derivative"]), len(x))
+
     def test_conservative_splines_are_not_flagged_as_nonconservative_tables(self):
         p = {"bonds":[{"type":"conservative_spline"}], "angles":[{"type":"conservative_spline"}]}
         self.assertEqual(nonconservative_prior_entries(p), [])
@@ -174,6 +264,33 @@ class ConservativeSplineTests(unittest.TestCase):
             self.assertEqual(installer.install(root, header), [])
             installer.check(root, header)
             self.assertEqual(snapshot, {rel: (root / rel).read_text() for rel in files})
+
+    def test_installer_repairs_missing_python_default_params(self):
+        installer_path = ROOT / "simulation/espresso_plugin/install_conservative_spline_bond.py"
+        spec = importlib.util.spec_from_file_location("install_conservative_spline_defaults", installer_path)
+        installer = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(installer)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            interactions = Path(tmpdir) / "interactions.py"
+            interactions.write_text(
+                "@script_interface_register\n"
+                "class ConservativeSplineDistance(BondedInteraction):\n"
+                "    _so_name = \"Interactions::ConservativeSplineDistanceBond\"\n"
+                "    _type_number = BONDED_IA.CONSERVATIVE_SPLINE_DISTANCE\n\n\n"
+                "@script_interface_register\n"
+                "class ConservativeSplineAngle(BondedInteraction):\n"
+                "    _so_name = \"Interactions::ConservativeSplineAngleBond\"\n"
+                "    _type_number = BONDED_IA.CONSERVATIVE_SPLINE_ANGLE\n\n\n"
+                "@script_interface_register\n"
+                "class BondedInteractions(ScriptObjectMap):\n"
+                "    pass\n"
+            )
+            self.assertTrue(installer._ensure_python_default_params(interactions))
+            text = interactions.read_text()
+            self.assertEqual(text.count("def get_default_params(self):"), 2)
+            self.assertEqual(text.count("return {}"), 2)
+            self.assertFalse(installer._ensure_python_default_params(interactions))
 
     def test_function_locator_ignores_later_call_sites(self):
         installer_path = ROOT / "simulation/espresso_plugin/install_conservative_spline_bond.py"

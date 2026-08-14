@@ -684,6 +684,37 @@ Il Pass 2 sottrae allora, per bond/angle/dihedral tabulati, le stesse forze e gl
 
 ESPResSo interpola separatamente le colonne energia e forza delle tabelle. Per questo il framework continua a rifiutare per default una **certificazione NVE stretta** quando sono attivi prior tabulati; l'IBI viene campionata in NVT. Questa limitazione è distinta dalla baseline pre-IBI analitica già certificata.
 
+### 7.6.6 Conversione IBI conservativa per NVE stretta
+
+Per bond e angle convergenti il framework dispone anche della rappresentazione
+`type="conservative_spline"`.  La sorgente di verità è una sola spline cubica
+Hermite dell'energia `U(q)`; ESPResSo calcola `dU/dq` dallo stesso polinomio e
+quindi non interpola più energia e forza come due tabelle indipendenti.  Il
+supporto certificato corrente è **bond + angle**; i dihedrals tabulati restano
+fuori da questa fase conservativa.
+
+Nel tutorial TEL22 IBI la sequenza è:
+
+```bash
+cd tutorials/tel22_IBI
+bash ./20_install_conservative_spline.sh
+bash ./21_convert_best_ibi_to_conservative.sh
+bash ./22_validate_conservative_spline.sh
+```
+
+`20_install_conservative_spline.sh` ricompila ESPResSo, verifica i binding
+Python e lancia uno smoke test sintetico che confronta le forze runtime con
+`-grad U` ottenuto per differenze finite direttamente dall'energia bonded di
+ESPResSo.  `22_validate_conservative_spline.sh` aggiunge il gate sulle tabelle
+reali convertite: coerenza `U/dU_dq` e parità energia/forze tra preprocessing e
+runtime per ogni spline unica.
+
+Il superamento di questi gate non rende valido il vecchio modello PaiNN: i
+prior espliciti sono cambiati.  Occorre ricostruire il dataset residuale usando
+**esattamente** il `cg_priors.json` conservativo, riaddestrare PaiNN, ripetere i
+controlli strutturali matched e solo dopo eseguire la certificazione NVE stretta
+con scaling di Velocity-Verlet e drift su finestra lunga.
+
 ---
 
 # 8. WCA pair-specific: costruzione, guardrail e sottrazione

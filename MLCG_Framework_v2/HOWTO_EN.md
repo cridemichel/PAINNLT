@@ -670,6 +670,37 @@ Pass 2 then subtracts the same site-aware tabulated bond/angle/dihedral forces a
 
 ESPResSo interpolates tabulated energy and force arrays separately. The framework therefore continues to reject strict **NVE certification** by default when explicit tabulated priors are active; IBI sampling is NVT. This is separate from the already certified analytic pre-IBI baseline.
 
+### 7.6.6 Conservative IBI conversion for strict NVE
+
+For converged bond and angle priors the framework also supports
+`type="conservative_spline"`.  A single cubic-Hermite energy spline `U(q)` is
+the source of truth; ESPResSo obtains `dU/dq` from that same polynomial instead
+of interpolating energy and force as independent tables.  The currently
+certified scope is **bond + angle**; tabulated dihedrals are deliberately outside
+this conservative phase.
+
+For the TEL22 IBI tutorial run:
+
+```bash
+cd tutorials/tel22_IBI
+bash ./20_install_conservative_spline.sh
+bash ./21_convert_best_ibi_to_conservative.sh
+bash ./22_validate_conservative_spline.sh
+```
+
+`20_install_conservative_spline.sh` rebuilds ESPResSo, checks the Python
+bindings, and runs a synthetic runtime smoke test that compares ESPResSo forces
+with `-grad U` obtained by finite differences of ESPResSo's own bonded energy.
+`22_validate_conservative_spline.sh` then gates the actual converted tables on
+`U/dU_dq` consistency and preprocessing/runtime energy-force parity for every
+unique conservative spline.
+
+Passing these gates does not make the old PaiNN model valid for the new prior:
+the explicit Hamiltonian has changed.  Rebuild the residual dataset against the
+**exact** conservative `cg_priors.json`, retrain PaiNN, repeat the matched
+structural checks, and only then run strict NVE timestep-scaling and long-window
+drift certification.
+
 ---
 
 # 8. Pair-specific WCA: construction, guardrails, and subtraction

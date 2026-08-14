@@ -30,9 +30,33 @@ def create_conservative_spline_interaction(espressomd_interactions, entry, *, ki
         raise ValueError(f"Invalid conservative spline file: {path}")
     if str(entry.get("spline_schema", "pchip_hermite_v1")) != "pchip_hermite_v1":
         raise ValueError(f"Unsupported conservative spline schema in {path}")
+
+    x = np.asarray(data[:, 0], dtype=np.float64)
+    energy = np.asarray(data[:, 1], dtype=np.float64)
+    derivative = np.asarray(data[:, 2], dtype=np.float64)
+    if not (np.all(np.isfinite(x)) and np.all(np.isfinite(energy)) and np.all(np.isfinite(derivative))):
+        raise ValueError(f"Conservative spline contains NaN/Inf: {path}")
+    spacing = np.diff(x)
+    if np.any(spacing <= 0.0):
+        raise ValueError(f"Conservative spline grid must be strictly increasing: {path}")
+    if not np.allclose(spacing, spacing[0], rtol=1.0e-10, atol=1.0e-12):
+        raise ValueError(f"Conservative spline grid must be uniform: {path}")
+
+    minimum = float(entry["min"])
+    maximum = float(entry["max"])
+    if not maximum > minimum:
+        raise ValueError(f"Invalid conservative spline range [{minimum}, {maximum}]: {path}")
+    if not np.isclose(x[0], minimum, rtol=0.0, atol=1.0e-10):
+        raise ValueError(f"Spline first x={x[0]} disagrees with prior min={minimum}: {path}")
+    if not np.isclose(x[-1], maximum, rtol=0.0, atol=1.0e-10):
+        raise ValueError(f"Spline last x={x[-1]} disagrees with prior max={maximum}: {path}")
+    if kind == "angle":
+        if not np.isclose(minimum, 0.0, atol=1.0e-12) or not np.isclose(maximum, np.pi, atol=1.0e-10):
+            raise ValueError(f"Conservative angle spline must span exactly 0..pi: {path}")
+
     return cls(
-        min=float(entry["min"]),
-        max=float(entry["max"]),
-        energy=np.asarray(data[:, 1], dtype=float).tolist(),
-        derivative=np.asarray(data[:, 2], dtype=float).tolist(),
+        min=minimum,
+        max=maximum,
+        energy=energy.tolist(),
+        derivative=derivative.tolist(),
     )

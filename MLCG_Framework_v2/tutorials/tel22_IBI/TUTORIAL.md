@@ -423,6 +423,13 @@ Install the ESPResSo extension and rebuild once:
 bash ./20_install_conservative_spline.sh
 ```
 
+Step 20 now finishes with a synthetic `pypresso` runtime smoke test for both
+`ConservativeSplineDistance` and `ConservativeSplineAngle`.  The smoke test is
+independent of any IBI output and verifies directly in ESPResSo that the bonded
+force is the negative Cartesian finite-difference gradient of the bonded energy.
+Do not proceed if either the binding check or this conservative runtime check
+fails.
+
 Then convert the frozen best IBI prior set without modifying it:
 
 ```bash
