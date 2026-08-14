@@ -1,0 +1,18 @@
+{
+  "energy_conservation_certified": false,
+  "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_ml_ab_validation/ibi_only/energy.csv",
+  "final_step": 18000,
+  "final_time_ps": 9.0,
+  "max_force": 1326.4771239426793,
+  "max_kinetic_energy": 1998.5526324261402,
+  "max_torque": 446.0927788815719,
+  "min_distance_nm": 0.23064852095457306,
+  "mode": "nvt_runtime_smoke",
+  "note": "NVT stability diagnostic only. Total-energy drift is not a certification metric, and tabulated priors are not treated as an NVE-conservative representation.",
+  "pass": true,
+  "samples": 181,
+  "schema_version": 1,
+  "total_energy_max": -6097.849612705391,
+  "total_energy_min": -6181.235972753899,
+  "total_energy_span": 83.38636004850741
+}

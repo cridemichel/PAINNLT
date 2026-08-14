@@ -3,6 +3,11 @@ from MDAnalysis.exceptions import NoDataError
 import numpy as np
 
 from geometry_utils import diagonalize_inertia_tensor, minimum_image_distance_matrix
+from conservative_spline import (
+    conservative_angle_forces,
+    conservative_distance_forces,
+    load_conservative_spline,
+)
 from prior_kernels import (
     load_tabulated_prior,
     switched_morse_radial_force_array,
@@ -1372,11 +1377,26 @@ tabulated_dihedral_tables = {
     for idx, d in enumerate(derived_priors.get("dihedrals", []))
     if str(d.get("type", "cosine")).lower() == "tabulated"
 }
+conservative_bond_tables = {
+    idx: load_conservative_spline(b, kind="bond", priors_path=table_reference_path)
+    for idx, b in enumerate(derived_priors.get("bonds", []))
+    if str(b.get("type", "harmonic")).lower() == "conservative_spline"
+}
+conservative_angle_tables = {
+    idx: load_conservative_spline(a, kind="angle", priors_path=table_reference_path)
+    for idx, a in enumerate(derived_priors.get("angles", []))
+    if str(a.get("type", "harmonic")).lower() == "conservative_spline"
+}
 if tabulated_bond_tables or tabulated_angle_tables or tabulated_dihedral_tables:
     print(
         "[INFO] Tabulated bonded subtraction: "
         f"{len(tabulated_bond_tables)} bonds, {len(tabulated_angle_tables)} angles, "
         f"{len(tabulated_dihedral_tables)} dihedrals"
+    )
+if conservative_bond_tables or conservative_angle_tables:
+    print(
+        "[INFO] Conservative spline bonded subtraction: "
+        f"{len(conservative_bond_tables)} bonds, {len(conservative_angle_tables)} angles"
     )
 
 # Diagnostics on physical frames only.  These are intentionally collected
@@ -1717,6 +1737,20 @@ with open(args.output, "wb") as f:
                     res_torques[j] -= np.cross(r_rel_j, f_j)
                 continue
 
+            if b_type == "conservative_spline":
+                f_i, f_j = conservative_distance_forces(
+                    pos_i, pos_j, box_dim, conservative_bond_tables[b_idx]
+                )
+                res_forces[i] -= f_i
+                res_forces[j] -= f_j
+                if site_i != -1:
+                    r_rel_i = mic_vector(frame_centers[i], pos_i, box_dim)
+                    res_torques[i] -= np.cross(r_rel_i, f_i)
+                if site_j != -1:
+                    r_rel_j = mic_vector(frame_centers[j], pos_j, box_dim)
+                    res_torques[j] -= np.cross(r_rel_j, f_j)
+                continue
+
             if b_type == "harmonic":
                 k, r0 = b["k"], b["r0"]
                 f_scalar = - k * (r - r0)
@@ -1792,6 +1826,21 @@ with open(args.output, "wb") as f:
             if a_type == "tabulated":
                 f_i, f_j, f_k = tabulated_angle_forces(
                     pos_i, pos_j, pos_k, box_dim, tabulated_angle_tables[a_idx]
+                )
+                res_forces[i] -= f_i
+                res_forces[j] -= f_j
+                res_forces[k_idx] -= f_k
+                if site_i != -1:
+                    res_torques[i] -= np.cross(mic_vector(frame_centers[i], pos_i, box_dim), f_i)
+                if site_j != -1:
+                    res_torques[j] -= np.cross(mic_vector(frame_centers[j], pos_j, box_dim), f_j)
+                if site_k != -1:
+                    res_torques[k_idx] -= np.cross(mic_vector(frame_centers[k_idx], pos_k, box_dim), f_k)
+                continue
+
+            if a_type == "conservative_spline":
+                f_i, f_j, f_k = conservative_angle_forces(
+                    pos_i, pos_j, pos_k, box_dim, conservative_angle_tables[a_idx]
                 )
                 res_forces[i] -= f_i
                 res_forces[j] -= f_j

@@ -385,3 +385,70 @@ The structural L1 comparison is diagnostic and does not impose a universal
 threshold in the generic core.  Likewise this NVT smoke run is **not** an NVE
 energy-conservation certification: ESPResSo tabulated bonded interactions use
 separately interpolated energy and force columns.
+
+### Matched IBI-only vs IBI+PaiNN structural A/B gate
+
+After `18_validate_postibi_runtime.sh` has produced a provenance-validated equilibrated checkpoint, run:
+
+```bash
+OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+```
+
+The default matched test uses the same checkpoint, Langevin seed, timestep, and sampling schedule in both branches. Each branch receives 1 ps of branch-specific NVT burn-in followed by 8 ps of structural production. Branch A retains the model in checkpoint/model provenance but disables PaiNN forces; branch B activates the same PaiNN model. The comparison report is written to `ibi_ml_ab_validation/ab_structure_comparison.json`.
+
+Longer production can be requested without changing source code, for example:
+
+```bash
+AB_PRODUCTION_PS=16 OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+```
+
+This A/B test is a structural diagnostic before converting converged IBI tables to a conservative spline representation. It does not make an NVE conservation claim for explicit tabulated priors.
+
+### Phase 2: conservative IBI spline representation
+
+Once the tabulated IBI priors have passed structural validation, convert their
+**energy** columns into a single-source conservative cubic-Hermite
+representation before attempting strict NVE certification. The converter fits a
+shape-preserving PCHIP to `U(q)` and stores `q, U(q), dU/dq`; the ESPResSo
+plugin evaluates energy and force from that same cubic polynomial rather than
+from independently interpolated columns.
+
+This first conservative implementation intentionally certifies **bond and angle
+IBI priors only**. A tabulated dihedral causes conversion to fail closed until a
+separate torsional endpoint/singularity convention is certified.
+
+Install the ESPResSo extension and rebuild once:
+
+```bash
+bash ./20_install_conservative_spline.sh
+```
+
+Then convert the frozen best IBI prior set without modifying it:
+
+```bash
+bash ./21_convert_best_ibi_to_conservative.sh
+```
+
+The output is written separately under `ibi_conservative/`, including
+`cg_priors.json` and `conversion_report.json`. The report records SHA256 hashes
+of the source and converted artifacts plus dense-grid energy/force fidelity
+metrics.
+
+Validate the exact converted tables:
+
+```bash
+bash ./22_validate_conservative_spline.sh
+```
+
+This performs two hard consistency checks: finite-difference verification of
+`dU/dq` against the same Hermite energy spline and ESPResSo runtime versus
+preprocessing force/energy parity for every unique converted bond/angle table.
+The original tabulated-to-spline fidelity metrics remain diagnostic because a
+nonzero force change is expected when replacing independently interpolated
+energy/force columns by a genuinely conservative representation.
+
+Passing this gate does **not** yet certify the final PaiNN Hamiltonian. The
+residual dataset must next be rebuilt against `ibi_conservative/cg_priors.json`,
+PaiNN must be retrained on that exact residual target, the matched structural
+A/B diagnostic should be repeated, and only then should strict NVE timestep
+scaling and long-window drift be measured.

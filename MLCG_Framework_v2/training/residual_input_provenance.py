@@ -51,10 +51,11 @@ def referenced_prior_artifacts(priors_path: str | Path) -> dict[str, str]:
     hashes = {str(priors): sha256_file(priors)}
     for key in ("bonds", "angles", "dihedrals"):
         for idx, entry in enumerate(data.get(key, [])):
-            if str(entry.get("type", "")).lower() != "tabulated":
+            entry_type = str(entry.get("type", "")).lower()
+            if entry_type not in {"tabulated", "conservative_spline"}:
                 continue
             if "file" not in entry:
-                raise ValueError(f"Tabulated {key}[{idx}] is missing 'file'")
+                raise ValueError(f"Referenced {entry_type} {key}[{idx}] is missing 'file'")
             table = Path(str(entry["file"])).expanduser()
             if not table.is_absolute():
                 table = priors.parent / table

@@ -21,6 +21,8 @@ from framework_utils import (
     wca_direct_bonded_site_exclusions,
 )
 
+from conservative_spline_runtime import create_conservative_spline_interaction
+
 from espresso_interactions import (
     configure_pair_specific_morse,
     create_pair_specific_morse_markers,
@@ -261,6 +263,10 @@ for idx, b in enumerate(priors.get("bonds", [])):
         bond = espressomd.interactions.TabulatedDistance(
             min=rmin_tab, max=rmax_tab, energy=energy, force=force
         )
+    elif b_type == "conservative_spline":
+        bond = create_conservative_spline_interaction(
+            espressomd.interactions, b, kind="bond", priors_path=args.priors
+        )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
         continue
@@ -290,6 +296,10 @@ for idx, a in enumerate(priors.get("angles", [])):
         max_tab = float(a["max"]) # Typically pi radians
         angle = espressomd.interactions.TabulatedAngle(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    elif a_type == "conservative_spline":
+        angle = create_conservative_spline_interaction(
+            espressomd.interactions, a, kind="angle", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown angle type: {a_type}")
