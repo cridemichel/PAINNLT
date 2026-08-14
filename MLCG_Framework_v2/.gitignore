@@ -33,3 +33,5 @@ rigid_bodies_info.json
 *_runs/
 output/
 wandb/
+
+**/__pycache__
