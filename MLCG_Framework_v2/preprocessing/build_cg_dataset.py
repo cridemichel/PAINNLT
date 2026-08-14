@@ -129,7 +129,7 @@ if MORSE_TYPE_PAIRS and any(
     for b in BONDS
 ):
     print(
-        "[WARNING] Topology enables both pair-specific COM Morse contacts and "
+        "[WARNING] Topology enables both pair-specific Morse contacts and "
         "site type-pair Morse interactions. The priors are additive; verify that "
         "this is intentional and not double counting."
     )

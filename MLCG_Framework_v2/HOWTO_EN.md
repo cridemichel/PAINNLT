@@ -473,20 +473,23 @@ The framework exposes **two selection modes** that share this same potential.
 
 ### 7.3.1 Pair-specific Morse
 
-Explicit contacts remain in the `bonds` list with `type="morse"` and COM-COM coordinates (`site_i=site_j=-1` or omitted):
+Explicit contacts remain in the `bonds` list with `type="morse"`. Each endpoint is addressed as `(mol, site)`: `site=-1` selects the rigid-body COM, while `site>=0` selects the corresponding CG site. `COM<->COM`, `COM<->site`, and `site<->site` contacts are therefore supported:
 
 ```json
 {
-  "mol_i": 1, "mol_j": 7,
+  "mol_i": 1, "site_i": 0,
+  "mol_j": 7, "site_j": 2,
   "type": "morse",
   "D": 50.0, "a": 0.3, "r0": 1.57,
   "r_switch": 11.64, "r_cut": 15.0
 }
 ```
 
-These terms are **pair-specific physically**, but are not bonded in ESPResSo bookkeeping. The runtime assigns dedicated technical COM types to participating molecules and configures the interaction through `system.non_bonded_inter[type_i,type_j]`. Physical CG virtual-site types are unchanged, so PaiNN sees the same species as before. Pair-specific COM types are placed on the N-square side of the hybrid decomposition so a long COM cutoff does not inflate the short-range WCA/PaiNN cells.
+These terms are **pair-specific physically**, but are not bonded in ESPResSo bookkeeping. The runtime must not change the physical `particle.type` of a CG site because that value identifies the PaiNN species and the WCA/type-pair interactions. Instead, every endpoint used by explicit Morse receives a **coincident technical virtual marker site**. The marker is attached to the same COM, carries a dedicated ESPResSo type outside the ML-species range, and is used only to dispatch the non-bonded Morse. A force on the marker is transferred to the rigid body at the selected endpoint position, so an off-COM site also generates the correct torque. Pair-specific marker types are placed on the N-square side of the hybrid decomposition so a long explicit-contact cutoff does not inflate the short-range WCA/PaiNN cells.
 
-For backward compatibility, pair-specific contacts retain a 15 nm default `r_cut`; if `r_switch` is omitted it is placed 75% of the way from `r0` to `r_cut`. `exclude_wca` defaults to `false`: a tertiary Morse contact is not covalent connectivity and does not create a WCA exclusion.
+Markers are not physical CG sites: PaiNN does not see them, and WCA/type-pair Morse remains configured on the original physical sites. Pair-specific Morse therefore adds to those physical terms without creating implicit exclusions. Markers do belong to the ESPResSo particle list: runtime checkpoints and VTF output contain them as technical particles with `type >= num_species+2`; analyses that want only physical CG sites should filter `type < num_species`. Changing pair-specific endpoints therefore requires regenerating the checkpoint.
+
+For backward compatibility, pair-specific contacts retain a 15 nm default `r_cut`; if `r_switch` is omitted it is placed 75% of the way from `r0` to `r_cut`. Omitted `site_i/site_j` fields mean `-1`, so existing COM-COM topologies remain valid. `exclude_wca` defaults to `false`: a tertiary Morse contact is not covalent connectivity and does not create a WCA exclusion.
 
 ### 7.3.2 Type-pair Morse
 
@@ -502,13 +505,13 @@ Transferable bead-type attractions use the top-level `morse_type_pairs` section:
 ]
 ```
 
-`type_i` and `type_j` are the **physical CG site types** from `mapping.site_types`, not technical COM types. One record applies to every non-excluded site pair carrying those types, using ordinary ESPResSo `non_bonded_inter[type_i,type_j]` semantics. `r_cut` is mandatory for this mode because it contributes directly to the regular neighbor-search cutoff; `r_switch` is optional and uses the same 75% default.
+`type_i` and `type_j` are the **physical CG site types** from `mapping.site_types`, not the technical marker types used by pair-specific contacts. One record applies to every non-excluded site pair carrying those types, using ordinary ESPResSo `non_bonded_inter[type_i,type_j]` semantics. `r_cut` is mandatory for this mode because it contributes directly to the regular neighbor-search cutoff; `r_switch` is optional and uses the same 75% default.
 
 ESPResSo particle exclusions suppress all non-bonded potentials, not only WCA. Type-pair Morse is therefore excluded intra-rigid-body, on explicitly excluded 1-2 site pairs, and on 1-3 pairs excluded by WCA policy v3. Preprocessing applies exactly the same mask when subtracting the prior from reference forces and torques.
 
 ### 7.3.3 Coexistence and double counting
 
-Both modes may coexist, but they are **additive**. If a molecule pair has a pair-specific COM contact while its CG site types are also covered by a type-pair Morse entry, both contributions enter the Hamiltonian. This can be intentional, but should not happen accidentally. Use pair-specific Morse for native/topological/tertiary contacts and type-pair Morse for generic transferable bead-type attractions.
+Both modes may coexist, but they are **additive**. If an explicit endpoint pair has a pair-specific contact while the corresponding physical sites are also covered by a type-pair Morse entry, both contributions enter the Hamiltonian. This can be intentional, but should not happen accidentally. Use pair-specific Morse for native/topological/tertiary contacts and type-pair Morse for generic transferable bead-type attractions.
 
 For both modes, the prior subtracted during preprocessing must match the runtime interaction exactly. After changing Morse priors, regenerate dataset/priors, retrain the residual model, re-equilibrate, and repeat NVE certification.
 
@@ -1366,7 +1369,7 @@ name
 exclude_wca
 ```
 
-`harmonic` and `fene` represent structural bonded connectivity. A `type="morse"` record instead denotes a **pair-specific COM-COM Morse contact** that the runtime converts into a selective non-bonded interaction. Morse fields are:
+`harmonic` and `fene` represent structural bonded connectivity. A `type="morse"` record instead denotes a **pair-specific Morse contact between explicit endpoints** that the runtime converts into a selective non-bonded interaction. Morse fields are:
 
 ```text
 D, a, r0
@@ -1374,7 +1377,7 @@ r_switch   # optional
 r_cut      # optional for pair-specific mode
 ```
 
-Pair-specific Morse requires COM selection (`site_i/site_j=-1` or omitted) and defaults to `exclude_wca=false`. The switched kernel is exactly zero at and beyond `r_cut`.
+For pair-specific Morse, `site_i/site_j=-1` (or omitted) select the COM, while values `>=0` select CG/virtual sites of the corresponding molecule. The runtime uses coincident technical virtual markers without changing the physical site types; `exclude_wca` defaults to `false`. The switched kernel is exactly zero at and beyond `r_cut`.
 
 ## 19.7 `morse_type_pairs`
 

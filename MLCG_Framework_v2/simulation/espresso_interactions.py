@@ -106,15 +106,20 @@ def _normalize_switched_morse_parameters(
 
 
 def _normalize_morse_contact(prior: dict[str, Any], index: int) -> dict[str, Any]:
+    """Normalize one explicit pair-specific Morse contact.
+
+    ``site=-1`` addresses the rigid-body COM; non-negative indices address the
+    corresponding CG site.  Site existence is validated later against the
+    particles created from the dataset, where the number of sites is known.
+    """
     mol_i = int(prior["mol_i"])
     mol_j = int(prior["mol_j"])
     site_i = int(prior.get("site_i", -1))
     site_j = int(prior.get("site_j", -1))
-    if site_i != -1 or site_j != -1:
+    if site_i < -1 or site_j < -1:
         raise ValueError(
-            f"Morse bond[{index}] is site-specific ({mol_i}:{site_i} <-> {mol_j}:{site_j}). "
-            "The reversible pair-specific Morse runtime currently supports COM-COM contacts only; "
-            "refusing to silently change the selected particle pair."
+            f"Morse bond[{index}] uses invalid site indices {site_i}, {site_j}; "
+            "use -1 for COM or a non-negative CG-site index"
         )
     if mol_i < 0 or mol_j < 0 or mol_i == mol_j:
         raise ValueError(
@@ -127,7 +132,9 @@ def _normalize_morse_contact(prior: dict[str, Any], index: int) -> dict[str, Any
     return {
         "index": index,
         "mol_i": mol_i,
+        "site_i": site_i,
         "mol_j": mol_j,
+        "site_j": site_j,
         **params,
     }
 
@@ -138,7 +145,7 @@ def prepare_type_pair_morse(
     """Normalize broad non-bonded Morse interactions selected by CG site type.
 
     ``morse_type_pairs`` uses the physical CG site types 0..num_species-1.
-    Unlike pair-specific COM contacts, one entry applies to every non-excluded
+    Unlike pair-specific explicit contacts, one entry applies to every non-excluded
     site pair carrying the selected types, exactly following ESPResSo's normal
     ``non_bonded_inter[type_i, type_j]`` semantics.
     """
@@ -211,64 +218,117 @@ def max_type_pair_morse_cutoff(interactions: list[dict[str, Any]]) -> float:
     """Return the largest regular-decomposition cutoff used by type-pair Morse."""
     return max((float(item["r_cut"]) for item in interactions), default=0.0)
 
+
 def prepare_pair_specific_morse(
     priors: dict[str, Any], num_species: int
-) -> tuple[dict[int, int], list[dict[str, Any]]]:
-    """Plan reversible pair-specific COM Morse interactions.
+) -> tuple[dict[tuple[int, int], int], list[dict[str, Any]]]:
+    """Plan reversible pair-specific Morse interactions on explicit endpoints.
 
-    ESPResSo non-bonded potentials are selected by particle *type*.  To retain
-    pair specificity without keeping the Morse in the bonded bookkeeping, each
-    molecule participating in at least one Morse contact receives a deterministic
-    dedicated COM type.  Non-participating COMs retain one shared dummy type.
+    Each endpoint is addressed as ``(mol_id, site_id)`` where ``site_id=-1``
+    denotes the rigid-body COM and a non-negative value denotes a CG site.
 
-    ML site types remain untouched and therefore PaiNN continues to see exactly
-    the same particles/species as before.
+    ESPResSo non-bonded interactions are selected by particle type, but changing
+    the physical CG-site type would also change the PaiNN species.  The runtime
+    therefore creates one coincident *virtual marker* for every endpoint used by
+    pair-specific Morse.  Marker types are technical, unique per endpoint, and
+    live above the physical ML-species range.  Forces on a marker are transferred
+    by ESPResSo to the parent rigid body at the marker position, preserving the
+    correct translational force and torque while leaving PaiNN/WCA/type-pair
+    interactions on the original CG site untouched.
     """
     if int(num_species) < 0:
         raise ValueError("num_species must be non-negative")
 
     contacts: list[dict[str, Any]] = []
-    seen_pairs: dict[tuple[int, int], int] = {}
-    participating_molecules: set[int] = set()
+    seen_pairs: dict[tuple[tuple[int, int], tuple[int, int]], int] = {}
+    endpoints: set[tuple[int, int]] = set()
     for index, prior in enumerate(priors.get("bonds", [])):
         if str(prior.get("type", "harmonic")).lower() != "morse":
             continue
         contact = _normalize_morse_contact(prior, index)
-        pair = tuple(sorted((contact["mol_i"], contact["mol_j"])))
+        endpoint_i = (contact["mol_i"], contact["site_i"])
+        endpoint_j = (contact["mol_j"], contact["site_j"])
+        pair = tuple(sorted((endpoint_i, endpoint_j)))
         if pair in seen_pairs:
             raise ValueError(
-                f"Duplicate Morse molecule pair {pair[0]} <-> {pair[1]} in "
-                f"bond[{seen_pairs[pair]}] and bond[{index}]. A type-pair non-bonded "
-                "interaction can carry only one Morse parameter set."
+                "Duplicate pair-specific Morse endpoint pair "
+                f"{pair[0][0]}:{pair[0][1]} <-> {pair[1][0]}:{pair[1][1]} in "
+                f"bond[{seen_pairs[pair]}] and bond[{index}]"
             )
         seen_pairs[pair] = index
-        participating_molecules.update(pair)
+        endpoints.update((endpoint_i, endpoint_j))
         contacts.append(contact)
 
-    # ``num_species + 1`` remains the shared COM type for molecules without
-    # Morse contacts. Dedicated types start one slot above it.
-    first_dedicated_type = int(num_species) + 2
-    com_types = {
-        mol_id: first_dedicated_type + offset
-        for offset, mol_id in enumerate(sorted(participating_molecules))
+    # ``num_species + 1`` is the shared COM type used by the runtime. Marker
+    # types start one slot above it and are deterministic across runs.
+    first_marker_type = int(num_species) + 2
+    marker_types = {
+        endpoint: first_marker_type + offset
+        for offset, endpoint in enumerate(sorted(endpoints))
     }
-    return com_types, contacts
+    return marker_types, contacts
 
 
-def com_runtime_type(mol_id: int, com_types: dict[int, int], num_species: int) -> int:
-    """Return the runtime COM particle type for one molecule."""
-    return int(com_types.get(int(mol_id), int(num_species) + 1))
+def create_pair_specific_morse_markers(
+    system: Any,
+    marker_types: dict[tuple[int, int], int],
+    mol_com_parts: dict[int, int],
+    mol_vs_parts: dict[tuple[int, int], int],
+) -> dict[tuple[int, int], int]:
+    """Create coincident virtual marker particles for explicit Morse endpoints.
+
+    The markers are deliberately *not* inserted into ``mol_vs_parts``: they are
+    technical interaction carriers, not physical CG sites.  Consequently they
+    are ignored by PaiNN and by the physical WCA/type-pair parameter tables.
+    """
+    marker_parts: dict[tuple[int, int], int] = {}
+    for endpoint, runtime_type in sorted(marker_types.items()):
+        mol_id, site_id = endpoint
+        if mol_id not in mol_com_parts:
+            raise ValueError(
+                f"Pair-specific Morse endpoint references missing molecule {mol_id}"
+            )
+        parent_pid = mol_com_parts[mol_id]
+        if site_id == -1:
+            target_pid = parent_pid
+        else:
+            target_pid = mol_vs_parts.get((mol_id, site_id))
+            if target_pid is None:
+                available = sorted(
+                    site for (mol, site) in mol_vs_parts if mol == mol_id
+                )
+                raise ValueError(
+                    "Pair-specific Morse endpoint references missing CG site "
+                    f"{mol_id}:{site_id}; available site indices are {available}"
+                )
+
+        target_pos = list(system.part.by_id(target_pid).pos)
+        marker = system.part.add(
+            pos=target_pos,
+            type=int(runtime_type),
+            mass=1.0e-5,
+            rinertia=[1.0e-5, 1.0e-5, 1.0e-5],
+            mol_id=int(mol_id),
+        )
+        marker.virtual = True
+        marker.vs_auto_relate_to(parent_pid)
+        marker.gamma = 0.0
+        marker.gamma_rot = 0.0
+        marker_parts[endpoint] = marker.id
+    return marker_parts
 
 
 def configure_pair_specific_morse(
     system: Any,
     contacts: list[dict[str, Any]],
-    com_types: dict[int, int],
+    marker_types: dict[tuple[int, int], int],
 ) -> None:
-    """Activate switched, reversible non-bonded Morse contacts in ESPResSo."""
+    """Activate switched Morse terms between technical endpoint marker types."""
     for contact in contacts:
-        type_i = com_types[contact["mol_i"]]
-        type_j = com_types[contact["mol_j"]]
+        endpoint_i = (contact["mol_i"], contact["site_i"])
+        endpoint_j = (contact["mol_j"], contact["site_j"])
+        type_i = marker_types[endpoint_i]
+        type_j = marker_types[endpoint_j]
         try:
             system.non_bonded_inter[type_i, type_j].morse.set_params(
                 eps=contact["D"],

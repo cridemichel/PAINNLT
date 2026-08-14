@@ -466,20 +466,23 @@ Il framework espone **due modalità di selezione**, che condividono la stessa fo
 
 ### 7.3.1 Morse pair-specific
 
-I contatti espliciti restano descritti nella lista `bonds` con `type="morse"` e coordinate COM-COM (`site_i=site_j=-1` o campi omessi):
+I contatti espliciti restano descritti nella lista `bonds` con `type="morse"`. Ogni endpoint è indirizzato da `(mol, site)`: `site=-1` indica il COM del rigid body, mentre `site>=0` indica il corrispondente sito CG. Sono quindi supportati `COM<->COM`, `COM<->site` e `site<->site`:
 
 ```json
 {
-  "mol_i": 1, "mol_j": 7,
+  "mol_i": 1, "site_i": 0,
+  "mol_j": 7, "site_j": 2,
   "type": "morse",
   "D": 50.0, "a": 0.3, "r0": 1.57,
   "r_switch": 11.64, "r_cut": 15.0
 }
 ```
 
-Questi termini sono **pair-specific dal punto di vista fisico**, ma non sono bonded nel bookkeeping ESPResSo. Il runtime assegna tipi COM tecnici dedicati alle molecole coinvolte e configura il Morse tramite `system.non_bonded_inter[type_i,type_j]`. I tipi delle virtual site CG non vengono modificati, quindi PaiNN continua a vedere le stesse specie. I COM pair-specific vengono collocati nella parte N-square della decomposizione ibrida, così un cutoff COM lungo non allarga le celle della parte short-range WCA/PaiNN.
+Questi termini sono **pair-specific dal punto di vista fisico**, ma non sono bonded nel bookkeeping ESPResSo. Per non cambiare il `particle.type` fisico dei siti (che identifica la specie PaiNN e le interazioni WCA/type-pair), il runtime crea per ogni endpoint usato da un Morse esplicito una **virtual marker site tecnica e coincidente**. Il marker è rigidamente legato allo stesso COM, porta un tipo ESPResSo dedicato fuori dall'intervallo delle specie ML e viene usato soltanto per il dispatch del Morse non-bonded. Una forza applicata al marker viene trasferita al rigid body nello stesso punto dell'endpoint selezionato: per un sito fuori dal COM produce quindi anche il torque corretto. I marker pair-specific vengono collocati nella parte N-square della decomposizione ibrida, così un cutoff lungo non allarga le celle della parte short-range WCA/PaiNN.
 
-Per compatibilità con le topologie esistenti il default di `r_cut` dei contatti pair-specific resta 15 nm; se `r_switch` è omesso viene posto al 75% dell'intervallo tra `r0` e `r_cut`. `exclude_wca` resta `false` per default: un contatto Morse non definisce connettività covalente e non crea una WCA exclusion.
+I marker non sono siti CG fisici: non vengono passati a PaiNN e non ricevono WCA o Morse type-pair. Le interazioni fisiche del sito originale restano quindi invariate e il pair-specific Morse si somma ad esse senza creare exclusions implicite. I marker fanno però parte della lista particelle ESPResSo: checkpoint e VTF generati dal runtime li contengono come particelle tecniche con `type >= num_species+2`; analisi che vogliono soltanto i siti CG fisici devono filtrare `type < num_species`. Cambiare gli endpoint pair-specific richiede quindi di rigenerare il checkpoint.
+
+Per compatibilità con le topologie esistenti il default di `r_cut` dei contatti pair-specific resta 15 nm; se `r_switch` è omesso viene posto al 75% dell'intervallo tra `r0` e `r_cut`. `site_i/site_j` omessi equivalgono a `-1`, quindi le topologie COM-COM esistenti restano valide. `exclude_wca` resta `false` per default: un contatto Morse non definisce connettività covalente e non crea una WCA exclusion.
 
 ### 7.3.2 Morse type-pair
 
@@ -495,13 +498,13 @@ Per un'attrazione trasferibile basata sul tipo di bead si usa la sezione top-lev
 ]
 ```
 
-`type_i` e `type_j` sono i **CG site types fisici** definiti in `mapping.site_types`, non i tipi COM tecnici. Un record si applica a tutte le coppie di site con quei tipi, secondo la normale semantica ESPResSo `non_bonded_inter[type_i,type_j]`. `r_cut` è obbligatorio per questa modalità perché contribuisce direttamente al cutoff della regular neighbor decomposition; `r_switch` è opzionale e usa lo stesso default al 75%.
+`type_i` e `type_j` sono i **CG site types fisici** definiti in `mapping.site_types`, non i tipi tecnici dei marker pair-specific. Un record si applica a tutte le coppie di site con quei tipi, secondo la normale semantica ESPResSo `non_bonded_inter[type_i,type_j]`. `r_cut` è obbligatorio per questa modalità perché contribuisce direttamente al cutoff della regular neighbor decomposition; `r_switch` è opzionale e usa lo stesso default al 75%.
 
 Le particle exclusions ESPResSo valgono per tutte le interazioni non-bonded, non soltanto per WCA. Di conseguenza un Morse type-pair è escluso intra-rigid-body, sulle site-pair 1-2 esplicitamente escluse e sulle coppie 1-3 escluse dalla policy WCA v3. Il preprocessing usa esattamente la stessa maschera quando sottrae il prior da forze e torque di riferimento.
 
 ### 7.3.3 Coesistenza e double counting
 
-Le due modalità possono coesistere. Sono però **additive**: se una coppia di molecole possiede un contatto COM pair-specific e, contemporaneamente, le sue site types sono coperte da un Morse type-pair, entrambi i contributi entrano nell'Hamiltoniana. Questo può essere intenzionale, ma non va usato accidentalmente. La regola pratica è: pair-specific per contatti nativi/topologici o tertiary contacts; type-pair per attrazioni generiche/trasferibili tra bead types.
+Le due modalità possono coesistere. Sono però **additive**: se una coppia esplicita di endpoint possiede un contatto pair-specific e, contemporaneamente, i siti fisici coinvolti sono coperti da un Morse type-pair, entrambi i contributi entrano nell'Hamiltoniana. Questo può essere intenzionale, ma non va usato accidentalmente. La regola pratica è: pair-specific per contatti nativi/topologici o tertiary contacts; type-pair per attrazioni generiche/trasferibili tra bead types.
 
 In entrambi i casi il prior sottratto nel preprocessing deve coincidere con quello usato nel runtime. Dopo qualunque modifica ai Morse rigenerare dataset/priors, retrainare il modello residuale, riequilibrare e ricertificare NVE.
 
@@ -1440,7 +1443,7 @@ name
 exclude_wca
 ```
 
-`harmonic` e `fene` rappresentano connettività bonded strutturale. Un record `type="morse"` rappresenta invece un **contatto Morse pair-specific COM-COM** e viene trasformato dal runtime in una interazione non-bonded selettiva. Campi Morse:
+`harmonic` e `fene` rappresentano connettività bonded strutturale. Un record `type="morse"` rappresenta invece un **contatto Morse pair-specific tra endpoint espliciti** e viene trasformato dal runtime in una interazione non-bonded selettiva. Campi Morse:
 
 ```text
 D, a, r0
@@ -1448,7 +1451,7 @@ r_switch   # opzionale
 r_cut      # opzionale per pair-specific
 ```
 
-Per i Morse pair-specific `site_i/site_j` devono essere COM (`-1` o omessi); il default di `exclude_wca` è `false`. Il kernel è switched e vale esattamente zero a e oltre `r_cut`.
+Per i Morse pair-specific `site_i/site_j=-1` (o omessi) indicano il COM, mentre valori `>=0` selezionano siti CG/virtual site della rispettiva molecola. Il runtime usa marker virtuali tecnici coincidenti con gli endpoint senza cambiare i tipi fisici dei siti; il default di `exclude_wca` è `false`. Il kernel è switched e vale esattamente zero a e oltre `r_cut`.
 
 ## 19.7 `morse_type_pairs`
 
