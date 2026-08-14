@@ -19,8 +19,8 @@ sys.path.insert(0, str(ROOT / "preprocessing"))
 
 from prior_kernels import switched_morse_radial_force_array  # noqa: E402
 from espresso_interactions import (  # noqa: E402
-    com_runtime_type,
     configure_pair_specific_morse,
+    create_pair_specific_morse_markers,
     configure_type_pair_morse,
     max_type_pair_morse_cutoff,
     prepare_pair_specific_morse,
@@ -60,54 +60,122 @@ class FakeNonBonded:
         return self.pairs.setdefault(key, FakePairHandle())
 
 
+class FakeParticle:
+    def __init__(self, pid, **kwargs):
+        self.id = pid
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        self.virtual = False
+        self.related_to = None
+        self.gamma = None
+        self.gamma_rot = None
+
+    def vs_auto_relate_to(self, parent_pid):
+        self.related_to = parent_pid
+
+
+class FakeParticles:
+    def __init__(self):
+        self.items = []
+
+    def add(self, **kwargs):
+        particle = FakeParticle(len(self.items), **kwargs)
+        self.items.append(particle)
+        return particle
+
+    def by_id(self, pid):
+        return self.items[int(pid)]
+
+
 class FakeSystem:
     def __init__(self):
         self.non_bonded_inter = FakeNonBonded()
+        self.part = FakeParticles()
 
 
 class ReversibleMorseTests(unittest.TestCase):
-    def test_pair_mapping_is_deterministic_and_pair_specific(self):
+    def test_pair_mapping_is_deterministic_and_site_addressable(self):
         priors = {
             "bonds": [
-                {"type": "morse", "mol_i": 8, "mol_j": 2, "D": 5, "a": 2, "r0": 0.4},
+                {"type": "morse", "mol_i": 8, "mol_j": 2, "site_j": 0,
+                 "D": 5, "a": 2, "r0": 0.4},
                 {"type": "harmonic", "mol_i": 1, "mol_j": 2, "k": 3, "r0": 0.2},
-                {"type": "morse", "mol_i": 4, "mol_j": 8, "D": 7, "a": 3, "r0": 0.5},
+                {"type": "morse", "mol_i": 4, "site_i": 1, "mol_j": 8,
+                 "D": 7, "a": 3, "r0": 0.5},
             ]
         }
         types, contacts = prepare_pair_specific_morse(priors, num_species=6)
-        self.assertEqual(types, {2: 8, 4: 9, 8: 10})
-        self.assertEqual(com_runtime_type(2, types, 6), 8)
-        self.assertEqual(com_runtime_type(3, types, 6), 7)
+        self.assertEqual(types, {(2, 0): 8, (4, 1): 9, (8, -1): 10})
         self.assertEqual(len(contacts), 2)
+        self.assertEqual((contacts[0]["site_i"], contacts[0]["site_j"]), (-1, 0))
         self.assertGreater(contacts[0]["r_switch"], contacts[0]["r0"])
         self.assertLess(contacts[0]["r_switch"], contacts[0]["r_cut"])
 
-    def test_duplicate_and_site_specific_contacts_fail_closed(self):
+    def test_duplicate_endpoint_pairs_and_invalid_site_indices_fail_closed(self):
         duplicate = {"bonds": [
-            {"type": "morse", "mol_i": 1, "mol_j": 2, "D": 1, "a": 1, "r0": 0.5},
-            {"type": "morse", "mol_i": 2, "mol_j": 1, "D": 2, "a": 2, "r0": 0.6},
+            {"type": "morse", "mol_i": 1, "site_i": 0, "mol_j": 2, "site_j": 1,
+             "D": 1, "a": 1, "r0": 0.5},
+            {"type": "morse", "mol_i": 2, "site_i": 1, "mol_j": 1, "site_j": 0,
+             "D": 2, "a": 2, "r0": 0.6},
         ]}
-        with self.assertRaisesRegex(ValueError, "Duplicate Morse molecule pair"):
+        with self.assertRaisesRegex(ValueError, "Duplicate pair-specific Morse endpoint pair"):
             prepare_pair_specific_morse(duplicate, 4)
-        site_specific = {"bonds": [
-            {"type": "morse", "mol_i": 1, "mol_j": 2, "site_i": 0, "D": 1, "a": 1, "r0": 0.5},
+        invalid_site = {"bonds": [
+            {"type": "morse", "mol_i": 1, "mol_j": 2, "site_i": -2,
+             "D": 1, "a": 1, "r0": 0.5},
         ]}
-        with self.assertRaisesRegex(ValueError, "COM-COM contacts only"):
-            prepare_pair_specific_morse(site_specific, 4)
+        with self.assertRaisesRegex(ValueError, "use -1 for COM"):
+            prepare_pair_specific_morse(invalid_site, 4)
 
-    def test_runtime_configuration_uses_switched_nonbonded_morse(self):
+    def test_runtime_configuration_uses_marker_type_pair(self):
         priors = {"bonds": [
-            {"type": "morse", "mol_i": 1, "mol_j": 3, "D": 8, "a": 2.5,
-             "r0": 0.6, "r_switch": 2.0, "r_cut": 2.5},
+            {"type": "morse", "mol_i": 1, "site_i": 0, "mol_j": 3, "site_j": -1,
+             "D": 8, "a": 2.5, "r0": 0.6, "r_switch": 2.0, "r_cut": 2.5},
         ]}
         types, contacts = prepare_pair_specific_morse(priors, 5)
         system = FakeSystem()
         configure_pair_specific_morse(system, contacts, types)
-        handle = system.non_bonded_inter[types[1], types[3]].morse
+        handle = system.non_bonded_inter[types[(1, 0)], types[(3, -1)]].morse
         self.assertEqual(handle.calls, [{
             "eps": 8.0, "alpha": 2.5, "rmin": 0.6,
             "cutoff": 2.5, "switch_start": 2.0,
         }])
+
+    def test_marker_creation_preserves_physical_site_types_and_attachment_point(self):
+        system = FakeSystem()
+        com0 = system.part.add(pos=[0.0, 0.0, 0.0], type=6, mass=10.0,
+                               rinertia=[1.0, 1.0, 1.0], mol_id=0)
+        site0 = system.part.add(pos=[0.2, 0.0, 0.0], type=1, mass=1.0e-5,
+                                rinertia=[1.0e-5] * 3, mol_id=0)
+        com1 = system.part.add(pos=[1.0, 0.0, 0.0], type=6, mass=10.0,
+                               rinertia=[1.0, 1.0, 1.0], mol_id=1)
+        site1 = system.part.add(pos=[1.0, 0.3, 0.0], type=2, mass=1.0e-5,
+                                rinertia=[1.0e-5] * 3, mol_id=1)
+        marker_types = {(0, 0): 8, (1, -1): 9}
+        marker_parts = create_pair_specific_morse_markers(
+            system, marker_types, {0: com0.id, 1: com1.id},
+            {(0, 0): site0.id, (1, 0): site1.id},
+        )
+        marker_site = system.part.by_id(marker_parts[(0, 0)])
+        marker_com = system.part.by_id(marker_parts[(1, -1)])
+        self.assertEqual(marker_site.pos, site0.pos)
+        self.assertEqual(marker_site.related_to, com0.id)
+        self.assertEqual(marker_site.type, 8)
+        self.assertTrue(marker_site.virtual)
+        self.assertEqual(marker_com.pos, com1.pos)
+        self.assertEqual(marker_com.related_to, com1.id)
+        self.assertEqual(marker_com.type, 9)
+        self.assertEqual(site0.type, 1)
+        self.assertEqual(site1.type, 2)
+
+    def test_marker_creation_rejects_missing_site(self):
+        system = FakeSystem()
+        com = system.part.add(pos=[0.0, 0.0, 0.0], type=5, mass=10.0,
+                              rinertia=[1.0, 1.0, 1.0], mol_id=0)
+        with self.assertRaisesRegex(ValueError, "missing CG site 0:3"):
+            create_pair_specific_morse_markers(
+                system, {(0, 3): 7}, {0: com.id}, {}
+            )
 
     def test_type_pair_morse_uses_physical_site_types(self):
         priors = {"morse_type_pairs": [
@@ -225,6 +293,17 @@ int main() {
             )
             subprocess.run([str(exe)], check=True)
 
+    def test_preprocessing_pair_specific_morse_is_site_and_torque_aware(self):
+        source = (ROOT / "preprocessing" / "build_cg_dataset.py").read_text(encoding="utf-8")
+        self.assertIn('site_i = b.get("site_i", -1)', source)
+        self.assertIn('site_j = b.get("site_j", -1)', source)
+        self.assertIn('resolve_site_position(frame_centers, frame_sites, i, site_i)', source)
+        self.assertIn('resolve_site_position(frame_centers, frame_sites, j, site_j)', source)
+        self.assertIn('if site_i != -1:', source)
+        self.assertIn('if site_j != -1:', source)
+        self.assertIn('np.cross(r_rel_i, f_vec)', source)
+        self.assertIn('np.cross(r_rel_j, f_vec)', source)
+
     def test_preprocessing_subtracts_type_pair_morse_with_nonbonded_exclusions(self):
         source = (ROOT / "preprocessing" / "build_cg_dataset.py").read_text(encoding="utf-8")
         self.assertIn('config_data.get("morse_type_pairs", [])', source)
@@ -324,10 +403,13 @@ class Other(NonBondedInteraction):
             self.assertFalse(changed_again)
             self.assertEqual(config.read_text().count("#define MORSE"), 1)
 
-    def test_production_runtimes_do_not_install_morse_as_bond(self):
+    def test_production_runtimes_use_site_addressable_marker_morse_not_bonded_morse(self):
         for rel in ("simulation/run_cg_md.py", "simulation/equilibrate.py"):
             text = (ROOT / rel).read_text()
+            self.assertIn("create_pair_specific_morse_markers", text)
             self.assertIn("configure_pair_specific_morse", text)
+            self.assertIn("morse_marker_types", text)
+            self.assertNotIn("com_runtime_type", text)
             self.assertNotIn("bond = make_analytic_morse_bond", text)
 
 

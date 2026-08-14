@@ -27,8 +27,8 @@ from framework_utils import (
 )
 
 from espresso_interactions import (
-    com_runtime_type,
     configure_pair_specific_morse,
+    create_pair_specific_morse_markers,
     configure_type_pair_morse,
     max_type_pair_morse_cutoff,
     prepare_pair_specific_morse,
@@ -98,15 +98,16 @@ if args.steps < 0:
 if args.log_interval <= 0:
     raise ValueError("--log_interval must be positive")
 
-# Plan pair-specific reversible Morse contacts before creating COM particles.
-# ML site types are untouched; only COM bookkeeping types are remapped.
-morse_com_types, morse_contacts = prepare_pair_specific_morse(
+# Plan pair-specific reversible Morse contacts before creating particles.
+# Physical CG-site types remain untouched; explicit contacts are carried by
+# coincident technical virtual markers created after the physical sites.
+morse_marker_types, morse_contacts = prepare_pair_specific_morse(
     priors, nn_config["num_species"]
 )
 morse_type_pairs = prepare_type_pair_morse(priors, nn_config["num_species"])
 if morse_contacts and morse_type_pairs:
     print(
-        "[WARNING] Both pair-specific COM Morse contacts and site type-pair Morse "
+        "[WARNING] Both pair-specific Morse contacts and site type-pair Morse "
         "interactions are active. Their contributions are additive; verify that this "
         "is intentional and not prior double counting."
     )
@@ -166,7 +167,7 @@ with open(args.dataset, "rb") as f:
         body_quat = rigid_body_quaternion(center, site_positions, box_dim, rb_data)
         
         p_com = system.part.add(
-            pos=center, type=com_runtime_type(mol_idx, morse_com_types, nn_config["num_species"]),
+            pos=center, type=DUMMY_COM_TYPE,
             mass=mass, rinertia=inertia, quat=body_quat,
             rotation=[True, True, True] if num_sites > 1 else [False, False, False],
             mol_id=mol_idx
@@ -183,6 +184,15 @@ with open(args.dataset, "rb") as f:
             p_vs.gamma_rot = 0.0
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
+
+morse_marker_parts = create_pair_specific_morse_markers(
+    system, morse_marker_types, mol_com_parts, mol_vs_parts
+)
+if morse_marker_parts:
+    print(
+        f"[INFO] Created {len(morse_marker_parts)} technical virtual markers "
+        "for pair-specific Morse endpoints."
+    )
 
 if args.checkpoint:
     print(f"[INFO] Overriding coordinates, velocities, and orientations from checkpoint {args.checkpoint}...")
@@ -324,12 +334,14 @@ if os.path.exists(cg_priors_path):
 else:
     print(f"[WARNING] {cg_priors_path} not found! No WCA will be applied.")
 
-configure_pair_specific_morse(system, morse_contacts, morse_com_types)
+configure_pair_specific_morse(system, morse_contacts, morse_marker_types)
 for contact in morse_contacts:
     print(
         "[INFO] Added pair-specific reversible Morse contact "
-        f"{contact['index']}: COM mol {contact['mol_i']} <-> mol {contact['mol_j']} "
-        f"(r_switch={contact['r_switch']:.6g}, r_cut={contact['r_cut']:.6g})"
+        f"{contact['index']}: {contact['mol_i']}:{contact['site_i']} <-> "
+        f"{contact['mol_j']}:{contact['site_j']} "
+        f"(site=-1 means COM; r_switch={contact['r_switch']:.6g}, "
+        f"r_cut={contact['r_cut']:.6g})"
     )
 
 configure_type_pair_morse(system, morse_type_pairs)
@@ -461,9 +473,9 @@ regular_cutoff = max(
     max((float(item.get("cutoff_nm", 0.0)) for item in priors.get("wca_pairs", {}).values()), default=0.0),
     max_type_pair_morse_cutoff(morse_type_pairs),
 )
-# Pair-specific COM Morse contacts use dedicated COM types in the N-square side
-# of the hybrid decomposition. Type-pair Morse acts on ordinary CG site types
-# and therefore contributes to the regular-decomposition cutoff above.
+# Pair-specific Morse contacts use dedicated technical marker types on the
+# N-square side of the hybrid decomposition. Type-pair Morse acts on ordinary
+# physical CG site types and therefore contributes to the regular cutoff above.
 if morse_type_pairs:
     type_pair_cutoff = max_type_pair_morse_cutoff(morse_type_pairs)
     required_length = 2.0 * (type_pair_cutoff + float(system.cell_system.skin))
@@ -472,13 +484,13 @@ if morse_type_pairs:
             "Morse type-pair cutoff is too large for the periodic regular decomposition: "
             f"box={list(system.box_l)}, max Morse r_cut={type_pair_cutoff:.6g}, "
             f"skin={float(system.cell_system.skin):.6g}; each box dimension must exceed "
-            f"{required_length:.6g} nm. Pair-specific COM Morse contacts do not have "
+            f"{required_length:.6g} nm. Pair-specific Morse marker contacts do not have "
             "this regular-cell constraint because they use the N-square side of the hybrid decomposition."
         )
-com_n_square_types = {DUMMY_COM_TYPE, *morse_com_types.values()} if morse_contacts else None
+morse_n_square_types = {DUMMY_COM_TYPE, *morse_marker_types.values()} if morse_contacts else None
 configure_neighbor_search(
     system, args.neighbor_search,
-    n_square_types=com_n_square_types,
+    n_square_types=morse_n_square_types,
     cutoff_regular=regular_cutoff if morse_contacts else None,
 )
 

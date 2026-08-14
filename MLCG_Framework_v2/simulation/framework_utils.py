@@ -457,8 +457,8 @@ def configure_neighbor_search(
     ``n_square_types`` is provided, ESPResSo's hybrid decomposition is used:
     those particle types are handled by the N-square sub-decomposition while
     the remaining short-range particles stay in the regular decomposition.
-    This prevents a long-range COM-only prior from inflating the regular cell
-    size used by PaiNN/WCA site interactions.
+    This prevents sparse long-range technical interaction carriers from inflating
+    the regular cell size used by PaiNN/WCA/type-pair site interactions.
     """
     normalized = str(mode).strip().lower()
     if normalized == "verlet":
@@ -484,7 +484,7 @@ def configure_neighbor_search(
         print(
             "[INFO] Neighbor search: "
             + ("verlet" if use_verlet_lists else "link-cell")
-            + " (hybrid decomposition; COM types in N-square, "
+            + " (hybrid decomposition; selected long-range types in N-square, "
             + f"regular cutoff={float(cutoff_regular):.6g})"
         )
         return
