@@ -361,6 +361,62 @@ class IBIPipelineTests(unittest.TestCase):
             self.assertTrue(np.allclose(state["force"], table[:, 2]))
             self.assertEqual(state["mode"], "ibi")
 
+    def test_continuation_loader_allows_conservative_spline_only_when_opted_in(self):
+        distances = 1.0 + 0.05 * np.sin(np.linspace(0.0, 4.0 * np.pi, 120, endpoint=False))
+        seed = {
+            "bonds": [{
+                "name": "backbone", "type": "ibi",
+                "mol_i": 0, "mol_j": 1, "site_i": -1, "site_j": -1,
+            }],
+            "angles": [],
+            "dihedrals": [],
+        }
+        config = {
+            "min_count": 1,
+            "relative_density_threshold": 1.0e-8,
+            "min_support_points": 4,
+            "bond": {
+                "hist_min": 0.75, "hist_max": 1.25, "hist_edges": 41,
+                "table_min": 0.5, "table_max": 1.8, "table_points": 201,
+                "left_guard": 0.65, "right_guard": 1.35,
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            dataset = tmp / "target.bin"
+            seed_path = tmp / "seed.json"
+            cfg_path = tmp / "ibi.json"
+            generated = tmp / "generated"
+            write_dataset(dataset, distances)
+            seed_path.write_text(json.dumps(seed))
+            cfg_path.write_text(json.dumps(config))
+            initial = build_initial_dbi_priors(dataset, seed_path, generated, ibi_config=cfg_path)
+            tabulated_priors = Path(initial["output_priors"])
+            converted = json.loads(tabulated_priors.read_text())
+            entry = converted["bonds"][0]
+            source_table = np.loadtxt(resolve_referenced_path(entry["file"], tabulated_priors))
+            spline_path = generated / "bond_conservative_backbone.dat"
+            # Conservative bond files store dU/dr, whereas the evaluated IBI table
+            # stores the radial force -dU/dr.
+            np.savetxt(spline_path, np.column_stack((source_table[:, 0], source_table[:, 1], -source_table[:, 2])))
+            entry["type"] = "conservative_spline"
+            entry["file"] = spline_path.name
+            entry["spline_schema"] = "pchip_hermite_v1"
+            conservative_priors = generated / "cg_priors_conservative.json"
+            conservative_priors.write_text(json.dumps(converted) + "\n")
+
+            with self.assertRaisesRegex(ValueError, "not fully tabulated"):
+                load_continuation_priors(dataset, conservative_priors, ibi_config=cfg_path)
+
+            diagnostic = load_continuation_priors(
+                dataset, conservative_priors, ibi_config=cfg_path, allow_conservative_spline=True
+            )
+            state = diagnostic["groups"]["bonds"]["backbone"]
+            self.assertEqual(state["representation"], "conservative_spline")
+            self.assertTrue(np.allclose(state["grid"], source_table[:, 0]))
+            self.assertTrue(np.allclose(state["energy"], source_table[:, 1]))
+            self.assertTrue(np.allclose(state["force"], source_table[:, 2]))
+
     def test_resume_driver_uses_offset_and_skips_dbi_reinitialization(self):
         distances = 1.0 + 0.05 * np.sin(np.linspace(0.0, 6.0 * np.pi, 200, endpoint=False))
         seed = {

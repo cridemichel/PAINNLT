@@ -302,6 +302,62 @@ class RuntimeStructureTests(unittest.TestCase):
             self.assertFalse(report["threshold_applied"])
             self.assertAlmostEqual(report["mean_l1"], 0.0, places=12)
 
+    def test_runtime_structure_accepts_conservative_spline_priors(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dataset = root / "dataset.bin"
+            priors = root / "priors.json"
+            spline = root / "bond_conservative_b.dat"
+            sample = root / "sample.npz"
+
+            with dataset.open("wb") as handle:
+                handle.write(struct.pack("i", 1))
+                handle.write(struct.pack("i", 2))
+                handle.write(struct.pack("i", 2))
+                handle.write(struct.pack("3f", 10.0, 10.0, 10.0))
+                for mol, x in ((0, 0.0), (1, 1.0)):
+                    handle.write(struct.pack("i", mol))
+                    handle.write(struct.pack("i", 1))
+                    handle.write(struct.pack("3f", x, 0.0, 0.0))
+                    handle.write(struct.pack("3f", 0.0, 0.0, 0.0))
+                    handle.write(struct.pack("3f", 0.0, 0.0, 0.0))
+                    handle.write(struct.pack("i", mol))
+                    handle.write(struct.pack("3f", x, 0.0, 0.0))
+
+            np.savetxt(spline, np.array([
+                [0.01, 0.0, 0.0],
+                [2.505, 0.0, 0.0],
+                [5.0, 0.0, 0.0],
+            ]))
+            priors.write_text(json.dumps({
+                "bonds": [{
+                    "type": "conservative_spline", "ibi_mode": "ibi", "name": "b",
+                    "file": spline.name, "min": 0.01, "max": 5.0,
+                    "spline_schema": "pchip_hermite_v1",
+                    "mol_i": 0, "mol_j": 1, "site_i": -1, "site_j": -1,
+                }],
+                "angles": [], "dihedrals": [],
+            }) + "\n")
+            com = np.array([
+                [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
+                [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
+            ])
+            np.savez_compressed(
+                sample,
+                schema_version=np.asarray(1, dtype=np.int32),
+                complete=np.asarray(1, dtype=np.int8),
+                steps=np.asarray([0, 100], dtype=np.int64),
+                time_ps=np.asarray([0.0, 0.05]),
+                com=com,
+                sites=com.copy(),
+                site_molecule=np.asarray([0, 1], dtype=np.int32),
+                site_index=np.asarray([0, 0], dtype=np.int32),
+                box=np.asarray([10.0, 10.0, 10.0]),
+            )
+            report = validate_runtime_structure(dataset=dataset, priors=priors, sample_npz=sample)
+            self.assertTrue(report["pass"])
+            self.assertAlmostEqual(report["mean_l1"], 0.0, places=12)
+
 
 if __name__ == "__main__":
     unittest.main()

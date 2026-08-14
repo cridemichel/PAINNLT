@@ -751,6 +751,44 @@ Strict NVE certification belongs only at the end of this chain: first produce a
 new residual model, preserve matching provenance, and validate the runtime using
 the same `conservative priors + residual PaiNN` Hamiltonian.
 
+
+#### 7.6.6.2 NVE certification of the conservative IBI-only candidate
+
+If the matched A/B gate in step `19` shows that the PaiNN residual does not
+improve structure, the physical candidate to certify can be the **IBI-only**
+branch. Run the dedicated gate with:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./23_certify_conservative_ibi_nve.sh --overwrite
+```
+
+The model selected by `IBI_MODEL` is **not activated** in the NVE trajectories.
+It is retained only as a provenance anchor so that
+`postibi_runtime_validation/equilibrated_postibi.npz`, produced by step `18`
+and carrying the model hash, can be reused without weakening checkpoint
+validation. Every certification trajectory passes `--disable_ml`, turns the
+thermostat off, sets force cap to zero, and uses velocity Verlet.
+
+Before dynamics, `simulation/conservative_nve_preflight.py` revalidates that
+`ibi_conservative/cg_priors.json`, every referenced spline,
+`validation_report.json`, and `runtime_parity_report.json` are byte-identical to
+the Phase-2 validated artifacts. Legacy `tabulated` bonded priors are rejected,
+and the conservative scope remains **bond + angle**; a conservative dihedral
+fails closed until a dedicated torsional kernel/parity gate exists.
+
+Defaults are 5 ps per timestep with
+`0.001 0.0015 0.002 0.003 0.004 0.005 ps`. The generic certification criteria
+remain `sigma_E ~ dt^p`, `1.7 <= p <= 2.3`, `R2 >= 0.97`, and relative block
+mean drift `<= 1e-4`. Outputs live under
+`nve_certification_conservative_ibi_only/`, and the report records
+`hamiltonian_mode=conservative_classical_model_provenance_ml_disabled`.
+
+This gate certifies only `WCA + Morse + conservative bonded IBI` over the sampled
+state region. It does not promote the PaiNN residual; if a future ML model wins
+the matched A/B test, the complete ML-active Hamiltonian must be certified
+separately.
+
 ---
 
 # 8. Pair-specific WCA: construction, guardrails, and subtraction
