@@ -355,3 +355,33 @@ standard deviation of the best validation loss, and computes the paired
 `IBI - baseline` delta at each identical seed.  A negative paired delta favors
 the post-IBI case.  Interpret the mean paired delta together with its spread and
 win count rather than a single seed.
+
+## 18. Validate the complete post-IBI runtime Hamiltonian
+
+After the validated IBI priors have been used to rebuild the residual dataset and
+`tel22_model_ibi.pt` has been trained, run:
+
+```bash
+OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+```
+
+The script fails closed unless the model manifest proves that the model was
+trained on the exact residual dataset/config selected at runtime and the
+residual-build manifest proves that the same dataset, validated IBI priors
+(including every referenced table), and rigid-body metadata belong together.
+It then creates a provenance-bearing checkpoint with the complete `IBI + PaiNN`
+Hamiltonian and runs a short NVT smoke trajectory.
+
+Outputs are written under `postibi_runtime_validation/`:
+
+- `runtime_preflight.json`: cryptographic model/dataset/config/prior/RB provenance;
+- `equilibrated_postibi.npz`: checkpoint whose own metadata carries the runtime hashes;
+- `nvt_energy.csv` and `nvt_smoke_report.json`: finite force/torque and stability checks;
+- `nvt_sample.npz` and `runtime_structure_report.json`: bonded target-distribution L1
+  values for the complete `IBI + PaiNN` Hamiltonian;
+- `equilibrate.log` and `nvt_run.log`: ESPResSo logs.
+
+The structural L1 comparison is diagnostic and does not impose a universal
+threshold in the generic core.  Likewise this NVT smoke run is **not** an NVE
+energy-conservation certification: ESPResSo tabulated bonded interactions use
+separately interpolated energy and force columns.
