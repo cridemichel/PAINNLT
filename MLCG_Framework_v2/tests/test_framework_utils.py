@@ -126,11 +126,20 @@ class FrameworkUtilsTests(unittest.TestCase):
             [(
                 "hybrid",
                 {
-                    "n_square_types": {8, 11},
+                    "n_square_types": [8, 11],
                     "cutoff_regular": 1.4,
                     "use_verlet_lists": False,
                 },
             )],
+        )
+        # The public helper accepts any simple integer collection, but the
+        # value crossing ESPResSo's Cython boundary must be an indexed list.
+        system2 = FakeNeighborSystem()
+        configure_neighbor_search(
+            system2, "verlet", n_square_types=(11, 8, 11), cutoff_regular=1.4
+        )
+        self.assertEqual(
+            system2.cell_system.calls[0][1]["n_square_types"], [8, 11]
         )
         with self.assertRaises(ValueError):
             configure_neighbor_search(

@@ -2635,7 +2635,18 @@ production. The exact command depends on the local ESPResSo build tree, but the 
 
 After rebuilding ESPResSo, run `tutorials/tel22/08_diagnose_morse_reversibility.sh --assert-expected`. The diagnostic verifies `U(r_cut)=F(r_cut)=0`, cutoff crossing without exceptions, and re-entry/rebinding. Unit tests additionally cover `morse_type_pairs` parsing and runtime configuration.
 
-## 26.5 Prior audit
+## 26.5 Runtime site-site Morse force/torque diagnostic
+
+After changing pair-specific Morse endpoint or virtual-marker logic, also run:
+
+```bash
+cd tutorials/tel22
+bash ./09_diagnose_morse_site_torque.sh --assert-expected
+```
+
+The test is independent of TEL22: it constructs two synthetic rigid bodies, each with an off-COM physical CG virtual site, creates the technical markers through the same production helpers, and activates one `site<->site` pair-specific Morse interaction. It compares the ESPResSo energy, COM forces, and lab-frame torques against the analytic prediction `tau=(r_site-r_COM) x F`. It also checks marker/site coincidence and verifies that the physical CG-site types are unchanged. This is the runtime certification of the generic `COM/site` endpoint path beyond TEL22's current COM-COM contacts.
+
+## 26.6 Prior audit
 
 After dataset generation, inspect the generated prior file. A useful quick audit is:
 

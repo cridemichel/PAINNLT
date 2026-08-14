@@ -2654,7 +2654,18 @@ Il percorso esatto dipende dalla build locale.
 
 Dopo il rebuild di ESPResSo eseguire `tutorials/tel22/08_diagnose_morse_reversibility.sh --assert-expected`: il test verifica `U(r_cut)=F(r_cut)=0`, attraversamento del cutoff senza eccezioni e re-entry/rebinding. I test unitari coprono inoltre la configurazione `morse_type_pairs`.
 
-## 26.5 Audit priors
+## 26.5 Diagnostica runtime Morse site-site: forza e torque
+
+Dopo modifiche alla logica dei Morse pair-specific o dei virtual marker, eseguire anche:
+
+```bash
+cd tutorials/tel22
+bash ./09_diagnose_morse_site_torque.sh --assert-expected
+```
+
+Il test non usa TEL22: costruisce due rigid body sintetici con un sito CG virtuale fuori dal COM per ciascun corpo, crea i marker tecnici tramite gli stessi helper usati in produzione e attiva un solo Morse pair-specific `site<->site`. Confronta quindi l'energia ESPResSo, le forze sui due COM e i torque `torque_lab` con la previsione analitica `tau=(r_site-r_COM) x F`. Verifica anche che marker e sito restino coincidenti e che i tipi fisici dei siti CG non vengano modificati. Questo e' il test runtime che certifica la generalizzazione `COM/site` oltre al caso TEL22 COM-COM.
+
+## 26.6 Audit priors
 
 Controllare almeno:
 

@@ -1,0 +1,113 @@
+{
+  "actual": {
+    "energy": -4.433308761959575,
+    "force_i": [
+      3.464994331434557,
+      -0.9701984128016763,
+      0.0
+    ],
+    "force_j": [
+      -3.464994331434557,
+      0.9701984128016763,
+      0.0
+    ],
+    "marker_i_pos": [
+      2.5,
+      5.4,
+      5.0
+    ],
+    "marker_j_pos": [
+      5.0,
+      4.7,
+      5.0
+    ],
+    "marker_runtime_types": [
+      4,
+      5
+    ],
+    "physical_site_types_after": [
+      0,
+      1
+    ],
+    "site_i_pos": [
+      2.5,
+      5.4,
+      5.0
+    ],
+    "site_j_pos": [
+      5.0,
+      4.7,
+      5.0
+    ],
+    "torque_i": [
+      6.96138274934064e-17,
+      2.4862081247645135e-16,
+      -1.385997732573824
+    ],
+    "torque_j": [
+      -5.221037062005473e-17,
+      -1.8646560935733827e-16,
+      -1.0394982994303665
+    ]
+  },
+  "diagnostic": "pair-specific Morse site-to-site rigid-body force/torque back-transfer",
+  "errors": {
+    "energy_abs": 0.0,
+    "force_i_max_abs": 1.1102230246251565e-16,
+    "force_j_max_abs": 1.1102230246251565e-16,
+    "marker_i_site_max_abs": 0.0,
+    "marker_j_site_max_abs": 0.0,
+    "net_force_max_abs": 0.0,
+    "torque_i_max_abs": 2.4862081247645135e-16,
+    "torque_j_max_abs": 1.8646560935733827e-16
+  },
+  "expected": {
+    "distance": 2.596150997149434,
+    "energy": -4.433308761959575,
+    "force_i": [
+      3.464994331434557,
+      -0.9701984128016762,
+      0.0
+    ],
+    "force_j": [
+      -3.464994331434557,
+      0.9701984128016762,
+      -0.0
+    ],
+    "lever_i": [
+      0.0,
+      0.40000000000000036,
+      0.0
+    ],
+    "lever_j": [
+      0.0,
+      -0.2999999999999998,
+      0.0
+    ],
+    "radial_force": -3.5982593954683844,
+    "torque_i": [
+      0.0,
+      0.0,
+      -1.385997732573824
+    ],
+    "torque_j": [
+      0.0,
+      0.0,
+      -1.0394982994303665
+    ]
+  },
+  "invariants": {
+    "analytic_torque_is_nonzero": true,
+    "marker_types_are_technical": true,
+    "physical_site_types_unchanged": true
+  },
+  "parameters": {
+    "D": 6.0,
+    "a": 1.2,
+    "r0": 2.0,
+    "r_cut": 4.0,
+    "r_switch": 3.0
+  },
+  "pass": true,
+  "tolerance": 1e-09
+}

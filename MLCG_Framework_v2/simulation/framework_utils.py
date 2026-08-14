@@ -448,7 +448,7 @@ def configure_neighbor_search(
     system: Any,
     mode: str,
     *,
-    n_square_types: set[int] | None = None,
+    n_square_types: set[int] | list[int] | tuple[int, ...] | None = None,
     cutoff_regular: float | None = None,
 ) -> None:
     """Select ESPResSo pair traversal explicitly.
@@ -475,7 +475,11 @@ def configure_neighbor_search(
             raise ValueError(
                 "cutoff_regular must be positive when using hybrid decomposition"
             )
-        types = {int(value) for value in n_square_types}
+        # ESPResSo's script-interface variant converter expects an indexed
+        # Python sequence here.  A set reaches Cython as an unordered object and
+        # fails with ``TypeError: 'set' object is not subscriptable``.  Sorting
+        # also makes the runtime configuration deterministic across processes.
+        types = sorted({int(value) for value in n_square_types})
         system.cell_system.set_hybrid_decomposition(
             n_square_types=types,
             cutoff_regular=float(cutoff_regular),
