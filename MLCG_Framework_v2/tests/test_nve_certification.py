@@ -111,9 +111,11 @@ class NVECertificationTests(unittest.TestCase):
         self.assertIn('--neighbor-search', certify_source)
         self.assertIn('"--neighbor_search", args.neighbor_search', certify_source)
         self.assertIn('--neighbor_search', runner_source)
-        self.assertIn('configure_neighbor_search(system, args.neighbor_search)', runner_source)
+        self.assertIn('configure_neighbor_search(', runner_source)
+        self.assertIn('n_square_types=com_n_square_types', runner_source)
         self.assertIn('--neighbor_search', equilibrate_source)
-        self.assertIn('configure_neighbor_search(system, args.neighbor_search)', equilibrate_source)
+        self.assertIn('configure_neighbor_search(', equilibrate_source)
+        self.assertIn('n_square_types=com_n_square_types', equilibrate_source)
 
 
 

@@ -43,4 +43,10 @@ copy_if_different "$SCRIPT_DIR/painn.pyx" \
 "$PYTHON_BIN" "$SCRIPT_DIR/install_analytic_morse_bond.py" \
     --espresso-root "$ESPRESSO_ROOT"
 
-printf '[PASS] PaiNN plugin and analytic MorseBond synchronized with ESPResSo: %s\n' "$ESPRESSO_ROOT"
+# Extend ESPResSo's stock non-bonded Morse with an optional smooth switching
+# tail.  Stock behavior is preserved when switch_start is left at -1.
+"$PYTHON_BIN" "$SCRIPT_DIR/install_switched_morse_nonbonded.py" \
+    --espresso-root "$ESPRESSO_ROOT"
+
+printf '[PASS] PaiNN plugin, analytic MorseBond diagnostic, and switched non-bonded Morse synchronized with ESPResSo: %s\n' "$ESPRESSO_ROOT"
+printf '[INFO] Reconfigure before rebuilding so changes to build/myconfig.hpp are picked up: cmake -S %s -B %s/build\n' "$ESPRESSO_ROOT" "$ESPRESSO_ROOT"

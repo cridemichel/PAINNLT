@@ -1507,10 +1507,34 @@ with open(args.output, "wb") as f:
                 f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
 
             elif b_type == "morse":
-                D, a, r0 = b["D"], b["a"], b["r0"]
-                diff = r - r0
-                exp_term = np.exp(-a * diff)
-                f_scalar = - 2.0 * a * D * (1.0 - exp_term) * exp_term
+                # Keep the force prior exactly consistent with the reversible
+                # switched Morse used by the ESPResSo runtime.  The underlying
+                # Morse force is unchanged up to r_switch; only the far tail is
+                # smoothly brought to zero before r_cut.
+                D, a, r0 = float(b["D"]), float(b["a"]), float(b["r0"])
+                r_cut = float(b.get("r_cut", 15.0))
+                r_switch = float(
+                    b.get("r_switch", r0 + 0.75 * (r_cut - r0))
+                )
+                if not (r0 < r_switch < r_cut):
+                    raise ValueError(
+                        f"Morse bond {i}-{j} requires r0 < r_switch < r_cut; "
+                        f"got r0={r0}, r_switch={r_switch}, r_cut={r_cut}"
+                    )
+                if r >= r_cut:
+                    f_scalar = 0.0
+                else:
+                    exp_term = np.exp(-a * (r - r0))
+                    base_energy = D * (exp_term * exp_term - 2.0 * exp_term)
+                    base_force = 2.0 * D * a * exp_term * (exp_term - 1.0)
+                    if r <= r_switch:
+                        f_scalar = base_force
+                    else:
+                        width = r_cut - r_switch
+                        t = (r - r_switch) / width
+                        switch = 1.0 - 10.0*t**3 + 15.0*t**4 - 6.0*t**5
+                        d_switch_dr = -30.0*t*t*(1.0-t)*(1.0-t) / width
+                        f_scalar = switch * base_force - base_energy * d_switch_dr
 
 
             f_vec = - f_scalar * r_hat

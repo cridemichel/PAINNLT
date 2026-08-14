@@ -70,7 +70,10 @@ class FakeCellSystem:
         self.calls = []
 
     def set_regular_decomposition(self, **kwargs):
-        self.calls.append(kwargs)
+        self.calls.append(("regular", kwargs))
+
+    def set_hybrid_decomposition(self, **kwargs):
+        self.calls.append(("hybrid", kwargs))
 
 
 class FakeNeighborSystem:
@@ -105,10 +108,34 @@ class FrameworkUtilsTests(unittest.TestCase):
         configure_neighbor_search(system, "link-cell")
         self.assertEqual(
             system.cell_system.calls,
-            [{"use_verlet_lists": True}, {"use_verlet_lists": False}],
+            [
+                ("regular", {"use_verlet_lists": True}),
+                ("regular", {"use_verlet_lists": False}),
+            ],
         )
         with self.assertRaises(ValueError):
             configure_neighbor_search(system, "bogus")
+
+    def test_configure_neighbor_search_hybrid(self):
+        system = FakeNeighborSystem()
+        configure_neighbor_search(
+            system, "link-cell", n_square_types={8, 11}, cutoff_regular=1.4
+        )
+        self.assertEqual(
+            system.cell_system.calls,
+            [(
+                "hybrid",
+                {
+                    "n_square_types": {8, 11},
+                    "cutoff_regular": 1.4,
+                    "use_verlet_lists": False,
+                },
+            )],
+        )
+        with self.assertRaises(ValueError):
+            configure_neighbor_search(
+                system, "verlet", n_square_types={8}, cutoff_regular=0.0
+            )
 
     def test_particle_is_virtual_compatibility(self):
         self.assertFalse(particle_is_virtual(FakeParticle(0, 4, 0, False)))
