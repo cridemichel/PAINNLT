@@ -29,7 +29,10 @@ from framework_utils import (
 from espresso_interactions import (
     com_runtime_type,
     configure_pair_specific_morse,
+    configure_type_pair_morse,
+    max_type_pair_morse_cutoff,
     prepare_pair_specific_morse,
+    prepare_type_pair_morse,
 )
 
 parser = argparse.ArgumentParser()
@@ -100,6 +103,13 @@ if args.log_interval <= 0:
 morse_com_types, morse_contacts = prepare_pair_specific_morse(
     priors, nn_config["num_species"]
 )
+morse_type_pairs = prepare_type_pair_morse(priors, nn_config["num_species"])
+if morse_contacts and morse_type_pairs:
+    print(
+        "[WARNING] Both pair-specific COM Morse contacts and site type-pair Morse "
+        "interactions are active. Their contributions are additive; verify that this "
+        "is intentional and not prior double counting."
+    )
 DUMMY_COM_TYPE = nn_config["num_species"] + 1
 
 # Setup ESPResSo System
@@ -281,7 +291,7 @@ for (mol_i, mol_j), site_pairs in sorted(direct_site_exclusions.items()):
         applied_direct_site_exclusions += 1
 
 print(
-    f"[INFO] WCA topology exclusions active: {len(wca_direct_pairs)} 1-2 molecule pairs "
+    f"[INFO] Non-bonded topology exclusions active (WCA/type-pair potentials): {len(wca_direct_pairs)} 1-2 molecule pairs "
     f"with {applied_direct_site_exclusions} bonded site-pair exclusions; "
     f"{len(wca_one_three_pairs)} 1-3 all-sites exclusions (policy v3)."
 )
@@ -317,9 +327,17 @@ else:
 configure_pair_specific_morse(system, morse_contacts, morse_com_types)
 for contact in morse_contacts:
     print(
-        "[INFO] Added reversible non-bonded Morse contact "
-        f"{contact['index']}: mol {contact['mol_i']} <-> mol {contact['mol_j']} "
+        "[INFO] Added pair-specific reversible Morse contact "
+        f"{contact['index']}: COM mol {contact['mol_i']} <-> mol {contact['mol_j']} "
         f"(r_switch={contact['r_switch']:.6g}, r_cut={contact['r_cut']:.6g})"
+    )
+
+configure_type_pair_morse(system, morse_type_pairs)
+for item in morse_type_pairs:
+    print(
+        "[INFO] Added type-pair reversible Morse interaction "
+        f"{item['index']}: site type {item['type_i']} <-> {item['type_j']} "
+        f"(r_switch={item['r_switch']:.6g}, r_cut={item['r_cut']:.6g})"
     )
 
 # No additional COM-COM hard core is added: runtime interactions must match
@@ -441,7 +459,22 @@ for i in range(nn_config["num_species"]):
 regular_cutoff = max(
     float(nn_config.get("cutoff", 0.0)),
     max((float(item.get("cutoff_nm", 0.0)) for item in priors.get("wca_pairs", {}).values()), default=0.0),
+    max_type_pair_morse_cutoff(morse_type_pairs),
 )
+# Pair-specific COM Morse contacts use dedicated COM types in the N-square side
+# of the hybrid decomposition. Type-pair Morse acts on ordinary CG site types
+# and therefore contributes to the regular-decomposition cutoff above.
+if morse_type_pairs:
+    type_pair_cutoff = max_type_pair_morse_cutoff(morse_type_pairs)
+    required_length = 2.0 * (type_pair_cutoff + float(system.cell_system.skin))
+    if min(system.box_l) <= required_length:
+        raise ValueError(
+            "Morse type-pair cutoff is too large for the periodic regular decomposition: "
+            f"box={list(system.box_l)}, max Morse r_cut={type_pair_cutoff:.6g}, "
+            f"skin={float(system.cell_system.skin):.6g}; each box dimension must exceed "
+            f"{required_length:.6g} nm. Pair-specific COM Morse contacts do not have "
+            "this regular-cell constraint because they use the N-square side of the hybrid decomposition."
+        )
 com_n_square_types = {DUMMY_COM_TYPE, *morse_com_types.values()} if morse_contacts else None
 configure_neighbor_search(
     system, args.neighbor_search,

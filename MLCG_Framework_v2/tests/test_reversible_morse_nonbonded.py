@@ -9,15 +9,22 @@ import sys
 import tempfile
 import unittest
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[1]
 SIM = ROOT / "simulation"
 PLUGIN = SIM / "espresso_plugin"
 sys.path.insert(0, str(SIM))
+sys.path.insert(0, str(ROOT / "preprocessing"))
 
+from prior_kernels import switched_morse_radial_force_array  # noqa: E402
 from espresso_interactions import (  # noqa: E402
     com_runtime_type,
     configure_pair_specific_morse,
+    configure_type_pair_morse,
+    max_type_pair_morse_cutoff,
     prepare_pair_specific_morse,
+    prepare_type_pair_morse,
     switched_morse_energy_radial_force,
 )
 
@@ -102,6 +109,42 @@ class ReversibleMorseTests(unittest.TestCase):
             "cutoff": 2.5, "switch_start": 2.0,
         }])
 
+    def test_type_pair_morse_uses_physical_site_types(self):
+        priors = {"morse_type_pairs": [
+            {"type_i": 3, "type_j": 1, "D": 4.0, "a": 2.0,
+             "r0": 0.55, "r_switch": 0.9, "r_cut": 1.2},
+            {"type_i": 2, "type_j": 2, "D": 1.5, "a": 3.0,
+             "r0": 0.4, "r_cut": 0.8},
+        ]}
+        items = prepare_type_pair_morse(priors, num_species=4)
+        self.assertEqual((items[0]["type_i"], items[0]["type_j"]), (1, 3))
+        self.assertGreater(items[1]["r_switch"], items[1]["r0"])
+        self.assertLess(items[1]["r_switch"], items[1]["r_cut"])
+        self.assertEqual(max_type_pair_morse_cutoff(items), 1.2)
+
+        system = FakeSystem()
+        configure_type_pair_morse(system, items)
+        self.assertEqual(
+            system.non_bonded_inter[1, 3].morse.calls,
+            [{"eps": 4.0, "alpha": 2.0, "rmin": 0.55,
+              "cutoff": 1.2, "switch_start": 0.9}],
+        )
+
+    def test_type_pair_morse_rejects_duplicate_unknown_and_implicit_cutoff(self):
+        with self.assertRaisesRegex(ValueError, "explicit r_cut"):
+            prepare_type_pair_morse({"morse_type_pairs": [
+                {"type_i": 0, "type_j": 1, "D": 1, "a": 2, "r0": 0.4}
+            ]}, 3)
+        with self.assertRaisesRegex(ValueError, "valid CG site types"):
+            prepare_type_pair_morse({"morse_type_pairs": [
+                {"type_i": 0, "type_j": 4, "D": 1, "a": 2, "r0": 0.4, "r_cut": 1.0}
+            ]}, 3)
+        with self.assertRaisesRegex(ValueError, "Duplicate Morse type pair"):
+            prepare_type_pair_morse({"morse_type_pairs": [
+                {"type_i": 0, "type_j": 1, "D": 1, "a": 2, "r0": 0.4, "r_cut": 1.0},
+                {"type_i": 1, "type_j": 0, "D": 2, "a": 3, "r0": 0.5, "r_cut": 1.1},
+            ]}, 3)
+
     def test_python_switched_morse_is_energy_force_consistent(self):
         params = dict(D=8.5, a=3.2, r0=0.37, r_switch=1.1, r_cut=1.5)
         for r in (0.51, 1.1, 1.25, 1.49):
@@ -115,6 +158,23 @@ class ReversibleMorseTests(unittest.TestCase):
             -params["D"], places=13)
         self.assertEqual(switched_morse_energy_radial_force(params["r_cut"], **params), (0.0, 0.0))
         self.assertEqual(switched_morse_energy_radial_force(params["r_cut"] + 0.2, **params), (0.0, 0.0))
+
+    def test_preprocessing_vectorized_morse_matches_runtime_scalar_kernel(self):
+        params = dict(D=8.5, a=3.2, r0=0.37, r_switch=1.1, r_cut=1.5)
+        distances = np.asarray([0.51, 1.10, 1.25, 1.49, 1.50, 1.70])
+        got = switched_morse_radial_force_array(
+            distances,
+            np.full_like(distances, params["D"]),
+            np.full_like(distances, params["a"]),
+            np.full_like(distances, params["r0"]),
+            np.full_like(distances, params["r_switch"]),
+            np.full_like(distances, params["r_cut"]),
+        )
+        expected = np.asarray([
+            switched_morse_energy_radial_force(r, **params)[1]
+            for r in distances
+        ])
+        self.assertTrue(np.allclose(got, expected, rtol=1e-13, atol=1e-13))
 
     def test_cpp_switched_kernel_is_energy_force_consistent(self):
         compiler = shutil.which("c++") or shutil.which("clang++") or shutil.which("g++")
@@ -164,6 +224,15 @@ int main() {
                 check=True, capture_output=True, text=True,
             )
             subprocess.run([str(exe)], check=True)
+
+    def test_preprocessing_subtracts_type_pair_morse_with_nonbonded_exclusions(self):
+        source = (ROOT / "preprocessing" / "build_cg_dataset.py").read_text(encoding="utf-8")
+        self.assertIn('config_data.get("morse_type_pairs", [])', source)
+        self.assertIn('derived_priors.get("morse_type_pairs", [])', source)
+        self.assertIn('morse_excluded = wca_one_three_mol_matrix', source)
+        self.assertIn('_direct_site_excluded_mask(', source)
+        self.assertIn('switched_morse_radial_force_array(', source)
+        self.assertIn('np.add.at(res_torques, mol_i', source)
 
     def test_installer_is_idempotent_on_espresso_5_style_tree(self):
         installer = load_installer()

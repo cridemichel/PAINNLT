@@ -1,8 +1,8 @@
 # MLCG Framework v2 — Guida tecnica completa
 
-> Stato documentato: **13 agosto 2026**.
+> Stato documentato: **14 agosto 2026**.
 > Questa guida descrive il framework nella configurazione corrente, inclusi i fix recenti per:
-> Morse bonded analitico in ESPResSo, validazione tollerante ai round-trip `float32` del manifest,
+> Morse switched non-bonded reversibile (pair-specific e type-pair) in ESPResSo, validazione tollerante ai round-trip `float32` del manifest,
 > dummy neighbor-list limitata ai soli tipi ML, e certificazione NVE basata su `sigma_E = std(E)`.
 
 ---
@@ -452,47 +452,58 @@ Il dominio richiede:
 |r-r_0| < r_{\max}.
 \]
 
-## 7.3 Morse analitico
+## 7.3 Morse switched non-bonded
 
-La versione corrente usa un vero bonded `MorseBond` nel core ESPResSo:
-
-\[
-U(r)
-=
-D
-\left[
-1-e^{-a(r-r_0)}
-\right]^2,
-\]
+Il runtime corrente usa un unico kernel Morse analitico e conservativo con gauge
 
 \[
-F_r
-=
--2aD
-\left[
-1-e^{-a(r-r_0)}
-\right]
-e^{-a(r-r_0)}.
+U_0(r)=D\left(e^{-2a(r-r_0)}-2e^{-a(r-r_0)}\right),
 \]
 
-Parametri:
+per cui \(U_0(r_0)=-D\) e \(U_0(\infty)=0\). Tra `r_switch` e `r_cut` il termine viene moltiplicato per uno smoothstep quintico; energia e forza sono entrambe esattamente nulle a e oltre il cutoff. Il cutoff non è quindi un evento di "bond breaking": una coppia può uscire dal range e rientrare successivamente senza modifiche topologiche.
 
-- `D`: profondità energetica, kJ/mol;
-- `a`: inverse length, nm\(^{-1}\);
-- `r0`: distanza di equilibrio, nm;
-- `r_cut`: cutoff bonded opzionale; l'integrazione corrente usa un default ampio se non specificato.
+Il framework espone **due modalità di selezione**, che condividono la stessa forma energetica.
 
-Il Morse non viene più approssimato mediante interpolazioni indipendenti di energia e forza. Questa modifica è essenziale per una certificazione NVE rigorosa.
+### 7.3.1 Morse pair-specific
 
-### Dissociazione, rebinding e semantica topologica
+I contatti espliciti restano descritti nella lista `bonds` con `type="morse"` e coordinate COM-COM (`site_i=site_j=-1` o campi omessi):
 
-Il `MorseBond` è **dissociativo dal punto di vista energetico**, ma non viene rimosso dinamicamente dalla lista dei bonded interactions. Per `r > r0` la forza attrattiva tende gradualmente a zero e l'energia tende a `D`; se i due corpi tornano vicini, il contatto può riformarsi automaticamente. Questa è la semantica adatta a un contatto reversibile di folding/unfolding, non a una rottura irreversibile della connettività.
+```json
+{
+  "mol_i": 1, "mol_j": 7,
+  "type": "morse",
+  "D": 50.0, "a": 0.3, "r0": 1.57,
+  "r_switch": 11.64, "r_cut": 15.0
+}
+```
 
-Per default un bond Morse ha `exclude_wca=false`: la sola presenza del restraint Morse **non** crea una topological 1-2 WCA exclusion. Il core repulsivo tra i relativi virtual sites resta quindi attivo. Bond harmonic/FENE usati per la connettività covalente hanno invece default `exclude_wca=true`; con la policy WCA v3 viene esclusa soltanto la site-pair esplicitamente bonded.
+Questi termini sono **pair-specific dal punto di vista fisico**, ma non sono bonded nel bookkeeping ESPResSo. Il runtime assegna tipi COM tecnici dedicati alle molecole coinvolte e configura il Morse tramite `system.non_bonded_inter[type_i,type_j]`. I tipi delle virtual site CG non vengono modificati, quindi PaiNN continua a vedere le stesse specie. I COM pair-specific vengono collocati nella parte N-square della decomposizione ibrida, così un cutoff COM lungo non allarga le celle della parte short-range WCA/PaiNN.
 
-`D` è una scala energetica del singolo contatto, non direttamente una free-energy di unfolding dell'intera struttura. Se più Morse devono dissociarsi cooperativamente, i loro contributi si sommano e competono con entropia, prior bonded, WCA e residuo ML. Anche `a` è cruciale: la lunghezza caratteristica è circa `1/a`, quindi valori piccoli producono attrazioni molto larghe.
+Per compatibilità con le topologie esistenti il default di `r_cut` dei contatti pair-specific resta 15 nm; se `r_switch` è omesso viene posto al 75% dell'intervallo tra `r0` e `r_cut`. `exclude_wca` resta `false` per default: un contatto Morse non definisce connettività covalente e non crea una WCA exclusion.
 
-Il cutoff non deve essere usato come meccanismo di bond breaking. Nell'implementazione corrente energia e forza vengono omesse per `r >= r_cut`; un attraversamento effettivo del cutoff introdurrebbe una discontinuità energetica. Per NVE e per unfolding reversibile usare quindi un `r_cut` molto oltre tutte le distanze raggiungibili, oppure una futura forma di cutoff esplicitamente shiftata/smoothed.
+### 7.3.2 Morse type-pair
+
+Per un'attrazione trasferibile basata sul tipo di bead si usa la sezione top-level `morse_type_pairs`:
+
+```json
+"morse_type_pairs": [
+  {
+    "type_i": 1, "type_j": 3,
+    "D": 4.0, "a": 2.0, "r0": 0.55,
+    "r_switch": 0.90, "r_cut": 1.20
+  }
+]
+```
+
+`type_i` e `type_j` sono i **CG site types fisici** definiti in `mapping.site_types`, non i tipi COM tecnici. Un record si applica a tutte le coppie di site con quei tipi, secondo la normale semantica ESPResSo `non_bonded_inter[type_i,type_j]`. `r_cut` è obbligatorio per questa modalità perché contribuisce direttamente al cutoff della regular neighbor decomposition; `r_switch` è opzionale e usa lo stesso default al 75%.
+
+Le particle exclusions ESPResSo valgono per tutte le interazioni non-bonded, non soltanto per WCA. Di conseguenza un Morse type-pair è escluso intra-rigid-body, sulle site-pair 1-2 esplicitamente escluse e sulle coppie 1-3 escluse dalla policy WCA v3. Il preprocessing usa esattamente la stessa maschera quando sottrae il prior da forze e torque di riferimento.
+
+### 7.3.3 Coesistenza e double counting
+
+Le due modalità possono coesistere. Sono però **additive**: se una coppia di molecole possiede un contatto COM pair-specific e, contemporaneamente, le sue site types sono coperte da un Morse type-pair, entrambi i contributi entrano nell'Hamiltoniana. Questo può essere intenzionale, ma non va usato accidentalmente. La regola pratica è: pair-specific per contatti nativi/topologici o tertiary contacts; type-pair per attrazioni generiche/trasferibili tra bead types.
+
+In entrambi i casi il prior sottratto nel preprocessing deve coincidere con quello usato nel runtime. Dopo qualunque modifica ai Morse rigenerare dataset/priors, retrainare il modello residuale, riequilibrare e ricertificare NVE.
 
 ## 7.4 Harmonic angle
 
@@ -1300,7 +1311,7 @@ simulation/espresso_plugin/
 
 contiene il bridge C++/Cython.
 
-La versione corrente include anche il bonded Morse analitico.
+La versione corrente include anche l’estensione Morse non-bonded switched usata sia dai contatti pair-specific sia dalle interazioni type-pair.
 
 Usare lo script:
 
@@ -1429,31 +1440,37 @@ name
 exclude_wca
 ```
 
-Per harmonic:
-
-```text
-k, r0
-```
-
-con `k="auto"`, `r0="auto"` supportati.
-
-Per FENE:
-
-```text
-k, r0, r_max
-```
-
-Per Morse:
+`harmonic` e `fene` rappresentano connettività bonded strutturale. Un record `type="morse"` rappresenta invece un **contatto Morse pair-specific COM-COM** e viene trasformato dal runtime in una interazione non-bonded selettiva. Campi Morse:
 
 ```text
 D, a, r0
+r_switch   # opzionale
+r_cut      # opzionale per pair-specific
 ```
 
-e opzionalmente `r_cut`. Il default di `exclude_wca` per Morse è `false`; per harmonic/FENE è `true`. Con WCA policy v3, un harmonic/FENE site-site con `exclude_wca=true` sopprime WCA soltanto sulla specifica coppia `(site_i, site_j)`. Un bond COM-COM può definire semantica bonded ma non crea una virtual-site exclusion.
+Per i Morse pair-specific `site_i/site_j` devono essere COM (`-1` o omessi); il default di `exclude_wca` è `false`. Il kernel è switched e vale esattamente zero a e oltre `r_cut`.
 
-Per un Morse dissociativo, `r_cut` deve restare molto oltre le distanze fisicamente esplorate: non usarlo come soglia di rottura.
+## 19.7 `morse_type_pairs`
 
-## 19.7 `angles`
+Sezione opzionale per il Morse non-bonded ordinario selezionato da CG site type:
+
+```json
+"morse_type_pairs": [
+  {
+    "type_i": 0,
+    "type_j": 1,
+    "D": 4.0,
+    "a": 2.0,
+    "r0": 0.55,
+    "r_switch": 0.90,
+    "r_cut": 1.20
+  }
+]
+```
+
+`type_i/type_j` devono appartenere a `mapping.site_types`; coppie duplicate, anche con ordine invertito, sono rifiutate. `r_cut` è obbligatorio. Le exclusions non-bonded ESPResSo si applicano anche a questo Morse.
+
+## 19.8 `angles`
 
 ```text
 mol_i, mol_j, mol_k
@@ -1467,7 +1484,7 @@ exclude_wca
 
 `theta0` è in radianti.
 
-## 19.8 `dihedrals`
+## 19.9 `dihedrals`
 
 ```text
 mol_i, mol_j, mol_k, mol_l
@@ -1479,7 +1496,7 @@ phi0
 name
 ```
 
-## 19.9 `wca_sigma`
+## 19.10 `wca_sigma`
 
 Valore raccomandato:
 
@@ -1489,7 +1506,7 @@ Valore raccomandato:
 
 Nel framework pair-specific attuale questo attiva il fit completo e genera `wca_pairs`.
 
-## 19.10 `wca_quantile_percent`
+## 19.11 `wca_quantile_percent`
 
 Quantile basso delle distanze fisiche usato per l'onset WCA.
 
@@ -1500,7 +1517,7 @@ Valori più piccoli:
 
 Deve stare in `(0,50)`.
 
-## 19.11 `wca_guard_fraction`
+## 19.12 `wca_guard_fraction`
 
 \[
 r_{\mathrm{guard}}
@@ -1512,7 +1529,7 @@ Default template: `0.8`.
 
 Più piccolo significa calibrare l'altezza della barriera più in profondità nel core.
 
-## 19.12 `wca_guard_kbt`
+## 19.13 `wca_guard_kbt`
 
 Fissa
 
@@ -1524,13 +1541,13 @@ U(r_{\mathrm{guard}})
 
 Valori grandi aumentano \(\epsilon\) e la rigidità del core.
 
-## 19.13 `wca_physical_guard_margin`
+## 19.14 `wca_physical_guard_margin`
 
 Impone il margine rispetto al minimo fisico osservato.
 
 Default: `0.98`.
 
-## 19.14 `decoy_target_fraction`
+## 19.15 `decoy_target_fraction`
 
 Default raccomandato:
 
@@ -1540,15 +1557,15 @@ Default raccomandato:
 
 I decoy legacy hanno target residuo zero per l'intero frame senza una loss mask per molecola. Per questo sono disabilitati.
 
-## 19.15 `allow_unmasked_zero_target_decoys`
+## 19.16 `allow_unmasked_zero_target_decoys`
 
 Deve restare `false` salvo riproduzione intenzionale di vecchie ablation.
 
-## 19.16 `decoy_random_seed`
+## 19.17 `decoy_random_seed`
 
 Seed della generazione decoy, se abilitata.
 
-## 19.17 `rigid_bodies`
+## 19.18 `rigid_bodies`
 
 Opzionale.
 
@@ -2012,7 +2029,7 @@ Dopo ogni modifica a:
 PaiNN_Architecture.hpp
 PaiNN_ML_Potential.*
 painn.pyx
-morse_bond.hpp / binding associati
+morse_switched.hpp / installer `install_switched_morse_nonbonded.py`
 ```
 
 occorre ricopiare e ricompilare ESPResSo.
@@ -2632,7 +2649,7 @@ Il percorso esatto dipende dalla build locale.
 
 ## 26.4 Morse smoke test
 
-Dopo rebuild di ESPResSo verificare che il bonded Morse restituisca energia e forze finite e opposte sui due estremi.
+Dopo il rebuild di ESPResSo eseguire `tutorials/tel22/08_diagnose_morse_reversibility.sh --assert-expected`: il test verifica `U(r_cut)=F(r_cut)=0`, attraversamento del cutoff senza eccezioni e re-entry/rebinding. I test unitari coprono inoltre la configurazione `morse_type_pairs`.
 
 ## 26.5 Audit priors
 
@@ -2643,6 +2660,7 @@ import json
 
 p = json.load(open("cg_priors.json"))
 print(len(p.get("bonds", [])))
+print(len(p.get("morse_type_pairs", [])))
 print(len(p.get("angles", [])))
 print(len(p.get("dihedrals", [])))
 print(len(p.get("wca_pairs", {})))

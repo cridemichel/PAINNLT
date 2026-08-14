@@ -3,6 +3,7 @@ from MDAnalysis.exceptions import NoDataError
 import numpy as np
 
 from geometry_utils import diagonalize_inertia_tensor, minimum_image_distance_matrix
+from prior_kernels import switched_morse_radial_force_array
 import struct
 import json
 import copy
@@ -10,6 +11,68 @@ import argparse
 import sys
 import os
 from scipy.ndimage import gaussian_filter1d
+
+
+DEFAULT_MORSE_SWITCH_FRACTION = 0.75
+
+
+def normalize_morse_type_pairs(entries, known_site_types):
+    """Validate broad non-bonded Morse priors selected by CG site type."""
+    known = {int(x) for x in known_site_types}
+    result = []
+    seen = {}
+    for index, raw in enumerate(entries or []):
+        if not isinstance(raw, dict):
+            raise ValueError(f"morse_type_pairs[{index}] must be an object")
+        type_i = int(raw["type_i"])
+        type_j = int(raw["type_j"])
+        if type_i not in known or type_j not in known:
+            raise ValueError(
+                f"morse_type_pairs[{index}] uses unknown CG site types "
+                f"{type_i}, {type_j}; known types are {sorted(known)}"
+            )
+        if "r_cut" not in raw:
+            raise ValueError(
+                f"morse_type_pairs[{index}] requires an explicit r_cut because "
+                "type-pair Morse contributes to the regular neighbor-search cutoff"
+            )
+        pair = tuple(sorted((type_i, type_j)))
+        if pair in seen:
+            raise ValueError(
+                f"Duplicate Morse type pair {pair[0]} <-> {pair[1]} in "
+                f"morse_type_pairs[{seen[pair]}] and morse_type_pairs[{index}]"
+            )
+        seen[pair] = index
+        D = float(raw["D"])
+        a = float(raw["a"])
+        r0 = float(raw["r0"])
+        r_cut = float(raw["r_cut"])
+        if D < 0.0 or a <= 0.0 or r0 < 0.0 or r_cut <= r0:
+            raise ValueError(
+                f"Invalid morse_type_pairs[{index}] parameters: "
+                f"D={D}, a={a}, r0={r0}, r_cut={r_cut}"
+            )
+        r_switch = float(
+            raw.get("r_switch", r0 + DEFAULT_MORSE_SWITCH_FRACTION * (r_cut - r0))
+        )
+        if not (r0 < r_switch < r_cut):
+            raise ValueError(
+                f"morse_type_pairs[{index}] requires r0 < r_switch < r_cut; "
+                f"got r0={r0}, r_switch={r_switch}, r_cut={r_cut}"
+            )
+        item = copy.deepcopy(raw)
+        item.update({
+            "type_i": pair[0],
+            "type_j": pair[1],
+            "D": D,
+            "a": a,
+            "r0": r0,
+            "r_switch": r_switch,
+            "r_cut": r_cut,
+        })
+        result.append(item)
+    return result
+
 
 
 
@@ -58,6 +121,18 @@ mapping_by_resname = MAPPING_DATA.get("residues", {})
 site_types = MAPPING_DATA.get("site_types", {})
 
 BONDS = copy.deepcopy(config_data.get("bonds", []))
+MORSE_TYPE_PAIRS = normalize_morse_type_pairs(
+    copy.deepcopy(config_data.get("morse_type_pairs", [])), site_types.values()
+)
+if MORSE_TYPE_PAIRS and any(
+    isinstance(b, dict) and str(b.get("type", "")).lower() == "morse"
+    for b in BONDS
+):
+    print(
+        "[WARNING] Topology enables both pair-specific COM Morse contacts and "
+        "site type-pair Morse interactions. The priors are additive; verify that "
+        "this is intentional and not double counting."
+    )
 ANGLES = copy.deepcopy(config_data.get("angles", []))
 DIHEDRALS = copy.deepcopy(config_data.get("dihedrals", []))
 
@@ -1061,6 +1136,9 @@ print("\n[INFO] Pass 1 completato. Calcolo parametri Harmonic Priors...")
 if args.priors:
     print(f"[INFO] Trovato flag --priors. Salto inferenza statistica e carico i prior esatti da: {args.priors}")
     derived_priors = _preloaded_priors
+    derived_priors["morse_type_pairs"] = normalize_morse_type_pairs(
+        copy.deepcopy(derived_priors.get("morse_type_pairs", [])), site_types.values()
+    )
     exclusion_meta = derived_priors.get("wca_exclusions", {})
     if not (
         exclusion_meta.get("policy_version") == 3
@@ -1113,7 +1191,15 @@ if derived_priors is None:
     else:
         WCA_SIGMA_VAL = float(WCA_SIGMA)
 
-    derived_priors = {"bonds": [], "wca": {"sigma": WCA_SIGMA_VAL, "epsilon": WCA_EPSILON if WCA_EPSILON > 0 else 1000.0, "overrides": WCA_OVERRIDES}}
+    derived_priors = {
+        "bonds": [],
+        "morse_type_pairs": copy.deepcopy(MORSE_TYPE_PAIRS),
+        "wca": {
+            "sigma": WCA_SIGMA_VAL,
+            "epsilon": WCA_EPSILON if WCA_EPSILON > 0 else 1000.0,
+            "overrides": WCA_OVERRIDES,
+        },
+    }
     
     for b, dists in bond_distances.items():
         if isinstance(b, str): continue
@@ -1371,6 +1457,68 @@ if wca_prior_dict:
         f"global cutoff={np.sqrt(wca_global_cutoff_sq):.4f} nm"
     )
 
+# Precompute the ordinary ESPResSo type-pair Morse selection on the same
+# non-bonded site-pair mask used at runtime. Particle exclusions suppress all
+# non-bonded potentials, not only WCA, so preprocessing must mirror intra-body,
+# explicit bonded-site 1-2, and 1-3 exclusions for Morse type pairs as well.
+morse_type_pair_priors = derived_priors.get("morse_type_pairs", [])
+if morse_type_pair_priors:
+    max_morse_type = max(
+        max(int(item["type_i"]), int(item["type_j"]))
+        for item in morse_type_pair_priors
+    )
+    n_morse_types = max(int(np.max(flat_type_template)), max_morse_type) + 1
+    shape = (n_morse_types, n_morse_types)
+    morse_D_matrix = np.zeros(shape, dtype=np.float64)
+    morse_a_matrix = np.zeros(shape, dtype=np.float64)
+    morse_r0_matrix = np.zeros(shape, dtype=np.float64)
+    morse_switch_matrix = np.zeros(shape, dtype=np.float64)
+    morse_cut_matrix = np.zeros(shape, dtype=np.float64)
+    for item in morse_type_pair_priors:
+        ti, tj = int(item["type_i"]), int(item["type_j"])
+        for matrix, value in (
+            (morse_D_matrix, float(item["D"])),
+            (morse_a_matrix, float(item["a"])),
+            (morse_r0_matrix, float(item["r0"])),
+            (morse_switch_matrix, float(item["r_switch"])),
+            (morse_cut_matrix, float(item["r_cut"])),
+        ):
+            matrix[ti, tj] = matrix[tj, ti] = value
+
+    morse_pair_i, morse_pair_j = np.triu_indices(flat_type_template.size, k=1)
+    morse_mol_i = flat_mol_template[morse_pair_i]
+    morse_mol_j = flat_mol_template[morse_pair_j]
+    morse_excluded = wca_one_three_mol_matrix[morse_mol_i, morse_mol_j].copy()
+    morse_excluded |= _direct_site_excluded_mask(
+        morse_pair_i, morse_pair_j, flat_mol_template, flat_site_template,
+        wca_direct_site_pairs, len(mol_resnames)
+    )
+    morse_candidate = (morse_mol_i != morse_mol_j) & (~morse_excluded)
+    morse_pair_i = morse_pair_i[morse_candidate]
+    morse_pair_j = morse_pair_j[morse_candidate]
+    morse_type_i = flat_type_template[morse_pair_i]
+    morse_type_j = flat_type_template[morse_pair_j]
+    morse_cut_all = morse_cut_matrix[morse_type_i, morse_type_j]
+    configured = morse_cut_all > 0.0
+    morse_pair_i = morse_pair_i[configured]
+    morse_pair_j = morse_pair_j[configured]
+    morse_type_i = morse_type_i[configured]
+    morse_type_j = morse_type_j[configured]
+    morse_D_all = morse_D_matrix[morse_type_i, morse_type_j]
+    morse_a_all = morse_a_matrix[morse_type_i, morse_type_j]
+    morse_r0_all = morse_r0_matrix[morse_type_i, morse_type_j]
+    morse_switch_all = morse_switch_matrix[morse_type_i, morse_type_j]
+    morse_cut_all = morse_cut_matrix[morse_type_i, morse_type_j]
+    print(
+        f"[INFO] Morse type-pair kernel: {morse_pair_i.size} selected non-bonded "
+        f"site pairs, max cutoff={np.max(morse_cut_all):.4f} nm"
+    )
+else:
+    morse_pair_i = np.empty(0, dtype=np.int64)
+    morse_pair_j = np.empty(0, dtype=np.int64)
+    morse_D_all = morse_a_all = morse_r0_all = np.empty(0, dtype=np.float64)
+    morse_switch_all = morse_cut_all = np.empty(0, dtype=np.float64)
+
 with open(args.output, "wb") as f:
     num_frames = len(cg_centers_history)
     f.write(struct.pack("i", num_frames))
@@ -1472,6 +1620,40 @@ with open(args.output, "wb") as f:
                     wca_force_norms_by_pair[pair_key_diag].extend(vals.tolist())
                     wca_active_distances_by_pair[pair_key_diag].extend(r[code_mask].tolist())
                     wca_active_classes_by_pair[pair_key_diag].extend(active_classes[code_mask].tolist())
+
+        # 3.1.1 Sottrazione Morse type-pair non-bonded sui siti virtuali.
+        # This uses exactly the same particle-exclusion semantics as ESPResSo.
+        if morse_pair_i.size:
+            morse_diff = flat_pos[morse_pair_i] - flat_pos[morse_pair_j]
+            morse_diff -= box_dim * np.round(morse_diff / box_dim)
+            morse_dist_sq = np.einsum("ij,ij->i", morse_diff, morse_diff)
+            active = (morse_dist_sq > 1.0e-12) & (morse_dist_sq < morse_cut_all**2)
+            active_idx = np.flatnonzero(active)
+            if active_idx.size:
+                i_idx = morse_pair_i[active_idx]
+                j_idx = morse_pair_j[active_idx]
+                mol_i = flat_mol_template[i_idx]
+                mol_j = flat_mol_template[j_idx]
+                r = np.sqrt(morse_dist_sq[active_idx])
+                r_hat = morse_diff[active_idx] / r[:, None]
+                f_scalar = switched_morse_radial_force_array(
+                    r,
+                    morse_D_all[active_idx],
+                    morse_a_all[active_idx],
+                    morse_r0_all[active_idx],
+                    morse_switch_all[active_idx],
+                    morse_cut_all[active_idx],
+                )
+                # morse_diff points from j to i, so signed radial force times
+                # r_hat is the force on i. Subtract that explicit prior from
+                # the mapped reference force and its rigid-body torque.
+                f_vec = f_scalar[:, None] * r_hat
+                np.add.at(res_forces, mol_i, -f_vec)
+                np.add.at(res_forces, mol_j, +f_vec)
+                lever_i = flat_pos[i_idx] - frame_centers_arr[mol_i]
+                lever_j = flat_pos[j_idx] - frame_centers_arr[mol_j]
+                np.add.at(res_torques, mol_i, -np.cross(lever_i, f_vec))
+                np.add.at(res_torques, mol_j, +np.cross(lever_j, f_vec))
 
         # 3.2 Sottrazione Legami (con supporto per siti specifici e momento torcente)
         for b in derived_priors["bonds"]:

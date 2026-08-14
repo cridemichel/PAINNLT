@@ -68,6 +68,43 @@ def make_analytic_morse_bond(interactions: Any, prior: dict[str, Any]):
     return cls(D=D, a=a, r_0=r0, r_cut=r_cut)
 
 
+def _normalize_switched_morse_parameters(
+    prior: dict[str, Any], *, label: str
+) -> dict[str, float]:
+    """Validate and normalize one conservative switched Morse parameter set."""
+    D = float(prior["D"])
+    a = float(prior["a"])
+    r0 = float(prior["r0"])
+    r_cut = float(prior.get("r_cut", DEFAULT_MORSE_R_CUT_NM))
+    if D < 0.0:
+        raise ValueError(f"{label} D must be >= 0")
+    if a <= 0.0:
+        raise ValueError(f"{label} a must be > 0")
+    if r0 < 0.0:
+        raise ValueError(f"{label} r0 must be >= 0")
+    if r_cut <= r0:
+        raise ValueError(
+            f"{label} requires r_cut > r0, got r0={r0} r_cut={r_cut}"
+        )
+
+    if "r_switch" in prior:
+        r_switch = float(prior["r_switch"])
+    else:
+        r_switch = r0 + DEFAULT_MORSE_SWITCH_FRACTION * (r_cut - r0)
+    if not (r0 < r_switch < r_cut):
+        raise ValueError(
+            f"{label} requires r0 < r_switch < r_cut, got "
+            f"r0={r0} r_switch={r_switch} r_cut={r_cut}"
+        )
+    return {
+        "D": D,
+        "a": a,
+        "r0": r0,
+        "r_cut": r_cut,
+        "r_switch": r_switch,
+    }
+
+
 def _normalize_morse_contact(prior: dict[str, Any], index: int) -> dict[str, Any]:
     mol_i = int(prior["mol_i"])
     mol_j = int(prior["mol_j"])
@@ -84,42 +121,95 @@ def _normalize_morse_contact(prior: dict[str, Any], index: int) -> dict[str, Any
             f"Morse bond[{index}] has invalid molecule pair {mol_i} <-> {mol_j}"
         )
 
-    D = float(prior["D"])
-    a = float(prior["a"])
-    r0 = float(prior["r0"])
-    r_cut = float(prior.get("r_cut", DEFAULT_MORSE_R_CUT_NM))
-    if D < 0.0:
-        raise ValueError(f"Morse bond[{index}] D must be >= 0")
-    if a <= 0.0:
-        raise ValueError(f"Morse bond[{index}] a must be > 0")
-    if r0 < 0.0:
-        raise ValueError(f"Morse bond[{index}] r0 must be >= 0")
-    if r_cut <= r0:
-        raise ValueError(
-            f"Morse bond[{index}] requires r_cut > r0, got r0={r0} r_cut={r_cut}"
-        )
-
-    if "r_switch" in prior:
-        r_switch = float(prior["r_switch"])
-    else:
-        r_switch = r0 + DEFAULT_MORSE_SWITCH_FRACTION * (r_cut - r0)
-    if not (r0 < r_switch < r_cut):
-        raise ValueError(
-            f"Morse bond[{index}] requires r0 < r_switch < r_cut, got "
-            f"r0={r0} r_switch={r_switch} r_cut={r_cut}"
-        )
-
+    params = _normalize_switched_morse_parameters(
+        prior, label=f"Morse bond[{index}]"
+    )
     return {
         "index": index,
         "mol_i": mol_i,
         "mol_j": mol_j,
-        "D": D,
-        "a": a,
-        "r0": r0,
-        "r_cut": r_cut,
-        "r_switch": r_switch,
+        **params,
     }
 
+
+def prepare_type_pair_morse(
+    priors: dict[str, Any], num_species: int
+) -> list[dict[str, Any]]:
+    """Normalize broad non-bonded Morse interactions selected by CG site type.
+
+    ``morse_type_pairs`` uses the physical CG site types 0..num_species-1.
+    Unlike pair-specific COM contacts, one entry applies to every non-excluded
+    site pair carrying the selected types, exactly following ESPResSo's normal
+    ``non_bonded_inter[type_i, type_j]`` semantics.
+    """
+    n_species = int(num_species)
+    raw_entries = priors.get("morse_type_pairs", [])
+    if not raw_entries:
+        return []
+    if n_species <= 0:
+        raise ValueError("num_species must be positive for Morse type-pair interactions")
+
+    normalized: list[dict[str, Any]] = []
+    seen: dict[tuple[int, int], int] = {}
+    for index, raw in enumerate(raw_entries):
+        if not isinstance(raw, dict):
+            raise ValueError(f"morse_type_pairs[{index}] must be an object")
+        type_i = int(raw["type_i"])
+        type_j = int(raw["type_j"])
+        if "r_cut" not in raw:
+            raise ValueError(
+                f"morse_type_pairs[{index}] requires an explicit r_cut because "
+                "type-pair Morse contributes to the regular neighbor-search cutoff"
+            )
+        if not (0 <= type_i < n_species and 0 <= type_j < n_species):
+            raise ValueError(
+                f"morse_type_pairs[{index}] uses site types {type_i}, {type_j}, "
+                f"but valid CG site types are 0..{n_species - 1}"
+            )
+        pair = tuple(sorted((type_i, type_j)))
+        if pair in seen:
+            raise ValueError(
+                f"Duplicate Morse type pair {pair[0]} <-> {pair[1]} in "
+                f"morse_type_pairs[{seen[pair]}] and morse_type_pairs[{index}]"
+            )
+        seen[pair] = index
+        params = _normalize_switched_morse_parameters(
+            raw, label=f"morse_type_pairs[{index}]"
+        )
+        normalized.append({
+            "index": index,
+            "type_i": pair[0],
+            "type_j": pair[1],
+            **params,
+        })
+    return normalized
+
+
+def configure_type_pair_morse(
+    system: Any, interactions: list[dict[str, Any]]
+) -> None:
+    """Configure ordinary ESPResSo type-pair non-bonded switched Morse terms."""
+    for item in interactions:
+        try:
+            system.non_bonded_inter[item["type_i"], item["type_j"]].morse.set_params(
+                eps=item["D"],
+                alpha=item["a"],
+                rmin=item["r0"],
+                cutoff=item["r_cut"],
+                switch_start=item["r_switch"],
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                "Failed to configure a Morse type-pair interaction. The ESPResSo "
+                "build must expose the MLCG switched non-bonded Morse extension; run "
+                "simulation/espresso_plugin/copy_plugin_files.sh, re-run CMake, and "
+                f"rebuild ESPResSo. Original error: {exc}"
+            ) from exc
+
+
+def max_type_pair_morse_cutoff(interactions: list[dict[str, Any]]) -> float:
+    """Return the largest regular-decomposition cutoff used by type-pair Morse."""
+    return max((float(item["r_cut"]) for item in interactions), default=0.0)
 
 def prepare_pair_specific_morse(
     priors: dict[str, Any], num_species: int
