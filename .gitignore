@@ -34,3 +34,4 @@ GROMACS
 **/*.mp4
 **/*.gif
 **/*.vtf
+**/.DS_Store
