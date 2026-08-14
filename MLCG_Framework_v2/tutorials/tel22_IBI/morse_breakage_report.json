@@ -1,0 +1,257 @@
+{
+  "cutoff_condition_in_mlcg_kernel": "r >= r_cut returns empty std::optional",
+  "diagnostic": "ESPResSo breakable MorseBond cutoff behavior",
+  "dynamic_crossing": {
+    "bond_after": {
+      "available": true,
+      "count": 1,
+      "repr": [
+        "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+      ]
+    },
+    "bond_before": {
+      "available": true,
+      "count": 1,
+      "repr": [
+        "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+      ]
+    },
+    "distance_at_exception": 15.000149994749567,
+    "exception": {
+      "message": "Raised while calling method integrate(): ERROR: bond broken between particles 0, 1",
+      "type": "Exception"
+    },
+    "margin": 0.00015000000000000001,
+    "max_steps": 4,
+    "r_cut": 15.0,
+    "raised": true,
+    "relative_speed": 3.0,
+    "start_distance": 14.99985,
+    "steps_completed": 0,
+    "system_time_at_exception": 0.0001,
+    "time_step": 0.0001
+  },
+  "epsilon": 1.4999999999999999e-05,
+  "morse_parameters": {
+    "D": 50.0,
+    "a": 0.3,
+    "r0": 1.5748742931065052,
+    "r_cut": 15.0
+  },
+  "static_probes": {
+    "above_cutoff": {
+      "analytic_untruncated_energy": 48.23406725790811,
+      "analytic_untruncated_radial_force": -0.52501756876866,
+      "distance": 15.000015,
+      "energy": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "distance": 15.000015,
+        "exception": {
+          "message": "Raised while calling method calculate_energy(): ERROR: bond broken between particles 0, 1",
+          "type": "Exception"
+        },
+        "success": false
+      },
+      "force": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "distance": 15.000015,
+        "exception": {
+          "message": "Raised while calling method integrate(): ERROR: bond broken between particles 0, 1",
+          "type": "Exception"
+        },
+        "success": false
+      }
+    },
+    "at_cutoff": {
+      "analytic_untruncated_energy": 48.23405938262717,
+      "analytic_untruncated_radial_force": -0.5250198884924614,
+      "distance": 15.0,
+      "energy": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "distance": 15.0,
+        "exception": {
+          "message": "Raised while calling method calculate_energy(): ERROR: bond broken between particles 0, 1",
+          "type": "Exception"
+        },
+        "success": false
+      },
+      "force": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "distance": 15.0,
+        "exception": {
+          "message": "Raised while calling method integrate(): ERROR: bond broken between particles 0, 1",
+          "type": "Exception"
+        },
+        "success": false
+      }
+    },
+    "below_cutoff": {
+      "analytic_untruncated_energy": 48.23405150731145,
+      "analytic_untruncated_radial_force": -0.5250222082263153,
+      "distance": 14.999985,
+      "energy": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bonded_energy": 48.23405150731145,
+        "distance": 14.999985,
+        "success": true
+      },
+      "force": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "distance": 14.999985,
+        "p0_force": [
+          0.5250222082263157,
+          0.0,
+          0.0
+        ],
+        "p1_force": [
+          -0.5250222082263157,
+          0.0,
+          0.0
+        ],
+        "success": true
+      }
+    },
+    "equilibrium": {
+      "analytic_untruncated_energy": 0.0,
+      "analytic_untruncated_radial_force": -0.0,
+      "distance": 1.5748742931065052,
+      "energy": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bonded_energy": 9.860761315262648e-30,
+        "distance": 1.5748742931065052,
+        "success": true
+      },
+      "force": {
+        "bond_after": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "bond_before": {
+          "available": true,
+          "count": 1,
+          "repr": [
+            "(<MorseBond({'D': 50.0, 'a': 0.3, 'r_0': 1.5748742931065052, 'r_cut': 15.0})>, 1)"
+          ]
+        },
+        "distance": 1.5748742931065052,
+        "p0_force": [
+          -1.3322676295501885e-14,
+          0.0,
+          0.0
+        ],
+        "p1_force": [
+          1.3322676295501885e-14,
+          0.0,
+          0.0
+        ],
+        "success": true
+      }
+    }
+  },
+  "summary": {
+    "above_cutoff_energy_reports_broken": true,
+    "above_cutoff_force_reports_broken": true,
+    "at_cutoff_energy_reports_broken": true,
+    "at_cutoff_force_reports_broken": true,
+    "below_cutoff_energy_succeeds": true,
+    "below_cutoff_force_succeeds": true,
+    "bond_topology_unchanged_after_above_cutoff_force_error": true,
+    "bond_topology_unchanged_after_at_cutoff_force_error": true,
+    "bond_topology_unchanged_after_dynamic_error": true,
+    "dynamic_crossing_stops_integrator": true
+  }
+}

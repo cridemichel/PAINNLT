@@ -1,0 +1,110 @@
+{
+  "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/cg_priors.json",
+  "selection": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_selection.json",
+  "output": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/cg_priors_ibi_seed.json",
+  "converted": {
+    "bonds": 210,
+    "angles": 200
+  },
+  "groups": [
+    {
+      "category": "bonds",
+      "name": "bb_A_G",
+      "mode": "ibi",
+      "count": 40,
+      "source_types": {
+        "harmonic": 40
+      }
+    },
+    {
+      "category": "bonds",
+      "name": "bb_G_G",
+      "mode": "ibi",
+      "count": 80,
+      "source_types": {
+        "harmonic": 80
+      }
+    },
+    {
+      "category": "bonds",
+      "name": "bb_G_T",
+      "mode": "ibi",
+      "count": 30,
+      "source_types": {
+        "harmonic": 30
+      }
+    },
+    {
+      "category": "bonds",
+      "name": "bb_T_T",
+      "mode": "ibi",
+      "count": 30,
+      "source_types": {
+        "harmonic": 30
+      }
+    },
+    {
+      "category": "bonds",
+      "name": "bb_T_A",
+      "mode": "ibi",
+      "count": 30,
+      "source_types": {
+        "harmonic": 30
+      }
+    },
+    {
+      "category": "angles",
+      "name": "ang_A_G_G",
+      "mode": "ibi",
+      "count": 40,
+      "source_types": {
+        "harmonic": 40
+      }
+    },
+    {
+      "category": "angles",
+      "name": "ang_G_G_G",
+      "mode": "ibi",
+      "count": 40,
+      "source_types": {
+        "harmonic": 40
+      }
+    },
+    {
+      "category": "angles",
+      "name": "ang_G_G_T",
+      "mode": "ibi",
+      "count": 30,
+      "source_types": {
+        "harmonic": 30
+      }
+    },
+    {
+      "category": "angles",
+      "name": "ang_G_T_T",
+      "mode": "ibi",
+      "count": 30,
+      "source_types": {
+        "harmonic": 30
+      }
+    },
+    {
+      "category": "angles",
+      "name": "ang_T_T_A",
+      "mode": "ibi",
+      "count": 30,
+      "source_types": {
+        "harmonic": 30
+      }
+    },
+    {
+      "category": "angles",
+      "name": "ang_T_A_G",
+      "mode": "ibi",
+      "count": 30,
+      "source_types": {
+        "harmonic": 30
+      }
+    }
+  ]
+}

@@ -43,6 +43,43 @@ def particle_is_virtual(particle: Any) -> bool:
     )
 
 
+def mask_excluded_particle_distances(
+    dist_matrix: np.ndarray,
+    particle_ids: Iterable[int],
+    excluded_pairs: Iterable[tuple[int, int]],
+) -> np.ndarray:
+    """Mask excluded particle pairs in a square distance matrix.
+
+    The runtime safety diagnostic must use the same nonbonded exclusions as
+    ESPResSo.  Otherwise topologically excluded 1-2/1-3 site pairs can approach
+    closely without WCA and trigger a false ``min_dist`` abort.  The matrix is
+    modified in place and also returned for convenience.  Excluded particle
+    ids that are not represented in the matrix are ignored.
+    """
+    matrix = np.asarray(dist_matrix)
+    ids = [int(pid) for pid in particle_ids]
+    if matrix.shape != (len(ids), len(ids)):
+        raise ValueError(
+            "dist_matrix shape must match the number of particle_ids: "
+            f"shape={matrix.shape}, n_ids={len(ids)}"
+        )
+    if len(set(ids)) != len(ids):
+        raise ValueError("particle_ids must be unique")
+
+    index = {pid: i for i, pid in enumerate(ids)}
+    for raw_i, raw_j in excluded_pairs:
+        pid_i, pid_j = int(raw_i), int(raw_j)
+        if pid_i == pid_j:
+            continue
+        i = index.get(pid_i)
+        j = index.get(pid_j)
+        if i is None or j is None:
+            continue
+        matrix[i, j] = np.inf
+        matrix[j, i] = np.inf
+    return matrix
+
+
 def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
     """Require the selective 1-2 / all-sites 1-3 WCA policy (schema v3)."""
     meta = priors.get("wca_exclusions", {})
@@ -172,6 +209,14 @@ def wca_direct_bonded_site_exclusions(
             f"missing={missing}, extra={extra}. Rebuild cg_priors.json."
         )
     return result
+
+def resolve_referenced_path(path: str | Path, reference_file: str | Path) -> Path:
+    """Resolve an input path relative to the file that references it."""
+    value = Path(path).expanduser()
+    if value.is_absolute():
+        return value
+    return Path(reference_file).expanduser().resolve().parent / value
+
 
 def sha256_file(path: str | Path) -> str:
     path = Path(path)

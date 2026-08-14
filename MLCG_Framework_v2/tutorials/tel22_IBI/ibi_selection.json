@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {"category": "bonds", "name": "bb_A_G", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 40},
+    {"category": "bonds", "name": "bb_G_G", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 80},
+    {"category": "bonds", "name": "bb_G_T", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 30},
+    {"category": "bonds", "name": "bb_T_T", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 30},
+    {"category": "bonds", "name": "bb_T_A", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 30},
+
+    {"category": "angles", "name": "ang_A_G_G", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 40},
+    {"category": "angles", "name": "ang_G_G_G", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 40},
+    {"category": "angles", "name": "ang_G_G_T", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 30},
+    {"category": "angles", "name": "ang_G_T_T", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 30},
+    {"category": "angles", "name": "ang_T_T_A", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 30},
+    {"category": "angles", "name": "ang_T_A_G", "mode": "ibi", "expected_source_type": "harmonic", "expected_count": 30}
+  ]
+}

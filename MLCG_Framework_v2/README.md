@@ -11,14 +11,19 @@ JSON/files rather than being compiled into the code.
 1. `preprocessing/build_cg_dataset.py`
    - maps an atomistic trajectory to configurable CG sites;
    - aggregates reference forces and torques;
-   - optionally infers/subtracts analytic priors;
+   - optionally infers/subtracts analytic or tabulated priors;
    - writes a binary force-matching dataset plus `cg_priors.json` and
      `rigid_bodies_info.json`.
-2. `training/train_painn.cpp`
+2. `ibi/build_dbi_priors.py` and `ibi/run_ibi_loop.py` (optional)
+   - build site-addressable bonded distance/angle/dihedral DBI tables;
+   - iterate selected bonded groups in priors-only NVT simulations;
+   - write self-contained final tabulated priors.
+   After IBI, rebuild the force-matching dataset with the final priors before training.
+3. `training/train_painn.cpp`
    - trains the canonical PaiNN residual potential with LibTorch;
    - configuration is supplied by JSON;
    - writes the trained model and a provenance manifest.
-3. `simulation/equilibrate.py` and `simulation/run_cg_md.py`
+4. `simulation/equilibrate.py` and `simulation/run_cg_md.py`
    - reconstruct the same priors/rigid bodies in ESPResSo;
    - load the PaiNN plugin and run CG dynamics.
 

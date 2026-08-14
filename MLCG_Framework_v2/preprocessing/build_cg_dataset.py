@@ -3,7 +3,13 @@ from MDAnalysis.exceptions import NoDataError
 import numpy as np
 
 from geometry_utils import diagonalize_inertia_tensor, minimum_image_distance_matrix
-from prior_kernels import switched_morse_radial_force_array
+from prior_kernels import (
+    load_tabulated_prior,
+    switched_morse_radial_force_array,
+    tabulated_angle_forces,
+    tabulated_dihedral_forces,
+    tabulated_distance_forces,
+)
 import struct
 import json
 import copy
@@ -1347,8 +1353,31 @@ out_dir = os.path.dirname(args.output)
 if out_dir:
     os.makedirs(out_dir, exist_ok=True)
 
-cached_tables = {}
-cached_splines = {}
+# Load explicit bonded tables once. Relative paths are interpreted relative to
+# the priors JSON, matching the runtime contract. When a topology config itself
+# contains a tabulated entry, use that config as the reference path.
+table_reference_path = args.priors if args.priors else args.config
+tabulated_bond_tables = {
+    idx: load_tabulated_prior(b, kind="bond", priors_path=table_reference_path)
+    for idx, b in enumerate(derived_priors.get("bonds", []))
+    if str(b.get("type", "harmonic")).lower() == "tabulated"
+}
+tabulated_angle_tables = {
+    idx: load_tabulated_prior(a, kind="angle", priors_path=table_reference_path)
+    for idx, a in enumerate(derived_priors.get("angles", []))
+    if str(a.get("type", "harmonic")).lower() == "tabulated"
+}
+tabulated_dihedral_tables = {
+    idx: load_tabulated_prior(d, kind="dihedral", priors_path=table_reference_path)
+    for idx, d in enumerate(derived_priors.get("dihedrals", []))
+    if str(d.get("type", "cosine")).lower() == "tabulated"
+}
+if tabulated_bond_tables or tabulated_angle_tables or tabulated_dihedral_tables:
+    print(
+        "[INFO] Tabulated bonded subtraction: "
+        f"{len(tabulated_bond_tables)} bonds, {len(tabulated_angle_tables)} angles, "
+        f"{len(tabulated_dihedral_tables)} dihedrals"
+    )
 
 # Diagnostics on physical frames only.  These are intentionally collected
 # before any optional --clip_forces operation so that pathological prior
@@ -1656,7 +1685,7 @@ with open(args.output, "wb") as f:
                 np.add.at(res_torques, mol_j, +np.cross(lever_j, f_vec))
 
         # 3.2 Sottrazione Legami (con supporto per siti specifici e momento torcente)
-        for b in derived_priors["bonds"]:
+        for b_idx, b in enumerate(derived_priors["bonds"]):
             i, j = b["mol_i"], b["mol_j"]
             site_i = b.get("site_i", -1)
             site_j = b.get("site_j", -1)
@@ -1672,7 +1701,21 @@ with open(args.output, "wb") as f:
 
             r_hat = r_vec / r
             f_scalar = 0.0
-            b_type = b.get("type", "harmonic")
+            b_type = str(b.get("type", "harmonic")).lower()
+
+            if b_type == "tabulated":
+                f_i, f_j = tabulated_distance_forces(
+                    pos_i, pos_j, box_dim, tabulated_bond_tables[b_idx]
+                )
+                res_forces[i] -= f_i
+                res_forces[j] -= f_j
+                if site_i != -1:
+                    r_rel_i = mic_vector(frame_centers[i], pos_i, box_dim)
+                    res_torques[i] -= np.cross(r_rel_i, f_i)
+                if site_j != -1:
+                    r_rel_j = mic_vector(frame_centers[j], pos_j, box_dim)
+                    res_torques[j] -= np.cross(r_rel_j, f_j)
+                continue
 
             if b_type == "harmonic":
                 k, r0 = b["k"], b["r0"]
@@ -1733,8 +1776,8 @@ with open(args.output, "wb") as f:
                 res_torques[j] += np.cross(r_rel_j, f_vec)
             
         # 3.2.1 Sottrazione Angoli
-        for a in derived_priors.get("angles", []):
-            a_type = a.get("type", "harmonic")
+        for a_idx, a in enumerate(derived_priors.get("angles", [])):
+            a_type = str(a.get("type", "harmonic")).lower()
             if a_type in ["ibi", "dbi"]:
                 continue
         
@@ -1745,6 +1788,21 @@ with open(args.output, "wb") as f:
             pos_i = resolve_site_position(frame_centers, frame_sites, i, site_i)
             pos_j = resolve_site_position(frame_centers, frame_sites, j, site_j)
             pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
+
+            if a_type == "tabulated":
+                f_i, f_j, f_k = tabulated_angle_forces(
+                    pos_i, pos_j, pos_k, box_dim, tabulated_angle_tables[a_idx]
+                )
+                res_forces[i] -= f_i
+                res_forces[j] -= f_j
+                res_forces[k_idx] -= f_k
+                if site_i != -1:
+                    res_torques[i] -= np.cross(mic_vector(frame_centers[i], pos_i, box_dim), f_i)
+                if site_j != -1:
+                    res_torques[j] -= np.cross(mic_vector(frame_centers[j], pos_j, box_dim), f_j)
+                if site_k != -1:
+                    res_torques[k_idx] -= np.cross(mic_vector(frame_centers[k_idx], pos_k, box_dim), f_k)
+                continue
         
             r_ji = mic_vector(pos_j, pos_i, box_dim)
             r_jk = mic_vector(pos_j, pos_k, box_dim)
@@ -1780,8 +1838,8 @@ with open(args.output, "wb") as f:
             if site_k != -1: res_torques[k_idx] -= np.cross(mic_vector(frame_centers[k_idx], pos_k, box_dim), f_k)
         
         # 3.2.2 Sottrazione Diedri
-        for d in derived_priors.get("dihedrals", []):
-            d_type = d.get("type", "cosine")
+        for d_idx, d in enumerate(derived_priors.get("dihedrals", [])):
+            d_type = str(d.get("type", "cosine")).lower()
             if d_type in ["ibi", "dbi"]:
                 continue
             
@@ -1794,7 +1852,12 @@ with open(args.output, "wb") as f:
             pos_k = resolve_site_position(frame_centers, frame_sites, k_idx, site_k)
             pos_l = resolve_site_position(frame_centers, frame_sites, l, site_l)
 
-            if d_type == "cosine":
+            if d_type == "tabulated":
+                f_i, f_j, f_k, f_l = tabulated_dihedral_forces(
+                    pos_i, pos_j, pos_k, pos_l, box_dim,
+                    tabulated_dihedral_tables[d_idx],
+                )
+            elif d_type == "cosine":
                 f_i, f_j, f_k, f_l = dihedral_forces(
                     pos_i,
                     pos_j,
@@ -1825,9 +1888,9 @@ with open(args.output, "wb") as f:
         # Record the true residual target distribution before optional clipping.
         residual_force_norms.extend(np.linalg.norm(res_forces, axis=1).tolist())
 
-        # 3.3 Clip delle forze residue e scrittura nel file
-        # Il clip finale è FONDAMENTALE quando si usa l'IBI, perché la sottrazione dei potenziali IBI (che hanno muri molto ripidi)
-        # crea degli artefatti spaventosi (forze > 1000) sui bordi delle distribuzioni.
+        # 3.3 Optional residual-force clipping and binary output.
+        # Clipping is a training-data policy, not part of the IBI definition;
+        # leave it disabled unless the chosen force-matching workflow requires it.
         if args.clip_forces is not None:
             res_forces = np.clip(res_forces, -args.clip_forces, args.clip_forces)
             res_torques = np.clip(res_torques, -args.clip_forces, args.clip_forces)
