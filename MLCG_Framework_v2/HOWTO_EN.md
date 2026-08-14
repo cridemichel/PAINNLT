@@ -1,8 +1,8 @@
 # MLCG Framework v2 — Complete Technical Guide
 
-> Documented state: **13 August 2026**.
+> Documented state: **14 August 2026**.
 > This guide describes the current framework configuration, including the recent fixes for:
-> analytic Morse bonded interactions in ESPResSo, manifest validation tolerant to harmless
+> reversible switched non-bonded Morse interactions (pair-specific and type-pair) in ESPResSo, manifest validation tolerant to harmless
 > `float32` round trips, ML-only dummy neighbor-list interactions, and NVE certification
 > based on `sigma_E = std(E)` with a fixed physical duration and energy sampled every step.
 
@@ -204,7 +204,7 @@ The total conservative force on a generalized coordinate is the negative energy 
 
 This identity is central to the NVE certification. If energy and force are evaluated from
 independent interpolants, the numerical trajectory can drift even if each table separately looks
-smooth. For this reason the current runtime uses an **analytic Morse bonded interaction** rather
+smooth. For this reason the current runtime uses an **analytic switched non-bonded Morse interaction** rather
 than independently tabulated Morse energy and force.
 
 The current runtime energy reported for certification is conceptually
@@ -459,43 +459,58 @@ The corresponding logarithmic energy diverges as \(|\Delta r|\to r_{\max}\). FEN
 a hard extensibility guard and must be parameterized so physically sampled configurations stay well
 inside the singular boundary.
 
-## 7.3 Analytic Morse
+## 7.3 Switched non-bonded Morse
 
-The current conservative runtime uses
-
-\[
-U(r)
-=
-D\left(1-e^{-a(r-r_0)}\right)^2,
-\]
-
-and
+The current runtime uses one analytic conservative Morse kernel with gauge
 
 \[
-F_r
-=
--2aD\left(1-e^{-a(r-r_0)}\right)e^{-a(r-r_0)}.
+U_0(r)=D\left(e^{-2a(r-r_0)}-2e^{-a(r-r_0)}\right),
 \]
 
-Parameters have the following roles:
+so \(U_0(r_0)=-D\) and \(U_0(\infty)=0\). Between `r_switch` and `r_cut` the tail is multiplied by a quintic smoothstep; both energy and force are exactly zero at and beyond the cutoff. Crossing the cutoff is therefore not a topology event: a pair can leave the interaction range and later re-enter/rebind.
 
-- `D`: dissociation-energy scale;
-- `a`: inverse length controlling width/stiffness;
-- `r0`: minimum-energy distance;
-- optional `r_cut`: runtime cutoff, with a large default in the current C++ bonded implementation.
+The framework exposes **two selection modes** that share this same potential.
 
-Morse is implemented as an analytic C++ ESPResSo bonded interaction. There is no silent fallback to
-independently interpolated energy/force tables. This is essential for a strict NVE test.
+### 7.3.1 Pair-specific Morse
 
-### Dissociation, rebinding, and topology semantics
+Explicit contacts remain in the `bonds` list with `type="morse"` and COM-COM coordinates (`site_i=site_j=-1` or omitted):
 
-`MorseBond` is **energetically dissociative**, but the interaction is not dynamically removed from the bonded list. For `r > r0` the attractive force decays toward zero while the energy approaches `D`; if the bodies approach again, the contact can reform automatically. This is appropriate for reversible folding/unfolding contacts, not irreversible graph deletion.
+```json
+{
+  "mol_i": 1, "mol_j": 7,
+  "type": "morse",
+  "D": 50.0, "a": 0.3, "r0": 1.57,
+  "r_switch": 11.64, "r_cut": 15.0
+}
+```
 
-Morse defaults to `exclude_wca=false`: merely adding a Morse restraint does **not** create a topological 1-2 WCA exclusion, so the short-range repulsive core between its virtual sites remains active. Harmonic/FENE terms used for covalent connectivity default to `exclude_wca=true`; under WCA policy v3 only the explicitly bonded site pair is excluded.
+These terms are **pair-specific physically**, but are not bonded in ESPResSo bookkeeping. The runtime assigns dedicated technical COM types to participating molecules and configures the interaction through `system.non_bonded_inter[type_i,type_j]`. Physical CG virtual-site types are unchanged, so PaiNN sees the same species as before. Pair-specific COM types are placed on the N-square side of the hybrid decomposition so a long COM cutoff does not inflate the short-range WCA/PaiNN cells.
 
-`D` is the energy scale of one contact, not directly the free energy of unfolding of the complete structure. Cooperative Morse networks add multiple contributions and compete with entropy, other bonded priors, WCA, and the ML residual. The width parameter matters just as much: the characteristic length is approximately `1/a`, so small `a` produces a very broad attractive interaction.
+For backward compatibility, pair-specific contacts retain a 15 nm default `r_cut`; if `r_switch` is omitted it is placed 75% of the way from `r0` to `r_cut`. `exclude_wca` defaults to `false`: a tertiary Morse contact is not covalent connectivity and does not create a WCA exclusion.
 
-Do not use `r_cut` as a physical bond-breaking threshold. In the current implementation energy and force are omitted for `r >= r_cut`, so actually crossing the cutoff would create an energy discontinuity. For strict NVE and reversible unfolding, keep `r_cut` far beyond all reachable bonded distances, or use a future explicitly shifted/smoothed cutoff form.
+### 7.3.2 Type-pair Morse
+
+Transferable bead-type attractions use the top-level `morse_type_pairs` section:
+
+```json
+"morse_type_pairs": [
+  {
+    "type_i": 1, "type_j": 3,
+    "D": 4.0, "a": 2.0, "r0": 0.55,
+    "r_switch": 0.90, "r_cut": 1.20
+  }
+]
+```
+
+`type_i` and `type_j` are the **physical CG site types** from `mapping.site_types`, not technical COM types. One record applies to every non-excluded site pair carrying those types, using ordinary ESPResSo `non_bonded_inter[type_i,type_j]` semantics. `r_cut` is mandatory for this mode because it contributes directly to the regular neighbor-search cutoff; `r_switch` is optional and uses the same 75% default.
+
+ESPResSo particle exclusions suppress all non-bonded potentials, not only WCA. Type-pair Morse is therefore excluded intra-rigid-body, on explicitly excluded 1-2 site pairs, and on 1-3 pairs excluded by WCA policy v3. Preprocessing applies exactly the same mask when subtracting the prior from reference forces and torques.
+
+### 7.3.3 Coexistence and double counting
+
+Both modes may coexist, but they are **additive**. If a molecule pair has a pair-specific COM contact while its CG site types are also covered by a type-pair Morse entry, both contributions enter the Hamiltonian. This can be intentional, but should not happen accidentally. Use pair-specific Morse for native/topological/tertiary contacts and type-pair Morse for generic transferable bead-type attractions.
+
+For both modes, the prior subtracted during preprocessing must match the runtime interaction exactly. After changing Morse priors, regenerate dataset/priors, retrain the residual model, re-equilibrate, and repeat NVE certification.
 
 ## 7.4 Harmonic angle
 
@@ -1227,7 +1242,7 @@ performs this synchronization. The current macOS-friendly version treats already
 `[SKIP]` rather than relying on `cp` behavior for same-source/destination paths.
 
 After changing the PaiNN architecture header, C++ potential implementation, Python/Cython binding, or
-analytic Morse files, **rebuild ESPResSo**. An old `pypresso` binary does not automatically pick up
+switched Morse plugin files, **rebuild ESPResSo**. An old `pypresso` binary does not automatically pick up
 new framework source files.
 
 ## 18.1 PaiNN plugin properties
@@ -1351,36 +1366,37 @@ name
 exclude_wca
 ```
 
-For harmonic bonds:
+`harmonic` and `fene` represent structural bonded connectivity. A `type="morse"` record instead denotes a **pair-specific COM-COM Morse contact** that the runtime converts into a selective non-bonded interaction. Morse fields are:
 
 ```text
-k
-r0
+D, a, r0
+r_switch   # optional
+r_cut      # optional for pair-specific mode
 ```
 
-with auto inference supported where the configuration accepts `"auto"`.
+Pair-specific Morse requires COM selection (`site_i/site_j=-1` or omitted) and defaults to `exclude_wca=false`. The switched kernel is exactly zero at and beyond `r_cut`.
 
-For FENE:
+## 19.7 `morse_type_pairs`
 
-```text
-k
-r0
-r_max
+Optional section for ordinary non-bonded Morse selected by physical CG site type:
+
+```json
+"morse_type_pairs": [
+  {
+    "type_i": 0,
+    "type_j": 1,
+    "D": 4.0,
+    "a": 2.0,
+    "r0": 0.55,
+    "r_switch": 0.90,
+    "r_cut": 1.20
+  }
+]
 ```
 
-For Morse:
+`type_i/type_j` must exist in `mapping.site_types`; duplicate unordered pairs are rejected. `r_cut` is mandatory. ESPResSo non-bonded exclusions also apply to these Morse interactions.
 
-```text
-D
-a
-r0
-```
-
-and an optional `r_cut`. Morse defaults to `exclude_wca=false`, while harmonic/FENE defaults to `true`. Under WCA policy v3, a site-site harmonic/FENE bond with `exclude_wca=true` suppresses WCA only for its explicit `(site_i, site_j)` pair.
-
-`site_i=-1` or equivalent configured COM selection means the bonded coordinate is attached to the body COM rather than a virtual site; such a COM-COM bond does not create a virtual-site WCA exclusion. For a dissociative Morse contact, keep `r_cut` far outside the physically explored distance range rather than using it as a break threshold.
-
-## 19.7 `angles`
+## 19.8 `angles`
 
 Typical fields:
 
@@ -1396,7 +1412,7 @@ exclude_wca
 
 `theta0` is in radians.
 
-## 19.8 `dihedrals`
+## 19.9 `dihedrals`
 
 Typical fields:
 
@@ -1410,7 +1426,7 @@ phi0
 name
 ```
 
-## 19.9 `wca_sigma`
+## 19.10 `wca_sigma`
 
 Recommended current value:
 
@@ -1420,7 +1436,7 @@ Recommended current value:
 
 This activates the pair-specific WCA policy and writes explicit `wca_pairs` to generated priors.
 
-## 19.10 `wca_quantile_percent`
+## 19.11 `wca_quantile_percent`
 
 Low percentile of physically sampled distances used to define repulsive support.
 
@@ -1433,7 +1449,7 @@ Smaller values:
 It must be in the valid low-percentile range accepted by preprocessing (conceptually between 0 and
 50%).
 
-## 19.11 `wca_guard_fraction`
+## 19.12 `wca_guard_fraction`
 
 Defines
 
@@ -1445,7 +1461,7 @@ r_{\mathrm{guard}}
 The neutral template uses approximately `0.8`. Smaller values calibrate barrier height deeper inside
 the repulsive core.
 
-## 19.12 `wca_guard_kbt`
+## 19.13 `wca_guard_kbt`
 
 Defines
 
@@ -1457,12 +1473,12 @@ U(r_{\mathrm{guard}})
 
 Larger values increase the repulsive energy/force scale and can reduce the maximum stable timestep.
 
-## 19.13 `wca_physical_guard_margin`
+## 19.14 `wca_physical_guard_margin`
 
 Sets the margin relative to the exact minimum sampled distance. A value near `0.98` leaves a small
 support margin while preventing the fitted WCA guard from invading known physical data.
 
-## 19.14 `decoy_target_fraction`
+## 19.15 `decoy_target_fraction`
 
 The recommended default is
 
@@ -1473,15 +1489,15 @@ The recommended default is
 Legacy decoy frames used an all-zero residual target without a molecule-level loss mask. They are
 therefore disabled in the normal production training path.
 
-## 19.15 `allow_unmasked_zero_target_decoys`
+## 19.16 `allow_unmasked_zero_target_decoys`
 
 Keep `false` unless intentionally reproducing a legacy diagnostic/ablation.
 
-## 19.16 `decoy_random_seed`
+## 19.17 `decoy_random_seed`
 
 Random seed for legacy decoy generation if that path is explicitly enabled.
 
-## 19.17 `rigid_bodies`
+## 19.18 `rigid_bodies`
 
 Optional per-residue rigid-body controls can include:
 
@@ -1947,7 +1963,7 @@ Run it after changes to files such as:
 PaiNN_Architecture.hpp
 PaiNN_ML_Potential.*
 painn.pyx
-analytic Morse bonded source/bindings
+morse_switched.hpp / `install_switched_morse_nonbonded.py`
 ```
 
 Then rebuild ESPResSo. Merely modifying the framework copy does not modify an already compiled
@@ -2612,17 +2628,9 @@ production. The exact command depends on the local ESPResSo build tree, but the 
 - single-rank expected behavior;
 - cutoff consistency.
 
-## 26.4 Analytic Morse smoke test
+## 26.4 Morse smoke test
 
-The analytic Morse integration should be smoke-tested directly in ESPResSo by evaluating a simple
-bonded pair and checking that:
-
-- energy is finite;
-- forces are equal and opposite;
-- the numerical values match the analytic formula.
-
-A previously verified test produced a finite Morse energy and exactly opposite particle forces,
-confirming the C++ bonded path was active.
+After rebuilding ESPResSo, run `tutorials/tel22/08_diagnose_morse_reversibility.sh --assert-expected`. The diagnostic verifies `U(r_cut)=F(r_cut)=0`, cutoff crossing without exceptions, and re-entry/rebinding. Unit tests additionally cover `morse_type_pairs` parsing and runtime configuration.
 
 ## 26.5 Prior audit
 
@@ -2638,6 +2646,7 @@ with open("cg_priors.json") as f:
 
 print("bonds:", len(p.get("bonds", [])))
 print("bond types:", Counter(x.get("type", "harmonic") for x in p.get("bonds", [])))
+print("morse type pairs:", len(p.get("morse_type_pairs", [])))
 print("angles:", len(p.get("angles", [])))
 print("dihedrals:", len(p.get("dihedrals", [])))
 

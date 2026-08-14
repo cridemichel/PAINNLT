@@ -4,8 +4,14 @@
     "mapping_method": "COM",
     "residues": {
       "MOL": {
-        "CG_A": ["A1", "A2"],
-        "CG_B": ["B1", "B2"]
+        "CG_A": [
+          "A1",
+          "A2"
+        ],
+        "CG_B": [
+          "B1",
+          "B2"
+        ]
       }
     },
     "site_types": {
@@ -14,6 +20,7 @@
     }
   },
   "bonds": [],
+  "morse_type_pairs": [],
   "angles": [],
   "dihedrals": [],
   "wca_sigma": "auto",

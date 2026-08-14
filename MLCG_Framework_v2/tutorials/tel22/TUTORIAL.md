@@ -120,9 +120,13 @@ The lesson is general: **do not infer an all-sites nonbonded exclusion from a mo
 
 ## Morse contacts and TEL22 unfolding
 
-TEL22 uses harmonic site-0 bonds and harmonic backbone angles to preserve covalent-chain connectivity, while the G-quartet tertiary contacts are represented by Morse terms. In the current topology each 22-residue copy contains 18 Morse contacts: three groups of four guanines, with six pair contacts per group. There are no dihedral priors.
+TEL22 uses harmonic site-0 bonds and harmonic backbone angles for covalent-chain connectivity, while the G-quartet tertiary contacts are represented by **pair-specific reversible Morse contacts**. Each 22-residue copy contains 18 such contacts: three groups of four guanines with six pair contacts per group. There are no dihedral priors.
 
-The Morse contacts are COM-COM restraints and have no explicit `exclude_wca=true`; by policy they therefore do not remove WCA. They can stretch into the asymptotic region and later reform, so the framework can represent **reversible loss and recovery of tertiary contacts without chain scission**. The bonded interaction remains registered internally; "broken" should therefore be defined from distance/contact observables, not by expecting the ESPResSo bond record to disappear.
+The TEL22 Morse records remain in `bonds` with `type="morse"`, but at runtime they are **not ESPResSo bonded interactions**. They select explicit COM-COM pairs; the framework assigns dedicated technical COM types and evaluates the switched Morse through the non-bonded machinery. The validated form has `U(r0)=-D`, smoothly reaches `U=F=0` at `r_cut`, can cross the cutoff without an exception, and can re-enter/rebind without topology changes. The old `MorseBond` broken-bond behavior is retained only as a diagnostic regression path.
+
+TEL22 does **not** enable `morse_type_pairs` by default. That optional generic mechanism is intended for transferable bead-type attractions and would act on every non-excluded virtual-site pair carrying the selected CG types. Enabling it in TEL22 would add those energies/forces on top of the existing pair-specific quartet contacts, so it should only be done deliberately and requires regenerating dataset/priors, retraining the residual model, re-equilibrating, and repeating NVE certification.
+
+Because the pair-specific Morse acts on COMs, it does not create or consume virtual-site WCA exclusions. WCA v3 therefore remains independent: tertiary contacts can dissociate while short-range excluded volume on the CG sites remains active.
 
 The current TEL22 parameters are intentionally strong and broad:
 
@@ -132,6 +136,6 @@ a = 0.3 nm^-1
 1/a = 3.33 nm
 ```
 
-At 300 K, one Morse plateau `D` is about 20 `kBT`. Fully separating all six pair contacts of one idealized quartet plane raises the Morse component by about `6D = 300 kJ/mol` (about 120 `kBT`) before accounting for entropy, the ML residual, backbone priors, and other interactions. Consequently, unfolding is **allowed by the topology**, but spontaneous unfolding may be extremely rare on short CG trajectories with these parameters. `D` and `a` should be calibrated against the desired thermodynamics/kinetics rather than interpreted as a guarantee that unfolding will be sampled.
+At 300 K, one contact depth `D` is about 20 `kBT`. Six pair contacts in one idealized quartet plane therefore correspond to an energetic scale of roughly `6D = 300 kJ/mol` before entropy, the ML residual, backbone priors, and other interactions are considered. Unfolding is allowed by the topology, but it may still be rare on short trajectories; `D`, `a`, and the switching range must be calibrated to the intended thermodynamics and kinetics.
 
-Do not use the current Morse `r_cut` as an unfolding criterion. The analytic interaction is intended to operate far inside that cutoff; contact rupture should be diagnosed from distance/contact-state thresholds and free-energy/kinetic analysis.
+Do not define unfolding as "ESPResSo bond deletion". For TEL22, use geometric/contact-state observables (and, when needed, free-energy or kinetic analysis). Crossing `r_cut` simply means that the switched Morse contribution is zero until the pair re-enters the interaction range.
