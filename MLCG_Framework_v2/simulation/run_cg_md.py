@@ -21,6 +21,8 @@ from framework_utils import (
     resolve_referenced_path,
     nonconservative_prior_entries,
     rigid_body_quaternion,
+    save_checkpoint,
+    sha256_file,
     validate_checkpoint,
     validate_model_manifest,
     validate_wca_exclusion_policy,
@@ -54,6 +56,8 @@ parser.add_argument("--no_vtf", action="store_true", help="Disable VTF trajector
 parser.add_argument("--energy_file", type=str, default="energy.csv", help="Energy CSV output path")
 parser.add_argument("--trajectory_file", type=str, default="cg_trajectory.vtf", help="VTF trajectory output path")
 parser.add_argument("--sample_npz", type=str, default=None, help="Structured COM/site trajectory for analysis/IBI")
+parser.add_argument("--state_sample_npz", type=str, default=None, help="Structured real-particle mechanical-state trajectory for convergence diagnostics")
+parser.add_argument("--out_checkpoint", type=str, default=None, help="Save the final mechanical state as a provenance-bound checkpoint")
 parser.add_argument("--sample_start_step", type=int, default=0, help="First logged step included in --sample_npz")
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
@@ -704,6 +708,18 @@ sample_steps = []
 sample_com = []
 sample_sites = []
 sample_site_keys = sorted(mol_vs_parts)
+state_sample_steps = []
+state_sample_positions = []
+state_sample_velocities = []
+state_sample_quaternions = []
+state_sample_omegas = []
+state_sample_particle_ids = sorted(
+    int(p.id) for p in system.part if float(p.mass) > 1.0e-4
+)
+state_sample_rotation_flags = np.asarray([
+    [bool(v) for v in system.part.by_id(pid).rotation]
+    for pid in state_sample_particle_ids
+], dtype=bool)
 if sorted(mol_com_parts) != list(range(num_molecules)):
     raise RuntimeError("COM particle mapping is not contiguous in molecule-index order")
 
@@ -718,6 +734,23 @@ def record_structured_sample(step):
     sample_sites.append(np.asarray([
         system.part.by_id(mol_vs_parts[key]).pos for key in sample_site_keys
     ], dtype=float))
+
+
+def record_state_sample(step):
+    if args.state_sample_npz is None:
+        return
+    state_sample_steps.append(int(step))
+    particles = [system.part.by_id(pid) for pid in state_sample_particle_ids]
+    state_sample_positions.append(np.asarray([p.pos for p in particles], dtype=float))
+    state_sample_velocities.append(np.asarray([p.v for p in particles], dtype=float))
+    state_sample_quaternions.append(np.asarray([p.quat for p in particles], dtype=float))
+    omega = []
+    for particle in particles:
+        try:
+            omega.append(particle.omega_body)
+        except Exception:
+            omega.append([0.0, 0.0, 0.0])
+    state_sample_omegas.append(np.asarray(omega, dtype=float))
 
 
 def record_state(step, energy_writer, energy_handle, vtf_handle):
@@ -759,6 +792,7 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
         espressomd.io.writer.vtf.writevcf(system, vtf_handle)
 
     record_structured_sample(step)
+    record_state_sample(step)
     unsafe = max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15
     return unsafe
 
@@ -850,6 +884,124 @@ if simulation_ok:
         print(
             f"[INFO] Structured sampling: {len(sample_steps)} frames written to {sample_path} "
             f"(start step {sample_steps[0]}, end step {sample_steps[-1]})"
+        )
+    if args.state_sample_npz is not None:
+        if not state_sample_steps:
+            raise RuntimeError("Mechanical-state sampling produced no frames")
+        state_path = os.path.abspath(args.state_sample_npz)
+        state_dir = os.path.dirname(state_path)
+        if state_dir:
+            os.makedirs(state_dir, exist_ok=True)
+        if args.disable_ml:
+            state_hamiltonian_mode = "conservative_classical_model_provenance_ml_disabled"
+        elif ml_active:
+            state_hamiltonian_mode = "painn_active"
+        else:
+            state_hamiltonian_mode = "classical_only"
+        state_metadata = {
+            "schema_version": 1,
+            "kind": "mlcg_real_particle_state_trajectory",
+            "dt_ps": float(args.dt),
+            "log_interval_steps": int(args.log_interval),
+            "hamiltonian_mode": state_hamiltonian_mode,
+            "sampling_ensemble": "NVE" if args.nve else "NVT_Langevin",
+            "input_hashes": input_hashes(
+                dataset=args.dataset,
+                config=args.config,
+                priors=args.priors,
+                rb_info=args.rb_info,
+                model=args.model,
+            ),
+            "source_checkpoint_sha256": (
+                sha256_file(args.checkpoint) if args.checkpoint is not None else None
+            ),
+            "ml_active": bool(ml_active),
+            "ml_disabled_by_flag": bool(args.disable_ml),
+        }
+        np.savez_compressed(
+            state_path,
+            schema_version=np.asarray(1, dtype=np.int32),
+            complete=np.asarray(1, dtype=np.int8),
+            steps=np.asarray(state_sample_steps, dtype=np.int64),
+            time_ps=np.asarray(state_sample_steps, dtype=float) * float(args.dt),
+            particle_ids=np.asarray(state_sample_particle_ids, dtype=np.int64),
+            rotation_flags=state_sample_rotation_flags,
+            positions=np.asarray(state_sample_positions, dtype=float),
+            velocities=np.asarray(state_sample_velocities, dtype=float),
+            quaternions=np.asarray(state_sample_quaternions, dtype=float),
+            omega_body=np.asarray(state_sample_omegas, dtype=float),
+            box=np.asarray(system.box_l, dtype=float),
+            metadata_json=np.asarray(json.dumps(state_metadata, sort_keys=True)),
+        )
+        print(
+            f"[INFO] Mechanical-state sampling: {len(state_sample_steps)} frames written to {state_path} "
+            f"(start step {state_sample_steps[0]}, end step {state_sample_steps[-1]})"
+        )
+    if args.out_checkpoint is not None:
+        checkpoint_path = os.path.abspath(args.out_checkpoint)
+        checkpoint_dir = os.path.dirname(checkpoint_path)
+        if checkpoint_dir:
+            os.makedirs(checkpoint_dir, exist_ok=True)
+        # A saved checkpoint is a pure mechanical state.  Turn off the thermostat
+        # before the final force refresh so NVE consumers inherit only positions,
+        # orientations and finite translational/rotational velocities.
+        system.thermostat.turn_off()
+        system.integrator.run(0, recalc_forces=True)
+        positions = []
+        velocities = []
+        quaternions = []
+        omegas = []
+        for i in range(len(system.part)):
+            particle = system.part.by_id(i)
+            positions.append(particle.pos)
+            velocities.append(particle.v)
+            quaternions.append(particle.quat)
+            try:
+                omegas.append(particle.omega_body)
+            except Exception:
+                omegas.append([0.0, 0.0, 0.0])
+        hashes = input_hashes(
+            dataset=args.dataset,
+            config=args.config,
+            priors=args.priors,
+            rb_info=args.rb_info,
+            model=args.model,
+        )
+        if args.disable_ml:
+            hamiltonian_mode = "conservative_classical_model_provenance_ml_disabled"
+        elif ml_active:
+            hamiltonian_mode = "painn_active"
+        else:
+            hamiltonian_mode = "classical_only"
+        source_checkpoint_sha256 = (
+            sha256_file(args.checkpoint) if args.checkpoint is not None else None
+        )
+        save_checkpoint(
+            checkpoint_path,
+            system=system,
+            pos=np.asarray(positions, dtype=float),
+            vel=np.asarray(velocities, dtype=float),
+            quat=np.asarray(quaternions, dtype=float),
+            omega=np.asarray(omegas, dtype=float),
+            hashes=hashes,
+            config=runtime_nn_config,
+            dt=args.dt,
+            kT=args.kT,
+            extra_metadata={
+                "checkpoint_origin": "run_cg_md_final_state",
+                "hamiltonian_mode": hamiltonian_mode,
+                "sampling_ensemble": "NVE" if args.nve else "NVT_Langevin",
+                "completed_steps": int(completed),
+                "source_checkpoint_sha256": source_checkpoint_sha256,
+                "neighbor_search": args.neighbor_search,
+                "thermostat_seed": None if args.nve else int(args.thermostat_seed),
+                "ml_active": bool(ml_active),
+                "ml_disabled_by_flag": bool(args.disable_ml),
+            },
+        )
+        print(
+            f"[INFO] Final checkpoint saved: {checkpoint_path} "
+            f"(hamiltonian_mode={hamiltonian_mode})"
         )
     print("\n[INFO] Simulation finished successfully.")
 else:

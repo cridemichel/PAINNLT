@@ -776,12 +776,18 @@ IBI_MODEL=tel22_model_ibi_conservative.pt \
   bash ./23_certify_conservative_ibi_nve.sh --overwrite
 ```
 
-Il modello indicato da `IBI_MODEL` **non viene attivato** durante le traiettorie
-NVE: viene mantenuto soltanto come anchor di provenance per poter riutilizzare
-in modo fail-closed `postibi_runtime_validation/equilibrated_postibi.npz`, che e
-stato creato dal passo `18` e contiene anche l'hash del modello. Ogni run del
-certificatore passa `--disable_ml`, spegne il termostato, imposta force cap a
-zero e usa Velocity-Verlet.
+Il modello indicato da `IBI_MODEL` **non viene attivato** ne durante la preparazione
+del checkpoint NVT dedicato ne durante le traiettorie NVE. Il vecchio
+`postibi_runtime_validation/equilibrated_postibi.npz` resta soltanto lo **stato
+sorgente**: il passo `23` esegue prima una NVT Langevin con `--disable_ml` e salva
+`nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz`.
+Solo questo nuovo checkpoint, termalizzato con l'Hamiltoniana realmente
+certificata, viene riutilizzato identicamente per tutti i timestep NVE.
+
+Il checkpoint dedicato registra `hamiltonian_mode`, ensemble e SHA256 del
+checkpoint sorgente. Il certificatore li ricontrolla in modo fail-closed prima
+del primo run NVE. Ogni traiettoria NVE passa `--disable_ml`, spegne il
+termostato, imposta force cap a zero e usa Velocity-Verlet.
 
 Prima delle traiettorie, `simulation/conservative_nve_preflight.py` ricontrolla
 che `ibi_conservative/cg_priors.json`, tutte le spline referenziate,
@@ -801,6 +807,88 @@ Questo gate certifica **solo** `WCA + Morse + bonded conservative IBI` nel range
 di stati visitato. Non promuove il residual PaiNN; se in futuro un nuovo modello
 ML supera il matched A/B, il suo Hamiltoniano completo deve essere certificato
 separatamente con PaiNN attivo.
+
+
+#### 7.6.6.3 Diagnostica NVE fine-dt e short-time (non certificante)
+
+Se il passo `23` passa il drift ma fallisce il fit globale `sigma_E ~ dt^p`, non
+si devono modificare subito spline o prior. Usare prima il gate **diagnostico**:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+NVE_DIAG_DURATION_PS=2 \
+  bash ./24_diagnose_conservative_ibi_nve_scaling.sh --overwrite
+```
+
+Il passo `24` riusa il checkpoint NVT IBI-only provenance-bound preparato dal
+passo `23`; non esegue una nuova termalizzazione e non attiva PaiNN. Il default
+scansiona
+`0.00025 0.0005 0.00075 0.001 0.0015 0.002 0.003 0.004 0.005 ps` e calcola
+fit separati di `sigma_E` e `rms_delta_E` per:
+
+- **fine**: `dt <= 0.001 ps`;
+- **coarse**: `dt >= 0.0015 ps`;
+- **global**: tutti i timestep.
+
+Per il solo regime fine vengono inoltre misurati gli errori energetici a tempi
+fisici comuni `0.012 0.024 0.048 0.096 ps`. Questi tempi sono multipli esatti di
+tutti i `dt` fini di default, quindi l'energia viene letta da campioni reali e
+**non interpolata**. Per ogni finestra il report contiene il fit in potenza di
+`|Delta E(t)|`, RMS di `Delta E` sul prefisso e `sigma_E` sul prefisso.
+
+Output:
+
+```text
+nve_diagnostic_conservative_ibi_only/nve_diagnostic_report.json
+nve_diagnostic_conservative_ibi_only/nve_diagnostic_runs.csv
+```
+
+Questo step e deliberatamente **diagnostic-only**: termina con successo quando
+i run sono stati prodotti e analizzati anche se il vecchio criterio strict
+resterebbe `FAIL`. Non modifica le soglie del passo `23` e non puo essere usato
+come certificazione. Se il fit fine/short-time recupera `p ~= 2` con buon `R2`,
+il problema e compatibile con l'assenza di un regime asintotico ai timestep piu
+grandi o con contaminazione della metrica a lunga finestra; se anche il regime
+fine non recupera l'ordine atteso, il passo successivo e una diagnostica per
+componenti dell'Hamiltoniana, non un rilassamento delle soglie.
+
+
+#### 7.6.6.4 Certificazione composita finale conservative IBI-only
+
+Dopo i passi `22`, `23` e `25`, il verdetto finale viene assemblato senza
+rilanciare dinamica:
+
+```bash
+cd tutorials/tel22_IBI
+bash ./26_finalize_conservative_ibi_nve_certification.sh
+```
+
+Il gate finale richiede contemporaneamente:
+
+- validazione finite-difference delle spline conservative: PASS;
+- parity energia/forza preprocessing <-> ESPResSo: PASS;
+- provenance coerente di prior e checkpoint NVT IBI-only;
+- relative block-mean drift NVE entro soglia;
+- convergenza Richardson dello stato compatibile con secondo ordine per
+  posizione, velocita', orientazione e `omega_body`.
+
+Di default ogni metrica di stato deve avere `1.7 <= median p <= 2.3` e
+`median R2 >= 0.95`. Il fit storico `sigma_E ~ dt^p` del passo `23` resta nel
+report con il suo PASS/FAIL originale, ma nel verdetto composito e' marcato
+`diagnostic_only`: non viene riscritto e non e' un gate dell'ordine numerico.
+L'ordine dell'integratore e' invece stabilito direttamente dalle differenze
+Richardson delle traiettorie.
+
+Output:
+
+```text
+nve_final_certification_conservative_ibi_only/
+    conservative_ibi_nve_certification_report.json
+```
+
+Un PASS certifica esclusivamente `WCA + Morse + bonded conservative IBI` con
+PaiNN disabilitato. Un Hamiltoniano ML-active richiede una certificazione
+separata.
 
 ---
 
@@ -3092,6 +3180,40 @@ Usare una sola rank salvo parity experiment esplicito con:
 MPS può accelerare training/runtime, ma parti del calcolo restano float32.
 
 Per certificazione energetica usare CPU, dove il plugin può usare accumulo più accurato.
+
+---
+
+## 28.11 Diagnostica dell'ordine reale della traiettoria NVE
+
+Quando il drift NVE e' molto piccolo ma `sigma_E(dt)` e' non monotona, non usare
+la sola ampiezza delle oscillazioni energetiche per concludere che Velocity-Verlet
+abbia perso il secondo ordine. Nel workflow conservative IBI usare lo step 25:
+
+```bash
+cd tutorials/tel22_IBI
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./25_diagnose_conservative_ibi_state_convergence.sh --overwrite
+```
+
+Il test usa lo stesso checkpoint NVT IBI-only provenance-bound dello step 23 e
+PaiNN resta disabilitato. Le traiettorie NVE di default usano la scala dyadica
+`0.001, 0.0005, 0.00025, 0.000125 ps` e una reference a `0.0000625 ps`, fino a
+`0.096 ps`, con campioni comuni ogni `0.012 ps`.
+
+`run_cg_md.py --state_sample_npz` salva per le sole particelle reali ID, posizione,
+velocita', quaternione e `omega_body`, insieme a hash degli input, Hamiltonian mode
+e SHA256 del checkpoint sorgente. Il postprocessing confronta sia ogni traiettoria
+con la reference sia le coppie Richardson `dt`/`dt/2`. L'ordine viene stimato da
+queste ultime: per un metodo del secondo ordine ci si aspetta
+`error(dt,dt/2) ~ dt^2`. Sono riportati fit separati per posizione, velocita',
+orientazione e velocita' angolare. Le posizioni sono confrontate con minimum image
+e l'errore quaternion e' invariante rispetto al cambio di segno `q -> -q`.
+
+Lo step 25 resta un test diagnostico e non riscrive il verdetto storico dello
+step 23. Il suo report viene pero' consumato dallo step 26, che costruisce il
+verdetto composito finale insieme a kernel/parity/provenance/drift. Serve a
+distinguere un vero difetto dell'integratore da una `sigma_E` contaminata dalla
+fase delle oscillazioni della shadow energy.
 
 ---
 

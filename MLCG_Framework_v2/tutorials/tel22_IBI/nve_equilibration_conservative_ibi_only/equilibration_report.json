@@ -1,0 +1,52 @@
+{
+  "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+  "checkpoint_metadata": {
+    "architecture": {
+      "cutoff": 1.2616,
+      "hidden_channels": 64,
+      "n_layers": 2,
+      "num_rbf": 32,
+      "num_species": 8,
+      "toxvaerd_alpha": 0.1,
+      "variant": "painn_canonical_context_silu_v2"
+    },
+    "checkpoint_origin": "run_cg_md_final_state",
+    "completed_steps": 10000,
+    "created_with_dt_ps": 0.0005,
+    "created_with_kT_kJ_mol": 2.49,
+    "energy_gauge": "isolated_species_zero_v1",
+    "framework": "MLCG_Framework_v2",
+    "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+    "input_hashes": {
+      "config_sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+      "dataset_sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c",
+      "model_manifest_sha256": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f",
+      "model_sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33",
+      "priors_sha256": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3",
+      "rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+    },
+    "ml_active": false,
+    "ml_disabled_by_flag": true,
+    "neighbor_search": "link-cell",
+    "sampling_ensemble": "NVT_Langevin",
+    "schema_version": 3,
+    "source_checkpoint_sha256": "151d26d1c85a966b2caff225e2281a50cbc7fee9363702e56f9f07ae9d61b307",
+    "thermostat_seed": 232323
+  },
+  "checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+  "dt_ps": 0.0005,
+  "duration_ps": 5.0,
+  "framework": "MLCG_Framework_v2",
+  "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+  "kT_kJ_mol": 2.49,
+  "kind": "conservative_ibi_only_nvt_checkpoint",
+  "ml_active": false,
+  "neighbor_search": "link-cell",
+  "pass": true,
+  "sampling_ensemble": "NVT_Langevin",
+  "schema_version": 1,
+  "source_checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/postibi_runtime_validation/equilibrated_postibi.npz",
+  "source_checkpoint_sha256": "151d26d1c85a966b2caff225e2281a50cbc7fee9363702e56f9f07ae9d61b307",
+  "steps": 10000,
+  "thermostat_seed": 232323
+}
