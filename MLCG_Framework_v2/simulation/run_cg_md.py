@@ -62,7 +62,7 @@ parser.add_argument("--sample_start_step", type=int, default=0, help="First logg
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
-parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal in ESPResSo regular decomposition")
+parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
 parser.add_argument("--velocity_seed", type=int, default=314159, help="Seed used by --init_kT")
@@ -74,6 +74,10 @@ parser.add_argument("--allow_legacy_checkpoint", action="store_true", help="Allo
 parser.add_argument("--allow_checkpoint_mismatch", action="store_true", help="Continue despite checkpoint hash or particle-identity mismatches")
 parser.add_argument("--allow_unsafe_mpi", action="store_true", help="Allow the uncertified multi-rank PaiNN path")
 parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow explicitly tabulated priors during NVE despite separate energy/force interpolation")
+parser.add_argument("--generalized_fd_report", type=str, default=None, help="Write a zero-step finite-difference force/torque consistency report for real particles")
+parser.add_argument("--generalized_fd_eps_pos", type=float, default=1.0e-6, help="Cartesian displacement for --generalized_fd_report (nm)")
+parser.add_argument("--generalized_fd_eps_rot", type=float, default=1.0e-6, help="Lab-frame rotation angle for --generalized_fd_report (rad)")
+parser.add_argument("--generalized_fd_max_bodies", type=int, default=8, help="Maximum number of real bodies sampled by --generalized_fd_report; 0 means all")
 args = parser.parse_args()
 
 if args.disable_ml and not args.model:
@@ -120,6 +124,10 @@ if args.sample_npz and args.sample_start_step % args.log_interval != 0:
     raise ValueError("--sample_start_step must be a multiple of --log_interval")
 if args.init_kT is not None and args.init_kT <= 0.0:
     raise ValueError("--init_kT must be positive")
+if args.generalized_fd_eps_pos <= 0.0 or args.generalized_fd_eps_rot <= 0.0:
+    raise ValueError("generalized finite-difference epsilons must be positive")
+if args.generalized_fd_max_bodies < 0:
+    raise ValueError("--generalized_fd_max_bodies must be non-negative")
 
 # Plan pair-specific reversible Morse contacts before creating particles.
 # Physical CG-site types remain untouched; explicit contacts are carried by
@@ -683,6 +691,8 @@ def measure_energies():
         e_ml = espressomd.painn.get_painn_energy()
     
     e_tot = e_class + e_ml
+    e_bonded = float(energies.get("bonded", 0.0))
+    e_non_bonded = float(energies.get("non_bonded", 0.0))
 
     e_kin = energies["kinetic"]
     e_kin_trans = 0.0
@@ -695,7 +705,126 @@ def measure_energies():
         e_kin_rot += 0.5 * sum(
             I * w**2 for I, w in zip(p.rinertia, p.omega_body)
         )
-    return e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml
+    return e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded
+
+
+def run_generalized_fd_probe(report_path):
+    """Check full-system generalized gradients against force and torque.
+
+    Translation uses central Cartesian finite differences. Rotation uses
+    ``ParticleHandle.rotate(axis, angle)`` with lab-frame Cartesian axes and is
+    compared with ``torque_lab``. The probe restores the exact state before
+    returning and never advances physical time.
+    """
+    system.integrator.run(0, recalc_forces=True)
+    real_particles = [p for p in system.part if float(p.mass) > 1.0e-4]
+    if not real_particles:
+        raise RuntimeError("No real particles available for generalized FD probe")
+    rotational = [p for p in real_particles if any(bool(v) for v in p.rotation)]
+    rotational_ids = {int(p.id) for p in rotational}
+    nonrot = [p for p in real_particles if int(p.id) not in rotational_ids]
+    ordered = rotational + nonrot
+    if args.generalized_fd_max_bodies:
+        ordered = ordered[:args.generalized_fd_max_bodies]
+
+    base = {}
+    for p in ordered:
+        base[int(p.id)] = {
+            "pos": np.asarray(p.pos, dtype=float).copy(),
+            "quat": np.asarray(p.quat, dtype=float).copy(),
+            "force": np.asarray(p.f, dtype=float).copy(),
+            "torque_lab": np.asarray(p.torque_lab, dtype=float).copy(),
+            "rotation": [bool(v) for v in p.rotation],
+        }
+
+    def total_energy():
+        return float(measure_energies()[0])
+
+    axes = np.eye(3, dtype=float)
+    rows = []
+    worst_force = 0.0
+    worst_torque = 0.0
+    for p in ordered:
+        pid = int(p.id)
+        info = base[pid]
+        translation = []
+        for axis_index, axis in enumerate(axes):
+            p.pos = info["pos"] + args.generalized_fd_eps_pos * axis
+            system.integrator.run(0, recalc_forces=True)
+            e_plus = total_energy()
+            p.pos = info["pos"] - args.generalized_fd_eps_pos * axis
+            system.integrator.run(0, recalc_forces=True)
+            e_minus = total_energy()
+            p.pos = info["pos"]
+            system.integrator.run(0, recalc_forces=True)
+            fd = -(e_plus - e_minus) / (2.0 * args.generalized_fd_eps_pos)
+            actual = float(info["force"][axis_index])
+            error = abs(fd - actual)
+            worst_force = max(worst_force, error)
+            translation.append({
+                "axis": int(axis_index), "actual_force": actual,
+                "fd_force": float(fd), "abs_error": float(error),
+            })
+
+        rotation = []
+        if any(info["rotation"]):
+            for axis_index, axis in enumerate(axes):
+                p.quat = info["quat"]
+                p.rotate(axis, float(args.generalized_fd_eps_rot))
+                system.integrator.run(0, recalc_forces=True)
+                e_plus = total_energy()
+                p.quat = info["quat"]
+                p.rotate(axis, -float(args.generalized_fd_eps_rot))
+                system.integrator.run(0, recalc_forces=True)
+                e_minus = total_energy()
+                p.quat = info["quat"]
+                system.integrator.run(0, recalc_forces=True)
+                fd = -(e_plus - e_minus) / (2.0 * args.generalized_fd_eps_rot)
+                actual = float(info["torque_lab"][axis_index])
+                error = abs(fd - actual)
+                worst_torque = max(worst_torque, error)
+                rotation.append({
+                    "axis": int(axis_index), "actual_torque_lab": actual,
+                    "fd_torque": float(fd), "abs_error": float(error),
+                })
+        rows.append({
+            "particle_id": pid,
+            "rotation_flags": info["rotation"],
+            "translation": translation,
+            "rotation": rotation,
+        })
+
+    # Restore every sampled particle and refresh all dependent virtual sites.
+    for p in ordered:
+        info = base[int(p.id)]
+        p.pos = info["pos"]
+        p.quat = info["quat"]
+    system.integrator.run(0, recalc_forces=True)
+    report = {
+        "schema_version": 1,
+        "kind": "full_system_generalized_energy_gradient",
+        "hamiltonian_mode": (
+            "conservative_classical_model_provenance_ml_disabled" if args.disable_ml
+            else "painn_active" if ml_active else "classical_only"
+        ),
+        "eps_position_nm": float(args.generalized_fd_eps_pos),
+        "eps_rotation_rad": float(args.generalized_fd_eps_rot),
+        "n_bodies": int(len(rows)),
+        "worst_force_abs_error": float(worst_force),
+        "worst_torque_abs_error": float(worst_torque),
+        "particles": rows,
+    }
+    path = os.path.abspath(report_path)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w") as handle:
+        json.dump(report, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    print(
+        "[GENERALIZED FD] "
+        f"bodies={len(rows)} max|dF|={worst_force:.3e} max|dTau|={worst_torque:.3e} "
+        f"report={path}"
+    )
+    return report
 
 
 def stringify_pair(value):
@@ -754,7 +883,7 @@ def record_state_sample(step):
 
 
 def record_state(step, energy_writer, energy_handle, vtf_handle):
-    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml = measure_energies()
+    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded = measure_energies()
     g_dist, g_pair, g_pids, max_f = log_diagnostics(step)
     real_particles = [p for p in system.part if p.mass > 1e-4]
     max_t = max(
@@ -779,6 +908,8 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
             e_kin_rot,
             e_class,
             e_ml,
+            e_bonded,
+            e_non_bonded,
             g_dist,
             stringify_pair(g_pair),
             stringify_pair(g_pids),
@@ -797,6 +928,9 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
     return unsafe
 
 
+if args.generalized_fd_report is not None:
+    run_generalized_fd_probe(args.generalized_fd_report)
+
 simulation_ok = True
 with ExitStack() as stack:
     energy_handle = None
@@ -814,6 +948,8 @@ with ExitStack() as stack:
             "E_kin_rot",
             "E_class",
             "E_ml",
+            "E_bonded",
+            "E_non_bonded",
             "min_dist",
             "min_pair",
             "min_pids",

@@ -1,0 +1,1210 @@
+{
+  "branch_dt_ps": 0.0005,
+  "branch_duration_ps": 0.25,
+  "comparisons_vs_current": {
+    "smooth_0p01": {
+      "abs_p_minus_2_candidate": 0.3940686349272484,
+      "abs_p_minus_2_current": 0.7483002635092357,
+      "c2_spread_improvement_factor": 1.8097298931257952,
+      "candidate_max_clean_dt_factor_1p5": 0.003,
+      "current_max_clean_dt_factor_1p5": 0.002,
+      "delta_angle_weighted_l1": 0.005863604405905831,
+      "delta_bond_weighted_l1": -0.00875973231257976,
+      "runtime_angle_p99_curvature_reduction": 2.1385422624036385
+    },
+    "smooth_0p02": {
+      "abs_p_minus_2_candidate": 0.04430752489980483,
+      "abs_p_minus_2_current": 0.7483002635092357,
+      "c2_spread_improvement_factor": 1.5809311329223112,
+      "candidate_max_clean_dt_factor_1p5": 0.001,
+      "current_max_clean_dt_factor_1p5": 0.002,
+      "delta_angle_weighted_l1": -0.015930005468322905,
+      "delta_bond_weighted_l1": -0.0037043236949493297,
+      "runtime_angle_p99_curvature_reduction": 6.381293134118647
+    }
+  },
+  "diagnostic_only": true,
+  "dts_ps": [
+    0.001,
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005
+  ],
+  "duration_ps": 1.0,
+  "estimated_total_steps": 10350,
+  "kT": 2.49,
+  "kind": "ibi_angle_regularization_matched_validation",
+  "schema_version": 1,
+  "validated": false,
+  "variants": {
+    "current": {
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nvt_checkpoint.npz",
+      "nve_runs": [
+        {
+          "E0": -6255.203101648724,
+          "E_mean": -6255.186993466695,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": -0.07068898630222975,
+          "centered_rms_E": 0.05995542988959586,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.13864603307591,
+          "dt_ps": 0.005,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p005/energy.csv",
+          "energy_scale": 6255.203101648724,
+          "first_block_mean_E": -6255.185785132969,
+          "last_block_mean_E": -6255.256474119271,
+          "linear_drift_kjmol_per_ps": -0.12275866739988174,
+          "linear_drift_span_kjmol": -0.12275866739988174,
+          "linear_fit_intercept": -6255.125614132995,
+          "max_abs_delta_E": 0.14606487669789203,
+          "peak_to_peak_E": 0.24055251504614716,
+          "relative_block_mean_drift": 1.130082990967916e-05,
+          "relative_linear_drift_span": 1.962504900400843e-05,
+          "relative_peak_to_peak_E": 3.8456387608380484e-05,
+          "relative_rms_delta_E": 9.92479627681254e-06,
+          "rms_delta_E": 0.06208161645394951,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p005/run.log",
+          "samples": 201,
+          "sigma_E": 0.05995542988959586,
+          "status": "ok",
+          "steps": 200
+        },
+        {
+          "E0": -6255.203101648724,
+          "E_mean": -6255.160386709977,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": 0.05250152408734721,
+          "centered_rms_E": 0.03245909255735413,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.9786210288823229,
+          "dt_ps": 0.004,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p004/energy.csv",
+          "energy_scale": 6255.203101648724,
+          "first_block_mean_E": -6255.204779701237,
+          "last_block_mean_E": -6255.15227817715,
+          "linear_drift_kjmol_per_ps": 0.06762650003357311,
+          "linear_drift_span_kjmol": 0.06762650003357311,
+          "linear_fit_intercept": -6255.1941999599985,
+          "max_abs_delta_E": 0.11404686886817217,
+          "peak_to_peak_E": 0.1407823920762894,
+          "relative_block_mean_drift": 8.393256499298807e-06,
+          "relative_linear_drift_span": 1.0811239688723832e-05,
+          "relative_peak_to_peak_E": 2.250644619983362e-05,
+          "relative_rms_delta_E": 8.576615719043656e-06,
+          "rms_delta_E": 0.05364847324741108,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p004/run.log",
+          "samples": 251,
+          "sigma_E": 0.03245909255735413,
+          "status": "ok",
+          "steps": 250
+        },
+        {
+          "E0": -6255.203101648724,
+          "E_mean": -6255.188972777954,
+          "actual_duration_ps": 0.999,
+          "block_mean_drift_kjmol": 0.007508095980483631,
+          "centered_rms_E": 0.012630314129700154,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.3961794882763612,
+          "dt_ps": 0.003,
+          "duration_ps": 0.999,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p003/energy.csv",
+          "energy_scale": 6255.203101648724,
+          "first_block_mean_E": -6255.188692404285,
+          "last_block_mean_E": -6255.181184308304,
+          "linear_drift_kjmol_per_ps": 0.005566272125857334,
+          "linear_drift_span_kjmol": 0.005560705853731476,
+          "linear_fit_intercept": -6255.191753130882,
+          "max_abs_delta_E": 0.05013601229074993,
+          "peak_to_peak_E": 0.06534763531999488,
+          "relative_block_mean_drift": 1.2002961148463228e-06,
+          "relative_linear_drift_span": 8.889728700041418e-07,
+          "relative_peak_to_peak_E": 1.0446924625480311e-05,
+          "relative_rms_delta_E": 3.029677583936494e-06,
+          "rms_delta_E": 0.018951248620035173,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p003/run.log",
+          "samples": 334,
+          "sigma_E": 0.012630314129700154,
+          "status": "ok",
+          "steps": 333
+        },
+        {
+          "E0": -6255.203101648724,
+          "E_mean": -6255.178617111569,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": 0.03960930283574271,
+          "centered_rms_E": 0.01702973938419398,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.3280765346927828,
+          "dt_ps": 0.002,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p002/energy.csv",
+          "energy_scale": 6255.203101648724,
+          "first_block_mean_E": -6255.203966624431,
+          "last_block_mean_E": -6255.164357321595,
+          "linear_drift_kjmol_per_ps": 0.04687810272516831,
+          "linear_drift_span_kjmol": 0.04687810272516831,
+          "linear_fit_intercept": -6255.202056162929,
+          "max_abs_delta_E": 0.05364344917052222,
+          "peak_to_peak_E": 0.06824645381948358,
+          "relative_block_mean_drift": 6.332216906802375e-06,
+          "relative_linear_drift_span": 7.494257494662699e-06,
+          "relative_peak_to_peak_E": 1.0910349785684084e-05,
+          "relative_rms_delta_E": 4.767960837638905e-06,
+          "rms_delta_E": 0.02982456342013853,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p002/run.log",
+          "samples": 501,
+          "sigma_E": 0.01702973938419398,
+          "status": "ok",
+          "steps": 500
+        },
+        {
+          "E0": -6255.203101648724,
+          "E_mean": -6255.196155245305,
+          "actual_duration_ps": 1.0005,
+          "block_mean_drift_kjmol": 0.020696031874649634,
+          "centered_rms_E": 0.009917172896072066,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.7092905622518197,
+          "dt_ps": 0.0015,
+          "duration_ps": 1.0005,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p0015/energy.csv",
+          "energy_scale": 6255.203101648724,
+          "first_block_mean_E": -6255.202881080564,
+          "last_block_mean_E": -6255.1821850486895,
+          "linear_drift_kjmol_per_ps": 0.02886839553206864,
+          "linear_drift_span_kjmol": 0.028882829729834674,
+          "linear_fit_intercept": -6255.210596660173,
+          "max_abs_delta_E": 0.02684505741854082,
+          "peak_to_peak_E": 0.039605871711501095,
+          "relative_block_mean_drift": 3.3086106939029122e-06,
+          "relative_linear_drift_span": 4.617408781214768e-06,
+          "relative_peak_to_peak_E": 6.3316683835672606e-06,
+          "relative_rms_delta_E": 1.935663114844645e-06,
+          "rms_delta_E": 0.012107965919723254,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p0015/run.log",
+          "samples": 668,
+          "sigma_E": 0.009917172896072066,
+          "status": "ok",
+          "steps": 667
+        },
+        {
+          "E0": -6255.203101648724,
+          "E_mean": -6255.208114905566,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": -0.013995105959111243,
+          "centered_rms_E": 0.006099650691356435,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.7725482961815786,
+          "dt_ps": 0.001,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p001/energy.csv",
+          "energy_scale": 6255.208114905566,
+          "first_block_mean_E": -6255.203039161029,
+          "last_block_mean_E": -6255.217034266988,
+          "linear_drift_kjmol_per_ps": -0.01837628812667124,
+          "linear_drift_span_kjmol": -0.01837628812667124,
+          "linear_fit_intercept": -6255.198926761501,
+          "max_abs_delta_E": 0.017209770362569543,
+          "peak_to_peak_E": 0.022085604422500182,
+          "relative_block_mean_drift": 2.237352571173809e-06,
+          "relative_linear_drift_span": 2.937758071211459e-06,
+          "relative_peak_to_peak_E": 3.530754535548112e-06,
+          "relative_rms_delta_E": 1.262223757735409e-06,
+          "rms_delta_E": 0.007895472292213128,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nve_coarse_scan/dt_0p001/run.log",
+          "samples": 1001,
+          "sigma_E": 0.006099650691356435,
+          "status": "ok",
+          "steps": 1000
+        }
+      ],
+      "nvt_kinetic_energy": {
+        "available": true,
+        "final_E_kin": 1596.0238887980554,
+        "mean_E_kin": 1585.0567653180183,
+        "mean_E_kin_second_half": 1588.1056268258067,
+        "samples": 501
+      },
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/current/nvt_structured_sample.npz",
+      "sigma_range": {
+        "adjacent_local_exponents": [
+          {
+            "c2_high": 4407.632398254252,
+            "c2_low": 6099.650691356435,
+            "dt_high_ps": 0.0015,
+            "dt_low_ps": 0.001,
+            "local_exponent_p": 1.198713218023124
+          },
+          {
+            "c2_high": 4257.434846048495,
+            "c2_low": 4407.632398254252,
+            "dt_high_ps": 0.002,
+            "dt_low_ps": 0.0015,
+            "local_exponent_p": 1.8794820832934396
+          },
+          {
+            "c2_high": 1403.3682366333503,
+            "c2_low": 4257.434846048495,
+            "dt_high_ps": 0.003,
+            "dt_low_ps": 0.002,
+            "local_exponent_p": -0.7370828647943723
+          },
+          {
+            "c2_high": 2028.6932848346332,
+            "c2_low": 1403.3682366333503,
+            "dt_high_ps": 0.004,
+            "dt_low_ps": 0.003,
+            "local_exponent_p": 3.280985812459112
+          },
+          {
+            "c2_high": 2398.2171955838344,
+            "c2_low": 2028.6932848346332,
+            "dt_high_ps": 0.005,
+            "dt_low_ps": 0.004,
+            "local_exponent_p": 2.7498927995881957
+          }
+        ],
+        "available": true,
+        "c2_spread_max_over_min": 4.346436332340943,
+        "dt_ps": [
+          0.001,
+          0.0015,
+          0.002,
+          0.003,
+          0.004,
+          0.005
+        ],
+        "fit": {
+          "exponent_p": 1.2516997364907643,
+          "loglog_r2": 0.8524709948861053,
+          "model": "sigma_E = C * dt^p",
+          "prefactor_C": 33.000855053573524
+        },
+        "max_clean_dt_factor_1p5": 0.002,
+        "max_clean_dt_factor_2": 0.002,
+        "n_points": 6,
+        "sigma_E": [
+          0.006099650691356435,
+          0.009917172896072066,
+          0.01702973938419398,
+          0.012630314129700154,
+          0.03245909255735413,
+          0.05995542988959586
+        ],
+        "sigma_over_dt2": [
+          6099.650691356435,
+          4407.632398254252,
+          4257.434846048495,
+          1403.3682366333503,
+          2028.6932848346332,
+          2398.2171955838344
+        ]
+      },
+      "structural": {
+        "angle_curvature_runtime": {
+          "groups": {
+            "ang_A_G_G": {
+              "max_abs": 9647.666819806036,
+              "n": 10040,
+              "p95_abs": 4419.451951179544,
+              "p99_abs": 6220.512581397554
+            },
+            "ang_G_G_G": {
+              "max_abs": 67906.44917472613,
+              "n": 10040,
+              "p95_abs": 5055.697002690896,
+              "p99_abs": 9311.003591126873
+            },
+            "ang_G_G_T": {
+              "max_abs": 20343.184771488348,
+              "n": 7530,
+              "p95_abs": 6429.686541796626,
+              "p99_abs": 12066.175383000738
+            },
+            "ang_G_T_T": {
+              "max_abs": 17706.571159727522,
+              "n": 7530,
+              "p95_abs": 4638.066282057954,
+              "p99_abs": 9018.892761744783
+            },
+            "ang_T_A_G": {
+              "max_abs": 15045.947168293149,
+              "n": 7530,
+              "p95_abs": 4683.236524410771,
+              "p99_abs": 7637.766071227522
+            },
+            "ang_T_T_A": {
+              "max_abs": 14874.667136200158,
+              "n": 7530,
+              "p95_abs": 5821.411947289303,
+              "p99_abs": 10041.88517110616
+            }
+          },
+          "max_abs": 67906.44917472613,
+          "n": 50200,
+          "p95_abs": 5087.395117346078,
+          "p99_abs": 8970.234145324384
+        },
+        "angles": {
+          "groups": {
+            "ang_A_G_G": {
+              "l1_runtime_vs_target": 0.9232208421217089,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "ang_G_G_G": {
+              "l1_runtime_vs_target": 0.7726544801187405,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "ang_G_G_T": {
+              "l1_runtime_vs_target": 0.8500742129521135,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_G_T_T": {
+              "l1_runtime_vs_target": 1.021826419810952,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_T_A_G": {
+              "l1_runtime_vs_target": 1.2446319297971518,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_T_T_A": {
+              "l1_runtime_vs_target": 1.10185141785798,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            }
+          },
+          "summary": {
+            "max_l1": 1.2446319297971518,
+            "mean_l1": 0.9857098837764412,
+            "n_groups": 6,
+            "weighted_mean_l1": 0.9719326615108195
+          }
+        },
+        "bonds": {
+          "groups": {
+            "bb_A_G": {
+              "l1_runtime_vs_target": 0.679032888055621,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "bb_G_G": {
+              "l1_runtime_vs_target": 0.5000683540348408,
+              "runtime_samples": 20080,
+              "target_samples": 4080
+            },
+            "bb_G_T": {
+              "l1_runtime_vs_target": 1.0342317006483868,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "bb_T_A": {
+              "l1_runtime_vs_target": 0.7325833919225055,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "bb_T_T": {
+              "l1_runtime_vs_target": 0.7763143504413716,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            }
+          },
+          "summary": {
+            "max_l1": 1.0342317006483868,
+            "mean_l1": 0.7444461370205452,
+            "n_groups": 5,
+            "weighted_mean_l1": 0.6831460339780001
+          }
+        }
+      }
+    },
+    "smooth_0p01": {
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nvt_checkpoint.npz",
+      "nve_runs": [
+        {
+          "E0": -6265.676453333127,
+          "E_mean": -6265.648106659382,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": 0.052646352705778554,
+          "centered_rms_E": 0.020838631623325703,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.4963945690919729,
+          "dt_ps": 0.005,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p005/energy.csv",
+          "energy_scale": 6265.676453333127,
+          "first_block_mean_E": -6265.674736524962,
+          "last_block_mean_E": -6265.622090172256,
+          "linear_drift_kjmol_per_ps": 0.06066731655829422,
+          "linear_drift_span_kjmol": 0.06066731655829422,
+          "linear_fit_intercept": -6265.6784403176625,
+          "max_abs_delta_E": 0.06912351228766056,
+          "peak_to_peak_E": 0.09447547633408249,
+          "relative_block_mean_drift": 8.402341406852006e-06,
+          "relative_linear_drift_span": 9.682484726133804e-06,
+          "relative_peak_to_peak_E": 1.5078256440104683e-05,
+          "relative_rms_delta_E": 5.615057405581624e-06,
+          "rms_delta_E": 0.03518213297026658,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p005/run.log",
+          "samples": 201,
+          "sigma_E": 0.020838631623325703,
+          "status": "ok",
+          "steps": 200
+        },
+        {
+          "E0": -6265.676453333127,
+          "E_mean": -6265.6689763351815,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": 0.041330195308546536,
+          "centered_rms_E": 0.01777768328911285,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 2.1430104452438252,
+          "dt_ps": 0.004,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p004/energy.csv",
+          "energy_scale": 6265.676453333127,
+          "first_block_mean_E": -6265.685149718785,
+          "last_block_mean_E": -6265.643819523477,
+          "linear_drift_kjmol_per_ps": 0.05517946989499547,
+          "linear_drift_span_kjmol": 0.05517946989499547,
+          "linear_fit_intercept": -6265.696566070131,
+          "max_abs_delta_E": 0.04178763462732604,
+          "peak_to_peak_E": 0.06101975365982071,
+          "relative_block_mean_drift": 6.596286229647284e-06,
+          "relative_linear_drift_span": 8.806626117063844e-06,
+          "relative_peak_to_peak_E": 9.738733577179886e-06,
+          "relative_rms_delta_E": 3.0780467002795116e-06,
+          "rms_delta_E": 0.019286044732201066,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p004/run.log",
+          "samples": 251,
+          "sigma_E": 0.01777768328911285,
+          "status": "ok",
+          "steps": 250
+        },
+        {
+          "E0": -6265.676453333127,
+          "E_mean": -6265.68056865247,
+          "actual_duration_ps": 0.999,
+          "block_mean_drift_kjmol": -0.00035334882431925507,
+          "centered_rms_E": 0.004994190087492907,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.05460240651891578,
+          "dt_ps": 0.003,
+          "duration_ps": 0.999,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p003/energy.csv",
+          "energy_scale": 6265.68056865247,
+          "first_block_mean_E": -6265.681799428725,
+          "last_block_mean_E": -6265.682152777549,
+          "linear_drift_kjmol_per_ps": -0.0008169212758871765,
+          "linear_drift_span_kjmol": -0.0008161043546112892,
+          "linear_fit_intercept": -6265.680160600294,
+          "max_abs_delta_E": 0.015147118165259599,
+          "peak_to_peak_E": 0.02528014764720865,
+          "relative_block_mean_drift": 5.6394324678324306e-08,
+          "relative_linear_drift_span": 1.3024991390309654e-07,
+          "relative_peak_to_peak_E": 4.034700998593283e-06,
+          "relative_rms_delta_E": 1.0328175674599206e-06,
+          "rms_delta_E": 0.006471304963396537,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p003/run.log",
+          "samples": 334,
+          "sigma_E": 0.004994190087492907,
+          "status": "ok",
+          "steps": 333
+        },
+        {
+          "E0": -6265.676453333127,
+          "E_mean": -6265.675054990153,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": 0.0014289141008703155,
+          "centered_rms_E": 0.0018505277898262986,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.616059138045211,
+          "dt_ps": 0.002,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p002/energy.csv",
+          "energy_scale": 6265.676453333127,
+          "first_block_mean_E": -6265.67556234673,
+          "last_block_mean_E": -6265.674133432629,
+          "linear_drift_kjmol_per_ps": 0.0006464539001269069,
+          "linear_drift_span_kjmol": 0.0006464539001269069,
+          "linear_fit_intercept": -6265.6753782171045,
+          "max_abs_delta_E": 0.006198121488523611,
+          "peak_to_peak_E": 0.009462271692427748,
+          "relative_block_mean_drift": 2.2805424306743157e-07,
+          "relative_linear_drift_span": 1.0317384003813592e-07,
+          "relative_peak_to_peak_E": 1.5101755992194811e-06,
+          "relative_rms_delta_E": 3.701823883191799e-07,
+          "rms_delta_E": 0.0023194430739301056,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p002/run.log",
+          "samples": 501,
+          "sigma_E": 0.0018505277898262986,
+          "status": "ok",
+          "steps": 500
+        },
+        {
+          "E0": -6265.676453333127,
+          "E_mean": -6265.67650144467,
+          "actual_duration_ps": 1.0005,
+          "block_mean_drift_kjmol": 0.0012696168996626511,
+          "centered_rms_E": 0.0011356763385123336,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.1169371972965352,
+          "dt_ps": 0.0015,
+          "duration_ps": 1.0005,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p0015/energy.csv",
+          "energy_scale": 6265.67650144467,
+          "first_block_mean_E": -6265.676671215789,
+          "last_block_mean_E": -6265.675401598889,
+          "linear_drift_kjmol_per_ps": 0.0015001895319981082,
+          "linear_drift_span_kjmol": 0.0015009396267641072,
+          "linear_fit_intercept": -6265.677251914483,
+          "max_abs_delta_E": 0.0028203102501720423,
+          "peak_to_peak_E": 0.005037400268520287,
+          "relative_block_mean_drift": 2.026304580790146e-07,
+          "relative_linear_drift_span": 2.39549492607548e-07,
+          "relative_peak_to_peak_E": 8.039674993368743e-07,
+          "relative_rms_delta_E": 1.8141616070220136e-07,
+          "rms_delta_E": 0.001136694975094093,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p0015/run.log",
+          "samples": 668,
+          "sigma_E": 0.0011356763385123336,
+          "status": "ok",
+          "steps": 667
+        },
+        {
+          "E0": -6265.676453333127,
+          "E_mean": -6265.676490871479,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": -0.0004981027277608518,
+          "centered_rms_E": 0.0005565404617849423,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.8929692839997891,
+          "dt_ps": 0.001,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p001/energy.csv",
+          "energy_scale": 6265.676490871479,
+          "first_block_mean_E": -6265.67657180922,
+          "last_block_mean_E": -6265.677069911948,
+          "linear_drift_kjmol_per_ps": -0.0005452661460879615,
+          "linear_drift_span_kjmol": -0.0005452661460879615,
+          "linear_fit_intercept": -6265.676218238403,
+          "max_abs_delta_E": 0.0016305201970681082,
+          "peak_to_peak_E": 0.0029751052097708452,
+          "relative_block_mean_drift": 7.949703890498373e-08,
+          "relative_linear_drift_span": 8.702430565675786e-08,
+          "relative_peak_to_peak_E": 4.748258570491635e-07,
+          "relative_rms_delta_E": 8.902550214146279e-08,
+          "rms_delta_E": 0.0005578049958557919,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nve_coarse_scan/dt_0p001/run.log",
+          "samples": 1001,
+          "sigma_E": 0.0005565404617849423,
+          "status": "ok",
+          "steps": 1000
+        }
+      ],
+      "nvt_kinetic_energy": {
+        "available": true,
+        "final_E_kin": 1599.171617022625,
+        "mean_E_kin": 1584.5433616480075,
+        "mean_E_kin_second_half": 1586.704965359522,
+        "samples": 501
+      },
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p01_wall_current/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p01/nvt_structured_sample.npz",
+      "sigma_range": {
+        "adjacent_local_exponents": [
+          {
+            "c2_high": 504.74503933881493,
+            "c2_low": 556.5404617849423,
+            "dt_high_ps": 0.0015,
+            "dt_low_ps": 0.001,
+            "local_exponent_p": 1.7590755787830754
+          },
+          {
+            "c2_high": 462.63194745657466,
+            "c2_low": 504.74503933881493,
+            "dt_high_ps": 0.002,
+            "dt_low_ps": 0.0015,
+            "local_exponent_p": 1.6971600615121356
+          },
+          {
+            "c2_high": 554.9100097214341,
+            "c2_low": 462.63194745657466,
+            "dt_high_ps": 0.003,
+            "dt_low_ps": 0.002,
+            "local_exponent_p": 2.448556840660319
+          },
+          {
+            "c2_high": 1111.1052055695532,
+            "c2_low": 554.9100097214341,
+            "dt_high_ps": 0.004,
+            "dt_low_ps": 0.003,
+            "local_exponent_p": 4.413443833213853
+          },
+          {
+            "c2_high": 833.5452649330281,
+            "c2_low": 1111.1052055695532,
+            "dt_high_ps": 0.005,
+            "dt_low_ps": 0.004,
+            "local_exponent_p": 0.7119391523028176
+          }
+        ],
+        "available": true,
+        "c2_spread_max_over_min": 2.4017044470839273,
+        "dt_ps": [
+          0.001,
+          0.0015,
+          0.002,
+          0.003,
+          0.004,
+          0.005
+        ],
+        "fit": {
+          "exponent_p": 2.3940686349272484,
+          "loglog_r2": 0.9740686103889686,
+          "model": "sigma_E = C * dt^p",
+          "prefactor_C": 6889.733722706771
+        },
+        "max_clean_dt_factor_1p5": 0.003,
+        "max_clean_dt_factor_2": 0.005,
+        "n_points": 6,
+        "sigma_E": [
+          0.0005565404617849423,
+          0.0011356763385123336,
+          0.0018505277898262986,
+          0.004994190087492907,
+          0.01777768328911285,
+          0.020838631623325703
+        ],
+        "sigma_over_dt2": [
+          556.5404617849423,
+          504.74503933881493,
+          462.63194745657466,
+          554.9100097214341,
+          1111.1052055695532,
+          833.5452649330281
+        ]
+      },
+      "structural": {
+        "angle_curvature_runtime": {
+          "groups": {
+            "ang_A_G_G": {
+              "max_abs": 2248.2126246331836,
+              "n": 10040,
+              "p95_abs": 1245.6429513120643,
+              "p99_abs": 1776.2850104644217
+            },
+            "ang_G_G_G": {
+              "max_abs": 14360.207473903674,
+              "n": 10040,
+              "p95_abs": 1421.3350521847592,
+              "p99_abs": 13096.457468197403
+            },
+            "ang_G_G_T": {
+              "max_abs": 4578.797338368703,
+              "n": 7530,
+              "p95_abs": 2696.259067868675,
+              "p99_abs": 4395.962588084424
+            },
+            "ang_G_T_T": {
+              "max_abs": 2666.277721167232,
+              "n": 7530,
+              "p95_abs": 1715.481670808075,
+              "p99_abs": 2564.8214674710853
+            },
+            "ang_T_A_G": {
+              "max_abs": 3069.4217055170884,
+              "n": 7530,
+              "p95_abs": 1609.67577603312,
+              "p99_abs": 2913.028911751242
+            },
+            "ang_T_T_A": {
+              "max_abs": 5822.607829425063,
+              "n": 7530,
+              "p95_abs": 2098.319488005394,
+              "p99_abs": 4999.956119057187
+            }
+          },
+          "max_abs": 14360.207473903674,
+          "n": 50200,
+          "p95_abs": 1821.7789943604205,
+          "p99_abs": 4194.55547034277
+        },
+        "angles": {
+          "groups": {
+            "ang_A_G_G": {
+              "l1_runtime_vs_target": 0.8940551519412544,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "ang_G_G_G": {
+              "l1_runtime_vs_target": 0.7944262167018198,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "ang_G_G_T": {
+              "l1_runtime_vs_target": 0.8578288154571262,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_G_T_T": {
+              "l1_runtime_vs_target": 1.039413587480144,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_T_A_G": {
+              "l1_runtime_vs_target": 1.249365934952999,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_T_T_A": {
+              "l1_runtime_vs_target": 1.1207249433637991,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            }
+          },
+          "summary": {
+            "max_l1": 1.249365934952999,
+            "mean_l1": 0.992635774982857,
+            "n_groups": 6,
+            "weighted_mean_l1": 0.9777962659167253
+          }
+        },
+        "bonds": {
+          "groups": {
+            "bb_A_G": {
+              "l1_runtime_vs_target": 0.6843723146629171,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "bb_G_G": {
+              "l1_runtime_vs_target": 0.48064018436059663,
+              "runtime_samples": 20080,
+              "target_samples": 4080
+            },
+            "bb_G_T": {
+              "l1_runtime_vs_target": 1.0165976616410177,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "bb_T_A": {
+              "l1_runtime_vs_target": 0.7410306486472407,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "bb_T_T": {
+              "l1_runtime_vs_target": 0.7688722235242038,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            }
+          },
+          "summary": {
+            "max_l1": 1.0165976616410177,
+            "mean_l1": 0.7383026065671953,
+            "n_groups": 5,
+            "weighted_mean_l1": 0.6743863016654204
+          }
+        }
+      }
+    },
+    "smooth_0p02": {
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nvt_checkpoint.npz",
+      "nve_runs": [
+        {
+          "E0": -6281.603566494465,
+          "E_mean": -6281.590729623357,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": 0.061078984865162056,
+          "centered_rms_E": 0.024944329837719725,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 2.1772239641724505,
+          "dt_ps": 0.005,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p005/energy.csv",
+          "energy_scale": 6281.603566494465,
+          "first_block_mean_E": -6281.61607467812,
+          "last_block_mean_E": -6281.554995693255,
+          "linear_drift_kjmol_per_ps": 0.07762441181314406,
+          "linear_drift_span_kjmol": 0.07762441181314406,
+          "linear_fit_intercept": -6281.629541829265,
+          "max_abs_delta_E": 0.05910084059632936,
+          "peak_to_peak_E": 0.08629809073590877,
+          "relative_block_mean_drift": 9.723470164680898e-06,
+          "relative_linear_drift_span": 1.235741972434969e-05,
+          "relative_peak_to_peak_E": 1.3738226206476225e-05,
+          "relative_rms_delta_E": 4.4659944611516945e-06,
+          "rms_delta_E": 0.02805360673511501,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p005/run.log",
+          "samples": 201,
+          "sigma_E": 0.024944329837719725,
+          "status": "ok",
+          "steps": 200
+        },
+        {
+          "E0": -6281.603566494465,
+          "E_mean": -6281.609189138726,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": 0.007334022063332668,
+          "centered_rms_E": 0.005806727478237459,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.9073577002061848,
+          "dt_ps": 0.004,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p004/energy.csv",
+          "energy_scale": 6281.609189138726,
+          "first_block_mean_E": -6281.612492970589,
+          "last_block_mean_E": -6281.605158948526,
+          "linear_drift_kjmol_per_ps": 0.007698527646966129,
+          "linear_drift_span_kjmol": 0.007698527646966129,
+          "linear_fit_intercept": -6281.613038402554,
+          "max_abs_delta_E": 0.02042559263372823,
+          "peak_to_peak_E": 0.030605170994022046,
+          "relative_block_mean_drift": 1.1675387376874107e-06,
+          "relative_linear_drift_span": 1.2255661591105252e-06,
+          "relative_peak_to_peak_E": 4.8721864211069035e-06,
+          "relative_rms_delta_E": 1.2867458306929046e-06,
+          "rms_delta_E": 0.008082834434166493,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p004/run.log",
+          "samples": 251,
+          "sigma_E": 0.005806727478237459,
+          "status": "ok",
+          "steps": 250
+        },
+        {
+          "E0": -6281.603566494465,
+          "E_mean": -6281.6078381410625,
+          "actual_duration_ps": 0.999,
+          "block_mean_drift_kjmol": -0.006494875534372113,
+          "centered_rms_E": 0.006081445064043355,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.8739359816324085,
+          "dt_ps": 0.003,
+          "duration_ps": 0.999,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p003/energy.csv",
+          "energy_scale": 6281.6078381410625,
+          "first_block_mean_E": -6281.606769394556,
+          "last_block_mean_E": -6281.61326427009,
+          "linear_drift_kjmol_per_ps": -0.0038139812373937086,
+          "linear_drift_span_kjmol": -0.003810167256156315,
+          "linear_fit_intercept": -6281.605933057435,
+          "max_abs_delta_E": 0.018309614200916258,
+          "peak_to_peak_E": 0.02727205293467705,
+          "relative_block_mean_drift": 1.0339511318959007e-06,
+          "relative_linear_drift_span": 6.065592367962708e-07,
+          "relative_peak_to_peak_E": 4.341572036554857e-06,
+          "relative_rms_delta_E": 1.183097107370042e-06,
+          "rms_delta_E": 0.007431752062937674,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p003/run.log",
+          "samples": 334,
+          "sigma_E": 0.006081445064043355,
+          "status": "ok",
+          "steps": 333
+        },
+        {
+          "E0": -6281.603566494465,
+          "E_mean": -6281.6060481980785,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": -0.0074406476733202,
+          "centered_rms_E": 0.003362446910959282,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.7804413139422368,
+          "dt_ps": 0.002,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p002/energy.csv",
+          "energy_scale": 6281.6060481980785,
+          "first_block_mean_E": -6281.602370882026,
+          "last_block_mean_E": -6281.609811529699,
+          "linear_drift_kjmol_per_ps": -0.009848682303770603,
+          "linear_drift_span_kjmol": -0.009848682303770603,
+          "linear_fit_intercept": -6281.601123856926,
+          "max_abs_delta_E": 0.009392973030116991,
+          "peak_to_peak_E": 0.014704446807627392,
+          "relative_block_mean_drift": 1.1845135807990697e-06,
+          "relative_linear_drift_span": 1.5678605484334321e-06,
+          "relative_peak_to_peak_E": 2.340873766167724e-06,
+          "relative_rms_delta_E": 6.652921225335592e-07,
+          "rms_delta_E": 0.004179103020725342,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p002/run.log",
+          "samples": 501,
+          "sigma_E": 0.003362446910959282,
+          "status": "ok",
+          "steps": 500
+        },
+        {
+          "E0": -6281.603566494465,
+          "E_mean": -6281.605617593595,
+          "actual_duration_ps": 1.0005,
+          "block_mean_drift_kjmol": -0.002251592302854988,
+          "centered_rms_E": 0.0011690759662659122,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 0.9537096088609085,
+          "dt_ps": 0.0015,
+          "duration_ps": 1.0005,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p0015/energy.csv",
+          "energy_scale": 6281.605617593595,
+          "first_block_mean_E": -6281.604264292994,
+          "last_block_mean_E": -6281.606515885297,
+          "linear_drift_kjmol_per_ps": -0.0024404492043423763,
+          "linear_drift_span_kjmol": -0.0024416694289445475,
+          "linear_fit_intercept": -6281.604396758882,
+          "max_abs_delta_E": 0.005371460074456991,
+          "peak_to_peak_E": 0.0065994303149636835,
+          "relative_block_mean_drift": 3.58442162708958e-07,
+          "relative_linear_drift_span": 3.8870148455450484e-07,
+          "relative_peak_to_peak_E": 1.0505960922602212e-06,
+          "relative_rms_delta_E": 3.758399405633273e-07,
+          "rms_delta_E": 0.0023608782819586394,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p0015/run.log",
+          "samples": 668,
+          "sigma_E": 0.0011690759662659122,
+          "status": "ok",
+          "steps": 667
+        },
+        {
+          "E0": -6281.603566494465,
+          "E_mean": -6281.605170161922,
+          "actual_duration_ps": 1.0,
+          "block_mean_drift_kjmol": -0.0019801191683654906,
+          "centered_rms_E": 0.0007873125753290555,
+          "drift_block_fraction": 0.2,
+          "drift_span_over_rms_delta": 1.108374158424812,
+          "dt_ps": 0.001,
+          "duration_ps": 1.0,
+          "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p001/energy.csv",
+          "energy_scale": 6281.605170161922,
+          "first_block_mean_E": -6281.604226900626,
+          "last_block_mean_E": -6281.606207019794,
+          "linear_drift_kjmol_per_ps": -0.0022546903096680713,
+          "linear_drift_span_kjmol": -0.0022546903096680713,
+          "linear_fit_intercept": -6281.604042816765,
+          "max_abs_delta_E": 0.0032873935624593287,
+          "peak_to_peak_E": 0.0036208061956131132,
+          "relative_block_mean_drift": 3.15225028432414e-07,
+          "relative_linear_drift_span": 3.5893537536838724e-07,
+          "relative_peak_to_peak_E": 5.764141644578689e-07,
+          "relative_rms_delta_E": 2.8440308359444464e-07,
+          "rms_delta_E": 0.0017865078803168568,
+          "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nve_coarse_scan/dt_0p001/run.log",
+          "samples": 1001,
+          "sigma_E": 0.0007873125753290555,
+          "status": "ok",
+          "steps": 1000
+        }
+      ],
+      "nvt_kinetic_energy": {
+        "available": true,
+        "final_E_kin": 1598.1974617841704,
+        "mean_E_kin": 1584.5401011235258,
+        "mean_E_kin_second_half": 1585.7025402347558,
+        "samples": 501
+      },
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_current/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation/smooth_0p02/nvt_structured_sample.npz",
+      "sigma_range": {
+        "adjacent_local_exponents": [
+          {
+            "c2_high": 519.5893183404054,
+            "c2_low": 787.3125753290556,
+            "dt_high_ps": 0.0015,
+            "dt_low_ps": 0.001,
+            "local_exponent_p": 0.9750372908493469
+          },
+          {
+            "c2_high": 840.6117277398205,
+            "c2_low": 519.5893183404054,
+            "dt_high_ps": 0.002,
+            "dt_low_ps": 0.0015,
+            "local_exponent_p": 3.67230145029378
+          },
+          {
+            "c2_high": 675.7161182270395,
+            "c2_low": 840.6117277398205,
+            "dt_high_ps": 0.003,
+            "dt_low_ps": 0.002,
+            "local_exponent_p": 1.461465794846832
+          },
+          {
+            "c2_high": 362.92046738984124,
+            "c2_low": 675.7161182270395,
+            "dt_high_ps": 0.004,
+            "dt_low_ps": 0.003,
+            "local_exponent_p": -0.1606815014005976
+          },
+          {
+            "c2_high": 997.773193508789,
+            "c2_low": 362.92046738984124,
+            "dt_high_ps": 0.005,
+            "dt_low_ps": 0.004,
+            "local_exponent_p": 6.53224962744591
+          }
+        ],
+        "available": true,
+        "c2_spread_max_over_min": 2.749288847457046,
+        "dt_ps": [
+          0.001,
+          0.0015,
+          0.002,
+          0.003,
+          0.004,
+          0.005
+        ],
+        "fit": {
+          "exponent_p": 1.9556924751001952,
+          "loglog_r2": 0.9140724505351845,
+          "model": "sigma_E = C * dt^p",
+          "prefactor_C": 506.4851917371552
+        },
+        "max_clean_dt_factor_1p5": 0.001,
+        "max_clean_dt_factor_2": 0.003,
+        "n_points": 6,
+        "sigma_E": [
+          0.0007873125753290555,
+          0.0011690759662659122,
+          0.003362446910959282,
+          0.006081445064043355,
+          0.005806727478237459,
+          0.024944329837719725
+        ],
+        "sigma_over_dt2": [
+          787.3125753290556,
+          519.5893183404054,
+          840.6117277398205,
+          675.7161182270395,
+          362.92046738984124,
+          997.773193508789
+        ]
+      },
+      "structural": {
+        "angle_curvature_runtime": {
+          "groups": {
+            "ang_A_G_G": {
+              "max_abs": 780.5450602167914,
+              "n": 10040,
+              "p95_abs": 424.23857730065936,
+              "p99_abs": 512.4806685139466
+            },
+            "ang_G_G_G": {
+              "max_abs": 10583.4512805044,
+              "n": 10040,
+              "p95_abs": 743.9267766672248,
+              "p99_abs": 9764.593507215703
+            },
+            "ang_G_G_T": {
+              "max_abs": 1483.792045918047,
+              "n": 7530,
+              "p95_abs": 812.5625055305221,
+              "p99_abs": 1433.616548975596
+            },
+            "ang_G_T_T": {
+              "max_abs": 926.9959409812578,
+              "n": 7530,
+              "p95_abs": 709.4160817081895,
+              "p99_abs": 913.5414407879618
+            },
+            "ang_T_A_G": {
+              "max_abs": 726.5604348413747,
+              "n": 7530,
+              "p95_abs": 519.9918503229374,
+              "p99_abs": 673.3912874121352
+            },
+            "ang_T_T_A": {
+              "max_abs": 5788.76884396777,
+              "n": 7530,
+              "p95_abs": 847.9184409599161,
+              "p99_abs": 4999.6217127091595
+            }
+          },
+          "max_abs": 10583.4512805044,
+          "n": 50200,
+          "p95_abs": 694.4944249080302,
+          "p99_abs": 1405.7078960005038
+        },
+        "angles": {
+          "groups": {
+            "ang_A_G_G": {
+              "l1_runtime_vs_target": 0.861768611827201,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "ang_G_G_G": {
+              "l1_runtime_vs_target": 0.7382352941176468,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "ang_G_G_T": {
+              "l1_runtime_vs_target": 0.8560789521651958,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_G_T_T": {
+              "l1_runtime_vs_target": 1.011082467515558,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_T_A_G": {
+              "l1_runtime_vs_target": 1.2815092570892905,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "ang_T_T_A": {
+              "l1_runtime_vs_target": 1.0913418222534697,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            }
+          },
+          "summary": {
+            "max_l1": 1.2815092570892905,
+            "mean_l1": 0.973336067494727,
+            "n_groups": 6,
+            "weighted_mean_l1": 0.9560026560424966
+          }
+        },
+        "bonds": {
+          "groups": {
+            "bb_A_G": {
+              "l1_runtime_vs_target": 0.6745840168736819,
+              "runtime_samples": 10040,
+              "target_samples": 2040
+            },
+            "bb_G_G": {
+              "l1_runtime_vs_target": 0.4851398328255604,
+              "runtime_samples": 20080,
+              "target_samples": 4080
+            },
+            "bb_G_T": {
+              "l1_runtime_vs_target": 1.0250240866598963,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "bb_T_A": {
+              "l1_runtime_vs_target": 0.7662838840715566,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            },
+            "bb_T_T": {
+              "l1_runtime_vs_target": 0.7716324245501655,
+              "runtime_samples": 7530,
+              "target_samples": 1530
+            }
+          },
+          "summary": {
+            "max_l1": 1.0250240866598963,
+            "mean_l1": 0.7445328489961721,
+            "n_groups": 5,
+            "weighted_mean_l1": 0.6794417102830508
+          }
+        }
+      }
+    }
+  }
+}

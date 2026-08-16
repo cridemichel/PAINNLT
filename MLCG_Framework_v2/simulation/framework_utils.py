@@ -508,8 +508,10 @@ def configure_neighbor_search(
 ) -> None:
     """Select ESPResSo pair traversal explicitly.
 
-    ``verlet`` and ``link-cell`` control whether Verlet lists are used.  When
-    ``n_square_types`` is provided, ESPResSo's hybrid decomposition is used:
+    ``verlet`` and ``link-cell`` select regular/hybrid decomposition with or
+    without Verlet lists. ``nsquare`` selects ESPResSo's all-pairs N-square
+    decomposition and deliberately ignores ``n_square_types``/``cutoff_regular``.
+    When ``n_square_types`` is provided for the other modes, ESPResSo's hybrid decomposition is used:
     those particle types are handled by the N-square sub-decomposition while
     the remaining short-range particles stay in the regular decomposition.
     This prevents sparse long-range technical interaction carriers from inflating
@@ -520,9 +522,13 @@ def configure_neighbor_search(
         use_verlet_lists = True
     elif normalized == "link-cell":
         use_verlet_lists = False
+    elif normalized == "nsquare":
+        system.cell_system.set_n_square(use_verlet_lists=False)
+        print("[INFO] Neighbor search: nsquare (all-pairs decomposition)")
+        return
     else:
         raise ValueError(
-            f"Unknown neighbor-search mode {mode!r}; expected 'verlet' or 'link-cell'"
+            f"Unknown neighbor-search mode {mode!r}; expected 'verlet', 'link-cell', or 'nsquare'"
         )
 
     if n_square_types:

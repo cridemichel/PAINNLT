@@ -1,0 +1,396 @@
+{
+  "eps_position_nm": 1e-06,
+  "eps_rotation_rad": 1e-06,
+  "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+  "kind": "full_system_generalized_energy_gradient",
+  "n_bodies": 8,
+  "particles": [
+    {
+      "particle_id": 2,
+      "rotation": [
+        {
+          "abs_error": 4.3019275253186606e-08,
+          "actual_torque_lab": -10.260065252896487,
+          "axis": 0,
+          "fd_torque": -10.260065209877212
+        },
+        {
+          "abs_error": 4.663821702166615e-07,
+          "actual_torque_lab": 8.401486854570413,
+          "axis": 1,
+          "fd_torque": 8.401487320952583
+        },
+        {
+          "abs_error": 2.5047567575597895e-08,
+          "actual_torque_lab": 8.141230889614318,
+          "axis": 2,
+          "fd_torque": 8.14123086456675
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 6.389548445895343e-09,
+          "actual_force": 33.18016114733347,
+          "axis": 0,
+          "fd_force": 33.18016115372302
+        },
+        {
+          "abs_error": 3.370184842310664e-07,
+          "actual_force": -17.797906029449457,
+          "axis": 1,
+          "fd_force": -17.79790636646794
+        },
+        {
+          "abs_error": 1.992038434650567e-06,
+          "actual_force": 50.38557373179121,
+          "axis": 2,
+          "fd_force": 50.38557173975278
+        }
+      ]
+    },
+    {
+      "particle_id": 9,
+      "rotation": [
+        {
+          "abs_error": 8.815668688377798e-07,
+          "actual_torque_lab": -2.15253382456742,
+          "axis": 0,
+          "fd_torque": -2.1525329430005513
+        },
+        {
+          "abs_error": 7.112641640105721e-07,
+          "actual_torque_lab": -19.57321202822348,
+          "axis": 1,
+          "fd_torque": -19.573212739487644
+        },
+        {
+          "abs_error": 4.556714472414569e-08,
+          "actual_torque_lab": 5.797558469474456,
+          "axis": 2,
+          "fd_torque": 5.797558515041601
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 1.791453854593783e-06,
+          "actual_force": -18.504086228608088,
+          "axis": 0,
+          "fd_force": -18.504084437154233
+        },
+        {
+          "abs_error": 8.118475918195145e-07,
+          "actual_force": -22.545820586525103,
+          "axis": 1,
+          "fd_force": -22.54581977467751
+        },
+        {
+          "abs_error": 8.051827945720902e-06,
+          "actual_force": 12.175018261515605,
+          "axis": 2,
+          "fd_force": 12.175026313343551
+        }
+      ]
+    },
+    {
+      "particle_id": 16,
+      "rotation": [
+        {
+          "abs_error": 2.167050539014781e-07,
+          "actual_torque_lab": -28.056825829725973,
+          "axis": 0,
+          "fd_torque": -28.05682561302092
+        },
+        {
+          "abs_error": 5.529068225484934e-07,
+          "actual_torque_lab": 7.7579339703583905,
+          "axis": 1,
+          "fd_torque": 7.757933417451568
+        },
+        {
+          "abs_error": 1.528967921160529e-07,
+          "actual_torque_lab": -2.5097368342250768,
+          "axis": 2,
+          "fd_torque": -2.509736987121869
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 1.495277004437412e-07,
+          "actual_force": 33.434950487928795,
+          "axis": 0,
+          "fd_force": 33.434950637456495
+        },
+        {
+          "abs_error": 2.0112306486907983e-07,
+          "actual_force": 49.9877780577091,
+          "axis": 1,
+          "fd_force": 49.987777856586035
+        },
+        {
+          "abs_error": 1.6165858909289454e-06,
+          "actual_force": -53.9197719468075,
+          "axis": 2,
+          "fd_force": -53.91977356339339
+        }
+      ]
+    },
+    {
+      "particle_id": 29,
+      "rotation": [
+        {
+          "abs_error": 3.461156463657744e-07,
+          "actual_torque_lab": 3.7117257483640262,
+          "axis": 0,
+          "fd_torque": 3.7117260944796726
+        },
+        {
+          "abs_error": 1.7757401860052369e-07,
+          "actual_torque_lab": -0.43283143463186047,
+          "axis": 1,
+          "fd_torque": -0.43283125705784187
+        },
+        {
+          "abs_error": 3.9060880729913094e-07,
+          "actual_torque_lab": 0.886286606581894,
+          "axis": 2,
+          "fd_torque": 0.8862862159730867
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 4.666652273499494e-07,
+          "actual_force": -10.978796569266848,
+          "axis": 0,
+          "fd_force": -10.978797035932075
+        },
+        {
+          "abs_error": 1.0407609529750061e-07,
+          "actual_force": -10.930674865842663,
+          "axis": 1,
+          "fd_force": -10.930674761766568
+        },
+        {
+          "abs_error": 9.325159368245295e-06,
+          "actual_force": 52.5530947442156,
+          "axis": 2,
+          "fd_force": 52.55310406937497
+        }
+      ]
+    },
+    {
+      "particle_id": 36,
+      "rotation": [
+        {
+          "abs_error": 5.19190869852082e-07,
+          "actual_torque_lab": -28.58075965455682,
+          "axis": 0,
+          "fd_torque": -28.580759135365952
+        },
+        {
+          "abs_error": 4.214882949327148e-07,
+          "actual_torque_lab": -31.56942190201451,
+          "axis": 1,
+          "fd_torque": -31.569421480526216
+        },
+        {
+          "abs_error": 1.4911886481172587e-07,
+          "actual_torque_lab": -10.775377482825274,
+          "axis": 2,
+          "fd_torque": -10.775377631944139
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 3.6121357993579295e-07,
+          "actual_force": 97.14397001775203,
+          "axis": 0,
+          "fd_force": 97.1439703789656
+        },
+        {
+          "abs_error": 3.075571562760615e-06,
+          "actual_force": -47.84727718140248,
+          "axis": 1,
+          "fd_force": -47.847280256974045
+        },
+        {
+          "abs_error": 2.5931434777248796e-06,
+          "actual_force": -120.23461190546314,
+          "axis": 2,
+          "fd_force": -120.23460931231966
+        }
+      ]
+    },
+    {
+      "particle_id": 43,
+      "rotation": [
+        {
+          "abs_error": 7.314674199676574e-08,
+          "actual_torque_lab": -12.654538368611332,
+          "axis": 0,
+          "fd_torque": -12.65453829546459
+        },
+        {
+          "abs_error": 2.3717571195902565e-07,
+          "actual_torque_lab": -29.33365953069601,
+          "axis": 1,
+          "fd_torque": -29.333659767871723
+        },
+        {
+          "abs_error": 8.857657185501466e-08,
+          "actual_torque_lab": -2.1020397047240937,
+          "axis": 2,
+          "fd_torque": -2.102039616147522
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 1.365786062024199e-07,
+          "actual_force": -107.74833285707267,
+          "axis": 0,
+          "fd_force": -107.74833299365127
+        },
+        {
+          "abs_error": 1.4189966250910402e-06,
+          "actual_force": 36.8403474929407,
+          "axis": 1,
+          "fd_force": 36.840348911937326
+        },
+        {
+          "abs_error": 4.657203902524998e-07,
+          "actual_force": 75.68617230578182,
+          "axis": 2,
+          "fd_force": 75.68617184006143
+        }
+      ]
+    },
+    {
+      "particle_id": 56,
+      "rotation": [
+        {
+          "abs_error": 2.262666085606213e-07,
+          "actual_torque_lab": 2.361597354335784,
+          "axis": 0,
+          "fd_torque": 2.3615975806023926
+        },
+        {
+          "abs_error": 2.6558314658586823e-07,
+          "actual_torque_lab": -15.663403890346892,
+          "axis": 1,
+          "fd_torque": -15.663404155930039
+        },
+        {
+          "abs_error": 1.0283382376741201e-06,
+          "actual_torque_lab": -0.16941691622391808,
+          "axis": 2,
+          "fd_torque": -0.16941794456215575
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 3.8645218580768415e-07,
+          "actual_force": -8.951233598880819,
+          "axis": 0,
+          "fd_force": -8.951233212428633
+        },
+        {
+          "abs_error": 6.202919422548803e-08,
+          "actual_force": -5.287740412497278,
+          "axis": 1,
+          "fd_force": -5.287740350468084
+        },
+        {
+          "abs_error": 5.026675950148274e-06,
+          "actual_force": -66.21784953212105,
+          "axis": 2,
+          "fd_force": -66.2178445054451
+        }
+      ]
+    },
+    {
+      "particle_id": 63,
+      "rotation": [
+        {
+          "abs_error": 1.4124888059185992e-07,
+          "actual_torque_lab": -0.31708728356969607,
+          "axis": 0,
+          "fd_torque": -0.3170871423208155
+        },
+        {
+          "abs_error": 1.253932961908788e-07,
+          "actual_torque_lab": 3.2340887063322836,
+          "axis": 1,
+          "fd_torque": 3.2340885809389874
+        },
+        {
+          "abs_error": 1.51604221176882e-07,
+          "actual_torque_lab": -2.64525973153413,
+          "axis": 2,
+          "fd_torque": -2.645259883138351
+        }
+      ],
+      "rotation_flags": [
+        true,
+        true,
+        true
+      ],
+      "translation": [
+        {
+          "abs_error": 4.0427708398738105e-06,
+          "actual_force": 24.2314840261984,
+          "axis": 0,
+          "fd_force": 24.231479983427562
+        },
+        {
+          "abs_error": 1.7188359890951688e-07,
+          "actual_force": 32.91270678438376,
+          "axis": 1,
+          "fd_force": 32.91270695626736
+        },
+        {
+          "abs_error": 1.8535100956285078e-06,
+          "actual_force": 2.6738798969344337,
+          "axis": 2,
+          "fd_force": 2.673878043424338
+        }
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "worst_force_abs_error": 9.325159368245295e-06,
+  "worst_torque_abs_error": 1.0283382376741201e-06
+}

@@ -1,0 +1,71 @@
+@@ -3135,35 +3135,46 @@
+ 
+ ---
+ 
+-## 28.11 Diagnose the actual NVE trajectory order
++## 28.11 Localize non-quadratic `sigma_E(dt)`
+ 
+-When NVE drift is tiny but `sigma_E(dt)` is non-monotonic, do not infer the
+-Velocity-Verlet order from the energy-oscillation amplitude alone. In the
+-conservative-IBI workflow run step 25:
++Richardson state convergence and the classical energy-fluctuation test answer
++different questions. A trajectory order near two does **not** remove the need to
++understand why, for a sufficiently regular Hamiltonian integrated with
++Velocity-Verlet, `sigma_E` fails to enter the expected `O(dt^2)` regime.
++
++For conservative IBI run:
+ 
+ ```bash
+ cd tutorials/tel22_IBI
+ IBI_MODEL=tel22_model_ibi_conservative.pt \
+-  bash ./25_diagnose_conservative_ibi_state_convergence.sh --overwrite
+-```
+-
+-The test reuses the provenance-bound IBI-only NVT checkpoint from step 23 and
+-keeps PaiNN disabled. The default NVE ladder is dyadic: `0.001, 0.0005,
+-0.00025, 0.000125 ps`, with a `0.0000625 ps` reference trajectory. Runs stop at
+-`0.096 ps` and share exact samples every `0.012 ps`.
+-
+-`run_cg_md.py --state_sample_npz` stores real-particle IDs, positions, velocities,
+-quaternions and `omega_body`, plus input hashes, Hamiltonian mode and the source
+-checkpoint SHA256. Postprocessing compares both each finite-dt trajectory with
+-the finest reference and Richardson `dt`/`dt/2` pairs. The latter determine the
+-order: a second-order method should satisfy `error(dt,dt/2) ~ dt^2`. Separate
+-fits are reported for position, velocity, orientation and angular velocity.
+-Position differences use the minimum-image convention and quaternion-angle
+-errors are invariant under `q -> -q`.
+-
+-This remains diagnostic-only and does not change the strict step-23 verdict. Its
+-purpose is to distinguish an integrator-order problem from a `sigma_E` measure
+-that is dominated by shadow-energy phase/amplitude effects.
++  bash ./27_diagnose_conservative_ibi_energy_scaling.sh --overwrite
++```
++
++Step 27 leaves the interaction kernel unchanged and localizes the anomaly with:
++
++- `U''` jumps at every Hermite knot;
++- minimal distance/angle systems inside one cell versus knot crossing;
++- point-particle angle versus rigid-body virtual-site angle;
++- rotational finite differences against `torque_lab`;
++- full-system translational/rotational finite differences;
++- matched `no_ibi`, `bonds_only`, `angles_only`, and `full` scans with the WCA
++  topology preserved;
++- knot-crossing versus per-step `|Delta E|` correlation;
++- translational/rotational kinetic plus bonded/non-bonded energy decomposition;
++- link-cell versus all-pairs N-square traversal;
++- forward / reverse-velocity / forward time reversibility.
++
++The main artifact is
++`conservative_ibi_energy_localization/localization_report.json`. If an
++inside-cell micro-system recovers `sigma_E ~ dt^2` while the corresponding
++knot-crossing system does not, knot regularity is strongly implicated. If the
++point-angle case passes but the rigid-angle case fails, investigate virtual-site
++force/torque back-transfer and rotational integration. If `no_ibi` also fails,
++do not blame the spline representation.
++
++Until a reproducible `sigma_E ~ dt^2` failure is localized, the composite step-26
++PASS must not be interpreted as explaining or closing that specific energy-
++scaling anomaly.
+ 
+ ---
+ 

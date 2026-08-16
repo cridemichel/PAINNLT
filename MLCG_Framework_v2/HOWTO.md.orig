@@ -3217,49 +3217,6 @@ fase delle oscillazioni della shadow energy.
 
 ---
 
-
-## 28.11 Localizzare un `sigma_E(dt)` non quadratico
-
-La convergenza Richardson dello stato e il test classico sulle fluttuazioni di
-energia rispondono a domande diverse. Un ordine di traiettoria vicino a 2 **non**
-annulla il requisito fisico/numerico di capire perche, per una Hamiltoniana
-regolare integrata con Velocity-Verlet, `sigma_E` non mostri il regime
-`O(dt^2)` atteso.
-
-Per il ramo conservative IBI usare:
-
-```bash
-cd tutorials/tel22_IBI
-IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./27_diagnose_conservative_ibi_energy_scaling.sh --overwrite
-```
-
-Il passo 27 non modifica il kernel. Esegue una localizzazione per componenti:
-
-- salto di `U''` a ogni knot Hermite;
-- micro-sistemi bond e angle dentro una cella vs attraversamento knot;
-- angle su point particles vs virtual sites di rigid bodies;
-- finite difference rotazionale confrontata con `torque_lab`;
-- full-system finite difference di forze e torque;
-- scan `no_ibi`, `bonds_only`, `angles_only`, `full` con identica topologia WCA;
-- correlazione tra crossing dei knot e `|Delta E|` per step;
-- decomposizione `K_trans`, `K_rot`, energia bonded/nonbonded;
-- confronto `link-cell` vs `nsquare`;
-- reversibilita temporale forward / inversione `v, omega_body` / forward.
-
-Il report principale e
-`conservative_ibi_energy_localization/localization_report.json`. Se il caso
-inside-cell recupera `sigma_E ~ dt^2` ma il caso crossing no, la regolarita ai
-knot diventa il sospetto principale. Se il point-angle passa e il rigid-angle
-fallisce, bisogna invece investigare back-transfer di forza/torque e integrazione
-rotazionale. Se anche `no_ibi` fallisce, non attribuire il problema alle spline.
-
-Finche un fallimento riproducibile di `sigma_E ~ dt^2` non e localizzato, il
-PASS composito del passo 26 non deve essere interpretato come spiegazione o
-chiusura di quella specifica anomalia energetica.
-
----
-
 # 29. Checklist per adattare il framework a un nuovo sistema
 
 1. **AA trajectory**

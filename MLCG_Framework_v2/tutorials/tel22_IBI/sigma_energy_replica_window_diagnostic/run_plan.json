@@ -1,0 +1,32 @@
+{
+  "analysis": "raw population sigma(E) on exact prefixes; replica fixed-effects log-log slope",
+  "base_checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+  "base_checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+  "diagnostic_only": true,
+  "dts_ps": [
+    0.001,
+    0.0005,
+    0.00025,
+    0.000125
+  ],
+  "durations_ps": [
+    0.125,
+    0.25,
+    0.5,
+    1.0,
+    2.0
+  ],
+  "kind": "conservative_ibi_sigma_energy_replica_window_plan",
+  "max_duration_ps": 2.0,
+  "nve_steps_per_replica": 30000,
+  "replica_equilibration": {
+    "dt_ps": 0.0005,
+    "duration_ps": 1.0,
+    "kT_kj_mol": 2.49,
+    "seed_base": 280000,
+    "steps": 2000
+  },
+  "replicas": 4,
+  "schema_version": 1,
+  "total_integration_steps": 128000
+}

@@ -1,0 +1,147 @@
+{
+  "angle": {
+    "max_abs": 88.57207277798672,
+    "max_signed": 88.57207277798672,
+    "min_signed": 9.621950521848941,
+    "n": 50200,
+    "p50_abs": 84.86993044473314,
+    "p95_abs": 88.57207277798672,
+    "p99_abs": 88.57207277798672
+  },
+  "bond": {
+    "max_abs": 1452.408548073078,
+    "max_signed": 1452.408548073078,
+    "min_signed": 254.49595317844958,
+    "n": 52710,
+    "p50_abs": 747.1952167492394,
+    "p95_abs": 1452.408548073078,
+    "p99_abs": 1452.408548073078
+  },
+  "groups": {
+    "ang_A_G_G": {
+      "kind": "angle",
+      "max_abs": 84.86993044473314,
+      "max_signed": 84.86993044473314,
+      "min_signed": 84.86993044473314,
+      "n": 10040,
+      "p50_abs": 84.86993044473314,
+      "p95_abs": 84.86993044473314,
+      "p99_abs": 84.86993044473314,
+      "type": "harmonic"
+    },
+    "ang_G_G_G": {
+      "kind": "angle",
+      "max_abs": 86.44933254304182,
+      "max_signed": 86.44933254304182,
+      "min_signed": 86.44933254304182,
+      "n": 10040,
+      "p50_abs": 86.44933254304182,
+      "p95_abs": 86.44933254304182,
+      "p99_abs": 86.44933254304182,
+      "type": "harmonic"
+    },
+    "ang_G_G_T": {
+      "kind": "angle",
+      "max_abs": 76.55700159173091,
+      "max_signed": 76.55700159173091,
+      "min_signed": 76.55700159173091,
+      "n": 7530,
+      "p50_abs": 76.55700159173091,
+      "p95_abs": 76.55700159173091,
+      "p99_abs": 76.55700159173091,
+      "type": "harmonic"
+    },
+    "ang_G_T_T": {
+      "kind": "angle",
+      "max_abs": 88.57207277798672,
+      "max_signed": 88.57207277798672,
+      "min_signed": 88.57207277798672,
+      "n": 7530,
+      "p50_abs": 88.57207277798672,
+      "p95_abs": 88.57207277798672,
+      "p99_abs": 88.57207277798672,
+      "type": "harmonic"
+    },
+    "ang_T_A_G": {
+      "kind": "angle",
+      "max_abs": 22.426701682954153,
+      "max_signed": 22.426701682954153,
+      "min_signed": 22.426701682954153,
+      "n": 7530,
+      "p50_abs": 22.426701682954153,
+      "p95_abs": 22.426701682954153,
+      "p99_abs": 22.426701682954153,
+      "type": "harmonic"
+    },
+    "ang_T_T_A": {
+      "kind": "angle",
+      "max_abs": 9.621950521848941,
+      "max_signed": 9.621950521848941,
+      "min_signed": 9.621950521848941,
+      "n": 7530,
+      "p50_abs": 9.621950521848941,
+      "p95_abs": 9.621950521848941,
+      "p99_abs": 9.621950521848941,
+      "type": "harmonic"
+    },
+    "bb_A_G": {
+      "kind": "bond",
+      "max_abs": 497.1678715357955,
+      "max_signed": 497.1678715357955,
+      "min_signed": 497.1678715357955,
+      "n": 10040,
+      "p50_abs": 497.1678715357955,
+      "p95_abs": 497.1678715357955,
+      "p99_abs": 497.1678715357955,
+      "type": "harmonic"
+    },
+    "bb_G_G": {
+      "kind": "bond",
+      "max_abs": 1452.408548073078,
+      "max_signed": 1452.408548073078,
+      "min_signed": 1452.408548073078,
+      "n": 20080,
+      "p50_abs": 1452.408548073078,
+      "p95_abs": 1452.408548073078,
+      "p99_abs": 1452.408548073078,
+      "type": "harmonic"
+    },
+    "bb_G_T": {
+      "kind": "bond",
+      "max_abs": 747.1952167492394,
+      "max_signed": 747.1952167492394,
+      "min_signed": 747.1952167492394,
+      "n": 7530,
+      "p50_abs": 747.1952167492394,
+      "p95_abs": 747.1952167492394,
+      "p99_abs": 747.1952167492394,
+      "type": "harmonic"
+    },
+    "bb_T_A": {
+      "kind": "bond",
+      "max_abs": 300.75753984823467,
+      "max_signed": 300.75753984823467,
+      "min_signed": 300.75753984823467,
+      "n": 7530,
+      "p50_abs": 300.75753984823467,
+      "p95_abs": 300.75753984823467,
+      "p99_abs": 300.75753984823467,
+      "type": "harmonic"
+    },
+    "bb_T_T": {
+      "kind": "bond",
+      "max_abs": 254.49595317844958,
+      "max_signed": 254.49595317844958,
+      "min_signed": 254.49595317844958,
+      "n": 7530,
+      "p50_abs": 254.49595317844958,
+      "p95_abs": 254.49595317844958,
+      "p99_abs": 254.49595317844958,
+      "type": "harmonic"
+    }
+  },
+  "kind": "visited_bonded_curvature",
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_timestep_range_diagnostic/priors_variants/cg_priors_old_tel22.json",
+  "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_timestep_range_diagnostic/old_tel22/nvt_structured_sample.npz",
+  "schema_version": 1
+}
