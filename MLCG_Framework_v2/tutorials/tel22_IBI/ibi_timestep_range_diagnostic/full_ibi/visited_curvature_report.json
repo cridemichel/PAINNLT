@@ -1,0 +1,147 @@
+{
+  "angle": {
+    "max_abs": 66022.51100265258,
+    "max_signed": 66022.51100265258,
+    "min_signed": -18062.53804137815,
+    "n": 50200,
+    "p50_abs": 760.0158969748218,
+    "p95_abs": 4981.886709581866,
+    "p99_abs": 8826.439401544189
+  },
+  "bond": {
+    "max_abs": 47164.995840172334,
+    "max_signed": 40365.43951503664,
+    "min_signed": -47164.995840172334,
+    "n": 52710,
+    "p50_abs": 2179.8272702365603,
+    "p95_abs": 8636.596160764282,
+    "p99_abs": 13385.42839415872
+  },
+  "groups": {
+    "ang_A_G_G": {
+      "kind": "angle",
+      "max_abs": 10917.618437661778,
+      "max_signed": 10917.618437661778,
+      "min_signed": -9395.513335990328,
+      "n": 10040,
+      "p50_abs": 662.7418625011614,
+      "p95_abs": 4024.927295605727,
+      "p99_abs": 6033.235500303871,
+      "type": "conservative_spline"
+    },
+    "ang_G_G_G": {
+      "kind": "angle",
+      "max_abs": 66022.51100265258,
+      "max_signed": 66022.51100265258,
+      "min_signed": -13301.543293231962,
+      "n": 10040,
+      "p50_abs": 870.6882477130088,
+      "p95_abs": 4872.345589762296,
+      "p99_abs": 8745.670899536444,
+      "type": "conservative_spline"
+    },
+    "ang_G_G_T": {
+      "kind": "angle",
+      "max_abs": 21508.278311276314,
+      "max_signed": 21508.278311276314,
+      "min_signed": -14200.153134230257,
+      "n": 7530,
+      "p50_abs": 1232.5063433911118,
+      "p95_abs": 6411.5570385839255,
+      "p99_abs": 11886.036906030466,
+      "type": "conservative_spline"
+    },
+    "ang_G_T_T": {
+      "kind": "angle",
+      "max_abs": 18062.53804137815,
+      "max_signed": 17827.61633838877,
+      "min_signed": -18062.53804137815,
+      "n": 7530,
+      "p50_abs": 725.236151974879,
+      "p95_abs": 4553.148560526586,
+      "p99_abs": 8902.940108656416,
+      "type": "conservative_spline"
+    },
+    "ang_T_A_G": {
+      "kind": "angle",
+      "max_abs": 13067.974196744433,
+      "max_signed": 13067.974196744433,
+      "min_signed": -10464.49854107199,
+      "n": 7530,
+      "p50_abs": 457.6295508126092,
+      "p95_abs": 4678.846545712789,
+      "p99_abs": 7694.220609238355,
+      "type": "conservative_spline"
+    },
+    "ang_T_T_A": {
+      "kind": "angle",
+      "max_abs": 15002.170467832138,
+      "max_signed": 15002.170467832138,
+      "min_signed": -14931.108463772729,
+      "n": 7530,
+      "p50_abs": 688.7309659721061,
+      "p95_abs": 5749.381295469176,
+      "p99_abs": 10065.832634339715,
+      "type": "conservative_spline"
+    },
+    "bb_A_G": {
+      "kind": "bond",
+      "max_abs": 25377.022241111088,
+      "max_signed": 25377.022241111088,
+      "min_signed": -14234.214375129292,
+      "n": 10040,
+      "p50_abs": 2105.591381368904,
+      "p95_abs": 6083.515277126479,
+      "p99_abs": 11740.492324126832,
+      "type": "conservative_spline"
+    },
+    "bb_G_G": {
+      "kind": "bond",
+      "max_abs": 12054.870995724146,
+      "max_signed": 12054.870995724146,
+      "min_signed": -8590.566574628767,
+      "n": 20080,
+      "p50_abs": 1985.4899219755152,
+      "p95_abs": 7934.361334949771,
+      "p99_abs": 9541.667122644154,
+      "type": "conservative_spline"
+    },
+    "bb_G_T": {
+      "kind": "bond",
+      "max_abs": 22920.255328236264,
+      "max_signed": 22920.255328236264,
+      "min_signed": -16905.681440594526,
+      "n": 7530,
+      "p50_abs": 1131.4158341391408,
+      "p95_abs": 7987.210116989969,
+      "p99_abs": 11397.325570453077,
+      "type": "conservative_spline"
+    },
+    "bb_T_A": {
+      "kind": "bond",
+      "max_abs": 34163.71619370356,
+      "max_signed": 34163.71619370356,
+      "min_signed": -19743.94325032674,
+      "n": 7530,
+      "p50_abs": 3283.6076592252634,
+      "p95_abs": 11040.560518579787,
+      "p99_abs": 16309.07116417552,
+      "type": "conservative_spline"
+    },
+    "bb_T_T": {
+      "kind": "bond",
+      "max_abs": 47164.995840172334,
+      "max_signed": 40365.43951503664,
+      "min_signed": -47164.995840172334,
+      "n": 7530,
+      "p50_abs": 3208.0378692808076,
+      "p95_abs": 11162.261711429708,
+      "p99_abs": 18257.573695111005,
+      "type": "conservative_spline"
+    }
+  },
+  "kind": "visited_bonded_curvature",
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_timestep_range_diagnostic/priors_variants/cg_priors_full_ibi.json",
+  "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_timestep_range_diagnostic/full_ibi/nvt_structured_sample.npz",
+  "schema_version": 1
+}

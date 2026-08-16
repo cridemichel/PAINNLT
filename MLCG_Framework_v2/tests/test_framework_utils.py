@@ -76,6 +76,9 @@ class FakeCellSystem:
     def set_hybrid_decomposition(self, **kwargs):
         self.calls.append(("hybrid", kwargs))
 
+    def set_n_square(self, **kwargs):
+        self.calls.append(("nsquare", kwargs))
+
 
 class FakeNeighborSystem:
     def __init__(self):
@@ -127,11 +130,13 @@ class FrameworkUtilsTests(unittest.TestCase):
         system = FakeNeighborSystem()
         configure_neighbor_search(system, "verlet")
         configure_neighbor_search(system, "link-cell")
+        configure_neighbor_search(system, "nsquare")
         self.assertEqual(
             system.cell_system.calls,
             [
                 ("regular", {"use_verlet_lists": True}),
                 ("regular", {"use_verlet_lists": False}),
+                ("nsquare", {"use_verlet_lists": False}),
             ],
         )
         with self.assertRaises(ValueError):
