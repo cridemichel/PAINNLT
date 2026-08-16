@@ -195,12 +195,95 @@ class ConservativeNVETests(unittest.TestCase):
                     model=model,
                 )
 
+
+    def test_checkpoint_mode_and_source_are_fail_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dataset = root / "dataset.bin"
+            config = root / "config.json"
+            priors = root / "priors.json"
+            rb = root / "rb.json"
+            model = root / "model.pt"
+            manifest = root / "model.pt.manifest.json"
+            source = root / "source.npz"
+            for path in (dataset, config, priors, rb, model, manifest):
+                path.write_text(path.name + "\n")
+            import numpy as np
+            np.savez_compressed(source, marker=np.asarray([1]))
+            hashes = input_hashes(
+                dataset=dataset, config=config, priors=priors, rb_info=rb, model=model
+            )
+            import hashlib
+            source_sha = hashlib.sha256(source.read_bytes()).hexdigest()
+            checkpoint = root / "checkpoint.npz"
+            np.savez_compressed(
+                checkpoint,
+                metadata_json=np.asarray(json.dumps({
+                    "schema_version": 3,
+                    "energy_gauge": "test",
+                    "input_hashes": hashes,
+                    "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+                    "sampling_ensemble": "NVT_Langevin",
+                    "source_checkpoint_sha256": source_sha,
+                }, sort_keys=True)),
+                v=np.asarray([[0.1, 0.0, 0.0]]),
+                omega=np.zeros((1, 3)),
+                particle_is_virtual=np.asarray([False]),
+            )
+            result = checkpoint_provenance_summary(
+                checkpoint,
+                dataset=dataset,
+                config=config,
+                priors=priors,
+                rb_info=rb,
+                model=model,
+                required_hamiltonian_mode="conservative_classical_model_provenance_ml_disabled",
+                required_source_checkpoint=source,
+            )
+            self.assertEqual(result["sampling_ensemble"], "NVT_Langevin")
+            with self.assertRaises(ValueError):
+                checkpoint_provenance_summary(
+                    checkpoint,
+                    dataset=dataset,
+                    config=config,
+                    priors=priors,
+                    rb_info=rb,
+                    model=model,
+                    required_hamiltonian_mode="painn_active",
+                    required_source_checkpoint=source,
+                )
+
+    def test_step23_prepares_dedicated_ibi_only_checkpoint(self):
+        source = ((ROOT / "tutorials") / ("tel" + "22_IBI") / "23_certify_conservative_ibi_nve.sh").read_text()
+        runner = (SIMULATION / "run_cg_md.py").read_text()
+        self.assertIn("NVE_EQ_DURATION_PS", source)
+        self.assertIn("--disable_ml", source)
+        self.assertIn("--out_checkpoint", source)
+        self.assertIn("--require-checkpoint-hamiltonian-mode", source)
+        self.assertIn("--require-checkpoint-source", source)
+        self.assertIn('parser.add_argument("--out_checkpoint"', runner)
+        self.assertIn('"hamiltonian_mode": hamiltonian_mode', runner)
+        self.assertIn('"sampling_ensemble": "NVE" if args.nve else "NVT_Langevin"', runner)
+
     def test_certifier_supports_model_provenance_with_ml_disabled(self):
         source = (SIMULATION / "certify_nve.py").read_text()
         self.assertIn('"--disable-ml"', source)
         self.assertIn('command.append("--disable_ml")', source)
         self.assertIn('"conservative_classical_model_provenance_ml_disabled"', source)
         self.assertIn('"--provenance-artifact"', source)
+
+
+    def test_step24_is_diagnostic_only_and_scans_fine_dt(self):
+        source = ((ROOT / "tutorials") / ("tel" + "22_IBI") / "24_diagnose_conservative_ibi_nve_scaling.sh").read_text()
+        certifier = (SIMULATION / "certify_nve.py").read_text()
+        self.assertIn("NVE_DIAG_DTS", source)
+        self.assertIn("0.00025 0.0005 0.00075", source)
+        self.assertIn("--diagnostic-only", source)
+        self.assertIn("--local-times-ps", source)
+        self.assertIn("--diagnostic-only", certifier)
+        self.assertIn("nve_diagnostic_report.json", certifier)
+        self.assertIn("Diagnostic-only scan completed", certifier)
+
 
 
 if __name__ == "__main__":

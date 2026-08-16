@@ -16,7 +16,13 @@ from typing import Any
 import numpy as np
 
 from framework_utils import input_hashes as runtime_input_hashes, nonconservative_prior_entries
-from nve_analysis import analyze_energy_series, certify_metrics, read_energy_csv
+from nve_analysis import (
+    analyze_energy_series,
+    analyze_local_energy_windows,
+    build_nve_diagnostics,
+    certify_metrics,
+    read_energy_csv,
+)
 
 
 def sha256_file(path: Path) -> str:
@@ -65,6 +71,8 @@ def checkpoint_provenance_summary(
     rb_info: Path,
     model: Path | None,
     allow_legacy: bool = False,
+    required_hamiltonian_mode: str | None = None,
+    required_source_checkpoint: Path | None = None,
 ) -> dict[str, Any] | None:
     """Fail fast on checkpoint/runtime hash mismatches before launching ESPResSo."""
     with np.load(path, allow_pickle=False) as checkpoint:
@@ -98,11 +106,31 @@ def checkpoint_provenance_summary(
     ]
     if mismatches:
         raise ValueError("Checkpoint/runtime provenance mismatch:\n  - " + "\n  - ".join(mismatches))
+    if required_hamiltonian_mode is not None:
+        recorded_mode = metadata.get("hamiltonian_mode")
+        if recorded_mode != required_hamiltonian_mode:
+            raise ValueError(
+                "Checkpoint Hamiltonian mode mismatch: "
+                f"checkpoint={recorded_mode!r}, required={required_hamiltonian_mode!r}"
+            )
+        print(f"[CHECK] checkpoint Hamiltonian mode: {recorded_mode}")
+    if required_source_checkpoint is not None:
+        recorded_source = metadata.get("source_checkpoint_sha256")
+        expected_source = sha256_file(required_source_checkpoint)
+        if recorded_source != expected_source:
+            raise ValueError(
+                "Checkpoint source mismatch: "
+                f"checkpoint metadata={recorded_source}, expected={expected_source}"
+            )
+        print(f"[CHECK] checkpoint source SHA256 matches {required_source_checkpoint}")
     print("[CHECK] checkpoint provenance hashes match selected dataset/config/priors/rb_info/model")
     return {
         "schema_version": metadata.get("schema_version"),
         "input_hashes": expected,
         "energy_gauge": metadata.get("energy_gauge"),
+        "hamiltonian_mode": metadata.get("hamiltonian_mode"),
+        "sampling_ensemble": metadata.get("sampling_ensemble"),
+        "source_checkpoint_sha256": metadata.get("source_checkpoint_sha256"),
     }
 
 
@@ -187,6 +215,16 @@ def main() -> int:
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument(
+        "--require-checkpoint-hamiltonian-mode",
+        default=None,
+        help="Fail closed unless checkpoint metadata records this exact Hamiltonian mode",
+    )
+    parser.add_argument(
+        "--require-checkpoint-source",
+        default=None,
+        help="Fail closed unless checkpoint metadata records the SHA256 of this source checkpoint",
+    )
+    parser.add_argument(
         "--dts",
         nargs="+",
         type=float,
@@ -225,6 +263,36 @@ def main() -> int:
         action="store_true",
         help="Allow an explicitly cold checkpoint; disabled by default for NVE certification",
     )
+    parser.add_argument(
+        "--diagnostic-only",
+        action="store_true",
+        help=(
+            "Run an extended timestep/short-time diagnostic and always return success after "
+            "the trajectories complete. This does not relax or replace strict certification."
+        ),
+    )
+    parser.add_argument(
+        "--diagnostic-fine-max-dt",
+        type=float,
+        default=0.001,
+        help="Maximum dt included in the fine-regime diagnostic fit",
+    )
+    parser.add_argument(
+        "--diagnostic-coarse-min-dt",
+        type=float,
+        default=0.0015,
+        help="Minimum dt included in the coarse-regime diagnostic fit",
+    )
+    parser.add_argument(
+        "--local-times-ps",
+        nargs="*",
+        type=float,
+        default=[],
+        help=(
+            "Exact physical times for short-time energy-error fits. They are evaluated only "
+            "for dt <= --diagnostic-fine-max-dt and must align with every such timestep."
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print run plan without launching ESPResSo")
     args = parser.parse_args()
 
@@ -233,6 +301,15 @@ def main() -> int:
 
     if args.duration_ps <= 0.0:
         raise ValueError("--duration-ps must be positive")
+    if args.diagnostic_only:
+        if args.diagnostic_fine_max_dt <= 0.0 or args.diagnostic_coarse_min_dt <= 0.0:
+            raise ValueError("Diagnostic dt boundaries must be positive")
+        if args.diagnostic_fine_max_dt >= args.diagnostic_coarse_min_dt:
+            raise ValueError("Fine-regime max dt must be smaller than coarse-regime min dt")
+        if any(value <= 0.0 or value > args.duration_ps for value in args.local_times_ps):
+            raise ValueError("Every --local-times-ps value must be positive and <= --duration-ps")
+        if len(set(args.local_times_ps)) != len(args.local_times_ps):
+            raise ValueError("--local-times-ps values must be unique")
     if args.log_interval_ps is not None and args.log_interval_ps <= 0.0:
         raise ValueError("--log-interval-ps must be positive when provided")
     if len(args.dts) < 3 or any(dt <= 0.0 for dt in args.dts):
@@ -255,6 +332,9 @@ def main() -> int:
     rb_info = existing_file(args.rb_info, "rb-info")
     dataset = existing_file(args.dataset, "dataset")
     checkpoint = existing_file(args.checkpoint, "checkpoint")
+    required_source_checkpoint = existing_file(
+        args.require_checkpoint_source, "require-checkpoint-source", required=False
+    )
     assert runner and config and priors and rb_info and dataset and checkpoint
 
     provenance_artifacts: dict[str, Path] = {}
@@ -277,6 +357,8 @@ def main() -> int:
         rb_info=rb_info,
         model=model,
         allow_legacy=args.allow_legacy_checkpoint,
+        required_hamiltonian_mode=args.require_checkpoint_hamiltonian_mode,
+        required_source_checkpoint=required_source_checkpoint,
     )
     checkpoint_motion = checkpoint_motion_summary(checkpoint)
     motion_scale = max(
@@ -406,6 +488,14 @@ def main() -> int:
 
         times, energies = read_energy_csv(energy_csv)
         metrics = analyze_energy_series(times, energies)
+        if (
+            args.diagnostic_only
+            and args.local_times_ps
+            and dt <= args.diagnostic_fine_max_dt
+        ):
+            metrics["local_energy_windows"] = analyze_local_energy_windows(
+                times, energies, args.local_times_ps
+            )
         metrics.update({
             "dt_ps": dt,
             "steps": steps,
@@ -459,12 +549,24 @@ def main() -> int:
         "device": args.device,
         "neighbor_search": args.neighbor_search,
         "runs": run_metrics,
-        "certification": certification,
     }
-    report_path = output_dir / "nve_certification_report.json"
+    if args.diagnostic_only:
+        diagnostics = build_nve_diagnostics(
+            run_metrics,
+            fine_max_dt=args.diagnostic_fine_max_dt,
+            coarse_min_dt=args.diagnostic_coarse_min_dt,
+            local_times_ps=args.local_times_ps,
+        )
+        report["strict_reference"] = certification
+        report["diagnostics"] = diagnostics
+        report_path = output_dir / "nve_diagnostic_report.json"
+        csv_path = output_dir / "nve_diagnostic_runs.csv"
+    else:
+        report["certification"] = certification
+        report_path = output_dir / "nve_certification_report.json"
+        csv_path = output_dir / "nve_certification_runs.csv"
     report_path.write_text(json.dumps(report, indent=2) + "\n")
 
-    csv_path = output_dir / "nve_certification_runs.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
             handle,
@@ -492,6 +594,36 @@ def main() -> int:
             })
 
     scaling = certification["scaling"]
+    if args.diagnostic_only:
+        diagnostics = report["diagnostics"]
+        print(
+            "[NVE DIAGNOSTIC] strict-global reference only: "
+            f"p={scaling['exponent_p']:.6f}, R2={scaling['loglog_r2']:.6f}, "
+            f"drift_pass={certification['drift_pass']}"
+        )
+        for name in ("global", "fine", "coarse"):
+            fit = diagnostics["split_fits"][name]["sigma_E"]
+            print(
+                f"[DIAGNOSTIC FIT] sigma_E {name}: p={fit['exponent_p']:.6f} "
+                f"R2={fit['loglog_r2']:.6f} "
+                f"dt=[{fit['dt_min_ps']:.6g},{fit['dt_max_ps']:.6g}] ps"
+            )
+        for key, item in diagnostics["local_energy_fits"].items():
+            fit = item["endpoint_abs_delta_E"]
+            if fit.get("available", True):
+                print(
+                    f"[LOCAL ENERGY FIT] t={key} ps |DeltaE|: "
+                    f"p={fit['exponent_p']:.6f} R2={fit['loglog_r2']:.6f}"
+                )
+            else:
+                print(
+                    f"[LOCAL ENERGY FIT] t={key} ps |DeltaE| unavailable: {fit['reason']}"
+                )
+        print("[DONE] Diagnostic-only scan completed; no certification decision was changed.")
+        print(f"       report: {report_path}")
+        print(f"       table:  {csv_path}")
+        return 0
+
     status = "PASS" if certification["pass"] else "FAIL"
     print(
         f"[{status}] NVE certification: p={scaling['exponent_p']:.6f}, "

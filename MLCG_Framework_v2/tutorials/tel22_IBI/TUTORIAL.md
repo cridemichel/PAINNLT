@@ -542,15 +542,20 @@ IBI_MODEL=tel22_model_ibi_conservative.pt \
 ```
 
 Step 23 intentionally keeps the model path only as a checkpoint-provenance
-anchor. PaiNN is disabled in every NVE trajectory via `--disable_ml`; the tested
-Hamiltonian is therefore the selected conservative IBI priors plus the other
-explicit conservative runtime priors (WCA/Morse), not IBI+PaiNN.
+anchor. PaiNN is disabled via `--disable_ml` both during checkpoint preparation
+and in every NVE trajectory; the tested Hamiltonian is therefore the selected
+conservative IBI priors plus the other explicit conservative runtime priors
+(WCA/Morse), not IBI+PaiNN.
 
-The default checkpoint is
-`postibi_runtime_validation/equilibrated_postibi.npz`. Reusing it is safe for an
-energy-conservation test because each timestep starts from the identical state;
-its model hash is still validated because the model remains present as a
-provenance anchor. No checkpoint-mismatch escape hatch is needed.
+`postibi_runtime_validation/equilibrated_postibi.npz` is now only the **source
+checkpoint**. Before the timestep scan, step 23 runs a matched IBI-only Langevin
+NVT and writes
+`nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz`.
+The NVE scan starts from this new state for every timestep. Its metadata records
+`hamiltonian_mode=conservative_classical_model_provenance_ml_disabled`,
+`sampling_ensemble=NVT_Langevin`, and the SHA256 of the source checkpoint; all
+three are validated fail-closed before NVE. No checkpoint-mismatch escape hatch
+is needed.
 
 Before launching the timestep scan, the new fail-closed preflight verifies the
 current conservative `cg_priors.json`, every referenced spline table, the
@@ -561,6 +566,9 @@ Legacy `tabulated` bonded priors and conservative dihedrals are rejected.
 Defaults:
 
 ```text
+NVE_EQ_DT=0.0005
+NVE_EQ_DURATION_PS=5.0
+NVE_EQ_KT=2.49
 NVE_DTS="0.001 0.0015 0.002 0.003 0.004 0.005"
 NVE_DURATION_PS=5.0
 NVE_DEVICE=cpu
@@ -571,9 +579,12 @@ NVE_MIN_R2=0.97
 NVE_MAX_RELATIVE_DRIFT=1e-4
 ```
 
-The output directory is `nve_certification_conservative_ibi_only/`. A strict
-pass requires both the velocity-Verlet `sigma_E ~ dt^p` scaling gate and the
-block-drift gate. The report records
+The output directory is `nve_certification_conservative_ibi_only/`. Step 23
+preserves the original strict reference rule: both the `sigma_E ~ dt^p` scaling
+gate and the block-drift gate must pass. This historical result is never
+rewritten. For conservative IBI, the final composite decision is made only
+after the direct Richardson state-order test in step 25 and is assembled by
+step 26. The report records
 `hamiltonian_mode=conservative_classical_model_provenance_ml_disabled` and hashes
 the Phase-2 preflight/validation/parity artifacts in addition to the normal
 runtime inputs.
@@ -581,3 +592,138 @@ runtime inputs.
 This certification does **not** certify `IBI + PaiNN`. A future residual model
 that wins the matched A/B structural test must undergo a separate ML-active NVE
 certification.
+
+## 24. Diagnose failed NVE scaling before changing the conservative kernel
+
+A step-23 result with `drift_pass=True` but poor/non-monotonic timestep scaling is
+not sufficient evidence that the conservative spline itself is wrong. Before
+changing priors or ESPResSo code, probe the fine-timestep and short-time regimes:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+NVE_DIAG_DURATION_PS=2 \
+  bash ./24_diagnose_conservative_ibi_nve_scaling.sh --overwrite
+```
+
+The diagnostic uses the exact IBI-only NVT checkpoint already prepared by step
+23 and keeps PaiNN disabled. Defaults:
+
+```text
+NVE_DIAG_DTS="0.00025 0.0005 0.00075 0.001 0.0015 0.002 0.003 0.004 0.005"
+NVE_DIAG_DURATION_PS=2.0
+NVE_DIAG_FINE_MAX_DT=0.001
+NVE_DIAG_COARSE_MIN_DT=0.0015
+NVE_DIAG_LOCAL_TIMES_PS="0.012 0.024 0.048 0.096"
+```
+
+The JSON report contains global/fine/coarse power-law fits for both `sigma_E`
+and `rms_delta_E`. For fine timesteps it also evaluates exact-sample short-time
+errors at the listed physical times and fits `|Delta E(t)|`, prefix RMS error,
+and prefix `sigma_E` versus `dt`. The local times are chosen to be commensurate
+with every default fine timestep; no interpolation is allowed.
+
+Outputs are written below `nve_diagnostic_conservative_ibi_only/`. This is a
+**diagnostic**, not a replacement certification: its process exit status does
+not promote the model when the strict step-23 fit fails. Use the fine and local
+fits to decide whether an asymptotic `dt^2` regime exists before moving to
+Hamiltonian-component isolation.
+
+
+## 25. Diagnose the actual Velocity-Verlet state-convergence order
+
+If step 24 shows very small drift and rapidly vanishing short-time energy error,
+but `sigma_E` remains non-monotonic, do not infer the integrator order from the
+energy-fluctuation amplitude alone. Run the short-time state-convergence test:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./25_diagnose_conservative_ibi_state_convergence.sh --overwrite
+```
+
+The default dyadic timestep ladder is:
+
+```text
+0.001
+0.0005
+0.00025
+0.000125
+reference = 0.0000625 ps
+```
+
+Every trajectory starts from the same provenance-checked IBI-only NVT checkpoint,
+runs in NVE with PaiNN disabled, and is sampled at the same physical times
+`0.012, 0.024, ..., 0.096 ps`. `run_cg_md.py` writes a dedicated real-particle
+state NPZ containing particle IDs, positions, velocities, quaternions and
+body-frame angular velocities. The NPZ also binds the input hashes, Hamiltonian
+mode and source-checkpoint SHA256.
+
+The report contains two complementary comparisons:
+
+1. each finite-dt trajectory versus the finest reference trajectory;
+2. Richardson differences between each `dt` trajectory and its `dt/2` partner.
+
+The second comparison is the order diagnostic. For a second-order integrator,
+these pair differences should obey `error(dt,dt/2) ~ dt^2`. Fits are reported
+independently for translational position, translational velocity, rigid-body
+orientation (quaternion geodesic angle) and body-frame angular velocity at every
+common physical time. Periodic position differences use the minimum-image
+convention, and quaternion sign degeneracy is removed before computing angles.
+
+Outputs are written below
+`nve_state_convergence_conservative_ibi_only/`, principally
+`state_convergence_report.json` and `run_plan.json`. This remains a diagnostic:
+it does not overwrite or relax the strict step-23 certification result. A clean
+`p ~= 2` state convergence together with tiny NVE drift is evidence that the
+trajectory integrator is behaving at second order even when long-window
+`sigma_E` is a noisy/non-monotonic proxy for the shadow-energy amplitude.
+
+
+## 26. Final composite NVE certification for conservative IBI-only
+
+After steps 22, 23 and 25 have produced their provenance-bound reports, assemble
+the final conservative-IBI NVE verdict without rerunning dynamics:
+
+```bash
+bash ./26_finalize_conservative_ibi_nve_certification.sh
+```
+
+The final gate is deliberately composite. It requires all of the following:
+
+1. conservative spline finite-difference validation: PASS;
+2. ESPResSo/runtime vs preprocessing energy/force parity: PASS;
+3. provenance consistency for priors and the dedicated IBI-only checkpoint;
+4. NVE relative block-mean energy drift below the configured threshold;
+5. Richardson state convergence consistent with second order for position,
+   velocity, rigid-body orientation and body-frame angular velocity.
+
+The default state-order window is `1.7 <= median p <= 2.3` with median
+`R2 >= 0.95` for every required state metric. The long-window `sigma_E ~ dt^p`
+fit from step 23 is preserved in the final JSON, including its original
+PASS/FAIL status and exponent, but is explicitly marked `diagnostic_only` and
+is not a final gating criterion. This avoids silently rewriting the historical
+step-23 result while using the direct trajectory-convergence measurement for
+the integrator-order claim.
+
+The final report is written to:
+
+```text
+nve_final_certification_conservative_ibi_only/
+    conservative_ibi_nve_certification_report.json
+```
+
+A successful summary has the form:
+
+```text
+[CONSERVATIVE IBI NVE COMPOSITE CERTIFICATION]
+conservative_kernel : PASS
+runtime_parity      : PASS
+provenance          : PASS
+energy_drift        : PASS
+VV_second_order     : PASS
+sigma_E_scaling     : DIAGNOSTIC (...)
+[PASS] Conservative IBI NVE certification
+```
+
+This certifies only the classical `WCA + Morse + bonded conservative IBI`
+Hamiltonian with PaiNN disabled. It must not be reused as evidence for an
+ML-active Hamiltonian.

@@ -378,6 +378,7 @@ def save_checkpoint(
     config: dict[str, Any],
     dt: float,
     kT: float,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> None:
     metadata = {
         "schema_version": CHECKPOINT_SCHEMA_VERSION,
@@ -388,6 +389,15 @@ def save_checkpoint(
         "created_with_dt_ps": float(dt),
         "created_with_kT_kJ_mol": float(kT),
     }
+    if extra_metadata:
+        reserved = set(metadata)
+        overlap = reserved.intersection(extra_metadata)
+        if overlap:
+            raise ValueError(
+                "extra checkpoint metadata may not override reserved keys: "
+                + ", ".join(sorted(overlap))
+            )
+        metadata.update(extra_metadata)
     signature = particle_signature(system)
     np.savez_compressed(
         path,

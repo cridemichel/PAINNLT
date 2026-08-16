@@ -1,0 +1,949 @@
+{
+  "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+  "checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+  "diagnostic_only": true,
+  "dts_ps": [
+    6.25e-05,
+    0.000125,
+    0.00025,
+    0.0005,
+    0.001
+  ],
+  "expected_second_order_window": {
+    "min_median_loglog_r2": 0.95,
+    "slope_max": 2.3,
+    "slope_min": 1.7
+  },
+  "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+  "input_hashes": {
+    "config_sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+    "dataset_sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c",
+    "model_manifest_sha256": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f",
+    "model_sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33",
+    "priors_sha256": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3",
+    "rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+  },
+  "kind": "conservative_ibi_nve_state_convergence_diagnostic",
+  "metric_summary": {
+    "omega_body_rms_per_ps": {
+      "consistent_with_second_order": true,
+      "max_exponent_p": 2.15355358839589,
+      "median_exponent_p": 1.9964504976100543,
+      "median_loglog_r2": 0.9976088042794576,
+      "min_exponent_p": 1.9458422922117276,
+      "min_loglog_r2": 0.994922253957389
+    },
+    "orientation_rms_rad": {
+      "consistent_with_second_order": true,
+      "max_exponent_p": 2.054651577857801,
+      "median_exponent_p": 1.988266867656458,
+      "median_loglog_r2": 0.9990440051287374,
+      "min_exponent_p": 1.9074768501497206,
+      "min_loglog_r2": 0.9976205223314113
+    },
+    "position_rms_nm": {
+      "consistent_with_second_order": true,
+      "max_exponent_p": 1.9389141293908088,
+      "median_exponent_p": 1.8757976130822698,
+      "median_loglog_r2": 0.9984968380574044,
+      "min_exponent_p": 1.84754687823585,
+      "min_loglog_r2": 0.9980273731548274
+    },
+    "velocity_rms_nm_per_ps": {
+      "consistent_with_second_order": true,
+      "max_exponent_p": 2.0035620163294254,
+      "median_exponent_p": 1.8956060548228286,
+      "median_loglog_r2": 0.9978545536653936,
+      "min_exponent_p": 1.7954934217535856,
+      "min_loglog_r2": 0.9905765366060427
+    }
+  },
+  "reference_dt_ps": 6.25e-05,
+  "run_plan": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_state_convergence_conservative_ibi_only/run_plan.json",
+  "sample_times_ps": [
+    0.012,
+    0.024,
+    0.036000000000000004,
+    0.048,
+    0.06,
+    0.07200000000000001,
+    0.084,
+    0.096
+  ],
+  "schema_version": 1,
+  "source_checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+  "times": [
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 3.85908151574478e-08,
+          "orientation_rms_rad": 3.5634264004097057e-10,
+          "position_rms_nm": 1.8069206790706861e-10,
+          "velocity_rms_nm_per_ps": 1.9030673882111055e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 1.493980671617973e-07,
+          "orientation_rms_rad": 1.8580104226204181e-09,
+          "position_rms_nm": 7.834246074646264e-10,
+          "velocity_rms_nm_per_ps": 9.229473687541733e-08
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 6.494577120291404e-07,
+          "orientation_rms_rad": 7.507106990911408e-09,
+          "position_rms_nm": 3.4595140920025695e-09,
+          "velocity_rms_nm_per_ps": 3.265329903868e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 2.871767190142184e-06,
+          "orientation_rms_rad": 2.6103618271357074e-08,
+          "position_rms_nm": 1.2824040435590099e-08,
+          "velocity_rms_nm_per_ps": 1.2731890032971489e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.002545825543234,
+          "loglog_r2": 0.9977413296783784,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 2.3589467796919124
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9233041671164035,
+          "loglog_r2": 0.9980132288017316,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.01228606997849224
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9389141293908088,
+          "loglog_r2": 0.9995675764781007,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.0066484445339254775
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.8981549253564645,
+          "loglog_r2": 0.9937253634468495,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 0.5329258862941633
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 3.85908151574478e-08,
+          "orientation_rms_rad": 3.5634264004097057e-10,
+          "position_rms_nm": 1.8069206790706861e-10,
+          "velocity_rms_nm_per_ps": 1.9030673882111055e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 1.359406346741175e-07,
+          "orientation_rms_rad": 1.573471800301074e-09,
+          "position_rms_nm": 6.683704715625443e-10,
+          "velocity_rms_nm_per_ps": 9.346899813290255e-08
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 5.305966424550314e-07,
+          "orientation_rms_rad": 5.781894472156784e-09,
+          "position_rms_nm": 2.7772554600705114e-09,
+          "velocity_rms_nm_per_ps": 2.5935378988343364e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 2.5047636661120255e-06,
+          "orientation_rms_rad": 1.965040675562903e-08,
+          "position_rms_nm": 9.915408316246002e-09,
+          "velocity_rms_nm_per_ps": 1.0873876425736546e-06
+        }
+      ],
+      "time_ps": 0.012
+    },
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 4.2868415125543584e-08,
+          "orientation_rms_rad": 7.664784415524167e-10,
+          "position_rms_nm": 4.130545038383679e-10,
+          "velocity_rms_nm_per_ps": 2.4087761858870733e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 1.8350925385720504e-07,
+          "orientation_rms_rad": 3.6052182381834523e-09,
+          "position_rms_nm": 1.5426360366681906e-09,
+          "velocity_rms_nm_per_ps": 1.260392176206349e-07
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 7.146111355203057e-07,
+          "orientation_rms_rad": 1.4930211781818534e-08,
+          "position_rms_nm": 6.58722814734103e-09,
+          "velocity_rms_nm_per_ps": 4.2476424118933164e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 2.536438876933161e-06,
+          "orientation_rms_rad": 4.804141267392925e-08,
+          "position_rms_nm": 2.3321681710365597e-08,
+          "velocity_rms_nm_per_ps": 1.2021332356519272e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9552865830452286,
+          "loglog_r2": 0.9987517817930132,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 1.8019981475103564
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9074768501497206,
+          "loglog_r2": 0.9990307433520631,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.022374086513102208
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.8671677484023215,
+          "loglog_r2": 0.9999629493364808,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.00797258779259381
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.7954934217535856,
+          "loglog_r2": 0.9905765366060427,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 0.28372502822751444
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 4.2868415125543584e-08,
+          "orientation_rms_rad": 7.664784415524167e-10,
+          "position_rms_nm": 4.130545038383679e-10,
+          "velocity_rms_nm_per_ps": 2.4087761858870733e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 1.6595713953289665e-07,
+          "orientation_rms_rad": 3.1585735794843e-09,
+          "position_rms_nm": 1.4805320186832287e-09,
+          "velocity_rms_nm_per_ps": 1.2014064051050338e-07
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 5.788481097436206e-07,
+          "orientation_rms_rad": 1.1816756200825585e-08,
+          "position_rms_nm": 5.529548959024778e-09,
+          "velocity_rms_nm_per_ps": 3.363347846472661e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 2.589887543198469e-06,
+          "orientation_rms_rad": 4.0506371815330974e-08,
+          "position_rms_nm": 1.9898868931253052e-08,
+          "velocity_rms_nm_per_ps": 1.0824979717171419e-06
+        }
+      ],
+      "time_ps": 0.024
+    },
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 4.8891852149896295e-08,
+          "orientation_rms_rad": 1.2007866609259401e-09,
+          "position_rms_nm": 6.583296706774924e-10,
+          "velocity_rms_nm_per_ps": 2.6554487912693734e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 2.010560513062136e-07,
+          "orientation_rms_rad": 5.534541874606343e-09,
+          "position_rms_nm": 2.534042383825308e-09,
+          "velocity_rms_nm_per_ps": 1.0937725454982525e-07
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 7.833241822873728e-07,
+          "orientation_rms_rad": 2.291489783223758e-08,
+          "position_rms_nm": 1.0418436486989517e-08,
+          "velocity_rms_nm_per_ps": 4.5398817532971965e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 2.8905663479973672e-06,
+          "orientation_rms_rad": 7.603616466011359e-08,
+          "position_rms_nm": 3.4256375309765636e-08,
+          "velocity_rms_nm_per_ps": 1.2798852502372286e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9458422922117276,
+          "loglog_r2": 0.99858485977904,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 1.8632034360096987
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.94635962218987,
+          "loglog_r2": 0.9996638591089768,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.048864685431139865
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.84754687823585,
+          "loglog_r2": 0.999622393468243,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.011036150123367483
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.838707533216093,
+          "loglog_r2": 0.9974466477721557,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 0.4270240229653827
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 4.8891852149896295e-08,
+          "orientation_rms_rad": 1.2007866609259401e-09,
+          "position_rms_nm": 6.583296706774924e-10,
+          "velocity_rms_nm_per_ps": 2.6554487912693734e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 1.8204104100167175e-07,
+          "orientation_rms_rad": 4.9839461137362964e-09,
+          "position_rms_nm": 2.545626598244975e-09,
+          "velocity_rms_nm_per_ps": 1.0815851630376114e-07
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 6.423263727209326e-07,
+          "orientation_rms_rad": 1.8330588282215762e-08,
+          "position_rms_nm": 8.867551084778885e-09,
+          "velocity_rms_nm_per_ps": 3.947819822796497e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 2.8789270786239383e-06,
+          "orientation_rms_rad": 6.981899535274901e-08,
+          "position_rms_nm": 3.102157606186742e-08,
+          "velocity_rms_nm_per_ps": 1.20705242380072e-06
+        }
+      ],
+      "time_ps": 0.036000000000000004
+    },
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 5.2462091354892315e-08,
+          "orientation_rms_rad": 1.6281162173138712e-09,
+          "position_rms_nm": 9.065401976662325e-10,
+          "velocity_rms_nm_per_ps": 2.7758143243231435e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 1.92576187887462e-07,
+          "orientation_rms_rad": 7.583067185604289e-09,
+          "position_rms_nm": 3.684081104966665e-09,
+          "velocity_rms_nm_per_ps": 1.0539870366612247e-07
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 8.259822919048632e-07,
+          "orientation_rms_rad": 3.107314456963644e-08,
+          "position_rms_nm": 1.4873389656509231e-08,
+          "velocity_rms_nm_per_ps": 4.560914109518903e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 3.068363137939827e-06,
+          "orientation_rms_rad": 1.0589592727295077e-07,
+          "position_rms_nm": 4.652010107477335e-08,
+          "velocity_rms_nm_per_ps": 1.362549028239041e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9885389750379836,
+          "loglog_r2": 0.9975628884022084,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 2.7913166913376783
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.973412434409162,
+          "loglog_r2": 0.9994688651944311,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.08443542270046989
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.8509584685851967,
+          "loglog_r2": 0.9984792165218871,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.016160679224956065
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.8837865825197975,
+          "loglog_r2": 0.9993285021638345,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 0.638968803232514
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 5.2462091354892315e-08,
+          "orientation_rms_rad": 1.6281162173138712e-09,
+          "position_rms_nm": 9.065401976662325e-10,
+          "velocity_rms_nm_per_ps": 2.7758143243231435e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 1.7423850142962852e-07,
+          "orientation_rms_rad": 6.968555655927981e-09,
+          "position_rms_nm": 3.779255541647223e-09,
+          "velocity_rms_nm_per_ps": 1.050114403693749e-07
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 7.22420008127024e-07,
+          "orientation_rms_rad": 2.5095381791346973e-08,
+          "position_rms_nm": 1.2758958729234977e-08,
+          "velocity_rms_nm_per_ps": 4.10210941824074e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 3.2309481110529777e-06,
+          "orientation_rms_rad": 1.014821156771058e-07,
+          "position_rms_nm": 4.350750119889472e-08,
+          "velocity_rms_nm_per_ps": 1.3689505485812316e-06
+        }
+      ],
+      "time_ps": 0.048
+    },
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 5.65645496217971e-08,
+          "orientation_rms_rad": 2.1139826812922444e-09,
+          "position_rms_nm": 1.185435115063368e-09,
+          "velocity_rms_nm_per_ps": 2.9567117875972755e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 1.9847629010564216e-07,
+          "orientation_rms_rad": 9.593331047139716e-09,
+          "position_rms_nm": 4.892731945663957e-09,
+          "velocity_rms_nm_per_ps": 1.1517265678384372e-07
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 1.0250063669109707e-06,
+          "orientation_rms_rad": 3.926810821567914e-08,
+          "position_rms_nm": 1.9477495080456197e-08,
+          "velocity_rms_nm_per_ps": 4.99312810629728e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 2.8745750937750976e-06,
+          "orientation_rms_rad": 1.414811846026216e-07,
+          "position_rms_nm": 6.162934318299763e-08,
+          "velocity_rms_nm_per_ps": 1.3986431653987882e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9903551696768746,
+          "loglog_r2": 0.9976547201567069,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 3.1639817924712266
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.003121300903754,
+          "loglog_r2": 0.9993910345095598,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.1402166286209956
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.867286694723175,
+          "loglog_r2": 0.9983640086295609,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.02452700451144666
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.8930571842891928,
+          "loglog_r2": 0.9982624595586312,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 0.7617630486168744
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 5.65645496217971e-08,
+          "orientation_rms_rad": 2.1139826812922444e-09,
+          "position_rms_nm": 1.185435115063368e-09,
+          "velocity_rms_nm_per_ps": 2.9567117875972755e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 1.9123634710965902e-07,
+          "orientation_rms_rad": 8.896972572619585e-09,
+          "position_rms_nm": 5.050388179354919e-09,
+          "velocity_rms_nm_per_ps": 1.1982712384670282e-07
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 9.247927294033424e-07,
+          "orientation_rms_rad": 3.227234903468131e-08,
+          "position_rms_nm": 1.693921963146816e-08,
+          "velocity_rms_nm_per_ps": 4.6581653829334955e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 3.3233420149193104e-06,
+          "orientation_rms_rad": 1.4078962043073172e-07,
+          "position_rms_nm": 5.920875467872201e-08,
+          "velocity_rms_nm_per_ps": 1.4921496791389936e-06
+        }
+      ],
+      "time_ps": 0.06
+    },
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 6.33606816158932e-08,
+          "orientation_rms_rad": 2.7697795826881183e-09,
+          "position_rms_nm": 1.5117970460813046e-09,
+          "velocity_rms_nm_per_ps": 3.403295041753702e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 2.3775181266337736e-07,
+          "orientation_rms_rad": 1.1522760936817468e-08,
+          "position_rms_nm": 6.3091219211082145e-09,
+          "velocity_rms_nm_per_ps": 1.4577239589086438e-07
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 1.107299294862891e-06,
+          "orientation_rms_rad": 4.8879818970620434e-08,
+          "position_rms_nm": 2.4412349946440667e-08,
+          "velocity_rms_nm_per_ps": 5.316186249127692e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 4.284616555438651e-06,
+          "orientation_rms_rad": 1.8156010837737847e-07,
+          "position_rms_nm": 7.947556439829968e-08,
+          "velocity_rms_nm_per_ps": 1.9514848352384157e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.0943255163333188,
+          "loglog_r2": 0.9975031038932528,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 8.670293842527919
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.0227508578628983,
+          "loglog_r2": 0.9990572669054116,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.20926132099763783
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.8843085314413643,
+          "loglog_r2": 0.9985144595929218,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.036254876475068615
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9499429875942786,
+          "loglog_r2": 0.9992945143663526,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 1.4312151146551109
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 6.33606816158932e-08,
+          "orientation_rms_rad": 2.7697795826881183e-09,
+          "position_rms_nm": 1.5117970460813046e-09,
+          "velocity_rms_nm_per_ps": 3.403295041753702e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 2.2281814351963057e-07,
+          "orientation_rms_rad": 1.056735869411636e-08,
+          "position_rms_nm": 6.49126231740731e-09,
+          "velocity_rms_nm_per_ps": 1.4443083194482195e-07
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 1.0060411929130159e-06,
+          "orientation_rms_rad": 4.1174492895344656e-08,
+          "position_rms_nm": 2.158931034331645e-08,
+          "velocity_rms_nm_per_ps": 5.039163752660285e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 4.842995961945638e-06,
+          "orientation_rms_rad": 1.8847491067560737e-07,
+          "position_rms_nm": 7.875925258053066e-08,
+          "velocity_rms_nm_per_ps": 2.030662950410429e-06
+        }
+      ],
+      "time_ps": 0.07200000000000001
+    },
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 7.324572710006898e-08,
+          "orientation_rms_rad": 3.5333656849790503e-09,
+          "position_rms_nm": 1.8931967341145198e-09,
+          "velocity_rms_nm_per_ps": 3.729178174670595e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 2.615546249695182e-07,
+          "orientation_rms_rad": 1.4051717779465258e-08,
+          "position_rms_nm": 8.070304377367701e-09,
+          "velocity_rms_nm_per_ps": 1.575876585182257e-07
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 1.3121527524367004e-06,
+          "orientation_rms_rad": 6.033689937315213e-08,
+          "position_rms_nm": 2.9782860476146205e-08,
+          "velocity_rms_nm_per_ps": 5.555118988730075e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 5.306552288136954e-06,
+          "orientation_rms_rad": 2.288799454692993e-07,
+          "position_rms_nm": 1.0124577265778882e-07,
+          "velocity_rms_nm_per_ps": 2.308797490281925e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.124139500261244,
+          "loglog_r2": 0.994922253957389,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 12.582560749889113
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.0313609817406415,
+          "loglog_r2": 0.9982764334466492,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.2816508347658047
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.891868919690264,
+          "loglog_r2": 0.9982212191280424,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.048508538406076974
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9724542812766854,
+          "loglog_r2": 0.9985608511254676,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 1.882358931315457
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 7.324572710006898e-08,
+          "orientation_rms_rad": 3.5333656849790503e-09,
+          "position_rms_nm": 1.8931967341145198e-09,
+          "velocity_rms_nm_per_ps": 3.729178174670595e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 2.3466507282344807e-07,
+          "orientation_rms_rad": 1.2823174060293522e-08,
+          "position_rms_nm": 8.241931474584449e-09,
+          "velocity_rms_nm_per_ps": 1.5704079138570994e-07
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 1.193558070944976e-06,
+          "orientation_rms_rad": 5.154701535942881e-08,
+          "position_rms_nm": 2.6576222114543154e-08,
+          "velocity_rms_nm_per_ps": 5.301790550674864e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 5.764340278280682e-06,
+          "orientation_rms_rad": 2.4272874838303085e-07,
+          "position_rms_nm": 1.0140794308717937e-07,
+          "velocity_rms_nm_per_ps": 2.3697513667217853e-06
+        }
+      ],
+      "time_ps": 0.084
+    },
+    {
+      "reference_errors": [
+        {
+          "dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 7.312254030359953e-08,
+          "orientation_rms_rad": 4.278101697898651e-09,
+          "position_rms_nm": 2.3090728631447356e-09,
+          "velocity_rms_nm_per_ps": 3.701618479160769e-08
+        },
+        {
+          "dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 2.78880405001014e-07,
+          "orientation_rms_rad": 1.671029531232975e-08,
+          "position_rms_nm": 9.88472235511304e-09,
+          "velocity_rms_nm_per_ps": 1.790694049980088e-07
+        },
+        {
+          "dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 1.4608321365736954e-06,
+          "orientation_rms_rad": 7.291861591214675e-08,
+          "position_rms_nm": 3.54665913998716e-08,
+          "velocity_rms_nm_per_ps": 6.186351105019128e-07
+        },
+        {
+          "dt_ps": 0.001,
+          "omega_body_rms_per_ps": 5.9179845512766176e-06,
+          "orientation_rms_rad": 2.860005837378421e-07,
+          "position_rms_nm": 1.2619721333423585e-07,
+          "velocity_rms_nm_per_ps": 2.624687118127262e-06
+        }
+      ],
+      "richardson_fits": {
+        "omega_body_rms_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.15355358839589,
+          "loglog_r2": 0.9967215391685127,
+          "model": "Richardson omega_body_rms_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson omega_body_rms_per_ps",
+          "prefactor_C": 16.823121562195205
+        },
+        "orientation_rms_rad": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.054651577857801,
+          "loglog_r2": 0.9976205223314113,
+          "model": "Richardson orientation_rms_rad = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson orientation_rms_rad",
+          "prefactor_C": 0.41417636683527276
+        },
+        "position_rms_nm": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.9017061120793812,
+          "loglog_r2": 0.9980273731548274,
+          "model": "Richardson position_rms_nm = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson position_rms_nm",
+          "prefactor_C": 0.06429900920870583
+        },
+        "velocity_rms_nm_per_ps": {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.0035620163294254,
+          "loglog_r2": 0.9970253835146461,
+          "model": "Richardson velocity_rms_nm_per_ps = C * dt^p",
+          "n_points": 4,
+          "observable": "Richardson velocity_rms_nm_per_ps",
+          "prefactor_C": 2.591512768250734
+        }
+      },
+      "richardson_pair_errors": [
+        {
+          "coarse_dt_ps": 0.000125,
+          "fine_dt_ps": 6.25e-05,
+          "omega_body_rms_per_ps": 7.312254030359953e-08,
+          "orientation_rms_rad": 4.278101697898651e-09,
+          "position_rms_nm": 2.3090728631447356e-09,
+          "velocity_rms_nm_per_ps": 3.701618479160769e-08
+        },
+        {
+          "coarse_dt_ps": 0.00025,
+          "fine_dt_ps": 0.000125,
+          "omega_body_rms_per_ps": 2.516627653635389e-07,
+          "orientation_rms_rad": 1.5243252384889667e-08,
+          "position_rms_nm": 1.009427511073533e-08,
+          "velocity_rms_nm_per_ps": 1.79308014006944e-07
+        },
+        {
+          "coarse_dt_ps": 0.0005,
+          "fine_dt_ps": 0.00025,
+          "omega_body_rms_per_ps": 1.323439167845911e-06,
+          "orientation_rms_rad": 6.314083367968876e-08,
+          "position_rms_nm": 3.202317027233565e-08,
+          "velocity_rms_nm_per_ps": 5.767369121589431e-07
+        },
+        {
+          "coarse_dt_ps": 0.001,
+          "fine_dt_ps": 0.0005,
+          "omega_body_rms_per_ps": 6.0912116308383825e-06,
+          "orientation_rms_rad": 3.070525669300501e-07,
+          "position_rms_nm": 1.2721642403835852e-07,
+          "velocity_rms_nm_per_ps": 2.568659405998721e-06
+        }
+      ],
+      "time_ps": 0.096
+    }
+  ]
+}
