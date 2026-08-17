@@ -5,7 +5,11 @@ No code under `preprocessing/`, `training/`, `simulation/` or `tests/` imports
 TEL22 files.
 
 The repository intentionally does not bundle atomistic trajectories, GROMACS
-working files, trained weights or diagnostic/ablation outputs. Prepare an AA
+working files, trained weights or diagnostic/ablation outputs.
+
+Artifact cleanup and retention policy are documented in `../TEL22_CLEANUP.md`.
+Use `bash ../cleanup_tel22_artifacts.sh --dry-run` before deleting local
+outputs; destructive cleanup is never the default. Prepare an AA
 trajectory containing forces separately, then run:
 
 ```bash

@@ -1,5 +1,3 @@
--rw-r--r--  1 demichel staff   203282 ago 12 23:27 tel22_IBI/#topol.top.1#
--rw-r--r--  1 demichel staff   203313 ago 12 23:27 tel22_IBI/#topol.top.2#
 -rwxr-xr-x  1 demichel staff     7803 ago 14 10:45 tel22_IBI/01_run_gromacs_short.sh
 -rwxr-xr-x  1 demichel staff     4155 ago 14 10:45 tel22_IBI/01_run_gromacs.sh
 -rwxr-xr-x  1 demichel staff      848 ago 14 10:45 tel22_IBI/02_build_dataset.sh
@@ -7,9 +5,7 @@
 -rwxr-xr-x  1 demichel staff     1162 ago 14 10:45 tel22_IBI/04_equilibrate.sh
 -rwxr-xr-x  1 demichel staff     1163 ago 14 10:45 tel22_IBI/05_run_espresso.sh
 -rwxr-xr-x  1 demichel staff     1810 ago 14 10:45 tel22_IBI/06_certify_nve.sh
--rw-r--r--  1 demichel staff     1718 ago 14 10:45 tel22_IBI/06_certify_nve.sh.pre_sigma_v2
 -rw-r--r--  1 demichel staff      952 ago 14 10:45 tel22_IBI/06b_diagnose_short_range.sh
--rw-r--r--  1 demichel staff        0 ago 14 10:45 tel22_IBI/06c_test_selective_wca12.sh
 -rw-r--r--  1 demichel staff      808 ago 14 10:45 tel22_IBI/07_diagnose_morse_breakage.sh
 -rw-r--r--  1 demichel staff      833 ago 14 10:45 tel22_IBI/08_diagnose_morse_reversibility.sh
 -rw-r--r--  1 demichel staff      626 ago 14 10:45 tel22_IBI/09_diagnose_morse_site_torque.sh
@@ -83,7 +79,6 @@ drwxr-xr-x 14 demichel staff      448 ago 14 18:12 tel22_IBI/ibi_run_16ps_contin
 -rw-r--r--  1 demichel staff      970 ago 14 16:32 tel22_IBI/ibi_settings.json
 drwxr-xr-x  9 demichel staff      288 ago 16 18:57 tel22_IBI/ibi_timestep_range_diagnostic
 drwxr-xr-x  5 demichel staff      160 ago 14 19:02 tel22_IBI/ibi_validation_best
--rw-r--r--  1 demichel staff  7751978 ago 15 01:10 tel22_IBI/ibival.zip
 -rw-r--r--  1 demichel staff   790104 ago 12 23:27 tel22_IBI/ions.tpr
 -rw-r--r--  1 demichel staff    45157 ago 14 10:33 tel22_IBI/md_sanity_100.log
 -rw-r--r--  1 demichel staff 91692288 ago 12 23:32 tel22_IBI/md_whole.trr
@@ -100,7 +95,6 @@ drwxr-xr-x  6 demichel staff      192 ago 12 23:24 tel22_IBI/mdp
 -rw-r--r--  1 demichel staff     7630 ago 14 10:45 tel22_IBI/morse_breakage_report.json
 -rw-r--r--  1 demichel staff     3524 ago 14 10:45 tel22_IBI/morse_reversibility_report.json
 -rw-r--r--  1 demichel staff     2098 ago 14 10:45 tel22_IBI/morse_site_torque_report.json
--rw-r--r--  1 demichel staff   797582 ago 14 19:24 tel22_IBI/ms.zip
 -rw-r--r--  1 demichel staff  1200472 ago 12 23:30 tel22_IBI/npt.cpt
 -rw-r--r--  1 demichel staff    14108 ago 12 23:30 tel22_IBI/npt.edr
 -rw-r--r--  1 demichel staff  3445768 ago 12 23:30 tel22_IBI/npt.gro
@@ -145,18 +139,13 @@ drwxr-xr-x  8 demichel staff      256 ago 16 16:02 tel22_IBI/sigma_energy_replic
 -rw-r--r--  1 demichel staff     1822 ago 14 19:14 tel22_IBI/tel22_model_ibi.pt.manifest.json
 -rw-r--r--  1 demichel staff   456143 ago 13 14:42 tel22_IBI/tel22_model.pt
 -rw-r--r--  1 demichel staff     1906 ago 13 14:44 tel22_IBI/tel22_model.pt.manifest.json
--rw-r--r--  1 demichel staff     1906 ago 14 10:45 tel22_IBI/tel22_model.pt.manifest.json.bak
 -rw-r--r--  1 demichel staff    32301 ago 12 23:27 tel22_IBI/tel22_processed.gro
 -rw-r--r--  1 demichel staff   127392 ago 14 10:45 tel22_IBI/tel22_topology.json
 -rw-r--r--  1 demichel staff      710 ago 14 10:45 tel22_IBI/tel22_training_config.json
 -rw-r--r--  1 demichel staff   203350 ago 12 23:27 tel22_IBI/topol.top
 drwxr-xr-x  7 demichel staff      224 ago 14 20:19 tel22_IBI/training_multiseed_benchmark
--rw-r--r--  1 demichel staff    66671 ago 17 16:44 tel22_IBI/TUTORIAL.md
--rw-r--r--  1 demichel staff    56763 ago 17 01:11 tel22_IBI/TUTORIAL.md.orig
--rw-r--r--  1 demichel staff  4533743 ago 14 22:00 tel22_IBI/val.zip
+-rw-r--r--  1 demichel staff    66875 ago 17 17:26 tel22_IBI/TUTORIAL.md
 drwxr-xr-x  4 demichel staff      128 ago 14 10:45 tel22_IBI/wca12_selective_ab
--rw-r--r--  1 demichel staff   203282 ago 12 23:27 tel22/#topol.top.1#
--rw-r--r--  1 demichel staff   203313 ago 12 23:27 tel22/#topol.top.2#
 -rwxr-xr-x  1 demichel staff     7803 ago 14 10:45 tel22/01_run_gromacs_short.sh
 -rwxr-xr-x  1 demichel staff     4155 ago 14 10:45 tel22/01_run_gromacs.sh
 -rwxr-xr-x  1 demichel staff      848 ago 14 10:45 tel22/02_build_dataset.sh
@@ -164,9 +153,7 @@ drwxr-xr-x  4 demichel staff      128 ago 14 10:45 tel22_IBI/wca12_selective_ab
 -rwxr-xr-x  1 demichel staff     1162 ago 14 10:45 tel22/04_equilibrate.sh
 -rwxr-xr-x  1 demichel staff     1163 ago 14 10:45 tel22/05_run_espresso.sh
 -rwxr-xr-x  1 demichel staff     1810 ago 14 10:45 tel22/06_certify_nve.sh
--rw-r--r--  1 demichel staff     1718 ago 14 10:45 tel22/06_certify_nve.sh.pre_sigma_v2
 -rw-r--r--  1 demichel staff      952 ago 14 10:45 tel22/06b_diagnose_short_range.sh
--rw-r--r--  1 demichel staff        0 ago 14 10:45 tel22/06c_test_selective_wca12.sh
 -rw-r--r--  1 demichel staff      808 ago 14 10:45 tel22/07_diagnose_morse_breakage.sh
 -rw-r--r--  1 demichel staff      833 ago 14 10:45 tel22/08_diagnose_morse_reversibility.sh
 -rw-r--r--  1 demichel staff      626 ago 14 10:45 tel22/09_diagnose_morse_site_torque.sh
@@ -224,10 +211,9 @@ drwxr-xr-x 12 demichel staff      384 ago 14 10:45 tel22/nve_certification_wca_v
 -rw-r--r--  1 demichel staff  1163824 ago 13 14:40 tel22/tel22_dataset.bin
 -rw-r--r--  1 demichel staff   456143 ago 13 14:42 tel22/tel22_model.pt
 -rw-r--r--  1 demichel staff     1906 ago 13 14:44 tel22/tel22_model.pt.manifest.json
--rw-r--r--  1 demichel staff     1906 ago 14 10:45 tel22/tel22_model.pt.manifest.json.bak
 -rw-r--r--  1 demichel staff    32301 ago 12 23:27 tel22/tel22_processed.gro
 -rw-r--r--  1 demichel staff   127392 ago 14 10:45 tel22/tel22_topology.json
 -rw-r--r--  1 demichel staff      710 ago 14 10:45 tel22/tel22_training_config.json
 -rw-r--r--  1 demichel staff   203350 ago 12 23:27 tel22/topol.top
--rw-r--r--  1 demichel staff    10231 ago 14 10:45 tel22/TUTORIAL.md
+-rw-r--r--  1 demichel staff    10435 ago 17 17:26 tel22/TUTORIAL.md
 drwxr-xr-x  4 demichel staff      128 ago 14 10:45 tel22/wca12_selective_ab
