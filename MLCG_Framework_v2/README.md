@@ -86,6 +86,23 @@ a model-config provenance sidecar (`model_config_provenance*.json`). Explicit `i
 authoritative: the production workflow does not silently fill missing
 model-dependent fields from internal defaults.
 
+## Tests
+
+Framework tests are intentionally scoped to `tests/`. The repository can also
+contain a bundled ESPResSo source tree with its own upstream test suite and build
+dependencies; those tests are not part of the MLCG framework test run.
+
+Install the test dependency and run the framework suite from the repository root:
+
+```bash
+python3 -m pip install -r requirements-test.txt
+python3 -m pytest -q
+```
+
+`pytest.ini` sets `testpaths = tests`, so the no-argument command above is
+equivalent to `python3 -m pytest -q tests` and does not recursively collect
+`espresso/testsuite`, `espresso/samples`, or other bundled ESPResSo tests.
+
 ## ESPResSo extension
 
 Bonded Morse priors are evaluated by the conservative analytic `MorseBond` extension in `simulation/espresso_plugin/`; run `copy_plugin_files.sh` and rebuild ESPResSo before simulations that use `type: "morse"`.

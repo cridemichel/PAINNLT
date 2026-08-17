@@ -3038,11 +3038,23 @@ certification should use the fixed-duration, per-step `sigma_E` procedure above.
 
 ## 26.1 Python tests
 
+Install the test dependency once in the active Python environment:
+
+```bash
+python3 -m pip install -r requirements-test.txt
+```
+
 From the repository root:
 
 ```bash
-python3 -m unittest discover -s tests -p 'test_*.py'
+python3 -m pytest -q
 ```
+
+`pytest.ini` sets `testpaths = tests`, so the no-argument command and
+`python3 -m pytest -q tests` have the same scope. This prevents accidental
+collection of an optional bundled `espresso/` source tree, whose upstream tests
+require the ESPResSo build/test environment and are not part of the MLCG
+framework suite.
 
 Run this after changing preprocessing, runtime utilities, NVE analysis, or guardrails.
 
