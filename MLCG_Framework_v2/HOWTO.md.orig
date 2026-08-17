@@ -1,9 +1,9 @@
 # MLCG Framework v2 — Guida tecnica completa
 
-> Stato documentato: **14 agosto 2026**.
+> Stato documentato: **17 agosto 2026**.
 > Questa guida descrive il framework nella configurazione corrente, inclusi i fix recenti per:
 > Morse switched non-bonded reversibile (pair-specific e type-pair) in ESPResSo, validazione tollerante ai round-trip `float32` del manifest,
-> dummy neighbor-list limitata ai soli tipi ML, e certificazione NVE basata su `sigma_E = std(E)`.
+> dummy neighbor-list limitata ai soli tipi ML, conversione IBI conservativa, **regolarizzazione opzionale degli angoli IBI**, e certificazione NVE post-promozione con `sigma_E = std(E)` nuovamente gating sullo scaling `O(dt^2)`.
 
 ---
 
@@ -853,7 +853,7 @@ fine non recupera l'ordine atteso, il passo successivo e una diagnostica per
 componenti dell'Hamiltoniana, non un rilassamento delle soglie.
 
 
-#### 7.6.6.4 Certificazione composita finale conservative IBI-only
+#### 7.6.6.4 Certificazione composita conservative IBI-only dello step 26 (storica)
 
 Dopo i passi `22`, `23` e `25`, il verdetto finale viene assemblato senza
 rilanciare dinamica:
@@ -873,11 +873,12 @@ Il gate finale richiede contemporaneamente:
   posizione, velocita', orientazione e `omega_body`.
 
 Di default ogni metrica di stato deve avere `1.7 <= median p <= 2.3` e
-`median R2 >= 0.95`. Il fit storico `sigma_E ~ dt^p` del passo `23` resta nel
-report con il suo PASS/FAIL originale, ma nel verdetto composito e' marcato
-`diagnostic_only`: non viene riscritto e non e' un gate dell'ordine numerico.
-L'ordine dell'integratore e' invece stabilito direttamente dalle differenze
-Richardson delle traiettorie.
+`median R2 >= 0.95`. Nello **step 26 storico** il fit `sigma_E ~ dt^p` del passo
+`23` restava nel report come `diagnostic_only`. Questa scelta e' stata utile per
+separare l'ordine della traiettoria dal problema energetico, ma **non e' piu il
+criterio finale corrente**: gli step 27--34 hanno localizzato la stiffness degli
+angoli IBI e la certificazione post-promozione dello step 34 rende nuovamente
+obbligatorio lo scaling `sigma_E = O(dt^2)`, oltre a Richardson.
 
 Output:
 
@@ -889,6 +890,134 @@ nve_final_certification_conservative_ibi_only/
 Un PASS certifica esclusivamente `WCA + Morse + bonded conservative IBI` con
 PaiNN disabilitato. Un Hamiltoniano ML-active richiede una certificazione
 separata.
+
+
+### 7.6.7 IBI angolare regolarizzato: opzione supportata, non default universale
+
+Per gli **angoli IBI gia' convertiti in `type="conservative_spline"`** il
+framework supporta una regolarizzazione opzionale del potenziale. Questa path e'
+una trasformazione post-IBI esplicita del prior: **non e' un flag automatico di
+`run_ibi_loop.py`**, non e' un nuovo integratore e non e' un rilassamento della
+certificazione NVE.
+
+La motivazione numerica e' che l'update IBI
+
+\[
+\Delta U(\theta)=\alpha k_B T\ln\frac{P_{\mathrm{sim}}(\theta)}
+                                      {P_{\mathrm{target}}(	heta)}
+\]
+
+puo' incorporare piccole componenti ad alta frequenza dovute a sampling finito o
+alla rappresentabilita' marginale. Una perturbazione energetica piccola su una
+scala angolare corta puo' produrre una grande `U''(theta)` e quindi modi angolari
+artificialmente veloci. In questo caso il potenziale IBI grezzo resta utilizzabile
+con timestep sufficientemente piccoli, ma la regolarizzazione puo' recuperare un
+range di timestep piu ampio senza modificare materialmente la distribuzione
+strutturale.
+
+L'implementazione corrente e' `ibi/generate_angle_smoothing_candidate.py`. Per
+ogni tabella angolare:
+
+1. separa analiticamente il wall quadratico configurato dall'IBI;
+2. applica un filtro Gaussiano **solo al body de-walled** `U_body(theta)`;
+3. riaggiunge lo stesso wall, senza abbassarne la barriera;
+4. costruisce una `CubicSpline` C2 sull'energia regolarizzata;
+5. esporta energia e derivate nodali nella stessa rappresentazione Hermite
+   conservativa usata dal runtime.
+
+Bond e dihedral non vengono smussati da questo comando. Il runtime ESPResSo non
+cambia: energia e forza continuano a derivare dallo stesso polinomio Hermite.
+
+Esempio generico:
+
+```bash
+python3 ibi/generate_angle_smoothing_candidate.py \
+  --source-priors ibi_conservative/cg_priors.json \
+  --ibi-config ibi_settings.json \
+  --body-sigma-rad 0.0075 \
+  --output-dir ibi_angle_candidate \
+  --dry-run
+
+python3 ibi/generate_angle_smoothing_candidate.py \
+  --source-priors ibi_conservative/cg_priors.json \
+  --ibi-config ibi_settings.json \
+  --body-sigma-rad 0.0075 \
+  --output-dir ibi_angle_candidate \
+  --overwrite
+```
+
+L'output e' deliberatamente marcato `validated=false` e **non modifica mai** i
+prior sorgente. Il valore di `body_sigma_rad` e' system-specific: `0.0075 rad` e'
+validato per il TEL22 corrente, non e' un default trasferibile ad altri modelli.
+
+La selezione di un candidato deve usare almeno quattro classi di evidenza:
+
+- struttura: distribuzioni angle/bond e delta L1 rispetto al prior non
+  regolarizzato;
+- stiffness occupata: `P95/P99/max |U''|` valutata sulle configurazioni realmente
+  visitate, non solo sugli estremi della tabella;
+- NVE: plateau **contiguo** di `sigma_E/dt^2` e fit `sigma_E ~ dt^p`, senza
+  scegliere il candidato soltanto perche' il `p` globale e' vicino a 2;
+- robustezza: repliche indipendenti e una validazione strutturale piu lunga prima
+  della promozione.
+
+Regolarizzare un prior cambia la decomposizione del target residuale. Un dataset
+residuale o un modello PaiNN costruito prima della regolarizzazione diventa
+**stale per uso ML-active** e deve essere ricostruito/retrainato prima di poter
+riattivare la rete.
+
+### 7.6.8 TEL22: path validata `smooth_0p0075` e certificazione post-promozione
+
+Nel caso TEL22 gli step diagnostici 29--32 hanno localizzato la perdita del range
+Verlet negli angoli IBI: il controllo con prior armonici originali conserva lo
+scaling quadratico, mentre l'introduzione degli angle IBI aumenta fortemente la
+curvatura occupata. La scansione locale ha selezionato
+`smooth_0p0075_wall_current` come miglior compromesso tra struttura e regolarita'
+NVE.
+
+Lo step 33 valida **un solo candidato**, senza ulteriore tuning:
+
+```bash
+cd tutorials/tel22_IBI
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./33_validate_final_ibi_angle_candidate.sh --overwrite
+```
+
+Il risultato TEL22 validato e':
+
+```text
+common sigma_E exponent p = 1.947046
+within-replica R2          = 0.984844
+full clean range           = 3/3 repliche fino a dt=0.005 ps
+Delta weighted angle L1    = +0.009561
+Delta weighted bond L1     = -0.019844
+angle P99 |U''| reduction  = 2.416x
+```
+
+Solo dopo questo PASS lo step 34 promuove transazionalmente il candidate nei
+prior di produzione, conserva un backup del prior precedente e ricertifica la
+**path di produzione**:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./34_promote_and_certify_ibi_angle_prior.sh --promote
+```
+
+La certificazione corrente richiede contemporaneamente finite-difference/parity,
+preflight, scaling energetico e Richardson. `sigma_E` e' nuovamente un gate:
+
+```text
+fresh production sigma_E: p=1.877261, R2=0.984412,
+                          C2 spread=1.487, max dt=0.005 ps, PASS
+Richardson median p:      position=2.004, velocity=2.215,
+                          orientation=2.035, omega_body=2.019, PASS
+FINAL:                    pass=True, ML_active=False
+```
+
+Il certificato finale copre quindi soltanto
+`WCA + Morse + bonded conservative regularized IBI` con PaiNN disabilitato. Il
+residual dataset e il modello PaiNN pre-promozione sono marcati stale e non
+fanno parte dell'Hamiltoniana certificata.
 
 ---
 
@@ -2941,9 +3070,23 @@ Stabilità fisica del modello/prior, non semplicemente precisione dell'integrato
 
 ## 26.1 Test Python
 
+Installare la dipendenza di test una volta nell'ambiente Python attivo:
+
 ```bash
-python3 -m unittest discover -s tests -p 'test_*.py'
+python3 -m pip install -r requirements-test.txt
 ```
+
+Dalla root del repository:
+
+```bash
+python3 -m pytest -q
+```
+
+`pytest.ini` imposta `testpaths = tests`, quindi il comando senza argomenti e
+`python3 -m pytest -q tests` hanno lo stesso scope. Questo evita di raccogliere
+accidentalmente la test-suite upstream contenuta in un eventuale checkout
+`espresso/`, che richiede l'ambiente di build/test ESPResSo e non fa parte dei
+test del framework MLCG.
 
 Coprono:
 
@@ -3043,6 +3186,65 @@ tabulated priors = 0
 Il run AA corto da 50 ps produce 51 frame a 1 ps ed è adatto a smoke test, non a un training definitivo.
 
 Per un dataset scientifico si deve usare una traiettoria sufficientemente lunga e rappresentativa.
+
+## 27.1 Regola architetturale: ogni scelta model-dependent è configurabile
+
+Nel percorso IBI/conservative il framework distingue esplicitamente tre classi:
+
+- **CORE_INVARIANT**: proprietà universali del metodo, quindi codificate nel core
+  e coperte da test. Esempi: `F=-grad(U)`, periodicità della spline torsionale,
+  schema della tabella conservativa, formula IBI, controlli di conservatività e
+  runtime/preprocessing parity.
+- **MODEL_PARAMETER**: qualunque scelta che possa cambiare cambiando molecola,
+  mapping, dataset, temperatura, Hamiltoniano o protocollo di sampling. Deve
+  provenire da configurazione esterna.
+- **CALIBRATED_PARAMETER**: un `MODEL_PARAMETER` scelto tramite sweep/diagnostica
+  (per esempio una larghezza di smoothing o una finestra NVE accettata). Deve
+  essere configurato e accompagnato dalla provenance della calibrazione.
+
+La configurazione model-dependent del tutorial IBI è:
+
+```text
+tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+I wrapper degli step 11–39 che contengono decisioni dipendenti dal modello la
+caricano tramite `tutorials/tel22_IBI/model_config.sh`. Lo step 20 installa solo
+il kernel ESPResSo generico e quindi non richiede una sezione model-dependent.
+La configurazione include grouping bonded/torsionale, `ibi`/`dbi`, mixing,
+binning/supporto, sampling, seed policy, regularizzazione e candidate sweep,
+numero di repliche, timestep grid, finestre fine/coarse e soglie di validazione.
+
+Validare il file prima di un workflow:
+
+```bash
+python3 simulation/model_dependent_config.py validate \
+  --config tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+Per un altro modello si usa un file diverso senza modificare il core:
+
+```bash
+IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
+  bash tutorials/tel22_IBI/38_test_conservative_in_loop_dihedral_ibi.sh --run
+```
+
+Gli override via environment restano possibili. Il sidecar di provenance del model config
+(`model_config_provenance*.json`) registra per ogni valore se proviene dal file di
+configurazione o da `environment_override`. I workflow non devono quindi
+dipendere da override invisibili.
+
+Un `ibi_settings.json` passato esplicitamente è **autorevole e completo**: non
+viene più fuso silenziosamente con valori model-dependent interni. Se manca un
+parametro richiesto dal percorso usato, il workflow deve fallire con errore di
+configurazione. I default Python rimasti in helper low-level servono soltanto a
+uso API/test/esplorativo; i wrapper di produzione/tutorial passano valori
+espliciti dalla configurazione del modello.
+
+Valori TEL22 quali `sigma_angle=0.0075 rad`, `alpha`, numero di repliche, seed,
+threshold strutturali e griglie NVE sono quindi esempi/configurazioni TEL22, non
+proprietà del metodo. `calibration_provenance` nel JSON collega i valori calibrati
+agli step/report che li hanno selezionati.
 
 ---
 
@@ -3211,9 +3413,56 @@ e l'errore quaternion e' invariante rispetto al cambio di segno `q -> -q`.
 
 Lo step 25 resta un test diagnostico e non riscrive il verdetto storico dello
 step 23. Il suo report viene pero' consumato dallo step 26, che costruisce il
-verdetto composito finale insieme a kernel/parity/provenance/drift. Serve a
-distinguere un vero difetto dell'integratore da una `sigma_E` contaminata dalla
-fase delle oscillazioni della shadow energy.
+verdetto composito storico insieme a kernel/parity/provenance/drift. Serve a
+distinguere un vero difetto dell'integratore da un'anomalia della metrica
+energetica. Un PASS Richardson **non** autorizza pero' a ignorare uno scaling
+`sigma_E(dt)` non quadratico: quella discrepanza va localizzata con gli step
+27--29 prima di certificare il prior.
+
+---
+
+
+## 28.12 Localizzare un `sigma_E(dt)` non quadratico
+
+La convergenza Richardson dello stato e il test classico sulle fluttuazioni di
+energia rispondono a domande diverse. Un ordine di traiettoria vicino a 2 **non**
+annulla il requisito fisico/numerico di capire perche, per una Hamiltoniana
+regolare integrata con Velocity-Verlet, `sigma_E` non mostri il regime
+`O(dt^2)` atteso.
+
+Per il ramo conservative IBI usare:
+
+```bash
+cd tutorials/tel22_IBI
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./27_diagnose_conservative_ibi_energy_scaling.sh --overwrite
+```
+
+Il passo 27 non modifica il kernel. Esegue una localizzazione per componenti:
+
+- salto di `U''` a ogni knot Hermite;
+- micro-sistemi bond e angle dentro una cella vs attraversamento knot;
+- angle su point particles vs virtual sites di rigid bodies;
+- finite difference rotazionale confrontata con `torque_lab`;
+- full-system finite difference di forze e torque;
+- scan `no_ibi`, `bonds_only`, `angles_only`, `full` con identica topologia WCA;
+- correlazione tra crossing dei knot e `|Delta E|` per step;
+- decomposizione `K_trans`, `K_rot`, energia bonded/nonbonded;
+- confronto `link-cell` vs `nsquare`;
+- reversibilita temporale forward / inversione `v, omega_body` / forward.
+
+Il report principale e
+`conservative_ibi_energy_localization/localization_report.json`. Se il caso
+inside-cell recupera `sigma_E ~ dt^2` ma il caso crossing no, la regolarita ai
+knot diventa il sospetto principale. Se il point-angle passa e il rigid-angle
+fallisce, bisogna invece investigare back-transfer di forza/torque e integrazione
+rotazionale. Se anche `no_ibi` fallisce, non attribuire il problema alle spline.
+
+Finche un fallimento riproducibile di `sigma_E ~ dt^2` non e localizzato, il
+PASS composito storico del passo 26 non deve essere interpretato come
+certificazione finale. Se la localizzazione identifica stiffness degli angoli
+IBI, usare la path opzionale di regolarizzazione descritta in 7.6.7 e, dopo la
+promozione, richiedere il gate energetico dello step 34.
 
 ---
 

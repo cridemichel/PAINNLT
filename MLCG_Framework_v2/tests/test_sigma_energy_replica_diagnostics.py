@@ -142,7 +142,7 @@ class SigmaEnergyReplicaDiagnosticTests(unittest.TestCase):
         self.assertAlmostEqual(metrics["sigma_E"], float(np.std(energies[:251], ddof=0)), places=15)
 
     def test_step28_keeps_sigma_raw_and_reuses_prefixes(self):
-        source = ROOT.joinpath("tutorials", "tel22_IBI", "28_diagnose_sigma_energy_replicas.sh").read_text(encoding="utf-8")
+        source = ROOT.joinpath("tutorials", "tel22_IBI", "diagnostics", "scripts", "28_diagnose_sigma_energy_replicas.sh").read_text(encoding="utf-8")
         self.assertIn("SIGMA_REPLICA_DURATIONS_PS", source)
         self.assertIn("SIGMA_REPLICA_DTS", source)
         self.assertIn("load_model_dependent_config step28", source)

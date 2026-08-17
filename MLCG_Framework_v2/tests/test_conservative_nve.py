@@ -254,7 +254,7 @@ class ConservativeNVETests(unittest.TestCase):
                 )
 
     def test_step23_prepares_dedicated_ibi_only_checkpoint(self):
-        source = ((ROOT / "tutorials") / ("tel" + "22_IBI") / "23_certify_conservative_ibi_nve.sh").read_text()
+        source = ((ROOT / "tutorials") / ("tel" + "22_IBI") / "diagnostics" / "scripts" / "23_certify_conservative_ibi_nve.sh").read_text()
         runner = (SIMULATION / "run_cg_md.py").read_text()
         self.assertIn("NVE_EQ_DURATION_PS", source)
         self.assertIn("--disable_ml", source)
@@ -274,7 +274,7 @@ class ConservativeNVETests(unittest.TestCase):
 
 
     def test_step24_is_diagnostic_only_and_scans_fine_dt(self):
-        source = ((ROOT / "tutorials") / ("tel" + "22_IBI") / "24_diagnose_conservative_ibi_nve_scaling.sh").read_text()
+        source = ((ROOT / "tutorials") / ("tel" + "22_IBI") / "diagnostics" / "scripts" / "24_diagnose_conservative_ibi_nve_scaling.sh").read_text()
         certifier = (SIMULATION / "certify_nve.py").read_text()
         self.assertIn("NVE_DIAG_DTS", source)
         self.assertIn("load_model_dependent_config step24", source)

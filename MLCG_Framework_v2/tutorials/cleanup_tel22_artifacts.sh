@@ -20,9 +20,9 @@ Default behavior is a dry-run of low-risk junk cleanup in tutorials/tel22 and
   --dry-run    print what would be removed (default)
   --run        actually remove selected paths
   --archives   also include known local ZIP snapshots (ibival.zip, val.zip, ms.zip)
-  --generated  also include regenerable AA/CG runtime outputs; scientific
-               reports, certification directories, priors, datasets and models
-               are intentionally preserved
+  --generated  include regenerable CG runtime outputs only. GROMACS-generated
+               files are protected by policy and are never removed by this helper;
+               scientific reports, priors, datasets and models are also preserved
   -h, --help   show this help
 
 Examples:
@@ -63,10 +63,34 @@ is_safe_path() {
     esac
 }
 
+is_protected_gromacs_path() {
+    local path="$1"
+    local dir name
+    for dir in "${TEL22_DIR}" "${IBI_DIR}"; do
+        case "${path}" in
+            "${dir}"/*)
+                name="${path#${dir}/}"
+                case "${name}" in
+                    .short_mdp|143D.pdb|pdb143d.ent.gz|tel22_clean.pdb|tel22_processed.gro|\
+                    box_10.gro|box_solvated.gro|box_ions.gro|ions.tpr|posre.itp|topol.top|\
+                    em.edr|em.gro|em.log|em.tpr|em.trr|nvt.cpt|nvt.edr|nvt.gro|nvt.log|nvt.tpr|\
+                    npt.cpt|npt.edr|npt.gro|npt.log|npt.tpr|md.cpt|md.edr|md.gro|md.log|md.tpr|\
+                    md.trr|md_whole.trr|mdout.mdp) return 0 ;;
+                esac
+                ;;
+        esac
+    done
+    return 1
+}
+
 remove_path() {
     local path="$1"
     local category="$2"
     [ -e "${path}" ] || [ -L "${path}" ] || return 0
+    if is_protected_gromacs_path "${path}"; then
+        echo "[KEEP:gromacs-protected] ${path#${SCRIPT_DIR}/}"
+        return 0
+    fi
     if ! is_safe_path "${path}"; then
         echo "[ERROR] Refusing path outside TEL22 tutorials: ${path}" >&2
         exit 1
@@ -133,7 +157,7 @@ fi
 
 if [ "${INCLUDE_GENERATED}" -eq 1 ]; then
     for dir in "${TEL22_DIR}" "${IBI_DIR}"; do
-        # Regenerable all-atom working products from 01_run_gromacs*.sh.
+        # GROMACS working products are listed for visibility but remove_path protects them unconditionally.
         for name in \
             .short_mdp \
             143D.pdb pdb143d.ent.gz tel22_clean.pdb tel22_processed.gro \
@@ -166,5 +190,5 @@ if [ "${INCLUDE_ARCHIVES}" -eq 0 ]; then
     echo "[NOTE] Local ZIP snapshots were preserved. Add --archives to include them."
 fi
 if [ "${INCLUDE_GENERATED}" -eq 0 ]; then
-    echo "[NOTE] Regenerable AA/CG runtime outputs were preserved. Add --generated to include them."
+    echo "[NOTE] Regenerable CG runtime outputs were preserved. GROMACS-generated files are always protected."
 fi

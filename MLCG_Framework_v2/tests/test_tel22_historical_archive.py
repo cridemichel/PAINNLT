@@ -42,7 +42,7 @@ class Tel22HistoricalArchiveTests(unittest.TestCase):
             self.assertFalse(manifest["executed"])
             self.assertTrue((tutorial / "ibi_run").exists())
             self.assertTrue((tutorial / "md.trr").exists())
-            self.assertFalse((tutorial / "archive" / "historical_ibi" / "ibi_run").exists())
+            self.assertFalse((tutorial / "diagnostics" / "historical" / "phase3_archive" / "historical_ibi" / "ibi_run").exists())
 
     def test_run_archives_only_reviewed_terminal_outputs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -50,9 +50,9 @@ class Tel22HistoricalArchiveTests(unittest.TestCase):
             archive.execute(tutorial, run=True)
             self.assertFalse((tutorial / "ibi_run").exists())
             self.assertFalse((tutorial / "ibi_dbi_preview").exists())
-            self.assertTrue((tutorial / "archive" / "historical_ibi" / "ibi_run" / "evidence.txt").exists())
+            self.assertTrue((tutorial / "diagnostics" / "historical" / "phase3_archive" / "historical_ibi" / "ibi_run" / "evidence.txt").exists())
             self.assertTrue(
-                (tutorial / "archive" / "ml_residual_experiments" / "ibi_ml_ab_validation" / "evidence.txt").exists()
+                (tutorial / "diagnostics" / "historical" / "phase3_archive" / "ml_residual_experiments" / "ibi_ml_ab_validation" / "evidence.txt").exists()
             )
             # Live historical dependencies are intentionally untouched.
             self.assertTrue((tutorial / "ibi_run_16ps").exists())
@@ -73,7 +73,7 @@ class Tel22HistoricalArchiveTests(unittest.TestCase):
     def test_collision_fails_before_any_move(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tutorial = self._make_tree(Path(tmpdir))
-            collision = tutorial / "archive" / "historical_ibi" / "ibi_run"
+            collision = tutorial / "diagnostics" / "historical" / "phase3_archive" / "historical_ibi" / "ibi_run"
             collision.mkdir(parents=True)
             with self.assertRaises(RuntimeError):
                 archive.execute(tutorial, run=True)
@@ -84,11 +84,11 @@ class Tel22HistoricalArchiveTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             tutorial = self._make_tree(Path(tmpdir))
             archive.execute(tutorial, run=True)
-            data = json.loads((tutorial / "archive" / "archive_manifest.json").read_text(encoding="utf-8"))
+            data = json.loads((tutorial / "diagnostics" / "historical" / "phase3_archive" / "archive_manifest.json").read_text(encoding="utf-8"))
             self.assertTrue(data["executed"])
             self.assertTrue(data["policy"]["gromacs_generated_preserved"])
             self.assertIn("md.trr", data["policy"]["protected_gromacs_toplevel"])
-            self.assertIn("postibi_runtime_validation", data["policy"]["live_historical_dependencies_preserved"])
+            self.assertIn("diagnostics/ml/postibi_runtime_validation", data["policy"]["live_historical_dependencies_preserved"])
 
 
 if __name__ == "__main__":
