@@ -1,0 +1,136 @@
+{
+  "energy_atol": 1e-10,
+  "force_atol": 1e-09,
+  "framework": "MLCG_Framework_v2",
+  "kind": "ibi_conservative_spline_runtime_parity",
+  "pass": true,
+  "prior_artifact_sha256": {
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/angle_conservative_ang_A_G_G.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/angle_conservative_ang_G_G_G.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/angle_conservative_ang_G_G_T.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/angle_conservative_ang_G_T_T.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/angle_conservative_ang_T_A_G.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/angle_conservative_ang_T_T_A.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/bond_conservative_bb_A_G.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/bond_conservative_bb_G_G.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/bond_conservative_bb_G_T.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/bond_conservative_bb_T_A.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/bond_conservative_bb_T_T.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/cg_priors.json": "8b97bca796fd7980368220da45a9228f0c20dac619580c18cc973c478ff25f4f",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_A_G_G_G.dat": "018cf43fed24d567abe28aa9e0f356045beca34ea9ebc054c8fe2fb1c09bea42",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_G_G_G_T.dat": "6737e7de9f0ed583e8f16292fd091165c433f68ff1e6af47535b8d9111b656fd",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_G_G_T_T.dat": "6f58f87eacd932974d6fb46d1d75fe39e01f96e49d0c62144ceebfb80d910799",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_G_T_T_A.dat": "f46c1dc8a2a42d24f96c0c020183633acc3be45693187c7d4a066dc6afa8eea4",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_T_A_G_G.dat": "fdc14d75a99fadda37a3b431c1bc6dc3bffa8a8763cbae1f37d10b368968008c",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_T_T_A_G.dat": "3fe6357b067a6e035bd6f2d371d6f3473435bd9a1572b8c1388a4de55c4911bc"
+  },
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/cg_priors.json",
+  "priors_sha256": "8b97bca796fd7980368220da45a9228f0c20dac619580c18cc973c478ff25f4f",
+  "results": [
+    {
+      "file": "bond_conservative_bb_A_G.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "bond_conservative_bb_G_G.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "bond_conservative_bb_G_T.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "bond_conservative_bb_T_T.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "bond_conservative_bb_T_A.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "angle_conservative_ang_A_G_G.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "angle_conservative_ang_G_G_G.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "angle_conservative_ang_G_G_T.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "angle_conservative_ang_G_T_T.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "angle_conservative_ang_T_T_A.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "angle_conservative_ang_T_A_G.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "dihedral_conservative_dih_A_G_G_G.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 8.881784197001252e-16,
+      "max_force_abs_error": 1.8146595337498184e-13
+    },
+    {
+      "file": "dihedral_conservative_dih_G_G_G_T.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 4.440892098500626e-16,
+      "max_force_abs_error": 1.459943277382081e-14
+    },
+    {
+      "file": "dihedral_conservative_dih_G_G_T_T.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 4.440892098500626e-16,
+      "max_force_abs_error": 6.361577931102147e-14
+    },
+    {
+      "file": "dihedral_conservative_dih_G_T_T_A.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 0.0,
+      "max_force_abs_error": 3.262667913617179e-14
+    },
+    {
+      "file": "dihedral_conservative_dih_T_T_A_G.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 0.0,
+      "max_force_abs_error": 9.9253938401489e-14
+    },
+    {
+      "file": "dihedral_conservative_dih_T_A_G_G.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 8.881784197001252e-16,
+      "max_force_abs_error": 5.229150445984487e-14
+    }
+  ],
+  "schema_version": 1,
+  "worst_energy_abs_error": 2.8421709430404007e-13,
+  "worst_force_abs_error": 1.8146595337498184e-13
+}

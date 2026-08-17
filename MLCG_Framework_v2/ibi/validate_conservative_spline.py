@@ -30,6 +30,22 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _five_point_fd_derivative(table, q: float, eps: float) -> float:
+    """Fourth-order central FD for the derivative of the spline energy.
+
+    Probe points are selected well inside one Hermite interval by ``validate``.
+    A 5-point stencil is therefore exact for the local cubic polynomial up to
+    floating-point roundoff, unlike the 3-point stencil whose O(eps^2) term can
+    become visible for the deliberately rough/high-third-derivative torsional
+    profiles that this diagnostic is meant to inspect.
+    """
+    upp, _ = conservative_spline_value(table, q + 2.0 * eps)
+    up, _ = conservative_spline_value(table, q + eps)
+    um, _ = conservative_spline_value(table, q - eps)
+    umm, _ = conservative_spline_value(table, q - 2.0 * eps)
+    return float((-upp + 8.0 * up - 8.0 * um + umm) / (12.0 * eps))
+
+
 def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float = 2.0e-6) -> dict:
     conversion_report = conversion_report.expanduser().resolve()
     report = json.loads(conversion_report.read_text())
@@ -44,6 +60,12 @@ def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float
     priors = json.loads(output_priors.read_text())
 
     record_by_output = {r["output_file"]: r for r in report["records"]}
+    passthrough_by_output = {
+        r["output_file"]: r for r in report.get("passthrough_records", [])
+    }
+    overlap = set(record_by_output) & set(passthrough_by_output)
+    if overlap:
+        raise ValueError(f"Conversion report reuses output files across converted/passthrough records: {sorted(overlap)}")
     fd_checks = []
     seen = set()
     for json_key, kind in (("bonds", "bond"), ("angles", "angle"), ("dihedrals", "dihedral")):
@@ -54,12 +76,22 @@ def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float
             if key in seen:
                 continue
             seen.add(key)
-            if entry["file"] not in record_by_output:
-                raise ValueError(f"Converted {json_key}[{idx}] has no conversion record")
-            rec = record_by_output[entry["file"]]
+            rec = record_by_output.get(entry["file"])
+            provenance = "converted"
+            if rec is None:
+                rec = passthrough_by_output.get(entry["file"])
+                provenance = "passthrough"
+            if rec is None:
+                raise ValueError(f"Conservative {json_key}[{idx}] has no conversion/passthrough record")
             table_path = output_priors.parent / entry["file"]
             if sha256_file(table_path) != rec["output_sha256"]:
-                raise ValueError(f"Converted spline changed after conversion: {table_path}")
+                raise ValueError(f"Conservative spline changed after conversion: {table_path}")
+            if provenance == "passthrough":
+                source = Path(rec["source_path"])
+                if not source.is_file() or sha256_file(source) != rec["source_sha256"]:
+                    raise ValueError(f"Passthrough source conservative spline changed after conversion: {source}")
+                if rec.get("byte_identical") is not True or rec["source_sha256"] != rec["output_sha256"]:
+                    raise ValueError(f"Passthrough conservative spline is not byte-identical: {table_path}")
             table = load_conservative_spline(entry, kind=kind, priors_path=output_priors)
             # Probe interval interiors, away from knots where central FD would
             # straddle two C1 segments and unnecessarily reduce FD accuracy.
@@ -70,10 +102,8 @@ def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float
             for i in indices:
                 q = float(table.x[i] + 0.371 * hgrid)
                 eps = min(1.0e-6, 1.0e-3 * hgrid)
-                up, _ = conservative_spline_value(table, q + eps)
-                um, _ = conservative_spline_value(table, q - eps)
                 _u, analytic = conservative_spline_value(table, q)
-                fd = (up - um) / (2.0 * eps)
+                fd = _five_point_fd_derivative(table, q, eps)
                 err = abs(fd - analytic)
                 rel = err / max(abs(fd), abs(analytic), 1.0)
                 max_abs = max(max_abs, err)
@@ -84,7 +114,7 @@ def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float
                         f"analytic={analytic}, fd={fd}, abs_err={err}"
                     )
             fd_checks.append({
-                "kind": kind, "file": entry["file"],
+                "kind": kind, "file": entry["file"], "provenance": provenance,
                 "max_abs_dU_dq_error": max_abs, "max_relative_error": max_rel,
             })
 
@@ -102,6 +132,16 @@ def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float
             {"kind": r["kind"], "file": r["output_file"], **r["fidelity"]}
             for r in report["records"]
         ],
+        "passthrough": [
+            {
+                "kind": r["kind"],
+                "file": r["output_file"],
+                "source_sha256": r["source_sha256"],
+                "output_sha256": r["output_sha256"],
+                "byte_identical": bool(r.get("byte_identical", False)),
+            }
+            for r in report.get("passthrough_records", [])
+        ],
         "pass": True,
     }
     out = conversion_report.parent / "validation_report.json"
@@ -109,7 +149,7 @@ def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float
     print("[CONSERVATIVE SPLINE VALIDATION]")
     for item in fd_checks:
         print(
-            f"{item['kind']:5s} {item['file']}: "
+            f"{item['kind']:8s} {item['file']} [{item['provenance']}]: "
             f"FD max_abs={item['max_abs_dU_dq_error']:.3e} "
             f"max_rel={item['max_relative_error']:.3e}"
         )

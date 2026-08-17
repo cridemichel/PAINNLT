@@ -247,6 +247,15 @@ def main() -> int:
     parser.add_argument("--allow-nonreference-device", action="store_true")
     parser.add_argument("--output-dir", default="nve_certification")
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument(
+        "--reuse-existing",
+        action="store_true",
+        help=(
+            "Reuse completed per-dt energy.csv files already present in --output-dir and "
+            "run only missing timestep branches. Existing series are re-analyzed with the "
+            "current code and must match the requested dt/duration."
+        ),
+    )
     parser.add_argument("--slope-min", type=float, default=1.7)
     parser.add_argument("--slope-max", type=float, default=2.3)
     parser.add_argument("--min-r2", type=float, default=0.97)
@@ -295,6 +304,9 @@ def main() -> int:
     )
     parser.add_argument("--dry-run", action="store_true", help="Print run plan without launching ESPResSo")
     args = parser.parse_args()
+
+    if args.overwrite and args.reuse_existing:
+        raise ValueError("--overwrite and --reuse-existing are mutually exclusive")
 
     if args.disable_ml and not args.model:
         raise ValueError("--disable-ml requires --model so checkpoint/model provenance remains bound")
@@ -388,9 +400,15 @@ def main() -> int:
         )
 
     output_dir = Path(args.output_dir).expanduser().resolve()
-    if output_dir.exists() and any(output_dir.iterdir()) and not args.overwrite:
+    if (
+        output_dir.exists()
+        and any(output_dir.iterdir())
+        and not args.overwrite
+        and not args.reuse_existing
+    ):
         raise FileExistsError(
-            f"Output directory is not empty: {output_dir}. Use --overwrite or a new directory."
+            f"Output directory is not empty: {output_dir}. Use --overwrite, --reuse-existing, "
+            "or a new directory."
         )
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -450,6 +468,7 @@ def main() -> int:
         if args.allow_legacy_checkpoint:
             command.append("--allow_legacy_checkpoint")
 
+        reuse_this = bool(args.reuse_existing and energy_csv.is_file())
         plan_item = {
             "dt_ps": dt,
             "steps": steps,
@@ -458,36 +477,50 @@ def main() -> int:
             "log_interval_steps": log_every,
             "run_dir": str(run_dir),
             "command": command,
+            "reused_existing_energy": reuse_this,
         }
         run_plan.append(plan_item)
+        action = "REUSE" if reuse_this else "PLAN"
         print(
-            f"[PLAN] dt={dt:g} ps steps={steps} duration={actual_duration:g} ps "
+            f"[{action}] dt={dt:g} ps steps={steps} duration={actual_duration:g} ps "
             f"log_every={log_every} steps"
         )
         if args.dry_run:
             continue
 
-        if run_dir.exists() and args.overwrite:
-            shutil.rmtree(run_dir)
-        run_dir.mkdir(parents=True, exist_ok=True)
-        with log_file.open("w", encoding="utf-8") as handle:
-            completed = subprocess.run(
-                command,
-                cwd=run_dir,
-                stdout=handle,
-                stderr=subprocess.STDOUT,
-                check=False,
-                env=os.environ.copy(),
-            )
-        if completed.returncode != 0:
-            print(f"[ERROR] NVE run failed for dt={dt:g} ps; tail of {log_file}:", file=sys.stderr)
-            print(tail(log_file), file=sys.stderr)
-            return 3
-        if not energy_csv.is_file():
-            raise RuntimeError(f"Expected energy log was not produced: {energy_csv}")
+        if not reuse_this:
+            if run_dir.exists() and args.overwrite:
+                shutil.rmtree(run_dir)
+            run_dir.mkdir(parents=True, exist_ok=True)
+            with log_file.open("w", encoding="utf-8") as handle:
+                completed = subprocess.run(
+                    command,
+                    cwd=run_dir,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=False,
+                    env=os.environ.copy(),
+                )
+            if completed.returncode != 0:
+                print(f"[ERROR] NVE run failed for dt={dt:g} ps; tail of {log_file}:", file=sys.stderr)
+                print(tail(log_file), file=sys.stderr)
+                return 3
+            if not energy_csv.is_file():
+                raise RuntimeError(f"Expected energy log was not produced: {energy_csv}")
 
         times, energies = read_energy_csv(energy_csv)
         metrics = analyze_energy_series(times, energies)
+        duration_tol = max(1.0e-10, 1.0e-8 * max(1.0, actual_duration))
+        if abs(float(metrics["duration_ps"]) - actual_duration) > duration_tol:
+            raise RuntimeError(
+                f"Existing NVE series for dt={dt:g} has duration {metrics['duration_ps']:.17g} ps; "
+                f"expected {actual_duration:.17g} ps"
+            )
+        sample_dt = np.diff(times)
+        if sample_dt.size and not np.allclose(sample_dt, dt, rtol=1.0e-8, atol=1.0e-12):
+            raise RuntimeError(
+                f"Existing NVE series for dt={dt:g} is not sampled every integration step"
+            )
         if (
             args.diagnostic_only
             and args.local_times_ps
