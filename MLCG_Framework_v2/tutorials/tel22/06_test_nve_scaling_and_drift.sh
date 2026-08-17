@@ -52,12 +52,12 @@ Environment overrides:
 USAGE
 }
 
-MODE_ARGS=()
+MODE="normal"
 case "${1:-}" in
     "") ;;
-    --dry-run) MODE_ARGS+=(--dry-run); shift ;;
-    --overwrite) MODE_ARGS+=(--overwrite); shift ;;
-    --resume) MODE_ARGS+=(--reuse-existing); shift ;;
+    --dry-run) MODE="dry-run"; shift ;;
+    --overwrite) MODE="overwrite"; shift ;;
+    --resume) MODE="resume"; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "[ERROR] Unknown option: $1" >&2; usage >&2; exit 2 ;;
 esac
@@ -98,27 +98,34 @@ drift gate       : relative block-mean drift <= ${NVE_MAX_RELATIVE_DRIFT}
 output           : ${NVE_OUTPUT_DIR}
 EOF_PLAN
 
-python3 "${CERTIFIER}" \
-    --pypresso "${PYPRESSO}" \
-    --model tel22_model.pt \
-    --config tel22_training_config.json \
-    --priors cg_priors.json \
-    --rb-info rigid_bodies_info.json \
-    --dataset tel22_dataset.bin \
-    --checkpoint equilibrated.npz \
-    --dts "${DT_ARGS[@]}" \
-    --duration-ps "${NVE_DURATION_PS}" \
-    --device "${NVE_DEVICE}" \
-    --ml-precision "${NVE_ML_PRECISION}" \
-    --neighbor-search "${NVE_NEIGHBOR_SEARCH}" \
-    --output-dir "${NVE_OUTPUT_DIR}" \
-    --slope-min "${NVE_SLOPE_MIN}" \
-    --slope-max "${NVE_SLOPE_MAX}" \
-    --min-r2 "${NVE_MIN_R2}" \
-    --max-relative-drift "${NVE_MAX_RELATIVE_DRIFT}" \
-    "${MODE_ARGS[@]}"
+CERT_CMD=(
+    python3 "${CERTIFIER}"
+    --pypresso "${PYPRESSO}"
+    --model tel22_model.pt
+    --config tel22_training_config.json
+    --priors cg_priors.json
+    --rb-info rigid_bodies_info.json
+    --dataset tel22_dataset.bin
+    --checkpoint equilibrated.npz
+    --dts "${DT_ARGS[@]}"
+    --duration-ps "${NVE_DURATION_PS}"
+    --device "${NVE_DEVICE}"
+    --ml-precision "${NVE_ML_PRECISION}"
+    --neighbor-search "${NVE_NEIGHBOR_SEARCH}"
+    --output-dir "${NVE_OUTPUT_DIR}"
+    --slope-min "${NVE_SLOPE_MIN}"
+    --slope-max "${NVE_SLOPE_MAX}"
+    --min-r2 "${NVE_MIN_R2}"
+    --max-relative-drift "${NVE_MAX_RELATIVE_DRIFT}"
+)
+case "${MODE}" in
+    dry-run) CERT_CMD+=(--dry-run) ;;
+    overwrite) CERT_CMD+=(--overwrite) ;;
+    resume) CERT_CMD+=(--reuse-existing) ;;
+esac
+"${CERT_CMD[@]}"
 
-[[ " ${MODE_ARGS[*]} " == *" --dry-run "* ]] && exit 0
+[[ "${MODE}" == "dry-run" ]] && exit 0
 REPORT="${NVE_OUTPUT_DIR}/nve_certification_report.json"
 [[ -f "${REPORT}" ]] || { echo "[ERROR] Missing report: ${REPORT}" >&2; exit 1; }
 

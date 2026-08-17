@@ -182,35 +182,35 @@ else
 fi
 [[ -s "${PREP_CHECKPOINT}" ]] || { echo "[ERROR] NVT preparation did not produce ${PREP_CHECKPOINT}" >&2; exit 1; }
 
-CERT_MODE=()
+CERT_CMD=(
+    python3 "${CERTIFIER}"
+    --pypresso "${PYPRESSO}"
+    --model "${MODEL}"
+    --disable-ml
+    --config "${CONFIG}"
+    --priors "${PRIORS}"
+    --rb-info "${RB_INFO}"
+    --dataset "${DATASET}"
+    --checkpoint "${PREP_CHECKPOINT}"
+    --require-checkpoint-hamiltonian-mode conservative_classical_model_provenance_ml_disabled
+    --require-checkpoint-source "${SOURCE_CHECKPOINT}"
+    --dts "${DT_ARGS[@]}"
+    --duration-ps "${NVE_DURATION_PS}"
+    --device "${NVE_DEVICE}"
+    --ml-precision "${NVE_ML_PRECISION}"
+    --neighbor-search "${NVE_NEIGHBOR_SEARCH}"
+    --output-dir "${NVE_OUTPUT_DIR}"
+    --slope-min "${NVE_SLOPE_MIN}"
+    --slope-max "${NVE_SLOPE_MAX}"
+    --min-r2 "${NVE_MIN_R2}"
+    --max-relative-drift "${NVE_MAX_RELATIVE_DRIFT}"
+)
 if [[ "${MODE}" == "resume" ]]; then
-    CERT_MODE+=(--reuse-existing)
+    CERT_CMD+=(--reuse-existing)
 elif [[ "${MODE}" == "overwrite" ]]; then
-    CERT_MODE+=(--overwrite)
+    CERT_CMD+=(--overwrite)
 fi
-
-python3 "${CERTIFIER}" \
-    --pypresso "${PYPRESSO}" \
-    --model "${MODEL}" \
-    --disable-ml \
-    --config "${CONFIG}" \
-    --priors "${PRIORS}" \
-    --rb-info "${RB_INFO}" \
-    --dataset "${DATASET}" \
-    --checkpoint "${PREP_CHECKPOINT}" \
-    --require-checkpoint-hamiltonian-mode conservative_classical_model_provenance_ml_disabled \
-    --require-checkpoint-source "${SOURCE_CHECKPOINT}" \
-    --dts "${DT_ARGS[@]}" \
-    --duration-ps "${NVE_DURATION_PS}" \
-    --device "${NVE_DEVICE}" \
-    --ml-precision "${NVE_ML_PRECISION}" \
-    --neighbor-search "${NVE_NEIGHBOR_SEARCH}" \
-    --output-dir "${NVE_OUTPUT_DIR}" \
-    --slope-min "${NVE_SLOPE_MIN}" \
-    --slope-max "${NVE_SLOPE_MAX}" \
-    --min-r2 "${NVE_MIN_R2}" \
-    --max-relative-drift "${NVE_MAX_RELATIVE_DRIFT}" \
-    "${CERT_MODE[@]}"
+"${CERT_CMD[@]}"
 
 REPORT="${NVE_OUTPUT_DIR}/nve_certification_report.json"
 [[ -f "${REPORT}" ]] || { echo "[ERROR] Missing report: ${REPORT}" >&2; exit 1; }
