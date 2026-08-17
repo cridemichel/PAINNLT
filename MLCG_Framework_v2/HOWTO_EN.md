@@ -1,10 +1,9 @@
 # MLCG Framework v2 — Complete Technical Guide
 
-> Documented state: **14 August 2026**.
+> Documented state: **17 August 2026**.
 > This guide describes the current framework configuration, including the recent fixes for:
 > reversible switched non-bonded Morse interactions (pair-specific and type-pair) in ESPResSo, manifest validation tolerant to harmless
-> `float32` round trips, ML-only dummy neighbor-list interactions, and NVE certification
-> based on `sigma_E = std(E)` with a fixed physical duration and energy sampled every step.
+> `float32` round trips, ML-only dummy neighbor-list interactions, conservative IBI conversion, **optional regularized angular IBI**, and post-promotion NVE certification in which `sigma_E = std(E)` is again a gating `O(dt^2)` observable.
 
 ---
 
@@ -840,7 +839,7 @@ expected order even there calls for Hamiltonian-component diagnostics rather
 than relaxed certification thresholds.
 
 
-#### 7.6.6.4 Final composite conservative IBI-only certification
+#### 7.6.6.4 Historical step-26 composite conservative IBI-only certification
 
 After steps `22`, `23`, and `25`, assemble the final verdict without rerunning
 dynamics:
@@ -860,11 +859,12 @@ The final gate requires all of the following simultaneously:
   velocity, orientation, and `omega_body`.
 
 By default every state metric must satisfy `1.7 <= median p <= 2.3` and
-`median R2 >= 0.95`. The historical step-23 `sigma_E ~ dt^p` fit remains in the
-final report with its original PASS/FAIL status, but is marked
-`diagnostic_only` in the composite verdict. It is not rewritten and it is not
-the gating estimate of the numerical order; that claim comes directly from the
-Richardson trajectory differences.
+`median R2 >= 0.95`. In the **historical step-26** composite, the step-23
+`sigma_E ~ dt^p` fit remained `diagnostic_only`. That was useful for separating
+trajectory order from the energy-scaling anomaly, but it is **not the current
+final production criterion**: steps 27--34 localized IBI-angle stiffness, and
+the post-promotion step-34 certification again requires `sigma_E = O(dt^2)` in
+addition to Richardson state convergence.
 
 Output:
 
@@ -875,6 +875,130 @@ nve_final_certification_conservative_ibi_only/
 
 A PASS certifies only `WCA + Morse + bonded conservative IBI` with PaiNN
 disabled. An ML-active Hamiltonian requires a separate certification.
+
+
+### 7.6.7 Regularized angular IBI: supported option, not a universal default
+
+For IBI angles that have already been converted to `type="conservative_spline"`,
+the framework supports an optional regularization path. This is an explicit
+post-IBI prior transformation: **it is not an automatic `run_ibi_loop.py`
+flag**, it is not a different integrator, and it does not relax any NVE
+certification requirement.
+
+The numerical motivation is that the IBI update
+
+\[
+\Delta U(\theta)=\alpha k_B T\ln\frac{P_{\mathrm{sim}}(\theta)}
+                                      {P_{\mathrm{target}}(	heta)}
+\]
+
+can absorb small short-wavelength components from finite sampling or marginal
+representability. A tiny energy perturbation on a short angular scale can create
+a large `U''(theta)` and therefore artificially fast angular modes. Raw IBI is
+still usable with a sufficiently small timestep; regularization is an optional
+way to recover a wider clean timestep range while retaining the target
+structure.
+
+The implementation is `ibi/generate_angle_smoothing_candidate.py`. For each
+angle table it:
+
+1. analytically removes the configured quadratic endpoint wall;
+2. Gaussian-smooths only the de-walled `U_body(theta)`;
+3. restores the same wall and barrier;
+4. constructs a C2 `CubicSpline` for the regularized energy;
+5. exports energy and nodal derivatives into the same conservative Hermite
+   runtime representation.
+
+Bonds and dihedrals are not smoothed by this command. ESPResSo still evaluates
+energy and force from the same Hermite polynomial.
+
+Generic example:
+
+```bash
+python3 ibi/generate_angle_smoothing_candidate.py \
+  --source-priors ibi_conservative/cg_priors.json \
+  --ibi-config ibi_settings.json \
+  --body-sigma-rad 0.0075 \
+  --output-dir ibi_angle_candidate \
+  --dry-run
+
+python3 ibi/generate_angle_smoothing_candidate.py \
+  --source-priors ibi_conservative/cg_priors.json \
+  --ibi-config ibi_settings.json \
+  --body-sigma-rad 0.0075 \
+  --output-dir ibi_angle_candidate \
+  --overwrite
+```
+
+The output is deliberately tagged `validated=false` and never modifies the
+source priors. `body_sigma_rad` is system-specific: `0.0075 rad` is validated
+for the current TEL22 model, not a transferable default.
+
+Candidate selection must combine at least:
+
+- structural angle/bond distributions and L1 deltas versus the unregularized
+  prior;
+- occupied `P95/P99/max |U''|` rather than table extrema alone;
+- a **contiguous** `sigma_E/dt^2` plateau plus `sigma_E ~ dt^p`, rather than
+  ranking solely by a global exponent close to 2;
+- independent replicas and a longer structural validation before promotion.
+
+Regularizing a prior changes the residual decomposition. Any residual dataset or
+PaiNN model built before regularization becomes **stale for ML-active use** and
+must be rebuilt/retrained before the network can be enabled again.
+
+### 7.6.8 TEL22 validated `smooth_0p0075` path and post-promotion certification
+
+For TEL22, diagnostics 29--32 localized the historical timestep restriction to
+the IBI angles: the original harmonic-angle control retained quadratic scaling,
+whereas the IBI-angle branches exhibited a much larger occupied curvature. The
+local sweep selected `smooth_0p0075_wall_current` as the best structural/NVE
+compromise.
+
+Step 33 validates one candidate without further tuning:
+
+```bash
+cd tutorials/tel22_IBI
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./33_validate_final_ibi_angle_candidate.sh --overwrite
+```
+
+Validated TEL22 result:
+
+```text
+common sigma_E exponent p = 1.947046
+within-replica R2          = 0.984844
+full clean range           = 3/3 replicas through dt=0.005 ps
+Delta weighted angle L1    = +0.009561
+Delta weighted bond L1     = -0.019844
+angle P99 |U''| reduction  = 2.416x
+```
+
+Only after that PASS does step 34 transactionally promote the candidate into the
+production priors, preserve the previous prior set as a backup, and recertify the
+**production path**:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./34_promote_and_certify_ibi_angle_prior.sh --promote
+```
+
+The current certification simultaneously requires finite-difference/parity,
+preflight, energy scaling, and Richardson convergence. `sigma_E` is gating
+again:
+
+```text
+fresh production sigma_E: p=1.877261, R2=0.984412,
+                          C2 spread=1.487, max dt=0.005 ps, PASS
+Richardson median p:      position=2.004, velocity=2.215,
+                          orientation=2.035, omega_body=2.019, PASS
+FINAL:                    pass=True, ML_active=False
+```
+
+The final certificate therefore covers only
+`WCA + Morse + bonded conservative regularized IBI` with PaiNN disabled. The
+pre-promotion residual dataset and PaiNN model are stale and are not part of the
+certified Hamiltonian.
 
 ---
 
@@ -3199,10 +3323,31 @@ Position differences use the minimum-image convention and quaternion-angle
 errors are invariant under `q -> -q`.
 
 Step 25 remains diagnostic and never rewrites the historical step-23 result.
-Its report is, however, consumed by step 26 together with kernel/parity,
-provenance, and drift to build the final composite verdict. Its purpose is to
-distinguish an integrator-order problem from a `sigma_E` measure that is
-dominated by shadow-energy phase/amplitude effects.
+Its report is consumed by the historical step-26 composite together with
+kernel/parity, provenance, and drift. Its purpose is to separate trajectory
+order from an energy-scaling anomaly. A Richardson PASS does **not** justify
+ignoring a reproducibly non-quadratic `sigma_E(dt)` law; localize that
+discrepancy before certifying the prior.
+
+## 28.12 Localize non-quadratic `sigma_E(dt)` in conservative IBI
+
+For conservative IBI, use tutorial steps 27--29 to distinguish spline/kernel
+issues from a changed bonded frequency scale. If the original analytic-angle
+control retains `sigma_E ~ dt^2`, bond-only IBI remains acceptable, and the
+angle-only/full-IBI branches lose the clean timestep range together with a large
+increase in occupied `|U''|`, treat angle stiffness as the primary numerical
+restriction.
+
+At that point there are two valid choices:
+
+- keep the raw conservative IBI angle and use a timestep inside its demonstrated
+  second-order regime; or
+- use the optional regularized-angle path in section 7.6.7, validate one
+  candidate structurally and across NVE replicas, promote it explicitly, and
+  require the fresh step-34 `sigma_E = O(dt^2)` gate on the production path.
+
+Do not use the historical step-26 non-gating treatment of `sigma_E` as a final
+production certification.
 
 ---
 

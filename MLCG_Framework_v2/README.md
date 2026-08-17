@@ -17,8 +17,16 @@ JSON/files rather than being compiled into the code.
 2. `ibi/build_dbi_priors.py` and `ibi/run_ibi_loop.py` (optional)
    - build site-addressable bonded distance/angle/dihedral DBI tables;
    - iterate selected bonded groups in priors-only NVT simulations;
-   - write self-contained final tabulated priors.
-   After IBI, rebuild the force-matching dataset with the final priors before training.
+   - write self-contained final tabulated priors;
+   - optionally convert bond/angle IBI priors to the single-source conservative
+     Hermite representation;
+   - optionally regularize **conservative angular IBI** by smoothing only the
+     de-walled angle-potential body, then re-adding the unchanged endpoint wall
+     and exporting C2 nodal derivatives.
+   Regularization candidates are always unvalidated artifacts: they must pass
+   matched structural and NVE timestep-scaling validation before promotion.
+   After any final prior change, rebuild the force-matching dataset before
+   training or re-enabling a residual ML model.
 3. `training/train_painn.cpp`
    - trains the canonical PaiNN residual potential with LibTorch;
    - configuration is supplied by JSON;
@@ -30,7 +38,9 @@ JSON/files rather than being compiled into the code.
 `tutorials/tel22/` is only a reference example. Nothing under `preprocessing/`,
 `training/`, `simulation/` or `tests/` depends on that tutorial.
 
-See `HOWTO.md` or `HOWTO_EN.md` for usage.
+See `HOWTO.md` or `HOWTO_EN.md` for usage. The TEL22 IBI tutorial documents
+the validated regularized-angle path (`smooth_0p0075`) as a system-specific
+example; the smoothing bandwidth is **not** a universal default.
 
 ## ESPResSo extension
 
