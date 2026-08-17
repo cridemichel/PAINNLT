@@ -56,6 +56,41 @@ def test_move_plan_moves_diagnostics_but_not_gromacs():
         assert (tutorial / "md.trr").read_bytes() == b"gromacs-trajectory"
 
 
+def test_stale_zero_byte_script_placeholder_is_recoverable():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tutorial = Path(tmpdir) / "tel22"
+        scripts = tutorial / "diagnostics" / "scripts"
+        scripts.mkdir(parents=True)
+        src = tutorial / "06_certify_nve.sh"
+        dst = scripts / "06_certify_nve.sh"
+        src.write_text("")
+        dst.write_text("#!/bin/sh\necho relocated\n")
+        plan = [(src, dst, "diagnostic-script")]
+        layout.preflight(plan)
+        records = layout.apply_plan(plan, True)
+        assert not src.exists()
+        assert dst.read_text() == "#!/bin/sh\necho relocated\n"
+        assert records[0]["status"] == "removed-stale-placeholder"
+
+
+def test_nonempty_script_collision_remains_fail_closed():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tutorial = Path(tmpdir) / "tel22"
+        scripts = tutorial / "diagnostics" / "scripts"
+        scripts.mkdir(parents=True)
+        src = tutorial / "06_certify_nve.sh"
+        dst = scripts / "06_certify_nve.sh"
+        src.write_text("#!/bin/sh\necho source\n")
+        dst.write_text("#!/bin/sh\necho destination\n")
+        plan = [(src, dst, "diagnostic-script")]
+        try:
+            layout.preflight(plan)
+        except RuntimeError as exc:
+            assert "destination collision" in str(exc)
+        else:
+            raise AssertionError("non-empty diagnostic-script collision must fail closed")
+
+
 def test_model_config_routes_nonpipeline_outputs_below_diagnostics():
     cfg = json.loads((ROOT / "tutorials" / ("tel" + "22_IBI") / "model_dependent_workflow_config.json").read_text())
     sec = cfg["sections"]
