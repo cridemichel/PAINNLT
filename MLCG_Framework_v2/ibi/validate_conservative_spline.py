@@ -46,7 +46,7 @@ def validate(conversion_report: Path, *, fd_rtol: float = 2.0e-6, fd_atol: float
     record_by_output = {r["output_file"]: r for r in report["records"]}
     fd_checks = []
     seen = set()
-    for json_key, kind in (("bonds", "bond"), ("angles", "angle")):
+    for json_key, kind in (("bonds", "bond"), ("angles", "angle"), ("dihedrals", "dihedral")):
         for idx, entry in enumerate(priors.get(json_key, [])):
             if str(entry.get("type", "")).lower() != "conservative_spline":
                 continue

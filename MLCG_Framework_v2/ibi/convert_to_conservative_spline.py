@@ -7,9 +7,10 @@ A shape-preserving PCHIP is fitted to ``U(q)`` and exported as nodal
 same cubic Hermite segments, so force is the exact analytical derivative of
 that energy representation.
 
-This tool is system-agnostic.  It converts bond and angle tables and fails
-closed on tabulated dihedrals until their singular endpoint convention is
-certified separately.
+This tool is system-agnostic.  It converts bond, angle and periodic dihedral
+tables.  Dihedral U(phi) is represented by a periodic cubic spline; runtime
+uses the analytical Cartesian gradient of ESPResSo's signed dihedral angle
+with that same dU/dphi.  Legacy force factors are used only for fidelity metrics.
 """
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from scipy.interpolate import PchipInterpolator
+from scipy.interpolate import CubicSpline, PchipInterpolator
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "preprocessing"))
@@ -55,11 +56,24 @@ def _safe_stem(path: Path, kind: str) -> str:
     return f"{kind}_conservative_{stem}.dat"
 
 
-def _force_from_derivative(kind: str, derivative: np.ndarray) -> np.ndarray:
+def _force_from_derivative(kind: str, grid: np.ndarray, derivative: np.ndarray) -> np.ndarray:
+    derivative = np.asarray(derivative, dtype=float)
     if kind == "bond":
-        return -np.asarray(derivative, dtype=float)
+        return -derivative
     if kind == "angle":
-        return np.asarray(derivative, dtype=float)
+        return derivative
+    if kind == "dihedral":
+        sin_phi = np.sin(np.asarray(grid, dtype=float))
+        factor = np.zeros_like(derivative)
+        regular = np.abs(sin_phi) > 1.0e-6
+        factor[regular] = -derivative[regular] / sin_phi[regular]
+        good = np.flatnonzero(regular)
+        if good.size == 0:
+            raise ValueError("Dihedral grid has no regular points for force-factor comparison")
+        for idx in np.flatnonzero(~regular):
+            nearest = good[np.argmin(np.abs(good - idx))]
+            factor[idx] = factor[nearest]
+        return factor
     raise ValueError(f"Unsupported conservative conversion kind: {kind}")
 
 
@@ -73,7 +87,7 @@ def _metrics(source, spline: ConservativeSplinePrior, *, dense_per_interval: int
     new_du = np.empty_like(q)
     for i, value in enumerate(q):
         new_u[i], new_du[i] = conservative_spline_value(spline, float(value))
-    new_f = _force_from_derivative(source.kind, new_du)
+    new_f = _force_from_derivative(source.kind, q, new_du)
     du = new_u - old_u
     df = new_f - old_f
     force_scale = max(float(np.sqrt(np.mean(old_f * old_f))), 1.0e-12)
@@ -110,23 +124,30 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
         for idx, entry in enumerate(converted.get(json_key, [])):
             if str(entry.get("type", "")).lower() != "tabulated":
                 continue
-            if kind == "dihedral":
-                raise ValueError(
-                    "Conservative spline conversion currently certifies bond+angle only; "
-                    f"found tabulated dihedral {json_key}[{idx}]. "
-                    "Do not silently convert torsions before singular-endpoint runtime parity is certified."
-                )
             source_entry = source_data[json_key][idx]
             source = load_tabulated_prior(source_entry, kind=kind, priors_path=priors_path)
             cache_key = (kind, str(source.path.resolve()))
             if cache_key not in table_cache:
-                pchip = PchipInterpolator(source.x, source.energy, extrapolate=False)
-                derivative = np.asarray(pchip(source.x, 1), dtype=np.float64)
+                if kind == "dihedral":
+                    periodic_energy = np.asarray(source.energy, dtype=np.float64).copy()
+                    scale = max(1.0, abs(float(periodic_energy[0])), abs(float(periodic_energy[-1])))
+                    if abs(float(periodic_energy[-1] - periodic_energy[0])) > 1.0e-8 * scale:
+                        raise ValueError(
+                            f"Dihedral energy is not periodic at 0/2*pi: {source.path}; "
+                            f"dU={periodic_energy[-1] - periodic_energy[0]:.6g}"
+                        )
+                    periodic_energy[-1] = periodic_energy[0]
+                    interpolator = CubicSpline(source.x, periodic_energy, bc_type="periodic")
+                    source_energy = periodic_energy
+                else:
+                    interpolator = PchipInterpolator(source.x, source.energy, extrapolate=False)
+                    source_energy = source.energy
+                derivative = np.asarray(interpolator(source.x, 1), dtype=np.float64)
                 out_name = _safe_stem(source.path, kind)
                 out_path = output_dir / out_name
-                save_conservative_spline(out_path, source.x, source.energy, derivative)
+                save_conservative_spline(out_path, source.x, source_energy, derivative)
                 spline = ConservativeSplinePrior(
-                    x=source.x.copy(), energy=source.energy.copy(), derivative=derivative,
+                    x=source.x.copy(), energy=np.asarray(source_energy).copy(), derivative=derivative,
                     minimum=source.minimum, maximum=source.maximum, kind=kind, path=out_path,
                 )
                 rec = {
@@ -153,7 +174,7 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
             entry["source_tabulated_sha256"] = rec["source_sha256"]
 
     if not records:
-        raise ValueError("No tabulated bond/angle priors were found for conservative conversion")
+        raise ValueError("No tabulated bond/angle/dihedral priors were found for conservative conversion")
 
     output_priors = output_dir / "cg_priors.json"
     output_priors.write_text(json.dumps(converted, indent=2, sort_keys=False) + "\n")

@@ -9,11 +9,12 @@ from framework_utils import resolve_referenced_path
 
 
 def create_conservative_spline_interaction(espressomd_interactions, entry, *, kind: str, priors_path):
-    if kind not in {"bond", "angle"}:
+    if kind not in {"bond", "angle", "dihedral"}:
         raise ValueError(f"Unsupported conservative spline runtime kind: {kind!r}")
     class_name = {
         "bond": "ConservativeSplineDistance",
         "angle": "ConservativeSplineAngle",
+        "dihedral": "ConservativeSplineDihedral",
     }[kind]
     cls = getattr(espressomd_interactions, class_name, None)
     if cls is None:
@@ -53,6 +54,11 @@ def create_conservative_spline_interaction(espressomd_interactions, entry, *, ki
     if kind == "angle":
         if not np.isclose(minimum, 0.0, atol=1.0e-12) or not np.isclose(maximum, np.pi, atol=1.0e-10):
             raise ValueError(f"Conservative angle spline must span exactly 0..pi: {path}")
+    elif kind == "dihedral":
+        if not np.isclose(minimum, 0.0, atol=1.0e-12) or not np.isclose(maximum, 2.0 * np.pi, atol=1.0e-10):
+            raise ValueError(f"Conservative dihedral spline must span exactly 0..2*pi: {path}")
+        if not np.isclose(energy[0], energy[-1], rtol=1.0e-10, atol=1.0e-10) or not np.isclose(derivative[0], derivative[-1], rtol=1.0e-10, atol=1.0e-10):
+            raise ValueError(f"Conservative dihedral spline endpoints must be periodic in U and dU/dphi: {path}")
 
     return cls(
         min=minimum,

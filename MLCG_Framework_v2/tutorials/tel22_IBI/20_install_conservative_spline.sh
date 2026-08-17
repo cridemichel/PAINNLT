@@ -18,10 +18,10 @@ cmake --build "${ESPRESSO_ROOT}/build" -j "${JOBS}"
 
 "${ESPRESSO_ROOT}/build/pypresso" - <<'PY'
 import espressomd.interactions as ia
-for name in ("ConservativeSplineDistance", "ConservativeSplineAngle"):
+for name in ("ConservativeSplineDistance", "ConservativeSplineAngle", "ConservativeSplineDihedral"):
     if not hasattr(ia, name):
         raise SystemExit(f"missing espressomd.interactions.{name} after rebuild")
-print("[PASS] ESPResSo exposes ConservativeSplineDistance and ConservativeSplineAngle.")
+print("[PASS] ESPResSo exposes ConservativeSplineDistance, ConservativeSplineAngle, and ConservativeSplineDihedral.")
 PY
 
 "${ESPRESSO_ROOT}/build/pypresso" \

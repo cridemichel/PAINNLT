@@ -6,6 +6,7 @@ from geometry_utils import diagonalize_inertia_tensor, minimum_image_distance_ma
 from conservative_spline import (
     conservative_angle_forces,
     conservative_distance_forces,
+    conservative_dihedral_forces,
     load_conservative_spline,
 )
 from prior_kernels import (
@@ -1387,16 +1388,22 @@ conservative_angle_tables = {
     for idx, a in enumerate(derived_priors.get("angles", []))
     if str(a.get("type", "harmonic")).lower() == "conservative_spline"
 }
+conservative_dihedral_tables = {
+    idx: load_conservative_spline(d, kind="dihedral", priors_path=table_reference_path)
+    for idx, d in enumerate(derived_priors.get("dihedrals", []))
+    if str(d.get("type", "cosine")).lower() == "conservative_spline"
+}
 if tabulated_bond_tables or tabulated_angle_tables or tabulated_dihedral_tables:
     print(
         "[INFO] Tabulated bonded subtraction: "
         f"{len(tabulated_bond_tables)} bonds, {len(tabulated_angle_tables)} angles, "
         f"{len(tabulated_dihedral_tables)} dihedrals"
     )
-if conservative_bond_tables or conservative_angle_tables:
+if conservative_bond_tables or conservative_angle_tables or conservative_dihedral_tables:
     print(
         "[INFO] Conservative spline bonded subtraction: "
-        f"{len(conservative_bond_tables)} bonds, {len(conservative_angle_tables)} angles"
+        f"{len(conservative_bond_tables)} bonds, {len(conservative_angle_tables)} angles, "
+        f"{len(conservative_dihedral_tables)} dihedrals"
     )
 
 # Diagnostics on physical frames only.  These are intentionally collected
@@ -1905,6 +1912,11 @@ with open(args.output, "wb") as f:
                 f_i, f_j, f_k, f_l = tabulated_dihedral_forces(
                     pos_i, pos_j, pos_k, pos_l, box_dim,
                     tabulated_dihedral_tables[d_idx],
+                )
+            elif d_type == "conservative_spline":
+                f_i, f_j, f_k, f_l = conservative_dihedral_forces(
+                    pos_i, pos_j, pos_k, pos_l, box_dim,
+                    conservative_dihedral_tables[d_idx],
                 )
             elif d_type == "cosine":
                 f_i, f_j, f_k, f_l = dihedral_forces(

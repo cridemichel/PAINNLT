@@ -18,7 +18,7 @@ import numpy as np
 
 
 SCHEMA = "pchip_hermite_v1"
-SUPPORTED_KINDS = {"bond", "angle"}
+SUPPORTED_KINDS = {"bond", "angle", "dihedral"}
 
 
 @dataclass(frozen=True)
@@ -51,7 +51,7 @@ def load_conservative_spline(
     if kind not in SUPPORTED_KINDS:
         raise ValueError(
             f"Conservative spline kind {kind!r} is not supported by schema {SCHEMA}; "
-            "current certified scope is bond+angle"
+            "current certified scope is bond+angle+dihedral"
         )
     if str(prior.get("spline_schema", SCHEMA)) != SCHEMA:
         raise ValueError(f"Unsupported conservative spline schema: {prior.get('spline_schema')!r}")
@@ -89,6 +89,13 @@ def load_conservative_spline(
     if kind == "angle":
         if not np.isclose(minimum, 0.0, atol=1.0e-12) or not np.isclose(maximum, np.pi, atol=1.0e-10):
             raise ValueError("Conservative angle splines must span exactly 0..pi")
+    elif kind == "dihedral":
+        if not np.isclose(minimum, 0.0, atol=1.0e-12) or not np.isclose(maximum, 2.0 * np.pi, atol=1.0e-10):
+            raise ValueError("Conservative dihedral splines must span exactly 0..2*pi")
+        escale = max(1.0, abs(float(energy[0])), abs(float(energy[-1])))
+        dscale = max(1.0, abs(float(derivative[0])), abs(float(derivative[-1])))
+        if abs(float(energy[0] - energy[-1])) > 1.0e-10 * escale or abs(float(derivative[0] - derivative[-1])) > 1.0e-10 * dscale:
+            raise ValueError("Conservative dihedral spline must have periodic U and dU/dphi endpoints")
 
     return ConservativeSplinePrior(x, energy, derivative, minimum, maximum, kind, path)
 
@@ -120,6 +127,9 @@ def conservative_spline_value(
     q = float(coordinate)
     if table.kind == "angle":
         q = float(np.clip(q, table.minimum, table.maximum))
+    elif table.kind == "dihedral":
+        period = table.maximum - table.minimum
+        q = table.minimum + ((q - table.minimum) % period)
 
     # Tangent continuation below the distance grid is exactly conservative and
     # avoids the unrelated quadratic energy/linear-force extrapolation of the
@@ -204,6 +214,38 @@ def conservative_angle_forces(
     force_k = (gradient / sin_theta) * grad_k_cos
     force_j = -(force_i + force_k)
     return force_i, force_j, force_k
+
+
+def conservative_dihedral_forces(
+    pos_i: np.ndarray,
+    pos_j: np.ndarray,
+    pos_k: np.ndarray,
+    pos_l: np.ndarray,
+    box_dim: np.ndarray,
+    table: ConservativeSplinePrior,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return conservative dihedral forces using ESPResSo's torsion geometry."""
+    from prior_kernels import espresso_dihedral_geometry
+
+    geom = espresso_dihedral_geometry(pos_i, pos_j, pos_k, pos_l, box_dim)
+    if geom is None:
+        zeros = np.zeros(3, dtype=float)
+        return zeros.copy(), zeros.copy(), zeros.copy(), zeros.copy()
+    phi, _cos_phi, v12, v23, v34, n12, l12, n23, l23 = geom
+    _energy, derivative = conservative_spline_value(table, phi)
+    bnorm = float(np.linalg.norm(v23))
+    b2 = bnorm * bnorm
+    grad_i = -(bnorm / l12) * n12
+    grad_l = (bnorm / l23) * n23
+    a = float(np.dot(v12, v23) / b2)
+    c = float(np.dot(v34, v23) / b2)
+    grad_j = -(1.0 + a) * grad_i + c * grad_l
+    grad_k = a * grad_i - (1.0 + c) * grad_l
+    force_i = -derivative * grad_i
+    force_j = -derivative * grad_j
+    force_k = -derivative * grad_k
+    force_l = -derivative * grad_l
+    return force_i, force_j, force_k, force_l
 
 
 def save_conservative_spline(path: str | Path, x, energy, derivative) -> None:

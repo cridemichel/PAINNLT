@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ESPResSo runtime/preprocessing parity for conservative bond/angle splines.
+"""ESPResSo runtime/preprocessing parity for conservative bond/angle/dihedral splines.
 
 This diagnostic must be run with pypresso after installing the MLCG conservative
 spline bonded interactions.  It probes every unique conservative spline table
@@ -25,6 +25,7 @@ sys.path.insert(0, str(ROOT / "simulation"))
 from conservative_spline import (  # noqa: E402
     conservative_angle_forces,
     conservative_distance_forces,
+    conservative_dihedral_forces,
     conservative_spline_value,
     load_conservative_spline,
 )
@@ -83,7 +84,7 @@ def reset(system, positions):
 def unique_entries(priors_path: Path):
     data = json.loads(priors_path.read_text())
     seen = set()
-    for json_key, kind in (("bonds", "bond"), ("angles", "angle")):
+    for json_key, kind in (("bonds", "bond"), ("angles", "angle"), ("dihedrals", "dihedral")):
         for idx, entry in enumerate(data.get(json_key, [])):
             if str(entry.get("type", "")).lower() != "conservative_spline":
                 continue
@@ -149,6 +150,39 @@ def probe_angle(system, priors_path: Path, entry, table):
     return max_df, max_de
 
 
+def probe_dihedral(system, priors_path: Path, entry, table):
+    max_df = 0.0
+    max_de = 0.0
+    center = np.asarray([10.0, 10.0, 10.0])
+    bases = [
+        np.asarray([[0.2, 0.4, 0.1], [1.1, 0.9, 0.6], [2.0, 1.5, 1.2], [2.8, 2.2, 0.5]]),
+        np.asarray([[0.0, 0.1, 0.3], [1.0, 0.4, 0.2], [1.8, 1.2, 0.8], [2.7, 1.0, 1.7]]),
+        np.asarray([[0.1, 0.0, 0.2], [0.9, 0.8, 0.5], [1.9, 1.0, 1.3], [2.5, 1.9, 0.4]]),
+    ]
+    from prior_kernels import espresso_dihedral_geometry
+    for offsets in bases:
+        pos = center + offsets
+        geom = espresso_dihedral_geometry(*pos, np.asarray(system.box_l))
+        if geom is None or abs(np.sin(geom[0])) < 1.0e-5:
+            raise RuntimeError("Internal dihedral parity probe is singular")
+        particles = reset(system, pos)
+        ia = create_conservative_spline_interaction(
+            espressomd.interactions, entry, kind="dihedral", priors_path=priors_path
+        )
+        system.bonded_inter.add(ia)
+        particles[1].add_bond((ia, particles[0].id, particles[2].id, particles[3].id))
+        system.integrator.run(0, recalc_forces=True)
+        actual_f = np.asarray([particle.f for particle in particles])
+        expected_f = np.vstack(
+            conservative_dihedral_forces(*pos, np.asarray(system.box_l), table)
+        )
+        expected_e = conservative_spline_value(table, float(geom[0]))[0]
+        actual_e = float(system.analysis.energy()["bonded"])
+        max_df = max(max_df, float(np.max(np.abs(actual_f - expected_f))))
+        max_de = max(max_de, abs(actual_e - expected_e))
+    return max_df, max_de
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--priors", required=True, type=Path)
@@ -160,7 +194,7 @@ def main():
     priors_path = args.priors.expanduser().resolve()
     if not priors_path.is_file():
         raise FileNotFoundError(priors_path)
-    for name in ("ConservativeSplineDistance", "ConservativeSplineAngle"):
+    for name in ("ConservativeSplineDistance", "ConservativeSplineAngle", "ConservativeSplineDihedral"):
         if not hasattr(espressomd.interactions, name):
             raise RuntimeError(
                 f"Missing espressomd.interactions.{name}; install/rebuild the conservative spline plugin first"
@@ -168,7 +202,7 @@ def main():
 
     entries = list(unique_entries(priors_path))
     if not entries:
-        raise ValueError(f"No conservative bond/angle spline entries found in {priors_path}")
+        raise ValueError(f"No conservative bond/angle/dihedral spline entries found in {priors_path}")
 
     system = system_singleton()
     results = []
@@ -178,8 +212,10 @@ def main():
         table = load_conservative_spline(entry, kind=kind, priors_path=priors_path)
         if kind == "bond":
             df, de = probe_bond(system, priors_path, entry, table)
-        else:
+        elif kind == "angle":
             df, de = probe_angle(system, priors_path, entry, table)
+        else:
+            df, de = probe_dihedral(system, priors_path, entry, table)
         results.append({
             "kind": kind,
             "file": str(entry["file"]),

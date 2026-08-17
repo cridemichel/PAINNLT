@@ -8,6 +8,7 @@
 #pragma once
 
 #include "angle_common.hpp"
+#include "dihedral.hpp"
 
 #include <utils/Vector.hpp>
 
@@ -26,14 +27,16 @@ struct ConservativeSpline1D {
   double inv_step = 0.0;
   std::vector<double> energy_nodes;
   std::vector<double> derivative_nodes;
+  bool periodic = false;
 
   ConservativeSpline1D() = default;
 
   ConservativeSpline1D(double min, double max,
                        std::vector<double> const &energy,
-                       std::vector<double> const &derivative)
+                       std::vector<double> const &derivative,
+                       bool periodic_input = false)
       : minval(min), maxval(max), energy_nodes(energy),
-        derivative_nodes(derivative) {
+        derivative_nodes(derivative), periodic(periodic_input) {
     if (!(maxval > minval)) {
       throw std::invalid_argument("Conservative spline requires max > min");
     }
@@ -51,14 +54,38 @@ struct ConservativeSpline1D {
         throw std::invalid_argument("Conservative spline derivative contains NaN/Inf");
       }
     }
+    if (periodic) {
+      auto const escale = std::max({1.0, std::abs(energy_nodes.front()),
+                                    std::abs(energy_nodes.back())});
+      auto const dscale = std::max({1.0, std::abs(derivative_nodes.front()),
+                                    std::abs(derivative_nodes.back())});
+      if (std::abs(energy_nodes.front() - energy_nodes.back()) > 1.0e-10 * escale ||
+          std::abs(derivative_nodes.front() - derivative_nodes.back()) > 1.0e-10 * dscale) {
+        throw std::invalid_argument(
+            "Periodic conservative spline requires matching endpoint U and dU/dq");
+      }
+    }
     inv_step = static_cast<double>(energy_nodes.size() - 1) / (maxval - minval);
   }
 
   double cutoff() const { return maxval; }
 
   std::pair<double, double> evaluate(double q) const {
+    if (periodic) {
+      auto const period = maxval - minval;
+      q = minval + std::fmod(q - minval, period);
+      if (q < minval) {
+        q += period;
+      }
+      // maxval is the seam duplicate of minval and is never evaluated as a
+      // separate physical point.  This makes U and dU/dq exactly periodic.
+      if (q >= maxval) {
+        q = minval;
+      }
+    }
+
     // Conservative linear tangent continuation below the first node.
-    if (q < minval) {
+    if (!periodic && q < minval) {
       auto const dq = q - minval;
       return {energy_nodes.front() + derivative_nodes.front() * dq,
               derivative_nodes.front()};
@@ -163,6 +190,77 @@ struct ConservativeSplineAngleBond {
   double energy(Utils::Vector3d const &vec1, Utils::Vector3d const &vec2) const {
     auto const cos_phi = calc_cosine(vec1, vec2, true);
     auto const phi = std::acos(cos_phi);
+    return spline.evaluate(phi).first;
+  }
+};
+
+struct ConservativeSplineDihedralBond {
+  static constexpr int num = 3;
+  ConservativeSpline1D spline;
+
+  ConservativeSplineDihedralBond(double min, double max,
+                                 std::vector<double> const &energy,
+                                 std::vector<double> const &derivative)
+      : spline(min, max, energy, derivative, true) {
+    auto const two_pi = 2.0 * std::acos(-1.0);
+    if (std::abs(min) > 1.0e-12 || std::abs(max - two_pi) > 1.0e-10) {
+      throw std::invalid_argument("ConservativeSplineDihedral requires range 0..2*pi");
+    }
+  }
+
+  double cutoff() const { return 0.0; }
+
+  std::optional<std::tuple<Utils::Vector3d, Utils::Vector3d,
+                           Utils::Vector3d, Utils::Vector3d>>
+  forces(Utils::Vector3d const &v12, Utils::Vector3d const &v23,
+         Utils::Vector3d const &v34) const {
+    Utils::Vector3d v12Xv23, v23Xv34;
+    double l_v12Xv23, l_v23Xv34;
+    double phi, cos_phi;
+    auto const angle_is_undefined = calc_dihedral_angle(
+        v12, v23, v34, v12Xv23, l_v12Xv23, v23Xv34, l_v23Xv34,
+        cos_phi, phi);
+    if (angle_is_undefined) {
+      return {};
+    }
+
+    auto const dU_dphi = spline.evaluate(phi).second;
+
+    // Direct Cartesian gradient of ESPResSo's signed phi.  calc_dihedral_angle
+    // returns normalized plane normals and their pre-normalization lengths.
+    // This form is algebraically equivalent to ESPResSo's traditional
+    // (geometry/sin(phi)) force expression away from planar configurations,
+    // but it has no artificial 0/pi division and therefore remains regular
+    // whenever the two defining planes themselves are well defined.
+    auto const bnorm = v23.norm();
+    auto const b2 = bnorm * bnorm;
+    auto const grad1 = (-bnorm / l_v12Xv23) * v12Xv23;
+    auto const grad4 = (bnorm / l_v23Xv34) * v23Xv34;
+    auto const a = (v12 * v23) / b2;
+    auto const c = (v34 * v23) / b2;
+    auto const grad2 = -(1.0 + a) * grad1 + c * grad4;
+    auto const grad3 = a * grad1 - (1.0 + c) * grad4;
+
+    auto const force1 = -dU_dphi * grad1;
+    auto const force2 = -dU_dphi * grad2;
+    auto const force3 = -dU_dphi * grad3;
+    auto const force4 = -dU_dphi * grad4;
+    // ESPResSo bonded-dihedral return order is p2,p1,p3,p4.
+    return std::make_tuple(force2, force1, force3, force4);
+  }
+
+  std::optional<double> energy(Utils::Vector3d const &v12,
+                               Utils::Vector3d const &v23,
+                               Utils::Vector3d const &v34) const {
+    Utils::Vector3d v12Xv23, v23Xv34;
+    double l_v12Xv23, l_v23Xv34;
+    double phi, cos_phi;
+    auto const angle_is_undefined = calc_dihedral_angle(
+        v12, v23, v34, v12Xv23, l_v12Xv23, v23Xv34, l_v23Xv34,
+        cos_phi, phi);
+    if (angle_is_undefined) {
+      return {};
+    }
     return spline.evaluate(phi).first;
   }
 };

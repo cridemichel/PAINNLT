@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Install MLCG conservative bond/angle spline interactions into ESPResSo 5.0.x.
+"""Install MLCG conservative bond/angle/dihedral spline interactions into ESPResSo 5.0.x.
 
 The installer is idempotent and intentionally patches only the minimal core,
-ScriptInterface and Python dispatch points required for two new bonded types:
-``ConservativeSplineDistance`` and ``ConservativeSplineAngle``.
+ScriptInterface and Python dispatch points required for three new bonded types:
+``ConservativeSplineDistance``, ``ConservativeSplineAngle`` and
+``ConservativeSplineDihedral``.
 """
 from __future__ import annotations
 
@@ -151,27 +152,44 @@ def _dispatch_is_in_function(path: Path, function_name: str, needle: str) -> boo
 
 def _patch_variant(path: Path) -> bool:
     text = _read(path)
-    if "ConservativeSplineDistanceBond" in text:
+    if "ConservativeSplineDihedralBond" in text:
         return False
     match = re.search(r"using Bonded_IA_Parameters\s*=\s*std::variant<.*?>;", text, flags=re.DOTALL)
     if match is None:
         raise RuntimeError(f"Could not locate Bonded_IA_Parameters variant in {path}")
     block = match.group(0)
-    if block.count("VirtualBond") != 1:
-        raise RuntimeError(f"Could not uniquely locate VirtualBond in Bonded_IA_Parameters: {path}")
-    replacement = block.replace(
-        "VirtualBond",
-        "VirtualBond, ConservativeSplineDistanceBond, ConservativeSplineAngleBond",
-        1,
-    )
+    if "ConservativeSplineAngleBond" in block:
+        replacement = block.replace(
+            "ConservativeSplineAngleBond",
+            "ConservativeSplineAngleBond, ConservativeSplineDihedralBond",
+            1,
+        )
+    else:
+        if block.count("VirtualBond") != 1:
+            raise RuntimeError(f"Could not uniquely locate VirtualBond in Bonded_IA_Parameters: {path}")
+        replacement = block.replace(
+            "VirtualBond",
+            "VirtualBond, ConservativeSplineDistanceBond, ConservativeSplineAngleBond, ConservativeSplineDihedralBond",
+            1,
+        )
     path.write_text(text[:match.start()] + replacement + text[match.end():])
     return True
 
 
 def _patch_python_enum(path: Path) -> bool:
     text = _read(path)
-    if "CONSERVATIVE_SPLINE_DISTANCE" in text:
+    if "CONSERVATIVE_SPLINE_DIHEDRAL" in text:
         return False
+    if "CONSERVATIVE_SPLINE_ANGLE" in text:
+        anchor = "    CONSERVATIVE_SPLINE_ANGLE = enum.auto()  # MLCG conservative spline\n"
+        if text.count(anchor) != 1:
+            raise RuntimeError(f"Could not uniquely locate conservative angle enum in {path}")
+        path.write_text(text.replace(
+            anchor,
+            anchor + "    CONSERVATIVE_SPLINE_DIHEDRAL = enum.auto()  # MLCG conservative spline\n",
+            1,
+        ))
+        return True
     anchor = "    VIRTUAL_BOND = enum.auto()\n"
     if text.count(anchor) != 1:
         raise RuntimeError(f"Could not locate BONDED_IA.VIRTUAL_BOND in {path}")
@@ -179,8 +197,33 @@ def _patch_python_enum(path: Path) -> bool:
         anchor
         + "    CONSERVATIVE_SPLINE_DISTANCE = enum.auto()  # MLCG conservative spline\n"
         + "    CONSERVATIVE_SPLINE_ANGLE = enum.auto()  # MLCG conservative spline\n"
+        + "    CONSERVATIVE_SPLINE_DIHEDRAL = enum.auto()  # MLCG conservative spline\n"
     )
     path.write_text(text.replace(anchor, addition, 1))
+    return True
+
+
+def _ensure_registration(path: Path) -> bool:
+    text = _read(path)
+    needle = 'Interactions::ConservativeSplineDihedralBond'
+    if needle in text:
+        return False
+    angle_line = '  om->register_new<ConservativeSplineAngleBond>("Interactions::ConservativeSplineAngleBond"); // MLCG conservative spline\n'
+    dihedral_line = '  om->register_new<ConservativeSplineDihedralBond>("Interactions::ConservativeSplineDihedralBond"); // MLCG conservative spline\n'
+    if angle_line in text:
+        path.write_text(text.replace(angle_line, angle_line + dihedral_line, 1))
+        return True
+    quartic = '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n'
+    if text.count(quartic) != 1:
+        raise RuntimeError(f"Could not locate ScriptInterface registration anchor in {path}")
+    path.write_text(text.replace(
+        quartic,
+        quartic
+        + '  om->register_new<ConservativeSplineDistanceBond>("Interactions::ConservativeSplineDistanceBond"); // MLCG conservative spline\n'
+        + angle_line
+        + dihedral_line,
+        1,
+    ))
     return True
 
 
@@ -198,6 +241,7 @@ def _ensure_python_default_params(path: Path) -> bool:
     for enum_name in (
         "CONSERVATIVE_SPLINE_DISTANCE",
         "CONSERVATIVE_SPLINE_ANGLE",
+        "CONSERVATIVE_SPLINE_DIHEDRAL",
     ):
         anchor = f"    _type_number = BONDED_IA.{enum_name}\n"
         if text.count(anchor) != 1:
@@ -268,6 +312,16 @@ def install(root: Path, source_header: Path) -> list[str]:
     ):
         changed.append("angle force dispatch")
 
+    dihedral_force = '''  // MLCG conservative spline bonded interactions\n  if (auto const *iap = std::get_if<ConservativeSplineDihedralBond>(&iaparams)) {\n    return iap->forces(v12, v23, v34);\n  }\n'''
+    if _ensure_dispatch_in_function(
+        paths["forces"],
+        function_name="calc_bonded_dihedral_force",
+        addition=dihedral_force,
+        sentinel="std::get_if<ConservativeSplineDihedralBond>",
+        anchors=("  throw BondUnknownTypeError();\n",),
+    ):
+        changed.append("dihedral force dispatch")
+
     pair_energy = '''  // MLCG conservative spline bonded interactions\n  if (auto const *iap = std::get_if<ConservativeSplineDistanceBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n'''
     if _ensure_dispatch_in_function(
         paths["energy"],
@@ -291,6 +345,16 @@ def install(root: Path, source_header: Path) -> list[str]:
         ),
     ):
         changed.append("angle energy dispatch")
+
+    dihedral_energy = '''  // MLCG conservative spline bonded interactions\n  if (auto const *iap = std::get_if<ConservativeSplineDihedralBond>(&iaparams)) {\n    return iap->energy(v12, v23, v34);\n  }\n'''
+    if _ensure_dispatch_in_function(
+        paths["energy"],
+        function_name="calc_dihedral_bonded_energy",
+        addition=dihedral_energy,
+        sentinel="std::get_if<ConservativeSplineDihedralBond>",
+        anchors=("  throw BondUnknownTypeError();\n",),
+    ):
+        changed.append("dihedral energy dispatch")
 
     classes = r'''// MLCG conservative spline bonded interactions
 class ConservativeSplineDistanceBond
@@ -333,6 +397,26 @@ class ConservativeSplineAngleBond
   }
 };
 
+class ConservativeSplineDihedralBond
+    : public BondedInteractionImpl<::ConservativeSplineDihedralBond> {
+ public:
+  ConservativeSplineDihedralBond() {
+    add_parameters({
+        {"min", AutoParameter::read_only, [this]() { return get_struct().spline.minval; }},
+        {"max", AutoParameter::read_only, [this]() { return get_struct().spline.maxval; }},
+        {"energy", AutoParameter::read_only, [this]() { return get_struct().spline.energy_nodes; }},
+        {"derivative", AutoParameter::read_only, [this]() { return get_struct().spline.derivative_nodes; }},
+    });
+  }
+ private:
+  void construct_bond(VariantMap const &params) override {
+    m_bonded_ia = std::make_shared<::Bonded_IA_Parameters>(CoreBondedInteraction(
+        get_value<double>(params, "min"), get_value<double>(params, "max"),
+        get_value<std::vector<double>>(params, "energy"),
+        get_value<std::vector<double>>(params, "derivative")));
+  }
+};
+
 '''
     if _insert_before(
         paths["script_header"],
@@ -342,13 +426,37 @@ class ConservativeSplineAngleBond
     ):
         changed.append("ScriptInterface classes")
 
-    init_anchor = '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n'
-    init_add = (
-        init_anchor
-        + '  om->register_new<ConservativeSplineDistanceBond>("Interactions::ConservativeSplineDistanceBond"); // MLCG conservative spline\n'
-        + '  om->register_new<ConservativeSplineAngleBond>("Interactions::ConservativeSplineAngleBond"); // MLCG conservative spline\n'
-    )
-    if _replace_once(paths["script_init"], init_anchor, init_add):
+    dihedral_class = r'''// MLCG conservative spline bonded interactions
+class ConservativeSplineDihedralBond
+    : public BondedInteractionImpl<::ConservativeSplineDihedralBond> {
+ public:
+  ConservativeSplineDihedralBond() {
+    add_parameters({
+        {"min", AutoParameter::read_only, [this]() { return get_struct().spline.minval; }},
+        {"max", AutoParameter::read_only, [this]() { return get_struct().spline.maxval; }},
+        {"energy", AutoParameter::read_only, [this]() { return get_struct().spline.energy_nodes; }},
+        {"derivative", AutoParameter::read_only, [this]() { return get_struct().spline.derivative_nodes; }},
+    });
+  }
+ private:
+  void construct_bond(VariantMap const &params) override {
+    m_bonded_ia = std::make_shared<::Bonded_IA_Parameters>(CoreBondedInteraction(
+        get_value<double>(params, "min"), get_value<double>(params, "max"),
+        get_value<std::vector<double>>(params, "energy"),
+        get_value<std::vector<double>>(params, "derivative")));
+  }
+};
+
+'''
+    if _insert_before(
+        paths["script_header"],
+        "class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {",
+        dihedral_class,
+        "class ConservativeSplineDihedralBond",
+    ):
+        changed.append("ScriptInterface dihedral class")
+
+    if _ensure_registration(paths["script_init"]):
         changed.append("ScriptInterface registration")
 
     if _patch_python_enum(paths["python"]):
@@ -375,6 +483,16 @@ class ConservativeSplineAngle(BondedInteraction):
         return {}
 
 
+@script_interface_register
+class ConservativeSplineDihedral(BondedInteraction):
+    """Periodic conservative Hermite dihedral potential from U and dU/dphi nodes."""
+    _so_name = "Interactions::ConservativeSplineDihedralBond"
+    _type_number = BONDED_IA.CONSERVATIVE_SPLINE_DIHEDRAL
+
+    def get_default_params(self):
+        return {}
+
+
 '''
     if _insert_before(
         paths["python"],
@@ -383,6 +501,25 @@ class ConservativeSplineAngle(BondedInteraction):
         "class ConservativeSplineDistance(BondedInteraction)",
     ):
         changed.append("Python classes")
+    py_dihedral = '''# MLCG conservative spline bonded interactions
+@script_interface_register
+class ConservativeSplineDihedral(BondedInteraction):
+    """Periodic conservative Hermite dihedral potential from U and dU/dphi nodes."""
+    _so_name = "Interactions::ConservativeSplineDihedralBond"
+    _type_number = BONDED_IA.CONSERVATIVE_SPLINE_DIHEDRAL
+
+    def get_default_params(self):
+        return {}
+
+
+'''
+    if _insert_before(
+        paths["python"],
+        "@script_interface_register\nclass BondedInteractions(ScriptObjectMap):",
+        py_dihedral,
+        "class ConservativeSplineDihedral(BondedInteraction)",
+    ):
+        changed.append("Python dihedral class")
     if _ensure_python_default_params(paths["python"]):
         changed.append("Python get_default_params")
     return changed
@@ -394,11 +531,15 @@ def check(root: Path, source_header: Path) -> None:
         "header": p["header"].is_file() and p["header"].read_text() == _read(source_header),
         "variant distance": "ConservativeSplineDistanceBond" in _read(p["bond_data"]),
         "variant angle": "ConservativeSplineAngleBond" in _read(p["bond_data"]),
+        "variant dihedral": "ConservativeSplineDihedralBond" in _read(p["bond_data"]),
         "distance force": _dispatch_is_in_function(
             p["forces"], "calc_bond_pair_force", "std::get_if<ConservativeSplineDistanceBond>"
         ),
         "angle force": _dispatch_is_in_function(
             p["forces"], "calc_bonded_three_body_force", "std::get_if<ConservativeSplineAngleBond>"
+        ),
+        "dihedral force": _dispatch_is_in_function(
+            p["forces"], "calc_bonded_dihedral_force", "std::get_if<ConservativeSplineDihedralBond>"
         ),
         "distance energy": _dispatch_is_in_function(
             p["energy"], "calc_pair_bonded_energy", "std::get_if<ConservativeSplineDistanceBond>"
@@ -406,11 +547,16 @@ def check(root: Path, source_header: Path) -> None:
         "angle energy": _dispatch_is_in_function(
             p["energy"], "calc_angle_bonded_energy", "std::get_if<ConservativeSplineAngleBond>"
         ),
+        "dihedral energy": _dispatch_is_in_function(
+            p["energy"], "calc_dihedral_bonded_energy", "std::get_if<ConservativeSplineDihedralBond>"
+        ),
         "script distance": "BondedInteractionImpl<::ConservativeSplineDistanceBond>" in _read(p["script_header"]),
         "script angle": "BondedInteractionImpl<::ConservativeSplineAngleBond>" in _read(p["script_header"]),
+        "script dihedral": "BondedInteractionImpl<::ConservativeSplineDihedralBond>" in _read(p["script_header"]),
         "registration": "Interactions::ConservativeSplineDistanceBond" in _read(p["script_init"]),
         "python distance": "class ConservativeSplineDistance(BondedInteraction)" in _read(p["python"]),
         "python angle": "class ConservativeSplineAngle(BondedInteraction)" in _read(p["python"]),
+        "python dihedral": "class ConservativeSplineDihedral(BondedInteraction)" in _read(p["python"]),
         "python distance defaults": (
             "_type_number = BONDED_IA.CONSERVATIVE_SPLINE_DISTANCE\n\n"
             "    def get_default_params(self):\n"
@@ -418,6 +564,11 @@ def check(root: Path, source_header: Path) -> None:
         ) in _read(p["python"]),
         "python angle defaults": (
             "_type_number = BONDED_IA.CONSERVATIVE_SPLINE_ANGLE\n\n"
+            "    def get_default_params(self):\n"
+            "        return {}"
+        ) in _read(p["python"]),
+        "python dihedral defaults": (
+            "_type_number = BONDED_IA.CONSERVATIVE_SPLINE_DIHEDRAL\n\n"
             "    def get_default_params(self):\n"
             "        return {}"
         ) in _read(p["python"]),
