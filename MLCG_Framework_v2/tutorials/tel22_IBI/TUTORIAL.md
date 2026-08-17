@@ -1219,6 +1219,20 @@ and performs a longer matched current-vs-candidate NVT structural comparison.
 Passing this step validates the candidate **for promotion consideration only**;
 it does not modify `ibi_conservative/` and does not certify the production path.
 
+The validated TEL22 result is:
+
+```text
+[NVE] common p=1.947046 R2within=0.984844
+      full-clean=3/3 medianC2spread=1.389 pass=True
+[STRUCT] dAngleL1=+0.009561 dBondL1=-0.019844
+         maxGroupAngleDelta=+0.055364 kineticRelDelta=4.001e-03
+         P99U2red=2.416x pass=True
+[FINAL] pass=True
+```
+
+This is evidence for the **specific** `0.0075 rad` candidate; it is not evidence
+that the same smoothing bandwidth should be used for another model.
+
 ## 34. Explicit promotion and post-promotion Hamiltonian certification
 
 Only after step 33 passes, promote the reviewed `smooth_0p0075` candidate and
@@ -1269,6 +1283,37 @@ Main artifact:
 ibi_promoted_final_certification/promoted_ibi_final_certification_report.json
 ```
 
-A final `pass=true` certifies `WCA + Morse + bonded conservative smooth_0p0075
-IBI` with PaiNN disabled.  Promotion/certification does not silently rebuild or
-promote an ML residual model.
+The validated production result is:
+
+```text
+[SIGMA] p=1.877261 R2=0.984412 C2spread=1.487 maxdt=0.005 pass=True
+[RICHARDSON] position:p=2.004/R2=1.000 velocity:p=2.215/R2=0.998
+             orientation:p=2.035/R2=1.000 omega_body:p=2.019/R2=0.999 pass=True
+[FINAL] pass=True ML_active=False
+```
+
+The single fresh `sigma_E` scan is not perfectly pointwise quadratic, but it
+passes the pre-declared second-order gate and is consistent with the independent
+step-33 result (`common p=1.947046`, `3/3` clean through `0.005 ps`).
+
+A final `pass=true` certifies `WCA + Morse + bonded conservative regularized
+smooth_0p0075 IBI` with PaiNN disabled. Promotion/certification does not silently
+rebuild or promote an ML residual model.
+
+### Regularized angular IBI is optional
+
+The TEL22 result must not be interpreted as a universal rule that every angular
+IBI potential needs `0.0075 rad` smoothing. There are two valid operating modes:
+
+- **raw/conservative angular IBI:** keep the converged IBI potential unchanged
+  and choose a timestep inside its demonstrated clean second-order regime;
+- **regularized conservative angular IBI:** remove short-wavelength angle-body
+  structure only when diagnostics show that it creates an unnecessarily stiff
+  numerical scale, then validate and promote the regularized candidate as a new
+  prior.
+
+The smoothing bandwidth is a model parameter selected by structural and NVE
+validation, not an IBI constant. A candidate with lower `|U''|` is not
+necessarily better; the step-31/32 diagnostics showed that excessive smoothing
+can produce a less regular `sigma_E/dt^2` sequence even when the curvature is
+smaller.
