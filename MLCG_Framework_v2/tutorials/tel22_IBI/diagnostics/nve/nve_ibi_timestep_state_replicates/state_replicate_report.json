@@ -1,0 +1,135 @@
+{
+  "purpose": "Test persistence of the narrow dt=0.0015 ps C2 amplification across independent NVT states",
+  "diagnostic_only": true,
+  "peak_dt_ps": 0.0015,
+  "robust_dt_ps": 0.002,
+  "peak_ratio_threshold": 1.5,
+  "robust_c2_spread_max": 1.75,
+  "drift_limit": 2e-05,
+  "branches": {
+    "reference": {
+      "rows": [
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0011206522714982345,
+          "c2": 717.21745375887,
+          "relative_block_mean_drift": 3.056883074460095e-07
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.003601850592229427,
+          "c2": 1600.822485435301,
+          "relative_block_mean_drift": 1.5307719528676353e-06
+        },
+        {
+          "dt_ps": 0.00175,
+          "sigma_E": 0.001709652451019301,
+          "c2": 558.2538615573227,
+          "relative_block_mean_drift": 2.515887245834596e-07
+        },
+        {
+          "dt_ps": 0.002,
+          "sigma_E": 0.0018588679305052704,
+          "c2": 464.71698262631764,
+          "relative_block_mean_drift": 1.6155040936219236e-07
+        }
+      ],
+      "c2_median": 637.7356576580963,
+      "c2_spread": 3.4447255970469537,
+      "peak": {
+        "peak_dt_ps": 0.0015,
+        "peak_c2": 1600.822485435301,
+        "neighbor_geometric_mean_c2": 632.7633152587148,
+        "peak_ratio": 2.5298914251702165,
+        "c2_over_branch_median": 2.51016618909764,
+        "strong_peak": true
+      },
+      "max_relative_block_mean_drift": 1.5307719528676353e-06
+    },
+    "branch_B": {
+      "rows": [
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0019556459558495312,
+          "c2": 1251.6134117437,
+          "relative_block_mean_drift": 4.014992699352613e-07
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.001250449365498128,
+          "c2": 555.7552735547235,
+          "relative_block_mean_drift": 4.045845117755467e-08
+        },
+        {
+          "dt_ps": 0.00175,
+          "sigma_E": 0.0014300474150824771,
+          "c2": 466.95425798611495,
+          "relative_block_mean_drift": 2.5616645281697735e-07
+        },
+        {
+          "dt_ps": 0.002,
+          "sigma_E": 0.0022746454587226363,
+          "c2": 568.6613646806591,
+          "relative_block_mean_drift": 4.95934938909978e-07
+        }
+      ],
+      "c2_median": 562.2083191176913,
+      "c2_spread": 2.6803769113096236,
+      "peak": {
+        "peak_dt_ps": 0.0015,
+        "peak_c2": 555.7552735547235,
+        "neighbor_geometric_mean_c2": 764.4908187586357,
+        "peak_ratio": 0.7269613446203937,
+        "c2_over_branch_median": 0.9885219671364968,
+        "strong_peak": false
+      },
+      "max_relative_block_mean_drift": 4.95934938909978e-07
+    },
+    "branch_C": {
+      "rows": [
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0012245768192552478,
+          "c2": 783.7291643233585,
+          "relative_block_mean_drift": 2.5099404086077854e-07
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.0013640164424489364,
+          "c2": 606.2295299773051,
+          "relative_block_mean_drift": 4.8795838689729814e-08
+        },
+        {
+          "dt_ps": 0.00175,
+          "sigma_E": 0.001678890454395169,
+          "c2": 548.2091279657694,
+          "relative_block_mean_drift": 2.7127582137420355e-07
+        },
+        {
+          "dt_ps": 0.002,
+          "sigma_E": 0.003769662474309132,
+          "c2": 942.415618577283,
+          "relative_block_mean_drift": 1.3516922390373184e-06
+        }
+      ],
+      "c2_median": 694.9793471503318,
+      "c2_spread": 1.719080494106855,
+      "peak": {
+        "peak_dt_ps": 0.0015,
+        "peak_c2": 606.2295299773051,
+        "neighbor_geometric_mean_c2": 655.47500466078,
+        "peak_ratio": 0.924870552906956,
+        "c2_over_branch_median": 0.8722986265175602,
+        "strong_peak": false
+      },
+      "max_relative_block_mean_drift": 1.3516922390373184e-06
+    }
+  },
+  "classification": {
+    "strong_peak_count": 1,
+    "peak_persistence": "state_dependent_0p0015_peak_1of3",
+    "robust_dt_c2_spread_across_states": 2.027934536093953,
+    "robust_dt_max_drift": 1.3516922390373184e-06,
+    "robust_dt_pass": false
+  }
+}

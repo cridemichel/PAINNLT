@@ -1,0 +1,522 @@
+{
+  "schema_version": 1,
+  "purpose": "postprocess_existing_nve_sigma_floor_without_new_md",
+  "new_md_steps": 0,
+  "models": {
+    "pure_verlet": "sigma_E = C * dt^2",
+    "floor_plus_verlet": "sigma_E^2 = sigma_0^2 + A * dt^4"
+  },
+  "primary_fit_policy": "three smallest available dt values not exceeding 0.0015 ps; completed 06h data preferred, then 06g prefix, then 06d/06e reports",
+  "branches": {
+    "reference": {
+      "available_points": [
+        {
+          "dt_ps": 0.0005,
+          "sigma_E": 0.0002359681075284128,
+          "relative_block_mean_drift": 8.096998371431175e-08,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/reference/dt_0p0005/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        },
+        {
+          "dt_ps": 0.00075,
+          "sigma_E": 0.00030412216993418346,
+          "relative_block_mean_drift": 1.2390683818742636e-08,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/reference/dt_0p00075/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        },
+        {
+          "dt_ps": 0.001,
+          "sigma_E": 0.00044423743003041606,
+          "relative_block_mean_drift": 3.70638969159213e-08,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/reference/dt_0p001/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        },
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0011206522714982345,
+          "relative_block_mean_drift": 3.056883074460095e-07,
+          "source": "06d:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_fine_timestep_response_promoted_ibi/nve_diagnostic_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.003601850592229427,
+          "relative_block_mean_drift": 1.5307719528676353e-06,
+          "source": "06d:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_fine_timestep_response_promoted_ibi/nve_diagnostic_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.00175,
+          "sigma_E": 0.001709652451019301,
+          "relative_block_mean_drift": 2.515887245834596e-07,
+          "source": "06d:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_fine_timestep_response_promoted_ibi/nve_diagnostic_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.002,
+          "sigma_E": 0.0018588679305052704,
+          "relative_block_mean_drift": 1.6155040936219236e-07,
+          "source": "06d:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_fine_timestep_response_promoted_ibi/nve_diagnostic_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.0025,
+          "sigma_E": 0.00458797466004621,
+          "relative_block_mean_drift": 5.158458665323483e-07,
+          "source": "06d:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_fine_timestep_response_promoted_ibi/nve_diagnostic_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.003,
+          "sigma_E": 0.00924445212671934,
+          "relative_block_mean_drift": 1.9423425825213273e-06,
+          "source": "06d:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_fine_timestep_response_promoted_ibi/nve_diagnostic_report.json",
+          "duration_ps": null,
+          "priority": 30
+        }
+      ],
+      "primary_rows": [
+        {
+          "dt_ps": 0.0005,
+          "sigma_E": 0.0002359681075284128,
+          "relative_block_mean_drift": 8.096998371431175e-08,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/reference/dt_0p0005/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        },
+        {
+          "dt_ps": 0.00075,
+          "sigma_E": 0.00030412216993418346,
+          "relative_block_mean_drift": 1.2390683818742636e-08,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/reference/dt_0p00075/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        },
+        {
+          "dt_ps": 0.001,
+          "sigma_E": 0.00044423743003041606,
+          "relative_block_mean_drift": 3.70638969159213e-08,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/reference/dt_0p001/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        }
+      ],
+      "primary_fit": {
+        "available": true,
+        "n_points": 3,
+        "dt_ps": [
+          0.0005,
+          0.00075,
+          0.001
+        ],
+        "sigma_E": [
+          0.0002359681075284128,
+          0.00030412216993418346,
+          0.00044423743003041606
+        ],
+        "free_power_fit": {
+          "p": 0.893904718481993,
+          "C": 0.20408518903358464,
+          "loglog_r2": 0.9559097556680359
+        },
+        "pure_quadratic": {
+          "model": "sigma_E = C * dt^2",
+          "C": 489.0094431731652,
+          "relative_rmse": 0.2895531483068258
+        },
+        "floor_model": {
+          "model": "sigma_E^2 = sigma_0^2 + A * dt^4",
+          "sigma0": 0.0002133045922627725,
+          "sigma0_squared": 4.5498849080387626e-08,
+          "A": 151585.06172184137,
+          "physical_nonnegative": true,
+          "variance_space_r2": 0.9998599582158145,
+          "relative_rmse": 0.004779749546341028,
+          "rmse_improvement_vs_pure_quadratic": 60.57914656396238,
+          "crossover_dt_ps": 0.000740177708458128,
+          "supported": true,
+          "thresholds": {
+            "variance_space_r2_min": 0.98,
+            "rmse_improvement_min": 2.0
+          }
+        }
+      },
+      "sensitivity_le_0p002_fit": {
+        "available": true,
+        "n_points": 7,
+        "dt_ps": [
+          0.0005,
+          0.00075,
+          0.001,
+          0.00125,
+          0.0015,
+          0.00175,
+          0.002
+        ],
+        "sigma_E": [
+          0.0002359681075284128,
+          0.00030412216993418346,
+          0.00044423743003041606,
+          0.0011206522714982345,
+          0.003601850592229427,
+          0.001709652451019301,
+          0.0018588679305052704
+        ],
+        "free_power_fit": {
+          "p": 1.878299290375202,
+          "C": 298.18010311895597,
+          "loglog_r2": 0.8055196001716457
+        },
+        "pure_quadratic": {
+          "model": "sigma_E = C * dt^2",
+          "C": 677.1628623418197,
+          "relative_rmse": 0.3796425340762895
+        },
+        "floor_model": {
+          "model": "sigma_E^2 = sigma_0^2 + A * dt^4",
+          "sigma0": 0.0013574917655486164,
+          "sigma0_squared": 1.8427838935322995e-06,
+          "A": 235058.88974775444,
+          "physical_nonnegative": true,
+          "variance_space_r2": 0.09041301935545232,
+          "relative_rmse": 2.419925468121097,
+          "rmse_improvement_vs_pure_quadratic": 0.1568819118925408,
+          "crossover_dt_ps": 0.001673302391696846,
+          "supported": false,
+          "thresholds": {
+            "variance_space_r2_min": 0.98,
+            "rmse_improvement_min": 2.0
+          }
+        }
+      }
+    },
+    "branch_B": {
+      "available_points": [
+        {
+          "dt_ps": 0.001,
+          "sigma_E": 0.0006938302999123326,
+          "relative_block_mean_drift": 1.3034254612378167e-07,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/branch_B/dt_0p001/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        },
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0019556459558495312,
+          "relative_block_mean_drift": 4.014992699352613e-07,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_B/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.001250449365498128,
+          "relative_block_mean_drift": 4.045845117755467e-08,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_B/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.00175,
+          "sigma_E": 0.0014300474150824771,
+          "relative_block_mean_drift": 2.5616645281697735e-07,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_B/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.002,
+          "sigma_E": 0.0022746454587226363,
+          "relative_block_mean_drift": 4.95934938909978e-07,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_B/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        }
+      ],
+      "primary_rows": [
+        {
+          "dt_ps": 0.001,
+          "sigma_E": 0.0006938302999123326,
+          "relative_block_mean_drift": 1.3034254612378167e-07,
+          "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_small_dt_multistate_scaling/branch_B/dt_0p001/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 100
+        },
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0019556459558495312,
+          "relative_block_mean_drift": 4.014992699352613e-07,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_B/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.001250449365498128,
+          "relative_block_mean_drift": 4.045845117755467e-08,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_B/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        }
+      ],
+      "primary_fit": {
+        "available": true,
+        "n_points": 3,
+        "dt_ps": [
+          0.001,
+          0.00125,
+          0.0015
+        ],
+        "sigma_E": [
+          0.0006938302999123326,
+          0.0019556459558495312,
+          0.001250449365498128
+        ],
+        "free_power_fit": {
+          "p": 1.5702079505985773,
+          "C": 44.082965073264766,
+          "loglog_r2": 0.3764052278241876
+        },
+        "pure_quadratic": {
+          "model": "sigma_E = C * dt^2",
+          "C": 771.7674660745481,
+          "relative_rmse": 0.3218039421595008
+        },
+        "floor_model": {
+          "model": "sigma_E^2 = sigma_0^2 + A * dt^4",
+          "sigma0": 0.0012610269664556355,
+          "sigma0_squared": 1.5901890101283024e-06,
+          "A": 129235.68801065125,
+          "physical_nonnegative": true,
+          "variance_space_r2": 0.02434702323034832,
+          "relative_rmse": 0.553069189988356,
+          "rmse_improvement_vs_pure_quadratic": 0.5818511462666649,
+          "crossover_dt_ps": 0.0018729085494477247,
+          "supported": false,
+          "thresholds": {
+            "variance_space_r2_min": 0.98,
+            "rmse_improvement_min": 2.0
+          }
+        }
+      },
+      "sensitivity_le_0p002_fit": {
+        "available": true,
+        "n_points": 5,
+        "dt_ps": [
+          0.001,
+          0.00125,
+          0.0015,
+          0.00175,
+          0.002
+        ],
+        "sigma_E": [
+          0.0006938302999123326,
+          0.0019556459558495312,
+          0.001250449365498128,
+          0.0014300474150824771,
+          0.0022746454587226363
+        ],
+        "free_power_fit": {
+          "p": 1.2248885838923012,
+          "C": 4.196398544343719,
+          "loglog_r2": 0.527402082784745
+        },
+        "pure_quadratic": {
+          "model": "sigma_E = C * dt^2",
+          "C": 591.4839632004764,
+          "relative_rmse": 0.27451717996273434
+        },
+        "floor_model": {
+          "model": "sigma_E^2 = sigma_0^2 + A * dt^4",
+          "sigma0": 0.0010899407985609925,
+          "sigma0_squared": 1.187970944367774e-06,
+          "A": 210985.08442339164,
+          "physical_nonnegative": true,
+          "variance_space_r2": 0.46742690721776337,
+          "relative_rmse": 0.37714633929004693,
+          "rmse_improvement_vs_pure_quadratic": 0.7278797415334716,
+          "crossover_dt_ps": 0.0015404177567341847,
+          "supported": false,
+          "thresholds": {
+            "variance_space_r2_min": 0.98,
+            "rmse_improvement_min": 2.0
+          }
+        }
+      }
+    },
+    "branch_C": {
+      "available_points": [
+        {
+          "dt_ps": 0.001,
+          "sigma_E": 0.0007851995961640176,
+          "relative_block_mean_drift": 1.971515300258996e-07,
+          "source": "06g-prefix:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_dt_0p001_duration_state_certification/branch_C/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 90
+        },
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0012245768192552478,
+          "relative_block_mean_drift": 2.5099404086077854e-07,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_C/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.0013640164424489364,
+          "relative_block_mean_drift": 4.8795838689729814e-08,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_C/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.00175,
+          "sigma_E": 0.001678890454395169,
+          "relative_block_mean_drift": 2.7127582137420355e-07,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_C/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.002,
+          "sigma_E": 0.003769662474309132,
+          "relative_block_mean_drift": 1.3516922390373184e-06,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_C/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        }
+      ],
+      "primary_rows": [
+        {
+          "dt_ps": 0.001,
+          "sigma_E": 0.0007851995961640176,
+          "relative_block_mean_drift": 1.971515300258996e-07,
+          "source": "06g-prefix:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_dt_0p001_duration_state_certification/branch_C/energy.csv",
+          "duration_ps": 0.999,
+          "priority": 90
+        },
+        {
+          "dt_ps": 0.00125,
+          "sigma_E": 0.0012245768192552478,
+          "relative_block_mean_drift": 2.5099404086077854e-07,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_C/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        },
+        {
+          "dt_ps": 0.0015,
+          "sigma_E": 0.0013640164424489364,
+          "relative_block_mean_drift": 4.8795838689729814e-08,
+          "source": "06e:/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_ibi_timestep_state_replicates/branch_C/nve/nve_certification_report.json",
+          "duration_ps": null,
+          "priority": 30
+        }
+      ],
+      "primary_fit": {
+        "available": true,
+        "n_points": 3,
+        "dt_ps": [
+          0.001,
+          0.00125,
+          0.0015
+        ],
+        "sigma_E": [
+          0.0007851995961640176,
+          0.0012245768192552478,
+          0.0013640164424489364
+        ],
+        "free_power_fit": {
+          "p": 1.3851959562673042,
+          "C": 11.716458318287888,
+          "loglog_r2": 0.9234792626562658
+        },
+        "pure_quadratic": {
+          "model": "sigma_E = C * dt^2",
+          "C": 678.2339435786288,
+          "relative_rmse": 0.13010785963796756
+        },
+        "floor_model": {
+          "model": "sigma_E^2 = sigma_0^2 + A * dt^4",
+          "sigma0": 0.0007180348389233294,
+          "sigma0_squared": 5.155740299076517e-07,
+          "A": 285744.6314887978,
+          "physical_nonnegative": true,
+          "variance_space_r2": 0.8455913445011529,
+          "relative_rmse": 0.10074486941264421,
+          "rmse_improvement_vs_pure_quadratic": 1.2914589139527743,
+          "crossover_dt_ps": 0.0011589861293525437,
+          "supported": false,
+          "thresholds": {
+            "variance_space_r2_min": 0.98,
+            "rmse_improvement_min": 2.0
+          }
+        }
+      },
+      "sensitivity_le_0p002_fit": {
+        "available": true,
+        "n_points": 5,
+        "dt_ps": [
+          0.001,
+          0.00125,
+          0.0015,
+          0.00175,
+          0.002
+        ],
+        "sigma_E": [
+          0.0007851995961640176,
+          0.0012245768192552478,
+          0.0013640164424489364,
+          0.001678890454395169,
+          0.003769662474309132
+        ],
+        "free_power_fit": {
+          "p": 1.948973442897599,
+          "C": 515.5290653094507,
+          "loglog_r2": 0.8568761862146707
+        },
+        "pure_quadratic": {
+          "model": "sigma_E = C * dt^2",
+          "C": 766.9932885760938,
+          "relative_rmse": 0.23032058149915222
+        },
+        "floor_model": {
+          "model": "sigma_E^2 = sigma_0^2 + A * dt^4",
+          "sigma0": NaN,
+          "sigma0_squared": -1.5704383333485613e-06,
+          "A": 851696.9375597424,
+          "physical_nonnegative": false,
+          "variance_space_r2": -Infinity,
+          "relative_rmse": Infinity,
+          "rmse_improvement_vs_pure_quadratic": 0.0,
+          "crossover_dt_ps": NaN,
+          "supported": false,
+          "thresholds": {
+            "variance_space_r2_min": 0.98,
+            "rmse_improvement_min": 2.0
+          }
+        }
+      }
+    }
+  },
+  "summary": {
+    "states_with_primary_fit": [
+      "reference",
+      "branch_B",
+      "branch_C"
+    ],
+    "states_supporting_floor": [
+      "reference"
+    ],
+    "n_supporting_floor": 1,
+    "classification": "floor_supported_reference__cross_state_floor_evidence_incomplete"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "c2_spread": 3.603189906860679,
+  "clean_factor": 1.5,
+  "clean_prefix_max_dt_ps": 0.001,
+  "clean_prefix_points": 1,
+  "kind": "tel22_ibi_fine_timestep_response_diagnostic",
+  "local_orders": [
+    {
+      "dt_hi_ps": 0.00125,
+      "dt_lo_ps": 0.001,
+      "p_local": 4.146267653268423
+    },
+    {
+      "dt_hi_ps": 0.0015,
+      "dt_lo_ps": 0.00125,
+      "p_local": 6.403723653180523
+    },
+    {
+      "dt_hi_ps": 0.00175,
+      "dt_lo_ps": 0.0015,
+      "p_local": -4.833956378099789
+    },
+    {
+      "dt_hi_ps": 0.002,
+      "dt_lo_ps": 0.00175,
+      "p_local": 0.6266508304256316
+    },
+    {
+      "dt_hi_ps": 0.0025,
+      "dt_lo_ps": 0.002,
+      "p_local": 4.048833174526365
+    },
+    {
+      "dt_hi_ps": 0.003,
+      "dt_lo_ps": 0.0025,
+      "p_local": 3.842578670713426
+    }
+  ],
+  "local_peaks": [
+    {
+      "c2": 1600.822485435301,
+      "dt_ps": 0.0015,
+      "neighbor_geometric_mean": 632.7633152587148,
+      "peak_ratio": 2.5298914251702165,
+      "strong_peak": true
+    }
+  ],
+  "median_c2": 717.21745375887,
+  "near_factor": 1.25,
+  "rows": [
+    {
+      "band": "near_plateau",
+      "c2": 444.2792433413636,
+      "c2_over_median": 0.6194484545976083,
+      "dt_ps": 0.001,
+      "relative_block_mean_drift": 3.6983374264048434e-08,
+      "sigma_E": 0.0004442792433413636
+    },
+    {
+      "band": "near_plateau",
+      "c2": 717.21745375887,
+      "c2_over_median": 1.0,
+      "dt_ps": 0.00125,
+      "relative_block_mean_drift": 3.056883074460095e-07,
+      "sigma_E": 0.0011206522714982345
+    },
+    {
+      "band": "amplified",
+      "c2": 1600.822485435301,
+      "c2_over_median": 2.231990419426548,
+      "dt_ps": 0.0015,
+      "relative_block_mean_drift": 1.5307719528676353e-06,
+      "sigma_E": 0.003601850592229427
+    },
+    {
+      "band": "near_plateau",
+      "c2": 558.2538615573227,
+      "c2_over_median": 0.7783606751781711,
+      "dt_ps": 0.00175,
+      "relative_block_mean_drift": 2.515887245834596e-07,
+      "sigma_E": 0.001709652451019301
+    },
+    {
+      "band": "near_plateau",
+      "c2": 464.71698262631764,
+      "c2_over_median": 0.6479443301202155,
+      "dt_ps": 0.002,
+      "relative_block_mean_drift": 1.6155040936219236e-07,
+      "sigma_E": 0.0018588679305052704
+    },
+    {
+      "band": "near_plateau",
+      "c2": 734.0759456073936,
+      "c2_over_median": 1.0235054121454656,
+      "dt_ps": 0.0025,
+      "relative_block_mean_drift": 5.158458665323483e-07,
+      "sigma_E": 0.00458797466004621
+    },
+    {
+      "band": "clean_1p5x",
+      "c2": 1027.16134741326,
+      "c2_over_median": 1.4321477287397328,
+      "dt_ps": 0.003,
+      "relative_block_mean_drift": 1.9423425825213273e-06,
+      "sigma_E": 0.00924445212671934
+    }
+  ],
+  "source_report": "diagnostics/nve/nve_fine_timestep_response_promoted_ibi/nve_diagnostic_report.json"
+}
