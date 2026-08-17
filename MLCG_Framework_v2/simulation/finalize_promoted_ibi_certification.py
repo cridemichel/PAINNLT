@@ -155,15 +155,16 @@ def build_report(
     state_report: Path,
     residual_ml_status: Path,
     expected_candidate_sha256: str,
-    sigma_p_min: float = 1.8,
-    sigma_p_max: float = 2.2,
-    sigma_r2_min: float = 0.95,
-    sigma_c2_spread_max: float = 2.0,
-    full_dt_ps: float = 0.005,
-    max_relative_drift: float = 2e-5,
-    state_p_min: float = 1.7,
-    state_p_max: float = 2.3,
-    state_r2_min: float = 0.95,
+    sigma_p_min: float,
+    sigma_p_max: float,
+    sigma_r2_min: float,
+    sigma_c2_spread_max: float,
+    full_dt_ps: float,
+    max_relative_drift: float,
+    state_p_min: float,
+    state_p_max: float,
+    state_r2_min: float,
+    model_config_provenance: Path | None = None,
 ) -> dict[str, Any]:
     paths = {
         "priors": priors.resolve(),
@@ -176,7 +177,11 @@ def build_report(
         "state_convergence": state_report.resolve(),
         "residual_ml_status": residual_ml_status.resolve(),
     }
-    data = {name: load(path) for name, path in paths.items() if name != "priors"}
+    if model_config_provenance is not None:
+        model_config_provenance = model_config_provenance.resolve()
+        require(model_config_provenance.is_file(), f"Missing model config provenance: {model_config_provenance}")
+        paths["model_config_provenance"] = model_config_provenance
+    data = {name: load(path) for name, path in paths.items() if name not in {"priors", "model_config_provenance"}}
     priors_sha = sha256_file(paths["priors"])
     artifacts = referenced_prior_artifacts(paths["priors"])
 
@@ -280,7 +285,7 @@ def build_report(
         "certification_basis": "post_promotion_identity_plus_gating_sigmaE_dt2_plus_richardson_v1",
         "pass": final_pass,
         "hamiltonian_mode": EXPECTED_MODE,
-        "scope": "WCA + Morse + bonded conservative smooth_0p0075 IBI; PaiNN disabled",
+        "scope": "Configured classical nonbonded + conservative bonded IBI Hamiltonian; PaiNN disabled",
         "ml_active": False,
         "selected_priors_sha256": priors_sha,
         "validated_candidate_priors_sha256": expected_candidate_sha256,
@@ -309,15 +314,16 @@ def main() -> None:
     p.add_argument("--residual-ml-status", required=True, type=Path)
     p.add_argument("--expected-candidate-sha256", required=True)
     p.add_argument("--output", required=True, type=Path)
-    p.add_argument("--sigma-p-min", type=float, default=1.8)
-    p.add_argument("--sigma-p-max", type=float, default=2.2)
-    p.add_argument("--sigma-r2-min", type=float, default=0.95)
-    p.add_argument("--sigma-c2-spread-max", type=float, default=2.0)
-    p.add_argument("--full-dt-ps", type=float, default=0.005)
-    p.add_argument("--max-relative-drift", type=float, default=2e-5)
-    p.add_argument("--state-p-min", type=float, default=1.7)
-    p.add_argument("--state-p-max", type=float, default=2.3)
-    p.add_argument("--state-r2-min", type=float, default=0.95)
+    p.add_argument("--model-config-provenance", type=Path, default=None)
+    p.add_argument("--sigma-p-min", type=float, required=True)
+    p.add_argument("--sigma-p-max", type=float, required=True)
+    p.add_argument("--sigma-r2-min", type=float, required=True)
+    p.add_argument("--sigma-c2-spread-max", type=float, required=True)
+    p.add_argument("--full-dt-ps", type=float, required=True)
+    p.add_argument("--max-relative-drift", type=float, required=True)
+    p.add_argument("--state-p-min", type=float, required=True)
+    p.add_argument("--state-p-max", type=float, required=True)
+    p.add_argument("--state-r2-min", type=float, required=True)
     args = p.parse_args()
 
     report = build_report(
@@ -340,6 +346,7 @@ def main() -> None:
         state_p_min=args.state_p_min,
         state_p_max=args.state_p_max,
         state_r2_min=args.state_r2_min,
+        model_config_provenance=args.model_config_provenance,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")

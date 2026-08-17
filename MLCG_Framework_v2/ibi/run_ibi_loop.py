@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "preprocessing"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from conservative_spline import SCHEMA, save_conservative_spline  # noqa: E402
 from build_dbi_priors import (  # noqa: E402
     build_initial_dbi_priors,
     load_continuation_priors,
@@ -96,18 +97,22 @@ def _write_iteration_priors(template, groups, iteration_dir: Path, *, source_pri
         json_key: {idx for state in category.values() for idx in state["indices"]}
         for json_key, category in groups.items()
     }
+    # Make fixed file-backed interactions self-contained.  This includes the
+    # promoted production bond/angle conservative splines used as the frozen
+    # background during dihedral-only IBI.
     for json_key in ("bonds", "angles", "dihedrals"):
         for idx, entry in enumerate(priors.get(json_key, [])):
             if idx in group_indices.get(json_key, set()):
                 continue
-            if str(entry.get("type", "")).lower() != "tabulated":
+            entry_type = str(entry.get("type", "")).lower()
+            if entry_type not in {"tabulated", "conservative_spline"}:
                 continue
             if "file" not in entry:
-                raise ValueError(f"Fixed tabulated {json_key}[{idx}] is missing 'file'")
+                raise ValueError(f"Fixed {entry_type} {json_key}[{idx}] is missing 'file'")
             source = _resolve_table_path(entry["file"], source_priors_path).resolve()
             if not source.is_file():
                 raise FileNotFoundError(
-                    f"Missing fixed tabulated table for {json_key}[{idx}]: {source}"
+                    f"Missing fixed {entry_type} table for {json_key}[{idx}]: {source}"
                 )
             suffix = source.suffix or ".dat"
             destination = iteration_dir / f"fixed_{json_key}_{idx}{suffix}"
@@ -116,22 +121,38 @@ def _write_iteration_priors(template, groups, iteration_dir: Path, *, source_pri
 
     for json_key, category in groups.items():
         for name, state in category.items():
-            filename = f"{state['kind']}_tabulated_{safe_group_name(name)}.dat"
-            table_path = iteration_dir / filename
-            save_tabulated_potential(
-                table_path, state["grid"], state["energy"], state["force"]
+            use_conservative_dihedral = (
+                state["kind"] == "dihedral"
+                and str(state.get("representation", "tabulated")) == "conservative_spline"
             )
+            if use_conservative_dihedral:
+                filename = f"dihedral_conservative_{safe_group_name(name)}.dat"
+                table_path = iteration_dir / filename
+                save_conservative_spline(
+                    table_path, state["grid"], state["energy"], state["force"]
+                )
+            else:
+                filename = f"{state['kind']}_tabulated_{safe_group_name(name)}.dat"
+                table_path = iteration_dir / filename
+                save_tabulated_potential(
+                    table_path, state["grid"], state["energy"], state["force"]
+                )
             for idx in state["indices"]:
                 entry = priors[json_key][idx]
-                entry["type"] = "tabulated"
+                entry["type"] = "conservative_spline" if use_conservative_dihedral else "tabulated"
                 entry["ibi_mode"] = state["mode"]
                 entry["file"] = filename
                 entry["min"] = float(state["grid"][0])
                 entry["max"] = float(state["grid"][-1])
+                if use_conservative_dihedral:
+                    entry["spline_schema"] = SCHEMA
+                    entry["ibi_runtime_representation"] = "conservative_spline"
+                else:
+                    entry.pop("spline_schema", None)
+                    entry.pop("ibi_runtime_representation", None)
     priors_path = iteration_dir / "cg_priors.json"
     priors_path.write_text(json.dumps(priors, indent=2) + "\n")
     return priors, priors_path
-
 
 def _write_final_priors(template, groups, outdir: Path, *, source_priors_path: Path):
     final_dir = outdir / "final"
@@ -144,19 +165,50 @@ def _write_final_priors(template, groups, outdir: Path, *, source_priors_path: P
     root_priors = copy.deepcopy(final_priors)
     for json_key in ("bonds", "angles", "dihedrals"):
         for entry in root_priors.get(json_key, []):
-            if str(entry.get("type", "")).lower() == "tabulated":
+            if str(entry.get("type", "")).lower() in {"tabulated", "conservative_spline"}:
                 entry["file"] = str(Path("final") / entry["file"])
     root_path = outdir / "cg_priors_final.json"
     root_path.write_text(json.dumps(root_priors, indent=2) + "\n")
     return root_path, final_internal
 
 
+def _assert_conservative_dihedral_loop(priors, groups, priors_path: Path) -> None:
+    """Fail closed if an active torsional IBI group can reach legacy runtime."""
+    active = 0
+    for name, state in groups.get("dihedrals", {}).items():
+        if state["mode"] != "ibi":
+            continue
+        active += 1
+        if str(state.get("representation", "")) != "conservative_spline":
+            raise RuntimeError(
+                f"Conservative dihedral IBI loop requested but state {name!r} is "
+                f"{state.get('representation')!r}"
+            )
+        for idx in state["indices"]:
+            entry = priors.get("dihedrals", [])[idx]
+            if str(entry.get("type", "")).lower() != "conservative_spline":
+                raise RuntimeError(
+                    f"Conservative dihedral IBI loop refuses {priors_path}: "
+                    f"dihedrals[{idx}] is type={entry.get('type')!r}"
+                )
+            if str(entry.get("ibi_runtime_representation", "")) != "conservative_spline":
+                raise RuntimeError(
+                    f"Conservative dihedral IBI loop is missing the explicit runtime marker "
+                    f"for dihedrals[{idx}] in {priors_path}"
+                )
+    if active == 0:
+        raise RuntimeError("Conservative dihedral IBI loop requested but no active IBI dihedral groups exist")
+
+
 def _simulation_parameters(settings):
-    sim = settings.get("simulation", {})
-    dt = float(sim.get("dt", 0.0005))
-    production_steps = int(sim.get("steps", 40000))
-    sample_interval = int(sim.get("log_interval", 40))
-    burn_in_steps = int(sim.get("burn_in_steps", sim.get("equilibration_md_steps", 8000)))
+    try:
+        sim = settings["simulation"]
+        dt = float(sim["dt"])
+        production_steps = int(sim["steps"])
+        sample_interval = int(sim["log_interval"])
+        burn_in_steps = int(sim["burn_in_steps"])
+    except KeyError as exc:
+        raise ValueError(f"Explicit IBI settings are missing required simulation key: {exc.args[0]}") from exc
     if dt <= 0.0:
         raise ValueError("IBI simulation dt must be positive")
     if production_steps <= 0:
@@ -188,6 +240,7 @@ def run_ibi(
     velocity_seed=314159,
     thermostat_seed=42,
     iteration_offset=0,
+    conservative_dihedrals_in_loop=False,
 ):
     dataset = Path(dataset).resolve()
     seed_priors = Path(seed_priors).resolve() if seed_priors is not None else None
@@ -251,6 +304,7 @@ def run_ibi(
             iteration0,
             output_priors=iteration0 / "cg_priors.json",
             ibi_config=ibi_config_path,
+            conservative_dihedrals=conservative_dihedrals_in_loop,
         )
         settings = initial["settings"]
         groups = initial["groups"]
@@ -262,6 +316,8 @@ def run_ibi(
             dataset,
             resume_priors,
             ibi_config=ibi_config_path,
+            allow_conservative_spline=conservative_dihedrals_in_loop,
+            conservative_dihedral_update=conservative_dihedrals_in_loop,
         )
         settings = initial["settings"]
         groups = initial["groups"]
@@ -293,6 +349,9 @@ def run_ibi(
         f"[INFO] {state_label}: {ibi_group_count} iterative IBI groups, "
         f"{dbi_group_count} DBI-only groups"
     )
+    if conservative_dihedrals_in_loop:
+        _assert_conservative_dihedral_loop(current_priors, groups, current_priors_path)
+        print("[PASS] Active dihedral IBI groups use ConservativeSplineDihedral before the first sampling step.")
 
     dt, burn_in_steps, production_steps, sample_interval = _simulation_parameters(settings)
     total_steps = burn_in_steps + production_steps
@@ -321,6 +380,9 @@ def run_ibi(
         sample_dir.mkdir(parents=True, exist_ok=True)
         sample_path = sample_dir / "trajectory.npz"
         log_path = sample_dir / "run.log"
+
+        if conservative_dihedrals_in_loop:
+            _assert_conservative_dihedral_loop(current_priors, groups, current_priors_path)
 
         command = [
             pypresso,
@@ -370,7 +432,7 @@ def run_ibi(
                     sim_values = np.mod(sim_values, 2.0 * np.pi)
 
                 if state["kind"] == "bond":
-                    safety_fraction = float(settings["bond"].get("runtime_safety_fraction", 0.95))
+                    safety_fraction = float(settings["bond"]["runtime_safety_fraction"])
                     max_sample = float(np.max(sim_values))
                     if max_sample >= safety_fraction * float(state["grid"][-1]):
                         raise RuntimeError(
@@ -388,6 +450,7 @@ def run_ibi(
                 group_metrics = {
                     "kind": state["kind"],
                     "mode": state["mode"],
+                    "runtime_representation": str(state.get("representation", "tabulated")),
                     "samples": int(sim_values.size),
                     "distribution_l1": l1_before,
                     "sample_min": float(np.min(sim_values)),
@@ -407,6 +470,10 @@ def run_ibi(
                         target_type=state["kind"],
                         settings=settings,
                         previous_force=state["force"],
+                        conservative_dihedral=(
+                            state["kind"] == "dihedral"
+                            and str(state.get("representation", "")) == "conservative_spline"
+                        ),
                     )
                     state["energy"] = next_energy
                     state["force"] = next_force
@@ -425,6 +492,8 @@ def run_ibi(
         current_priors, current_priors_path = _write_iteration_priors(
             current_priors, groups, next_dir, source_priors_path=current_priors_path
         )
+        if conservative_dihedrals_in_loop:
+            _assert_conservative_dihedral_loop(current_priors, groups, current_priors_path)
         metrics_path = sample_dir / "metrics.json"
         metrics_path.write_text(json.dumps(iteration_metrics, indent=2) + "\n")
         all_metrics.append(iteration_metrics)
@@ -452,6 +521,10 @@ def run_ibi(
         "production_steps": production_steps,
         "sample_interval": sample_interval,
         "neighbor_search": neighbor_search,
+        "conservative_dihedrals_in_loop": bool(conservative_dihedrals_in_loop),
+        "dihedral_runtime_representation": (
+            "conservative_spline" if conservative_dihedrals_in_loop else "legacy_tabulated"
+        ),
         "velocity_seed": int(velocity_seed),
         "thermostat_seed": int(thermostat_seed),
         "settings": settings,
@@ -480,19 +553,27 @@ def main():
     source.add_argument("--priors", help="Fresh seed priors with type=ibi/dbi entries")
     source.add_argument(
         "--resume-priors",
-        help="Previously evaluated tabulated priors carrying ibi_mode=ibi/dbi; skips DBI reinitialization",
+        help="Previously evaluated priors carrying ibi_mode=ibi/dbi; representation must match the selected IBI runtime mode",
     )
     parser.add_argument("--iteration-offset", type=int, default=0, help="Sampling-iteration offset for a continuation run")
     parser.add_argument("--config", required=True, help="CG/PaiNN config used by run_cg_md.py")
     parser.add_argument("--rb_info", required=True, help="rigid_bodies_info.json")
-    parser.add_argument("--iterations", type=int, default=5)
-    parser.add_argument("--outdir", default="ibi_priors")
-    parser.add_argument("--ibi-config", "--ibi_config", dest="ibi_config", default=None, help="Optional IBI settings JSON")
+    parser.add_argument("--iterations", type=int, required=True)
+    parser.add_argument("--outdir", required=True)
+    parser.add_argument("--ibi-config", "--ibi_config", dest="ibi_config", required=True, help="Authoritative external IBI settings JSON")
     parser.add_argument("--pypresso", default=str(default_pypresso))
-    parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), default="verlet")
-    parser.add_argument("--velocity_seed", type=int, default=314159)
-    parser.add_argument("--thermostat_seed", type=int, default=42)
+    parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), required=True)
+    parser.add_argument("--velocity_seed", type=int, required=True)
+    parser.add_argument("--thermostat_seed", type=int, required=True)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument(
+        "--conservative-dihedrals-in-loop",
+        action="store_true",
+        help=(
+            "Generate/update active IBI dihedrals directly as ConservativeSplineDihedral and "
+            "fail if a legacy TabulatedDihedral enters sampling. Bond/angle behavior is unchanged."
+        ),
+    )
     args = parser.parse_args()
 
     run_ibi(
@@ -510,6 +591,7 @@ def main():
         velocity_seed=args.velocity_seed,
         thermostat_seed=args.thermostat_seed,
         iteration_offset=args.iteration_offset,
+        conservative_dihedrals_in_loop=args.conservative_dihedrals_in_loop,
     )
 
 

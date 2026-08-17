@@ -88,10 +88,67 @@ class DihedralUpdateLocalizationTests(unittest.TestCase):
                     "groups": {"d": {"kind": "dihedral", "distribution_l1": l1}},
                 }))
             out = root / "out.json"
-            report = finalize(regpath, step35, sroot, out)
+            report = finalize(
+                regpath, step35, sroot, out,
+                representation_dominance_factor=10.0, gain_dominance_factor=1.5, gain_floor=1.0e-3,
+            )
             self.assertEqual(report["localization"]["diagnostic_hint"], "update_amplitude_overshoot_dominant")
             self.assertTrue(report["localization"]["raw_fraction_l1_monotone_non_decreasing"])
             self.assertFalse(report["promotion_ready"])
+
+    def test_finalizer_detects_representation_jump_before_update_amplitude(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            candidates = [
+                ("frac_0p00_raw", 0.0, 0.0, 1.454, 445.0),
+                ("frac_0p50_raw", 0.5, 0.0, 1.456, 441.0),
+                ("frac_1p00_raw", 1.0, 0.0, 1.457, 441.0),
+                ("frac_1p00_smooth_0p02", 1.0, 0.02, 1.455, 436.0),
+            ]
+            registry = {
+                "candidates": [
+                    {
+                        "name": n,
+                        "update_fraction": f,
+                        "effective_alpha_if_linear_no_clip": 0.1 * f,
+                        "smooth_sigma_rad": sm,
+                        "target_abs_U2_p99": u2,
+                        "target_abs_U2_p95": u2,
+                        "target_abs_U2_max": u2,
+                        "candidate_priors": str(root / n / "cg_priors.json"),
+                    }
+                    for n, f, sm, _l1, u2 in candidates
+                ]
+            }
+            regpath = root / "registry.json"
+            regpath.write_text(json.dumps(registry))
+            step35 = root / "step35.json"
+            step35.write_text(json.dumps({
+                "ibi_last_sampled_dihedral_l1": {"a": 0.60, "b": 0.604},
+                "runtime_structure": {"dihedral_mean_l1": 1.389},
+                "candidate_order2_through_0p005": False,
+            }))
+            sroot = root / "short"
+            for name, _f, _sm, l1, _u2 in candidates:
+                d = sroot / name
+                d.mkdir(parents=True)
+                (d / "runtime_structure_report.json").write_text(json.dumps({
+                    "mean_l1_by_kind": {"dihedral": l1},
+                    "groups": {"d": {"kind": "dihedral", "distribution_l1": l1}},
+                }))
+            report = finalize(
+                regpath, step35, sroot, root / "out.json",
+                representation_dominance_factor=10.0, gain_dominance_factor=1.5, gain_floor=1.0e-3,
+            )
+            self.assertEqual(
+                report["localization"]["diagnostic_hint"],
+                "legacy_to_conservative_representation_change_dominant",
+            )
+            self.assertGreater(
+                report["localization"]["l1_jump_preupdate_sample_to_zero_update_conservative"],
+                0.8,
+            )
+            self.assertIn("TabulatedDihedral", report["next_step"])
 
 
 if __name__ == "__main__":

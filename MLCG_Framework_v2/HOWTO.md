@@ -3173,6 +3173,65 @@ Il run AA corto da 50 ps produce 51 frame a 1 ps ed è adatto a smoke test, non 
 
 Per un dataset scientifico si deve usare una traiettoria sufficientemente lunga e rappresentativa.
 
+## 27.1 Regola architetturale: ogni scelta model-dependent è configurabile
+
+Nel percorso IBI/conservative il framework distingue esplicitamente tre classi:
+
+- **CORE_INVARIANT**: proprietà universali del metodo, quindi codificate nel core
+  e coperte da test. Esempi: `F=-grad(U)`, periodicità della spline torsionale,
+  schema della tabella conservativa, formula IBI, controlli di conservatività e
+  runtime/preprocessing parity.
+- **MODEL_PARAMETER**: qualunque scelta che possa cambiare cambiando molecola,
+  mapping, dataset, temperatura, Hamiltoniano o protocollo di sampling. Deve
+  provenire da configurazione esterna.
+- **CALIBRATED_PARAMETER**: un `MODEL_PARAMETER` scelto tramite sweep/diagnostica
+  (per esempio una larghezza di smoothing o una finestra NVE accettata). Deve
+  essere configurato e accompagnato dalla provenance della calibrazione.
+
+La configurazione model-dependent del tutorial IBI è:
+
+```text
+tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+I wrapper degli step 11–39 che contengono decisioni dipendenti dal modello la
+caricano tramite `tutorials/tel22_IBI/model_config.sh`. Lo step 20 installa solo
+il kernel ESPResSo generico e quindi non richiede una sezione model-dependent.
+La configurazione include grouping bonded/torsionale, `ibi`/`dbi`, mixing,
+binning/supporto, sampling, seed policy, regularizzazione e candidate sweep,
+numero di repliche, timestep grid, finestre fine/coarse e soglie di validazione.
+
+Validare il file prima di un workflow:
+
+```bash
+python3 simulation/model_dependent_config.py validate \
+  --config tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+Per un altro modello si usa un file diverso senza modificare il core:
+
+```bash
+IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
+  bash tutorials/tel22_IBI/38_test_conservative_in_loop_dihedral_ibi.sh --run
+```
+
+Gli override via environment restano possibili. Il sidecar di provenance del model config
+(`model_config_provenance*.json`) registra per ogni valore se proviene dal file di
+configurazione o da `environment_override`. I workflow non devono quindi
+dipendere da override invisibili.
+
+Un `ibi_settings.json` passato esplicitamente è **autorevole e completo**: non
+viene più fuso silenziosamente con valori model-dependent interni. Se manca un
+parametro richiesto dal percorso usato, il workflow deve fallire con errore di
+configurazione. I default Python rimasti in helper low-level servono soltanto a
+uso API/test/esplorativo; i wrapper di produzione/tutorial passano valori
+espliciti dalla configurazione del modello.
+
+Valori TEL22 quali `sigma_angle=0.0075 rad`, `alpha`, numero di repliche, seed,
+threshold strutturali e griglie NVE sono quindi esempi/configurazioni TEL22, non
+proprietà del metodo. `calibration_provenance` nel JSON collega i valori calibrati
+agli step/report che li hanno selezionati.
+
 ---
 
 # 28. Troubleshooting

@@ -1,0 +1,1575 @@
+{
+  "diagnostic_hint": "legacy_tabulated_energy_force_inconsistency_dominant",
+  "force_factor_convention": "dU_dphi = -legacy_force_factor * sin(phi)",
+  "hint_is_gating": false,
+  "kind": "tabulated_dihedral_conservativity_diagnostic",
+  "pairs": [
+    {
+      "aggregate": {
+        "conservative_runtime_force_plus_gradE_max": 1.499947899219478e-08,
+        "conservative_runtime_force_plus_gradE_rms": 2.93916554338894e-09,
+        "groups": 6,
+        "legacy_runtime_force_plus_gradE_max": 0.006328063611563017,
+        "legacy_runtime_force_plus_gradE_rms": 0.0010086871184087846,
+        "legacy_runtime_preprocessing_parity_max": 1.4426237981979284e-12,
+        "legacy_to_conservative_nonconservativity_ratio": 343188.2633074625,
+        "legacy_vs_conservative_energy_rms": 0.00012478652113602455,
+        "legacy_vs_conservative_force_max": 0.021927543064212074,
+        "legacy_vs_conservative_force_rms": 0.004167014857215862,
+        "scalar_dU_residual_p99": 0.0042889139369337165,
+        "scalar_dU_residual_rms": 0.0010086870214326069
+      },
+      "conservative_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p00_raw/cg_priors.json",
+      "conservative_priors_sha256": "e21ec74c79c20149694210d99c1fcb9c9b14a1aaca38864dd040c8493a96a1e3",
+      "groups": {
+        "dih_A_G_G_G": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 2.9833273629265022e-09,
+            "rms_max_component_error": 1.562384204595539e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p00_raw/dihedral_conservative_dih_A_G_G_G.dat",
+          "conservative_table_sha256": "db9bbe2d91a9d23fbbfbd5622e5a0270885b69ad5551cdb2c982b1c286c04643",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.0005762560871396261,
+            "rms_max_component_error": 0.0002196287314059053
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 2.1793677973391823e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/dihedral_tabulated_dih_A_G_G_G.dat",
+          "legacy_table_sha256": "5ad0422b7e9d3bfa0abbca33c125bf6ba8abf39aacb4bf8212fa87ed8a3f65c5",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.00028757646575616747,
+            "max_force_component_difference": 0.0038932563003726273,
+            "rms_energy_difference": 0.00010966571971799203,
+            "rms_max_force_component_difference": 0.00166004074214099
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": -4.7163669355024505,
+              "conservative_energy": 0.4352721092999619,
+              "conservative_force_plus_gradE_max_abs": 7.56684159775034e-10,
+              "legacy_energy": 0.4351869299979106,
+              "legacy_force_factor": 30.560534753768707,
+              "legacy_force_minus_conservative_max_abs": 0.0015092469437627543,
+              "legacy_force_plus_gradE_max_abs": 0.00015923593325872787,
+              "legacy_implied_dU_dphi": -4.714857688558669,
+              "legacy_runtime_linear_dU_dphi": -4.715016924066918,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": 7.525575443766199,
+              "conservative_energy": 2.3696365662729275,
+              "conservative_force_plus_gradE_max_abs": 2.174772362195654e-09,
+              "legacy_energy": 2.369708566248703,
+              "legacy_force_factor": -9.168294676741313,
+              "legacy_force_minus_conservative_max_abs": 0.0038932563003726273,
+              "legacy_force_plus_gradE_max_abs": 6.661001290808599e-05,
+              "legacy_implied_dU_dphi": 7.5216821874658555,
+              "legacy_runtime_linear_dU_dphi": 7.521748796378049,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 0.6057552168818412,
+              "conservative_energy": 4.214592335880624,
+              "conservative_force_plus_gradE_max_abs": 6.601961199947937e-10,
+              "legacy_energy": 4.2148799123463805,
+              "legacy_force_factor": -0.6191839386302054,
+              "legacy_force_minus_conservative_max_abs": 0.0007276613997918568,
+              "legacy_force_plus_gradE_max_abs": 0.00012443882273405205,
+              "legacy_implied_dU_dphi": 0.6064828782813099,
+              "legacy_runtime_linear_dU_dphi": 0.6063584394815283,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": 0.037361417223255214,
+              "conservative_energy": 4.44340931953211,
+              "conservative_force_plus_gradE_max_abs": 1.490072960852462e-10,
+              "legacy_energy": 4.44340931953211,
+              "legacy_force_factor": -0.07025986190468964,
+              "legacy_force_minus_conservative_max_abs": 5.399536910644098e-07,
+              "legacy_force_plus_gradE_max_abs": 5.398836772432802e-07,
+              "legacy_implied_dU_dphi": 0.037361957176946084,
+              "legacy_runtime_linear_dU_dphi": 0.03736141722314812,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": 0.03736141722336525,
+              "conservative_energy": 4.484979403196593,
+              "conservative_force_plus_gradE_max_abs": 1.859325714226312e-10,
+              "legacy_energy": 4.484979403196593,
+              "legacy_force_factor": 0.07075220726909925,
+              "legacy_force_minus_conservative_max_abs": 5.487980989024588e-07,
+              "legacy_force_plus_gradE_max_abs": 5.487280933524907e-07,
+              "legacy_implied_dU_dphi": 0.037361966021362575,
+              "legacy_runtime_linear_dU_dphi": 0.03736141722335168,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": 0.037361417223365785,
+              "conservative_energy": 4.5151380913453325,
+              "conservative_force_plus_gradE_max_abs": 1.5224314170447784e-10,
+              "legacy_energy": 4.5151380913453325,
+              "legacy_force_factor": 0.038178578902051286,
+              "legacy_force_minus_conservative_max_abs": 9.677651786194064e-08,
+              "legacy_force_plus_gradE_max_abs": 9.670671639872008e-08,
+              "legacy_implied_dU_dphi": 0.03736151399998545,
+              "legacy_runtime_linear_dU_dphi": 0.03736141722335168,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -13.512327473944438,
+              "conservative_energy": 3.7752073750117203,
+              "conservative_force_plus_gradE_max_abs": 2.9833273629265022e-09,
+              "legacy_energy": 3.775185129291359,
+              "legacy_force_factor": -16.42023793308337,
+              "legacy_force_minus_conservative_max_abs": 0.0003021566912959628,
+              "legacy_force_plus_gradE_max_abs": 9.243679198966959e-05,
+              "legacy_implied_dU_dphi": -13.51202531725305,
+              "legacy_runtime_linear_dU_dphi": -13.511932880470795,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": -4.479747958724914,
+              "conservative_energy": 0.5394358906427494,
+              "conservative_force_plus_gradE_max_abs": 2.1931931826202344e-09,
+              "legacy_energy": 0.5394599313355279,
+              "legacy_force_factor": -29.02366496944149,
+              "legacy_force_minus_conservative_max_abs": 0.0019974535754201383,
+              "legacy_force_plus_gradE_max_abs": 0.0005762560871396261,
+              "legacy_implied_dU_dphi": -4.477750505149375,
+              "legacy_runtime_linear_dU_dphi": -4.477174250191004,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.000576254958371436,
+            "p99_abs_dU_dphi_residual": 0.0005470635968628911,
+            "rms_abs_dU_dphi_residual": 0.00021962827886527937,
+            "rms_relative_to_runtime_energy_slope": 3.700537300170247e-05
+          }
+        },
+        "dih_G_G_G_T": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 4.5296388861970627e-10,
+            "rms_max_component_error": 2.7940987404256065e-10
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p00_raw/dihedral_conservative_dih_G_G_G_T.dat",
+          "conservative_table_sha256": "10f2568c67611a4019ab252bd7a6f2327f4db92fcffda7c9253998a787572679",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.001505385833649453,
+            "rms_max_component_error": 0.0006833975571812716
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 3.423927807943983e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/dihedral_tabulated_dih_G_G_G_T.dat",
+          "legacy_table_sha256": "1a37913fbd63a36b6c0b3c7a02ca29cd91890e05c6cbb215fe457f98368c4960",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.00039385467527286444,
+            "max_force_component_difference": 0.0017412027790397744,
+            "rms_energy_difference": 0.0001613344665038291,
+            "rms_max_force_component_difference": 0.0008743921818606276
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": 0.7823385685735994,
+              "conservative_energy": 0.7634727460946897,
+              "conservative_force_plus_gradE_max_abs": 3.725707520274568e-10,
+              "legacy_energy": 0.7635698373200323,
+              "legacy_force_factor": -5.0650199980989346,
+              "legacy_force_minus_conservative_max_abs": 0.0009108653886668039,
+              "legacy_force_plus_gradE_max_abs": 0.001089353161984774,
+              "legacy_implied_dU_dphi": 0.7814277031849126,
+              "legacy_runtime_linear_dU_dphi": 0.7825170562845264,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": -4.795908044816688,
+              "conservative_energy": 1.3826970006412247,
+              "conservative_force_plus_gradE_max_abs": 4.5296388861970627e-10,
+              "legacy_energy": 1.3823031459659518,
+              "legacy_force_factor": 5.843684064517877,
+              "legacy_force_minus_conservative_max_abs": 0.0017412027790397744,
+              "legacy_force_plus_gradE_max_abs": 0.0005288407815866591,
+              "legacy_implied_dU_dphi": -4.794166842037507,
+              "legacy_runtime_linear_dU_dphi": -4.794695682097861,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 5.510402456478437,
+              "conservative_energy": 1.673138451014304,
+              "conservative_force_plus_gradE_max_abs": 3.043989504902811e-10,
+              "legacy_energy": 1.6729579464095288,
+              "legacy_force_factor": -5.624732185502294,
+              "legacy_force_minus_conservative_max_abs": 0.001048042390156212,
+              "legacy_force_plus_gradE_max_abs": 6.0841312076398424e-05,
+              "legacy_implied_dU_dphi": 5.509354414088386,
+              "legacy_runtime_linear_dU_dphi": 5.509415254377776,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": 0.026492277067709662,
+              "conservative_energy": 2.7490029235919606,
+              "conservative_force_plus_gradE_max_abs": 1.2420172702809484e-10,
+              "legacy_energy": 2.7490029917008303,
+              "legacy_force_factor": -0.04980560817691557,
+              "legacy_force_minus_conservative_max_abs": 7.240669517068893e-06,
+              "legacy_force_plus_gradE_max_abs": 6.019748686886262e-07,
+              "legacy_implied_dU_dphi": 0.02648503639819238,
+              "legacy_runtime_linear_dU_dphi": 0.026484434412360244,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": 0.026009972596281693,
+              "conservative_energy": 2.7779471401920195,
+              "conservative_force_plus_gradE_max_abs": 1.3493609354875424e-10,
+              "legacy_energy": 2.77794714019202,
+              "legacy_force_factor": 0.04925570572431322,
+              "legacy_force_minus_conservative_max_abs": 3.820578741674241e-07,
+              "legacy_force_plus_gradE_max_abs": 3.8214498267880037e-07,
+              "legacy_implied_dU_dphi": 0.026010354654105103,
+              "legacy_runtime_linear_dU_dphi": 0.0260099725962363,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": 0.026009972596063406,
+              "conservative_energy": 2.7989427744743605,
+              "conservative_force_plus_gradE_max_abs": 1.3500171119895654e-10,
+              "legacy_energy": 2.798942774474361,
+              "legacy_force_factor": 0.02657885767750206,
+              "legacy_force_minus_conservative_max_abs": 6.737334921208538e-08,
+              "legacy_force_plus_gradE_max_abs": 6.746039210581145e-08,
+              "legacy_implied_dU_dphi": 0.02601003996951442,
+              "legacy_runtime_linear_dU_dphi": 0.0260099725962363,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": 0.028059571777678035,
+              "conservative_energy": 2.8200192187583735,
+              "conservative_force_plus_gradE_max_abs": 1.1049923823169827e-10,
+              "legacy_energy": 2.820020967436325,
+              "legacy_force_factor": 0.03416373856604396,
+              "legacy_force_minus_conservative_max_abs": 5.337654358555585e-05,
+              "legacy_force_plus_gradE_max_abs": 2.4898048418334207e-06,
+              "legacy_implied_dU_dphi": 0.02811294832131082,
+              "legacy_runtime_linear_dU_dphi": 0.028110458588206145,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": 0.7904835652495388,
+              "conservative_energy": 0.006595021628049968,
+              "conservative_force_plus_gradE_max_abs": 3.5191716207805257e-10,
+              "legacy_energy": 0.006700365325181642,
+              "legacy_force_factor": 5.130680029232945,
+              "legacy_force_minus_conservative_max_abs": 0.0010741211024893893,
+              "legacy_force_plus_gradE_max_abs": 0.001505385833649453,
+              "legacy_implied_dU_dphi": 0.7915576863516877,
+              "legacy_runtime_linear_dU_dphi": 0.7900523007174947,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.0015053856341930016,
+            "p99_abs_dU_dphi_residual": 0.0014762633567724558,
+            "rms_abs_dU_dphi_residual": 0.0006833974086490773,
+            "rms_relative_to_runtime_energy_slope": 0.0002616333534852349
+          }
+        },
+        "dih_G_G_T_T": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 1.499947899219478e-08,
+            "rms_max_component_error": 5.637993305637988e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p00_raw/dihedral_conservative_dih_G_G_T_T.dat",
+          "conservative_table_sha256": "0d9aefd91c523edd3b1837040b75717c0b21828022cb4121cce5d6fa0c85bb1b",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.0019894492688941057,
+            "rms_max_component_error": 0.0007112977951770595
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 4.4941828036826337e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/dihedral_tabulated_dih_G_G_T_T.dat",
+          "legacy_table_sha256": "bdfedf22473eb419011de94578429a9fe576714c7168835060c1f1e9c6f0f102",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.00022190667620991533,
+            "max_force_component_difference": 0.021927543064212074,
+            "rms_energy_difference": 9.333932643032564e-05,
+            "rms_max_force_component_difference": 0.008028658603089114
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": -0.3811575021965178,
+              "conservative_energy": 3.9645509647456048,
+              "conservative_force_plus_gradE_max_abs": 2.4889629246516165e-10,
+              "legacy_energy": 3.964550420187153,
+              "legacy_force_factor": 2.470541244684169,
+              "legacy_force_minus_conservative_max_abs": 4.146201527555071e-06,
+              "legacy_force_plus_gradE_max_abs": 6.82473033757347e-05,
+              "legacy_implied_dU_dphi": -0.3811533559949897,
+              "legacy_runtime_linear_dU_dphi": -0.38108510872923823,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": -2.896096781622843,
+              "conservative_energy": 3.514388145787121,
+              "conservative_force_plus_gradE_max_abs": 4.117996166286275e-09,
+              "legacy_energy": 3.514338946255495,
+              "legacy_force_factor": 3.5234355479561823,
+              "legacy_force_minus_conservative_max_abs": 0.0054651719105143215,
+              "legacy_force_plus_gradE_max_abs": 6.179215670298888e-05,
+              "legacy_implied_dU_dphi": -2.890631609712361,
+              "legacy_runtime_linear_dU_dphi": -2.890693401384719,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 0.04425956350516717,
+              "conservative_energy": 3.2626991863326533,
+              "conservative_force_plus_gradE_max_abs": 6.289155377037225e-10,
+              "legacy_energy": 3.2626837273886733,
+              "legacy_force_factor": -0.04444832421809142,
+              "legacy_force_minus_conservative_max_abs": 0.000722989113077499,
+              "legacy_force_plus_gradE_max_abs": 6.848475302155543e-06,
+              "legacy_implied_dU_dphi": 0.043536574392102456,
+              "legacy_runtime_linear_dU_dphi": 0.04354342282485979,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": -0.031675099379131544,
+              "conservative_energy": 3.2372080554743614,
+              "conservative_force_plus_gradE_max_abs": 1.724369952382787e-10,
+              "legacy_energy": 3.2372080554743614,
+              "legacy_force_factor": 0.05956647990348919,
+              "legacy_force_minus_conservative_max_abs": 4.577741368888555e-07,
+              "legacy_force_plus_gradE_max_abs": 4.578319399636821e-07,
+              "legacy_implied_dU_dphi": -0.03167555715316651,
+              "legacy_runtime_linear_dU_dphi": -0.03167509937903189,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": -0.03167509937800085,
+              "conservative_energy": 3.201964838564308,
+              "conservative_force_plus_gradE_max_abs": 5.672326497396796e-11,
+              "legacy_energy": 3.2019648385643076,
+              "legacy_force_factor": -0.05998389148535382,
+              "legacy_force_minus_conservative_max_abs": 4.652723655657054e-07,
+              "legacy_force_plus_gradE_max_abs": 4.6532908883067936e-07,
+              "legacy_implied_dU_dphi": -0.03167556465031569,
+              "legacy_runtime_linear_dU_dphi": -0.03167509937801411,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": -12.72349212341515,
+              "conservative_energy": 1.3492901266173492,
+              "conservative_force_plus_gradE_max_abs": 1.912697555894738e-09,
+              "legacy_energy": 1.349512033293559,
+              "legacy_force_factor": -12.999591818448,
+              "legacy_force_minus_conservative_max_abs": 0.002106317907063726,
+              "legacy_force_plus_gradE_max_abs": 0.00012674146679891862,
+              "legacy_implied_dU_dphi": -12.721385805508492,
+              "legacy_runtime_linear_dU_dphi": -12.721259064103227,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -14.976610712825,
+              "conservative_energy": 2.9635979427456247,
+              "conservative_force_plus_gradE_max_abs": 1.499947899219478e-08,
+              "legacy_energy": 2.963468119817992,
+              "legacy_force_factor": -18.17340110721947,
+              "legacy_force_minus_conservative_max_abs": 0.021927543064212074,
+              "legacy_force_plus_gradE_max_abs": 0.0002550712482367601,
+              "legacy_implied_dU_dphi": -14.954683169760454,
+              "legacy_runtime_linear_dU_dphi": -14.954428098569755,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": 8.081250068264126,
+              "conservative_energy": 3.2903482344760304,
+              "conservative_force_plus_gradE_max_abs": 2.8643738492206694e-09,
+              "legacy_energy": 3.2903789167832613,
+              "legacy_force_factor": 52.37952420981301,
+              "legacy_force_minus_conservative_max_abs": 0.00017411741738371234,
+              "legacy_force_plus_gradE_max_abs": 0.0019894492688941057,
+              "legacy_implied_dU_dphi": 8.08107595084631,
+              "legacy_runtime_linear_dU_dphi": 8.07908650356985,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.0019894472764612203,
+            "p99_abs_dU_dphi_residual": 0.0018680409504578494,
+            "rms_abs_dU_dphi_residual": 0.0007112970888695035,
+            "rms_relative_to_runtime_energy_slope": 9.388044021084162e-05
+          }
+        },
+        "dih_G_T_T_A": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 1.098353408224284e-09,
+            "rms_max_component_error": 5.697278498484365e-10
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p00_raw/dihedral_conservative_dih_G_T_T_A.dat",
+          "conservative_table_sha256": "1802497de80d64d6e5b78a91a903ded981cc94f35c267c661058544871328c05",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.006328063611563017,
+            "rms_max_component_error": 0.002252243808025054
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 1.4426237981979284e-12,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/dihedral_tabulated_dih_G_T_T_A.dat",
+          "legacy_table_sha256": "f3f17fb8157244f6c1200ca6b7114f53180dbd14358d51314d6e7d0150397aa4",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.0005208447186682581,
+            "max_force_component_difference": 0.0061549184019427106,
+            "rms_energy_difference": 0.00020110273161907724,
+            "rms_max_force_component_difference": 0.0022013588652536296
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": 0.6614496193110547,
+              "conservative_energy": 3.9328964752174254,
+              "conservative_force_plus_gradE_max_abs": 4.2131309552218e-10,
+              "legacy_energy": 3.932886760299343,
+              "legacy_force_factor": -4.290995150615638,
+              "legacy_force_minus_conservative_max_abs": 0.0005620778158991202,
+              "legacy_force_plus_gradE_max_abs": 0.0002554932922176345,
+              "legacy_implied_dU_dphi": 0.6620116971269024,
+              "legacy_runtime_linear_dU_dphi": 0.6617562038019866,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": -6.929463659104939,
+              "conservative_energy": 1.861588296193269,
+              "conservative_force_plus_gradE_max_abs": 5.372062794606336e-10,
+              "legacy_energy": 1.8617470187986864,
+              "legacy_force_factor": 8.445581228796291,
+              "legacy_force_minus_conservative_max_abs": 0.0006966275885194051,
+              "legacy_force_plus_gradE_max_abs": 0.0002533222018969994,
+              "legacy_implied_dU_dphi": -6.928767031516458,
+              "legacy_runtime_linear_dU_dphi": -6.928513708254287,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": -0.07332093548688405,
+              "conservative_energy": 4.552572128072822,
+              "conservative_force_plus_gradE_max_abs": 3.931596090356315e-10,
+              "legacy_energy": 4.5525712304656425,
+              "legacy_force_factor": 0.07489870328442147,
+              "legacy_force_minus_conservative_max_abs": 4.1402121391975744e-05,
+              "legacy_force_plus_gradE_max_abs": 5.935954217328732e-07,
+              "legacy_implied_dU_dphi": -0.07336233760837703,
+              "legacy_runtime_linear_dU_dphi": -0.07336174414046377,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": 7.8995536991115625,
+              "conservative_energy": 3.0754735130352584,
+              "conservative_force_plus_gradE_max_abs": 1.098353408224284e-09,
+              "legacy_energy": 3.07563774213606,
+              "legacy_force_factor": -14.855797175137992,
+              "legacy_force_minus_conservative_max_abs": 0.00028616450587026776,
+              "legacy_force_plus_gradE_max_abs": 0.0006379485993095457,
+              "legacy_implied_dU_dphi": 7.899839863617137,
+              "legacy_runtime_linear_dU_dphi": 7.899201914127534,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": -0.04816213475893359,
+              "conservative_energy": 4.71347575434379,
+              "conservative_force_plus_gradE_max_abs": 1.9253244831762828e-10,
+              "legacy_energy": 4.713475754343792,
+              "legacy_force_factor": -0.09120578378046301,
+              "legacy_force_minus_conservative_max_abs": 7.074487956698627e-07,
+              "legacy_force_plus_gradE_max_abs": 7.074830259135023e-07,
+              "legacy_implied_dU_dphi": -0.048162842207831284,
+              "legacy_runtime_linear_dU_dphi": -0.04816213475909062,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": -0.04816213475564464,
+              "conservative_energy": 4.674598567378648,
+              "conservative_force_plus_gradE_max_abs": 1.3271392144964533e-10,
+              "legacy_energy": 4.674598567378648,
+              "legacy_force_factor": -0.04921552763562555,
+              "legacy_force_minus_conservative_max_abs": 1.247535067819272e-07,
+              "legacy_force_plus_gradE_max_abs": 1.2478444807312306e-07,
+              "legacy_implied_dU_dphi": -0.048162259509253236,
+              "legacy_runtime_linear_dU_dphi": -0.04816213475563017,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -0.04816213474679519,
+              "conservative_energy": 4.635511233456778,
+              "conservative_force_plus_gradE_max_abs": 2.1245392944901909e-10,
+              "legacy_energy": 4.635511233456785,
+              "legacy_force_factor": -0.05852841228960774,
+              "legacy_force_minus_conservative_max_abs": 2.239145312221691e-07,
+              "legacy_force_plus_gradE_max_abs": 2.2393641950502197e-07,
+              "legacy_implied_dU_dphi": -0.048162358661224466,
+              "legacy_runtime_linear_dU_dphi": -0.04816213474647017,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": -1.7427224906539194,
+              "conservative_energy": 0.006730176964495035,
+              "conservative_force_plus_gradE_max_abs": 8.184437572111847e-10,
+              "legacy_energy": 0.007251021683163293,
+              "legacy_force_factor": -11.255999045931297,
+              "legacy_force_minus_conservative_max_abs": 0.0061549184019427106,
+              "legacy_force_plus_gradE_max_abs": 0.006328063611563017,
+              "legacy_implied_dU_dphi": -1.7365675722534237,
+              "legacy_runtime_linear_dU_dphi": -1.742895635870399,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.006328063616975355,
+            "p99_abs_dU_dphi_residual": 0.005929755628059269,
+            "rms_abs_dU_dphi_residual": 0.002252243856812414,
+            "rms_relative_to_runtime_energy_slope": 0.000596922973772265
+          }
+        },
+        "dih_T_A_G_G": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 3.0872628897782306e-09,
+            "rms_max_component_error": 1.1446180510080955e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p00_raw/dihedral_conservative_dih_T_A_G_G.dat",
+          "conservative_table_sha256": "45bb7a1e09645ed3bf7aaded6be96bb67c1ab8dcfb09a8e1bb5cf69e5bac8713",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.00018584386725972735,
+            "rms_max_component_error": 7.037468785761114e-05
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 1.1235457009206584e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/dihedral_tabulated_dih_T_A_G_G.dat",
+          "legacy_table_sha256": "aab9db87a7812f3a49d923e85a34880b11370c670475942a0c827752147bec76",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.0001492145019206248,
+            "max_force_component_difference": 0.0030421980523600567,
+            "rms_energy_difference": 7.384024890168675e-05,
+            "rms_max_force_component_difference": 0.0010757522563660036
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": -0.020777799016395534,
+              "conservative_energy": 4.674013492576757,
+              "conservative_force_plus_gradE_max_abs": 2.9272251636514035e-10,
+              "legacy_energy": 4.674013539902156,
+              "legacy_force_factor": 0.13468526719578855,
+              "legacy_force_minus_conservative_max_abs": 1.3487535381329074e-06,
+              "legacy_force_plus_gradE_max_abs": 4.706491483513764e-06,
+              "legacy_implied_dU_dphi": -0.02077914776983187,
+              "legacy_runtime_linear_dU_dphi": -0.020774441227059452,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": 3.732060152480853,
+              "conservative_energy": 0.11131111119680341,
+              "conservative_force_plus_gradE_max_abs": 7.654272771162596e-10,
+              "legacy_energy": 0.11145724154662259,
+              "legacy_force_factor": -4.549130594195122,
+              "legacy_force_minus_conservative_max_abs": 5.315378295023265e-05,
+              "legacy_force_plus_gradE_max_abs": 0.00018584386725972735,
+              "legacy_implied_dU_dphi": 3.7321133062637557,
+              "legacy_runtime_linear_dU_dphi": 3.732299149566942,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 3.3334433998878445,
+              "conservative_energy": 3.7604549729248467,
+              "conservative_force_plus_gradE_max_abs": 3.0872628897782306e-09,
+              "legacy_energy": 3.7606041874267673,
+              "legacy_force_factor": -3.4063588069790853,
+              "legacy_force_minus_conservative_max_abs": 0.0030421980523600567,
+              "legacy_force_plus_gradE_max_abs": 7.102121362123626e-05,
+              "legacy_implied_dU_dphi": 3.336485597940193,
+              "legacy_runtime_linear_dU_dphi": 3.336414576404052,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": -0.019887511555547185,
+              "conservative_energy": 4.7534370592312944,
+              "conservative_force_plus_gradE_max_abs": 2.3282836769666915e-10,
+              "legacy_energy": 4.753437158737648,
+              "legacy_force_factor": 0.0374203243991932,
+              "legacy_force_minus_conservative_max_abs": 1.1425331727935722e-05,
+              "legacy_force_plus_gradE_max_abs": 3.269593461252551e-08,
+              "legacy_implied_dU_dphi": -0.01989893688727515,
+              "legacy_runtime_linear_dU_dphi": -0.019898969593929203,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": -0.02059215340016363,
+              "conservative_energy": 4.730531518439232,
+              "conservative_force_plus_gradE_max_abs": 1.37828713719923e-10,
+              "legacy_energy": 4.730531518439232,
+              "legacy_force_factor": -0.03899585223883044,
+              "legacy_force_minus_conservative_max_abs": 3.024759765678231e-07,
+              "legacy_force_plus_gradE_max_abs": 3.025601924590282e-07,
+              "legacy_implied_dU_dphi": -0.020592455876038526,
+              "legacy_runtime_linear_dU_dphi": -0.020592153400033814,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": -0.0205921533999332,
+              "conservative_energy": 4.7139092278823025,
+              "conservative_force_plus_gradE_max_abs": 3.432470184819292e-10,
+              "legacy_energy": 4.7139092278823025,
+              "legacy_force_factor": -0.021042540989492382,
+              "legacy_force_minus_conservative_max_abs": 5.333953924380186e-08,
+              "legacy_force_plus_gradE_max_abs": 5.342372826067088e-08,
+              "legacy_implied_dU_dphi": -0.020592206739574237,
+              "legacy_runtime_linear_dU_dphi": -0.020592153400033814,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -0.020592153399939122,
+              "conservative_energy": 4.697197087106149,
+              "conservative_force_plus_gradE_max_abs": 2.6207175839176866e-10,
+              "legacy_energy": 4.69719708710615,
+              "legacy_force_factor": -0.025024348494328864,
+              "legacy_force_minus_conservative_max_abs": 9.57367316568869e-08,
+              "legacy_force_plus_gradE_max_abs": 9.582092659610186e-08,
+              "legacy_implied_dU_dphi": -0.020592249136772486,
+              "legacy_runtime_linear_dU_dphi": -0.020592153400033814,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": -0.020592153401096776,
+              "conservative_energy": 4.680484946329606,
+              "conservative_force_plus_gradE_max_abs": 1.3689557126772556e-10,
+              "legacy_energy": 4.68048494632962,
+              "legacy_force_factor": -0.13349959410590856,
+              "legacy_force_minus_conservative_max_abs": 4.069563071865817e-06,
+              "legacy_force_plus_gradE_max_abs": 4.069648220899474e-06,
+              "legacy_implied_dU_dphi": -0.020596222964065995,
+              "legacy_runtime_linear_dU_dphi": -0.020592153400644478,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.00018584330318649478,
+            "p99_abs_dU_dphi_residual": 0.00017780577949331187,
+            "rms_abs_dU_dphi_residual": 7.037454209309023e-05,
+            "rms_relative_to_runtime_energy_slope": 3.975880114278083e-05
+          }
+        },
+        "dih_T_T_A_G": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 1.0945395700900917e-08,
+            "rms_max_component_error": 3.986394542463332e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p00_raw/dihedral_conservative_dih_T_T_A_G.dat",
+          "conservative_table_sha256": "c004477752466429127a8968bb4ce55b663a013bab0d9e88a06083ccbd42d58d",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.00020966077628692403,
+            "rms_max_component_error": 7.700581368057084e-05
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 8.171241461241152e-14,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/dihedral_tabulated_dih_T_T_A_G.dat",
+          "legacy_table_sha256": "5be396b209d6cc21f414489cde359c85dce800339ba0752b459037b64bacf52e",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 7.798047409979247e-05,
+            "max_force_component_difference": 0.014736392461793812,
+            "rms_energy_difference": 2.7708375973054135e-05,
+            "rms_max_force_component_difference": 0.005495561593924247
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": 0.021747142366655547,
+              "conservative_energy": 4.929576949893869,
+              "conservative_force_plus_gradE_max_abs": 2.0429715428052497e-10,
+              "legacy_energy": 4.929576949893869,
+              "legacy_force_factor": -0.14098742479513188,
+              "legacy_force_minus_conservative_max_abs": 4.297820543428671e-06,
+              "legacy_force_plus_gradE_max_abs": 4.298100062735677e-06,
+              "legacy_implied_dU_dphi": 0.021751440187198948,
+              "legacy_runtime_linear_dU_dphi": 0.021747142366727385,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": 0.021747142366625533,
+              "conservative_energy": 4.947131564614337,
+              "conservative_force_plus_gradE_max_abs": 2.8141926289304564e-10,
+              "legacy_energy": 4.947131564614337,
+              "legacy_force_factor": -0.02650805233592326,
+              "legacy_force_minus_conservative_max_abs": 1.0203471397657315e-07,
+              "legacy_force_plus_gradE_max_abs": 1.0209226044416431e-07,
+              "legacy_implied_dU_dphi": 0.021747244401441303,
+              "legacy_runtime_linear_dU_dphi": 0.021747142366727385,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 0.021747142697091965,
+              "conservative_energy": 4.964781069143895,
+              "conservative_force_plus_gradE_max_abs": 1.6576473180207607e-10,
+              "legacy_energy": 4.964781069143989,
+              "legacy_force_factor": -0.02220263210786888,
+              "legacy_force_minus_conservative_max_abs": 5.6133765257565527e-08,
+              "legacy_force_plus_gradE_max_abs": 5.607748538444257e-08,
+              "legacy_implied_dU_dphi": 0.021747198830755432,
+              "legacy_runtime_linear_dU_dphi": 0.02174714269546952,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": -13.107087438386174,
+              "conservative_energy": 2.7627825238053063,
+              "conservative_force_plus_gradE_max_abs": 2.6486723925245315e-09,
+              "legacy_energy": 2.762860504279406,
+              "legacy_force_factor": 24.638825737663133,
+              "legacy_force_minus_conservative_max_abs": 0.004944520007384767,
+              "legacy_force_plus_gradE_max_abs": 5.869028246152652e-05,
+              "legacy_implied_dU_dphi": -13.102142918378874,
+              "legacy_runtime_linear_dU_dphi": -13.102201605470464,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": 13.42242448449797,
+              "conservative_energy": 3.6586058562961616,
+              "conservative_force_plus_gradE_max_abs": 1.0945395700900917e-08,
+              "legacy_energy": 3.658598041025745,
+              "legacy_force_factor": 25.390085905671697,
+              "legacy_force_minus_conservative_max_abs": 0.014736392461793812,
+              "legacy_force_plus_gradE_max_abs": 0.00020966077628692403,
+              "legacy_implied_dU_dphi": 13.407688092036253,
+              "legacy_runtime_linear_dU_dphi": 13.407478429720502,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": 0.021747142366968952,
+              "conservative_energy": 4.404542765289011,
+              "conservative_force_plus_gradE_max_abs": 2.4669521980769105e-10,
+              "legacy_energy": 4.404542765289011,
+              "legacy_force_factor": 0.02222279165122048,
+              "legacy_force_minus_conservative_max_abs": 5.633107733743481e-08,
+              "legacy_force_plus_gradE_max_abs": 5.6388967224763054e-08,
+              "legacy_implied_dU_dphi": 0.021747198698148083,
+              "legacy_runtime_linear_dU_dphi": 0.02174714236693094,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": 0.02174714236662644,
+              "conservative_energy": 4.422192269818778,
+              "conservative_force_plus_gradE_max_abs": 2.779507075889587e-10,
+              "legacy_energy": 4.422192269818778,
+              "legacy_force_factor": 0.02642793392070459,
+              "legacy_force_minus_conservative_max_abs": 1.0110661094811513e-07,
+              "legacy_force_plus_gradE_max_abs": 1.0094201194008057e-07,
+              "legacy_implied_dU_dphi": 0.021747243473237313,
+              "legacy_runtime_linear_dU_dphi": 0.021747142366727385,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": 0.02174714236685264,
+              "conservative_energy": 4.439841774348545,
+              "conservative_force_plus_gradE_max_abs": 1.644745901974165e-10,
+              "legacy_energy": 4.439841774348544,
+              "legacy_force_factor": 0.14098742479518384,
+              "legacy_force_minus_conservative_max_abs": 4.297820457133117e-06,
+              "legacy_force_plus_gradE_max_abs": 4.2978780271478445e-06,
+              "legacy_implied_dU_dphi": 0.02175144018720708,
+              "legacy_runtime_linear_dU_dphi": 0.021747142366727385,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.0002096623157505917,
+            "p99_abs_dU_dphi_residual": 0.0001990940500593474,
+            "rms_abs_dU_dphi_residual": 7.700603129370462e-05,
+            "rms_relative_to_runtime_energy_slope": 1.1618490289326726e-05
+          }
+        }
+      },
+      "label": "iteration_000_pre_update",
+      "legacy_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/cg_priors.json",
+      "legacy_priors_sha256": "4a9896427c658ae284f565a243aed670c3f1b2d9b34dae82c97188b82c2866ad"
+    },
+    {
+      "aggregate": {
+        "conservative_runtime_force_plus_gradE_max": 1.5508867079461197e-08,
+        "conservative_runtime_force_plus_gradE_rms": 3.199232135228364e-09,
+        "groups": 6,
+        "legacy_runtime_force_plus_gradE_max": 0.006082892512993432,
+        "legacy_runtime_force_plus_gradE_rms": 0.0009978007117700752,
+        "legacy_runtime_preprocessing_parity_max": 1.3877787807814457e-12,
+        "legacy_to_conservative_nonconservativity_ratio": 311887.56226307765,
+        "legacy_vs_conservative_energy_rms": 0.00013534785112755506,
+        "legacy_vs_conservative_force_max": 0.02090250465645127,
+        "legacy_vs_conservative_force_rms": 0.004503174374024182,
+        "scalar_dU_residual_p99": 0.004130412300576852,
+        "scalar_dU_residual_rms": 0.0009978005773254757
+      },
+      "conservative_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/cg_priors.json",
+      "conservative_priors_sha256": "8b97bca796fd7980368220da45a9228f0c20dac619580c18cc973c478ff25f4f",
+      "groups": {
+        "dih_A_G_G_G": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 3.069887455353637e-09,
+            "rms_max_component_error": 1.5844182084471302e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_A_G_G_G.dat",
+          "conservative_table_sha256": "018cf43fed24d567abe28aa9e0f356045beca34ea9ebc054c8fe2fb1c09bea42",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.00178231600413703,
+            "rms_max_component_error": 0.0007476180000376363
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 5.417888360170764e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_001/dihedral_tabulated_dih_A_G_G_G.dat",
+          "legacy_table_sha256": "a13057465d771b0ee39f14fabd98385c5984930b5c07f759b1b09447a00bb8f1",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.00027916040102660133,
+            "max_force_component_difference": 0.0038622847170408647,
+            "rms_energy_difference": 0.00015719001882982196,
+            "rms_max_force_component_difference": 0.001784976178833521
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": -4.745852342220358,
+              "conservative_energy": 0.4541161862404608,
+              "conservative_force_plus_gradE_max_abs": 1.0015153151243794e-09,
+              "legacy_energy": 0.453961856533625,
+              "legacy_force_factor": 30.7493713652931,
+              "legacy_force_minus_conservative_max_abs": 0.0018610747861460553,
+              "legacy_force_plus_gradE_max_abs": 0.0010381158953274294,
+              "legacy_implied_dU_dphi": -4.743991267434195,
+              "legacy_runtime_linear_dU_dphi": -4.74502938290237,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": 9.617372376913416,
+              "conservative_energy": 2.1165744619477307,
+              "conservative_force_plus_gradE_max_abs": 1.6543442171723655e-09,
+              "legacy_energy": 2.1167636752036363,
+              "legacy_force_factor": -11.718056042032416,
+              "legacy_force_minus_conservative_max_abs": 0.0038622847170408647,
+              "legacy_force_plus_gradE_max_abs": 0.0002199353059584297,
+              "legacy_implied_dU_dphi": 9.61351009219626,
+              "legacy_runtime_linear_dU_dphi": 9.613730026053783,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 0.5990170956367595,
+              "conservative_energy": 4.052806231027954,
+              "conservative_force_plus_gradE_max_abs": 2.8895552617314024e-10,
+              "legacy_energy": 4.05308539142898,
+              "legacy_force_factor": -0.6119477114945622,
+              "legacy_force_minus_conservative_max_abs": 0.0003779892003287211,
+              "legacy_force_plus_gradE_max_abs": 0.00011987093993204301,
+              "legacy_implied_dU_dphi": 0.5993950848368755,
+              "legacy_runtime_linear_dU_dphi": 0.5992752139546125,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": 0.02907174649677601,
+              "conservative_energy": 4.274731536247426,
+              "conservative_force_plus_gradE_max_abs": 2.7788829917718694e-10,
+              "legacy_energy": 4.274731536247426,
+              "legacy_force_factor": -0.054670755180734595,
+              "legacy_force_minus_conservative_max_abs": 4.2015020156743743e-07,
+              "legacy_force_plus_gradE_max_abs": 4.203034896892166e-07,
+              "legacy_implied_dU_dphi": 0.02907216664707921,
+              "legacy_runtime_linear_dU_dphi": 0.029071746497011598,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": 0.02907174649708935,
+              "conservative_energy": 4.307018469909281,
+              "conservative_force_plus_gradE_max_abs": 2.9058952466520793e-10,
+              "legacy_energy": 4.30701846990928,
+              "legacy_force_factor": 0.055053860017045556,
+              "legacy_force_minus_conservative_max_abs": 4.270321179687675e-07,
+              "legacy_force_plus_gradE_max_abs": 4.269635730490273e-07,
+              "legacy_implied_dU_dphi": 0.029072173529207473,
+              "legacy_runtime_linear_dU_dphi": 0.029071746497215153,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": 0.029071746497432653,
+              "conservative_energy": 4.3304856133345835,
+              "conservative_force_plus_gradE_max_abs": 1.5374120726496798e-10,
+              "legacy_energy": 4.3304856133345835,
+              "legacy_force_factor": 0.02970759810413068,
+              "legacy_force_minus_conservative_max_abs": 7.530412921702423e-08,
+              "legacy_force_plus_gradE_max_abs": 7.54578704242892e-08,
+              "legacy_implied_dU_dphi": 0.02907182180146011,
+              "legacy_runtime_linear_dU_dphi": 0.02907174649741871,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -14.65216500028966,
+              "conservative_energy": 3.682260151882495,
+              "conservative_force_plus_gradE_max_abs": 3.069887455353637e-09,
+              "legacy_energy": 3.682024873059427,
+              "legacy_force_factor": -17.802943757358616,
+              "legacy_force_minus_conservative_max_abs": 0.0023269314754230663,
+              "legacy_force_plus_gradE_max_abs": 0.00039291919705419787,
+              "legacy_implied_dU_dphi": -14.64983806881359,
+              "legacy_runtime_linear_dU_dphi": -14.649445149660998,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": -4.544260436803745,
+              "conservative_energy": 0.7065513940841864,
+              "conservative_force_plus_gradE_max_abs": 2.578789626284106e-09,
+              "legacy_energy": 0.7064823749024334,
+              "legacy_force_factor": -29.44669402910833,
+              "legacy_force_minus_conservative_max_abs": 0.0012453075063918462,
+              "legacy_force_plus_gradE_max_abs": 0.00178231600413703,
+              "legacy_implied_dU_dphi": -4.543015129296961,
+              "legacy_runtime_linear_dU_dphi": -4.541232814451643,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.0017823148453182114,
+            "p99_abs_dU_dphi_residual": 0.0017302208889181788,
+            "rms_abs_dU_dphi_residual": 0.0007476175232222983,
+            "rms_relative_to_runtime_energy_slope": 0.00011294369312826617
+          }
+        },
+        "dih_G_G_G_T": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 5.536477942769125e-10,
+            "rms_max_component_error": 3.098038125130117e-10
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_G_G_G_T.dat",
+          "conservative_table_sha256": "6737e7de9f0ed583e8f16292fd091165c433f68ff1e6af47535b8d9111b656fd",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.0009384660623619201,
+            "rms_max_component_error": 0.0004830393749937028
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 1.8521295608309174e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_001/dihedral_tabulated_dih_G_G_G_T.dat",
+          "legacy_table_sha256": "135238d20b745179c6fde133b984949292f44cd8e066bf53b5a2189aa50140d0",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.00041983670949896634,
+            "max_force_component_difference": 0.0018234513542703112,
+            "rms_energy_difference": 0.00016619393294590732,
+            "rms_max_force_component_difference": 0.0009225025169081484
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": 0.6209674515697141,
+              "conservative_energy": 0.9709944937655369,
+              "conservative_force_plus_gradE_max_abs": 4.972843248296499e-10,
+              "legacy_energy": 0.9709308395067053,
+              "legacy_force_factor": -4.032891635008585,
+              "legacy_force_minus_conservative_max_abs": 0.001224217707263997,
+              "legacy_force_plus_gradE_max_abs": 0.0009384660623619201,
+              "legacy_implied_dU_dphi": 0.6221916692769687,
+              "legacy_runtime_linear_dU_dphi": 0.621253203179614,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": -4.502954148942258,
+              "conservative_energy": 1.5737538757772298,
+              "conservative_force_plus_gradE_max_abs": 5.536477942769125e-10,
+              "legacy_energy": 1.5733340390677308,
+              "legacy_force_factor": 5.486497778752273,
+              "legacy_force_minus_conservative_max_abs": 0.0018234513542703112,
+              "legacy_force_plus_gradE_max_abs": 0.0005663866256471195,
+              "legacy_implied_dU_dphi": -4.501130697587889,
+              "legacy_runtime_linear_dU_dphi": -4.501697083488077,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 6.964102637890848,
+              "conservative_energy": 1.6962465863185463,
+              "conservative_force_plus_gradE_max_abs": 3.371061207957382e-10,
+              "legacy_energy": 1.6960546768405869,
+              "legacy_force_factor": -7.108700708413995,
+              "legacy_force_minus_conservative_max_abs": 0.00121972458891495,
+              "legacy_force_plus_gradE_max_abs": 6.185651535695058e-05,
+              "legacy_implied_dU_dphi": 6.962882913302025,
+              "legacy_runtime_linear_dU_dphi": 6.962944768562528,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": 0.03180223179036659,
+              "conservative_energy": 2.4577164104582594,
+              "conservative_force_plus_gradE_max_abs": 1.6450714401816668e-10,
+              "legacy_energy": 2.457716410189721,
+              "legacy_force_factor": -0.05980562971150574,
+              "legacy_force_minus_conservative_max_abs": 4.976150674365631e-07,
+              "legacy_force_plus_gradE_max_abs": 4.5969892483593844e-07,
+              "legacy_implied_dU_dphi": 0.031802729405484766,
+              "legacy_runtime_linear_dU_dphi": 0.0318022697105269,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": 0.0318128294915944,
+              "conservative_energy": 2.4930713321430193,
+              "conservative_force_plus_gradE_max_abs": 2.0997760127872134e-10,
+              "legacy_energy": 2.493071332143019,
+              "legacy_force_factor": 0.06024471428788644,
+              "legacy_force_minus_conservative_max_abs": 4.672954551365738e-07,
+              "legacy_force_plus_gradE_max_abs": 4.67305213032454e-07,
+              "legacy_implied_dU_dphi": 0.0318132967870497,
+              "legacy_runtime_linear_dU_dphi": 0.031812829491599935,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": 0.031812829491478054,
+              "conservative_energy": 2.5187511182719975,
+              "conservative_force_plus_gradE_max_abs": 9.20790006742056e-11,
+              "legacy_energy": 2.5187511182719975,
+              "legacy_force_factor": 0.03250863353458441,
+              "legacy_force_minus_conservative_max_abs": 8.240440109441582e-08,
+              "legacy_force_plus_gradE_max_abs": 8.241409353570983e-08,
+              "legacy_implied_dU_dphi": 0.03181291189593006,
+              "legacy_runtime_linear_dU_dphi": 0.031812829491599935,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": 0.033968030948678646,
+              "conservative_energy": 2.544538196194862,
+              "conservative_force_plus_gradE_max_abs": 1.1617547202025236e-10,
+              "legacy_energy": 2.544539948605599,
+              "legacy_force_factor": 0.04133933246979714,
+              "legacy_force_minus_conservative_max_abs": 4.963123172418982e-05,
+              "legacy_force_plus_gradE_max_abs": 2.5731017109925647e-06,
+              "legacy_implied_dU_dphi": 0.03401766218044996,
+              "legacy_runtime_linear_dU_dphi": 0.03401508910577997,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": 0.11230038950450723,
+              "conservative_energy": 0.00018298452076705003,
+              "conservative_force_plus_gradE_max_abs": 8.509186411043146e-11,
+              "legacy_energy": 0.0002447610600014819,
+              "legacy_force_factor": 0.7324598736350852,
+              "legacy_force_minus_conservative_max_abs": 0.0007030017842818842,
+              "legacy_force_plus_gradE_max_abs": 0.0008131854995040017,
+              "legacy_implied_dU_dphi": 0.11300339128860416,
+              "legacy_runtime_linear_dU_dphi": 0.11219020581755965,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.0009384660973547065,
+            "p99_abs_dU_dphi_residual": 0.0009296964535129933,
+            "rms_abs_dU_dphi_residual": 0.00048303925106743463,
+            "rms_relative_to_runtime_energy_slope": 0.00016429691331860624
+          }
+        },
+        "dih_G_G_T_T": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 1.3040843072076314e-08,
+            "rms_max_component_error": 4.981775021782274e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_G_G_T_T.dat",
+          "conservative_table_sha256": "6f58f87eacd932974d6fb46d1d75fe39e01f96e49d0c62144ceebfb80d910799",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.0019286813667607206,
+            "rms_max_component_error": 0.0006887716054572341
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 4.3520742565306136e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_001/dihedral_tabulated_dih_G_G_T_T.dat",
+          "legacy_table_sha256": "3a9f1c180664c0632fe50acda435b0cab768ca17335027ab6279c7072c9c5fc7",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.00020560286432091956,
+            "max_force_component_difference": 0.019423803395945072,
+            "rms_energy_difference": 8.560434430091956e-05,
+            "rms_max_force_component_difference": 0.007178695329726282
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": -0.4687032995527058,
+              "conservative_energy": 4.019179142931788,
+              "conservative_force_plus_gradE_max_abs": 3.181084284875624e-10,
+              "legacy_energy": 4.019178665454443,
+              "legacy_force_factor": 3.037973086378445,
+              "legacy_force_minus_conservative_max_abs": 6.960324565763454e-06,
+              "legacy_force_plus_gradE_max_abs": 8.668992141180887e-05,
+              "legacy_implied_dU_dphi": -0.4686963392281394,
+              "legacy_runtime_linear_dU_dphi": -0.4686096493071262,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": -2.9215437010716063,
+              "conservative_energy": 3.5602270780973115,
+              "conservative_force_plus_gradE_max_abs": 3.995143327273354e-09,
+              "legacy_energy": 3.560177572793052,
+              "legacy_force_factor": 3.5545613494967796,
+              "legacy_force_minus_conservative_max_abs": 0.00537643884438177,
+              "legacy_force_plus_gradE_max_abs": 6.149580480663275e-05,
+              "legacy_implied_dU_dphi": -2.9161672622271557,
+              "legacy_runtime_linear_dU_dphi": -2.9162287576803543,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 0.0356109732001264,
+              "conservative_energy": 3.6272853330147887,
+              "conservative_force_plus_gradE_max_abs": 4.739772185846647e-10,
+              "legacy_energy": 3.627274276729199,
+              "legacy_force_factor": -0.03583384732794204,
+              "legacy_force_minus_conservative_max_abs": 0.0005121705480671881,
+              "legacy_force_plus_gradE_max_abs": 4.7733938628238826e-06,
+              "legacy_implied_dU_dphi": 0.035098802652118954,
+              "legacy_runtime_linear_dU_dphi": 0.03510357609310409,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": -0.022510826505239005,
+              "conservative_energy": 3.609186466125499,
+              "conservative_force_plus_gradE_max_abs": 1.638529034675429e-10,
+              "legacy_energy": 3.6091864661254993,
+              "legacy_force_factor": 0.04233264365144203,
+              "legacy_force_minus_conservative_max_abs": 3.2533046556010303e-07,
+              "legacy_force_plus_gradE_max_abs": 3.2529955612189965e-07,
+              "legacy_implied_dU_dphi": -0.022511151835704454,
+              "legacy_runtime_linear_dU_dphi": -0.022510826505249718,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": -0.022510826504160586,
+              "conservative_energy": 3.58419044147727,
+              "conservative_force_plus_gradE_max_abs": 1.6869112356987515e-10,
+              "legacy_energy": 3.5841904414772703,
+              "legacy_force_factor": -0.04262928927732117,
+              "legacy_force_minus_conservative_max_abs": 3.306592670608566e-07,
+              "legacy_force_plus_gradE_max_abs": 3.307383015065113e-07,
+              "legacy_implied_dU_dphi": -0.02251115716342776,
+              "legacy_runtime_linear_dU_dphi": -0.022510826504130162,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": -14.34402778377391,
+              "conservative_energy": 1.542063580359982,
+              "conservative_force_plus_gradE_max_abs": 2.1085853063596005e-09,
+              "legacy_energy": 1.542269183224303,
+              "legacy_force_factor": -14.655269352224995,
+              "legacy_force_minus_conservative_max_abs": 0.0023978220762135294,
+              "legacy_force_plus_gradE_max_abs": 0.00012402965039193248,
+              "legacy_implied_dU_dphi": -14.34162996169805,
+              "legacy_runtime_linear_dU_dphi": -14.341505932122764,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -13.893925594417158,
+              "conservative_energy": 3.2403761134496416,
+              "conservative_force_plus_gradE_max_abs": 1.3040843072076314e-08,
+              "legacy_energy": 3.240262681708684,
+              "legacy_force_factor": -16.860730738911272,
+              "legacy_force_minus_conservative_max_abs": 0.019423803395945072,
+              "legacy_force_plus_gradE_max_abs": 0.000220761296940708,
+              "legacy_implied_dU_dphi": -13.874501791020979,
+              "legacy_runtime_linear_dU_dphi": -13.874281029829133,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": 7.79902307849262,
+              "conservative_energy": 3.462206246109712,
+              "conservative_force_plus_gradE_max_abs": 2.773556717627912e-09,
+              "legacy_energy": 3.462236450212851,
+              "legacy_force_factor": 50.549647612165145,
+              "legacy_force_minus_conservative_max_abs": 0.0002591949918286929,
+              "legacy_force_plus_gradE_max_abs": 0.0019286813667607206,
+              "legacy_implied_dU_dphi": 7.798763883500378,
+              "legacy_runtime_linear_dU_dphi": 7.796835204219755,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.0019286792806232356,
+            "p99_abs_dU_dphi_residual": 0.001809125014408836,
+            "rms_abs_dU_dphi_residual": 0.0006887708654697821,
+            "rms_relative_to_runtime_energy_slope": 9.008243134351995e-05
+          }
+        },
+        "dih_G_T_T_A": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 2.7389130963229036e-09,
+            "rms_max_component_error": 1.1780522694759447e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_G_T_T_A.dat",
+          "conservative_table_sha256": "f46c1dc8a2a42d24f96c0c020183633acc3be45693187c7d4a066dc6afa8eea4",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.006082892512993432,
+            "rms_max_component_error": 0.0021687386416585817
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 1.3877787807814457e-12,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_001/dihedral_tabulated_dih_G_T_T_A.dat",
+          "legacy_table_sha256": "0e6b885fa88a09cc671768720ccdedb2f4067a364f4e04d7d8f03d01beafc15c",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.0005286485220724509,
+            "max_force_component_difference": 0.005754994310074757,
+            "rms_energy_difference": 0.00020091083848299452,
+            "rms_max_force_component_difference": 0.0024712767155349855
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": 0.4469307434677169,
+              "conservative_energy": 4.209196515765338,
+              "conservative_force_plus_gradE_max_abs": 3.7103316252729e-10,
+              "legacy_energy": 4.209187675561961,
+              "legacy_force_factor": -2.900126232276933,
+              "legacy_force_minus_conservative_max_abs": 0.0004986805986352261,
+              "legacy_force_plus_gradE_max_abs": 0.00020036916576499086,
+              "legacy_implied_dU_dphi": 0.447429424066454,
+              "legacy_runtime_linear_dU_dphi": 0.4472290548903,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": -6.474231365652272,
+              "conservative_energy": 1.9891192790700234,
+              "conservative_force_plus_gradE_max_abs": 3.3951153000089107e-10,
+              "legacy_energy": 1.9891582527745302,
+              "legacy_force_factor": 7.889895843085186,
+              "legacy_force_minus_conservative_max_abs": 0.0013494267192530884,
+              "legacy_force_plus_gradE_max_abs": 8.292171214474564e-05,
+              "legacy_implied_dU_dphi": -6.472881938933035,
+              "legacy_runtime_linear_dU_dphi": -6.472799016250857,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": -0.060935183555504736,
+              "conservative_energy": 4.835689553595484,
+              "conservative_force_plus_gradE_max_abs": 2.3218641592714917e-10,
+              "legacy_energy": 4.835688526049832,
+              "legacy_force_factor": 0.0622596687569195,
+              "legacy_force_minus_conservative_max_abs": 4.737873781250623e-05,
+              "legacy_force_plus_gradE_max_abs": 6.134693382245371e-07,
+              "legacy_implied_dU_dphi": -0.060982562293316375,
+              "legacy_runtime_linear_dU_dphi": -0.060981948867022705,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": 7.412215877929858,
+              "conservative_energy": 2.983596102575449,
+              "conservative_force_plus_gradE_max_abs": 2.7389130963229036e-09,
+              "legacy_energy": 2.983800684846385,
+              "legacy_force_factor": -13.931859340944573,
+              "legacy_force_minus_conservative_max_abs": 0.003696732279719228,
+              "legacy_force_plus_gradE_max_abs": 0.0007607973623393605,
+              "legacy_implied_dU_dphi": 7.408519145649846,
+              "legacy_runtime_linear_dU_dphi": 7.407758347332588,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": -0.030439700886177607,
+              "conservative_energy": 4.930346306559387,
+              "conservative_force_plus_gradE_max_abs": 1.74402180197486e-10,
+              "legacy_energy": 4.930346306559389,
+              "legacy_force_factor": -0.05764438788407521,
+              "legacy_force_minus_conservative_max_abs": 4.4712572016061825e-07,
+              "legacy_force_plus_gradE_max_abs": 4.4702995614237517e-07,
+              "legacy_implied_dU_dphi": -0.030440148011999704,
+              "legacy_runtime_linear_dU_dphi": -0.030439700886243877,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": -0.030439700882719047,
+              "conservative_energy": 4.905774930137132,
+              "conservative_force_plus_gradE_max_abs": 3.213689626913041e-10,
+              "legacy_energy": 4.905774930137131,
+              "legacy_force_factor": -0.03110547212275641,
+              "legacy_force_minus_conservative_max_abs": 7.884748141548381e-08,
+              "legacy_force_plus_gradE_max_abs": 7.897020166264257e-08,
+              "legacy_implied_dU_dphi": -0.030439779730200487,
+              "legacy_runtime_linear_dU_dphi": -0.030439700882783433,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -0.030439700872970543,
+              "conservative_energy": 4.881070735463774,
+              "conservative_force_plus_gradE_max_abs": 2.8709041741126207e-10,
+              "legacy_energy": 4.881070735463782,
+              "legacy_force_factor": -0.03699145338999266,
+              "legacy_force_minus_conservative_max_abs": 1.4151945833609791e-07,
+              "legacy_force_plus_gradE_max_abs": 1.4163232829947359e-07,
+              "legacy_implied_dU_dphi": -0.030439842392326992,
+              "legacy_runtime_linear_dU_dphi": -0.030439700872605658,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": -3.4938823813345055,
+              "conservative_energy": 0.02758727982899695,
+              "conservative_force_plus_gradE_max_abs": 1.7543810848508201e-09,
+              "legacy_energy": 0.0281159283510694,
+              "legacy_force_factor": -22.609174078669163,
+              "legacy_force_minus_conservative_max_abs": 0.005754994310074757,
+              "legacy_force_plus_gradE_max_abs": 0.006082892512993432,
+              "legacy_implied_dU_dphi": -3.4881273870258283,
+              "legacy_runtime_linear_dU_dphi": -3.494210279551647,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.006082892525818728,
+            "p99_abs_dU_dphi_residual": 0.005710345931219488,
+            "rms_abs_dU_dphi_residual": 0.002168738692784199,
+            "rms_relative_to_runtime_energy_slope": 0.0005870359643245669
+          }
+        },
+        "dih_T_A_G_G": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 2.9831230818899712e-09,
+            "rms_max_component_error": 1.1031304588495352e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_T_A_G_G.dat",
+          "conservative_table_sha256": "fdc14d75a99fadda37a3b431c1bc6dc3bffa8a8763cbae1f37d10b368968008c",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 0.00011786712530303944,
+            "rms_max_component_error": 4.700845984290079e-05
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 1.9273471707492718e-13,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_001/dihedral_tabulated_dih_T_A_G_G.dat",
+          "legacy_table_sha256": "199361396576a81a62eac65b92076ea5a0e4b383c9f9df62eaf0fd7f823dc9b6",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 0.0002599948800412477,
+            "max_force_component_difference": 0.0027833403973578363,
+            "rms_energy_difference": 9.241377354901052e-05,
+            "rms_max_force_component_difference": 0.000984207538875518
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": -0.028233755508621484,
+              "conservative_energy": 4.626044868487728,
+              "conservative_force_plus_gradE_max_abs": 1.7840709812255717e-10,
+              "legacy_energy": 4.626044930172429,
+              "legacy_force_factor": 0.18301729342596135,
+              "legacy_force_minus_conservative_max_abs": 2.023086259954343e-06,
+              "legacy_force_plus_gradE_max_abs": 6.3751134202448545e-06,
+              "legacy_implied_dU_dphi": -0.02823577859488141,
+              "legacy_runtime_linear_dU_dphi": -0.02822940355360524,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": 4.625435854273656,
+              "conservative_energy": 0.2425976217634043,
+              "conservative_force_plus_gradE_max_abs": 6.976765831723242e-10,
+              "legacy_energy": 0.24257069434712344,
+              "legacy_force_factor": -5.638070729660775,
+              "legacy_force_minus_conservative_max_abs": 4.551103897565412e-05,
+              "legacy_force_plus_gradE_max_abs": 6.09446964814353e-05,
+              "legacy_implied_dU_dphi": 4.625481365312646,
+              "legacy_runtime_linear_dU_dphi": 4.62542041991983,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 3.861935602992169,
+              "conservative_energy": 3.6060833579163667,
+              "conservative_force_plus_gradE_max_abs": 2.9831230818899712e-09,
+              "legacy_energy": 3.606343352796408,
+              "legacy_force_factor": -3.9456544986859208,
+              "legacy_force_minus_conservative_max_abs": 0.0027833403973578363,
+              "legacy_force_plus_gradE_max_abs": 0.00011786712530303944,
+              "legacy_implied_dU_dphi": 3.864718943389435,
+              "legacy_runtime_linear_dU_dphi": 3.864601075788001,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": -0.027082057295725045,
+              "conservative_energy": 4.734025975066889,
+              "conservative_force_plus_gradE_max_abs": 4.1179204837704653e-10,
+              "legacy_energy": 4.7340261059573585,
+              "legacy_force_factor": 0.050956582464965164,
+              "legacy_force_minus_conservative_max_abs": 1.5030576752998737e-05,
+              "legacy_force_plus_gradE_max_abs": 3.112059111451404e-08,
+              "legacy_implied_dU_dphi": -0.027097087872478078,
+              "legacy_runtime_linear_dU_dphi": -0.02709711895319819,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": -0.027996236947804797,
+              "conservative_energy": 4.702917188024139,
+              "conservative_force_plus_gradE_max_abs": 2.0535506628505118e-10,
+              "legacy_energy": 4.702917188024138,
+              "legacy_force_factor": -0.05301714192123287,
+              "legacy_force_minus_conservative_max_abs": 4.112340642355161e-07,
+              "legacy_force_plus_gradE_max_abs": 4.112976507431032e-07,
+              "legacy_implied_dU_dphi": -0.027996648181970958,
+              "legacy_runtime_linear_dU_dphi": -0.02799623694802897,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": -0.027996236948009616,
+              "conservative_energy": 4.680318211801892,
+              "conservative_force_plus_gradE_max_abs": 2.264618007008501e-10,
+              "legacy_energy": 4.680318211801892,
+              "legacy_force_factor": -0.028608565218354635,
+              "legacy_force_minus_conservative_max_abs": 7.251828181356612e-08,
+              "legacy_force_plus_gradE_max_abs": 7.258197136025824e-08,
+              "legacy_implied_dU_dphi": -0.02799630946629145,
+              "legacy_runtime_linear_dU_dphi": -0.02799623694802897,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": -0.027996236947987304,
+              "conservative_energy": 4.657597078951418,
+              "conservative_force_plus_gradE_max_abs": 1.7236063964976012e-10,
+              "legacy_energy": 4.657597078951418,
+              "legacy_force_factor": -0.034022065410547336,
+              "legacy_force_minus_conservative_max_abs": 1.3015984505829192e-07,
+              "legacy_force_plus_gradE_max_abs": 1.302235122929707e-07,
+              "legacy_implied_dU_dphi": -0.02799636710783226,
+              "legacy_runtime_linear_dU_dphi": -0.02799623694802897,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": -0.027996236948881835,
+              "conservative_energy": 4.634875946100444,
+              "conservative_force_plus_gradE_max_abs": 1.5758462243442573e-10,
+              "legacy_energy": 4.634875946100463,
+              "legacy_force_factor": -0.18150050635029688,
+              "legacy_force_minus_conservative_max_abs": 5.5328087828140915e-06,
+              "legacy_force_plus_gradE_max_abs": 5.532873242796582e-06,
+              "legacy_implied_dU_dphi": -0.028001769757561686,
+              "legacy_runtime_linear_dU_dphi": -0.02799623694802897,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 0.00011786760143372987,
+            "p99_abs_dU_dphi_residual": 0.00011388304683048743,
+            "rms_abs_dU_dphi_residual": 4.700871965081585e-05,
+            "rms_relative_to_runtime_energy_slope": 2.2057936736870857e-05
+          }
+        },
+        "dih_T_T_A_G": {
+          "conservative_runtime_force_plus_gradE": {
+            "max_component_error": 1.5508867079461197e-08,
+            "rms_max_component_error": 5.601907866294109e-09
+          },
+          "conservative_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/dihedral_conservative_dih_T_T_A_G.dat",
+          "conservative_table_sha256": "3fe6357b067a6e035bd6f2d371d6f3473435bd9a1572b8c1388a4de55c4911bc",
+          "legacy_runtime_force_plus_gradE": {
+            "max_component_error": 7.33622798456679e-05,
+            "rms_max_component_error": 3.652992026521641e-05
+          },
+          "legacy_runtime_preprocessing_parity_max_abs": 4.973799150320701e-14,
+          "legacy_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_001/dihedral_tabulated_dih_T_T_A_G.dat",
+          "legacy_table_sha256": "7cfa921736c8eb672a37b1b805b2be2f08fcd9452fd767ee085fa8b8a2a7189c",
+          "legacy_vs_conservative_runtime": {
+            "max_energy_difference": 9.217246241854937e-05,
+            "max_force_component_difference": 0.02090250465645127,
+            "rms_energy_difference": 3.676336677501466e-05,
+            "rms_max_force_component_difference": 0.007682759015037812
+          },
+          "probes": 8,
+          "samples": [
+            {
+              "conservative_dU_dphi": 0.022067704518774718,
+              "conservative_energy": 4.931658356750168,
+              "conservative_force_plus_gradE_max_abs": 1.8822188946332474e-10,
+              "legacy_energy": 4.931658356750168,
+              "legacy_force_factor": -0.14306563955698676,
+              "legacy_force_minus_conservative_max_abs": 4.361172112450629e-06,
+              "legacy_force_plus_gradE_max_abs": 4.361138289735167e-06,
+              "legacy_implied_dU_dphi": 0.022072065690887138,
+              "legacy_runtime_linear_dU_dphi": 0.02206770451866662,
+              "phi": 0.15489797111449674
+            },
+            {
+              "conservative_dU_dphi": 0.022067704518766624,
+              "conservative_energy": 4.949471733977296,
+              "conservative_force_plus_gradE_max_abs": 2.440501134515216e-10,
+              "legacy_energy": 4.949471733977296,
+              "legacy_force_factor": -0.02689879233098784,
+              "legacy_force_minus_conservative_max_abs": 1.0353866879836415e-07,
+              "legacy_force_plus_gradE_max_abs": 1.0372688259360774e-07,
+              "legacy_implied_dU_dphi": 0.022067808057435436,
+              "legacy_runtime_linear_dU_dphi": 0.02206770451866662,
+              "phi": 0.9621127501618741
+            },
+            {
+              "conservative_dU_dphi": 0.02206770488509715,
+              "conservative_energy": 4.96738139972981,
+              "conservative_force_plus_gradE_max_abs": 2.224217893198599e-10,
+              "legacy_energy": 4.967381399729908,
+              "legacy_force_factor": -0.022529908404778552,
+              "legacy_force_minus_conservative_max_abs": 5.696109941014105e-08,
+              "legacy_force_plus_gradE_max_abs": 5.7071656300172746e-08,
+              "legacy_implied_dU_dphi": 0.02206776184629833,
+              "legacy_runtime_linear_dU_dphi": 0.022067704883438077,
+              "phi": 1.7736908523392374
+            },
+            {
+              "conservative_dU_dphi": -15.61880376053109,
+              "conservative_energy": 2.6593341121145513,
+              "conservative_force_plus_gradE_max_abs": 3.197584419467603e-09,
+              "legacy_energy": 2.659382243167571,
+              "legacy_force_factor": 29.360283425571915,
+              "legacy_force_minus_conservative_max_abs": 0.00593999576471127,
+              "legacy_force_plus_gradE_max_abs": 7.249405256182229e-05,
+              "legacy_implied_dU_dphi": -15.612863764766367,
+              "legacy_runtime_linear_dU_dphi": -15.612791268892911,
+              "phi": 2.5809056313866146
+            },
+            {
+              "conservative_dU_dphi": 16.789010757044743,
+              "conservative_energy": 3.4336588340674035,
+              "conservative_force_plus_gradE_max_abs": 1.5508867079461197e-08,
+              "legacy_energy": 3.433751006529822,
+              "legacy_force_factor": 31.753700271161364,
+              "legacy_force_minus_conservative_max_abs": 0.02090250465645127,
+              "legacy_force_plus_gradE_max_abs": 7.33622798456679e-05,
+              "legacy_implied_dU_dphi": 16.768108252388185,
+              "legacy_runtime_linear_dU_dphi": 16.768181612664023,
+              "phi": 3.6979163526629857
+            },
+            {
+              "conservative_dU_dphi": 0.022067704518908195,
+              "conservative_energy": 4.311863017525891,
+              "conservative_force_plus_gradE_max_abs": 2.557338438236023e-10,
+              "legacy_energy": 4.311863017525892,
+              "legacy_force_factor": 0.022550365076438393,
+              "legacy_force_minus_conservative_max_abs": 5.7161526380300476e-08,
+              "legacy_force_plus_gradE_max_abs": 5.7127837141401905e-08,
+              "legacy_implied_dU_dphi": 0.022067761680434592,
+              "legacy_runtime_linear_dU_dphi": 0.022067704518870176,
+              "phi": 4.505131131710363
+            },
+            {
+              "conservative_dU_dphi": 0.022067704518767547,
+              "conservative_energy": 4.329772683278567,
+              "conservative_force_plus_gradE_max_abs": 2.3709818136596894e-10,
+              "legacy_energy": 4.329772683278567,
+              "legacy_force_factor": 0.026817492936144615,
+              "legacy_force_minus_conservative_max_abs": 1.0259686723107508e-07,
+              "legacy_force_plus_gradE_max_abs": 1.0278498017643467e-07,
+              "legacy_implied_dU_dphi": 0.022067807115532925,
+              "legacy_runtime_linear_dU_dphi": 0.02206770451866662,
+              "phi": 5.316709233887726
+            },
+            {
+              "conservative_dU_dphi": 0.022067704518586626,
+              "conservative_energy": 4.347682349031245,
+              "conservative_force_plus_gradE_max_abs": 1.8813557656205404e-10,
+              "legacy_energy": 4.3476823490312455,
+              "legacy_force_factor": 0.14306563955678991,
+              "legacy_force_minus_conservative_max_abs": 4.361172169415478e-06,
+              "legacy_force_plus_gradE_max_abs": 4.36136030499204e-06,
+              "legacy_implied_dU_dphi": 0.022072065690856887,
+              "legacy_runtime_linear_dU_dphi": 0.02206770451866662,
+              "phi": 6.128287336065089
+            }
+          ],
+          "scalar_force_factor_vs_linear_energy_derivative": {
+            "max_abs_dU_dphi_residual": 7.336027583804139e-05,
+            "p99_abs_dU_dphi_residual": 7.329976767126212e-05,
+            "rms_abs_dU_dphi_residual": 3.6529866451511676e-05,
+            "rms_relative_to_runtime_energy_slope": 4.5096277082342945e-06
+          }
+        }
+      },
+      "label": "iteration_001_post_update",
+      "legacy_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_001/cg_priors.json",
+      "legacy_priors_sha256": "4a9896427c658ae284f565a243aed670c3f1b2d9b34dae82c97188b82c2866ad"
+    }
+  ],
+  "probe_policy": {
+    "cartesian_fd_eps": 2e-06,
+    "minimum_abs_sin_phi": 0.15,
+    "phi_points_are_midpoints_of_legacy_energy_intervals": true,
+    "probes_per_group": 8
+  },
+  "production_modified": false,
+  "schema_version": 1,
+  "test_only": true
+}

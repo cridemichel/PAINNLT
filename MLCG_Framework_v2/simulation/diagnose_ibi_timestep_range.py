@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Matched old-TEL22 vs conservative-IBI coarse-timestep localization.
+"""Matched reference-prior vs conservative-IBI coarse-timestep localization.
 
 Runs a short NVT branch for four matched bonded Hamiltonians, then reuses the
-standard NVE diagnostic on the historical 0.001--0.005 ps grid.  In parallel it
+standard NVE diagnostic on the configured timestep grid.  In parallel it
 measures U'' only in the coordinate ranges actually visited by each branch.
 """
 from __future__ import annotations
@@ -56,16 +56,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--rb-info", required=True, type=Path)
     p.add_argument("--dataset", required=True, type=Path)
     p.add_argument("--source-checkpoint", required=True, type=Path)
-    p.add_argument("--output-dir", type=Path, default=Path("ibi_timestep_range_diagnostic"))
-    p.add_argument("--dts", nargs="+", type=float, default=[0.001, 0.0015, 0.002, 0.003, 0.004, 0.005])
-    p.add_argument("--duration-ps", type=float, default=1.0)
-    p.add_argument("--branch-dt", type=float, default=0.0005)
-    p.add_argument("--branch-duration-ps", type=float, default=0.25)
-    p.add_argument("--branch-kT", type=float, default=2.49)
-    p.add_argument("--seed-base", type=int, default=290000)
-    p.add_argument("--device", default="cpu")
-    p.add_argument("--ml-precision", choices=("float32", "float64"), default="float32")
-    p.add_argument("--neighbor-search", choices=("verlet", "link-cell"), default="link-cell")
+    p.add_argument("--output-dir", type=Path, required=True)
+    p.add_argument("--dts", nargs="+", type=float, required=True)
+    p.add_argument("--duration-ps", type=float, required=True)
+    p.add_argument("--branch-dt", type=float, required=True)
+    p.add_argument("--branch-duration-ps", type=float, required=True)
+    p.add_argument("--branch-kT", type=float, required=True)
+    p.add_argument("--seed-base", type=int, required=True)
+    p.add_argument("--device", required=True)
+    p.add_argument("--ml-precision", choices=("float32", "float64"), required=True)
+    p.add_argument("--neighbor-search", choices=("verlet", "link-cell"), required=True)
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--overwrite", action="store_true")
     p.add_argument(
@@ -233,22 +233,22 @@ def main() -> None:
     final = {
         "schema_version": 1, "kind": "ibi_timestep_range_localization", "diagnostic_only": True,
         "variants": variant_reports, "visited_curvature": curvature_reports,
-        "stiffness_ratios_vs_old": ratios,
+        "stiffness_ratios_vs_reference": ratios,
         "interpretation_keys": {
-            "old_pass_bonds_fail": "IBI bond stiffness/representation narrows the clean timestep range",
-            "old_pass_angles_fail": "IBI angle stiffness/representation narrows the clean timestep range",
+            "reference_pass_bonds_fail": "IBI bond stiffness/representation narrows the clean timestep range",
+            "reference_pass_angles_fail": "IBI angle stiffness/representation narrows the clean timestep range",
             "isolated_pass_full_fail": "bond-angle coupling narrows the clean timestep range",
             "large_curvature_ratio": "sqrt(curvature ratio) is a frequency-scale proxy for the same generalized coordinate",
         },
     }
     out = args.output_dir / "timestep_range_localization_report.json"
     out.write_text(json.dumps(final, indent=2, sort_keys=True) + "\n")
-    print("[STIFFNESS P99 RATIOS VS OLD]")
+    print("[STIFFNESS P99 RATIOS VS REFERENCE]")
     for name, row in ratios.items():
         print(
-            f"{name:15s} bond={row['bond']['p99_abs_curvature_ratio_vs_old']:.3g} "
+            f"{name:15s} bond={row['bond']['p99_abs_curvature_ratio_vs_reference']:.3g} "
             f"(sqrt={row['bond']['sqrt_ratio_frequency_proxy']:.3g})  "
-            f"angle={row['angle']['p99_abs_curvature_ratio_vs_old']:.3g} "
+            f"angle={row['angle']['p99_abs_curvature_ratio_vs_reference']:.3g} "
             f"(sqrt={row['angle']['sqrt_ratio_frequency_proxy']:.3g})"
         )
     print(f"[DONE] report: {out}")

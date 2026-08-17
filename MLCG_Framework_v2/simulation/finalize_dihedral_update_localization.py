@@ -25,7 +25,11 @@ def _mean_step35_preupdate_l1(step35: dict) -> float:
     return float(np.mean(values)) if values else float("nan")
 
 
-def finalize(registry_path: Path, step35_report_path: Path, structure_root: Path, output: Path) -> dict:
+def finalize(
+    registry_path: Path, step35_report_path: Path, structure_root: Path, output: Path, *,
+    representation_dominance_factor: float, gain_dominance_factor: float, gain_floor: float,
+    model_config_provenance: Path | None = None,
+) -> dict:
     registry = load(registry_path, "candidate registry")
     step35 = load(step35_report_path, "step-35 report")
     structure_root = structure_root.expanduser().resolve()
@@ -75,18 +79,25 @@ def finalize(registry_path: Path, step35_report_path: Path, structure_root: Path
     raw_monotone_l1 = bool(np.all(np.diff(raw_l1) >= -1.0e-12))
     raw_monotone_u2 = bool(np.all(np.diff(raw_u2) >= -1.0e-12))
 
-    # Heuristic only; report the underlying gains so the scientific interpretation
-    # does not depend on this label.
-    if amplitude_gain > 1.5 * max(smoothing_gain, 1.0e-12):
-        hint = "update_amplitude_overshoot_dominant"
-    elif smoothing_gain > 1.5 * max(amplitude_gain, 1.0e-12):
-        hint = "update_roughness_dominant"
-    else:
-        hint = "mixed_or_not_separable_from_short_nvt"
-
     ranked = sorted(rows, key=lambda r: (r["dihedral_mean_l1"], r["target_abs_U2_p99"]))
     step35_pre = _mean_step35_preupdate_l1(step35)
     step35_post = float(step35.get("runtime_structure", {}).get("dihedral_mean_l1", float("nan")))
+    zero_raw = next(r for r in raw if np.isclose(r["update_fraction"], 0.0))
+    representation_jump = float(zero_raw["dihedral_mean_l1"] - step35_pre)
+
+    # Heuristic only; report the underlying gains so the scientific interpretation
+    # does not depend on this label.  A large jump already at fraction=0 means the
+    # dominant change predates the IBI update amplitude: it is the legacy-tabulated
+    # -> conservative representation change and must be diagnosed directly.
+    gain_scale = max(abs(amplitude_gain), abs(smoothing_gain), gain_floor)
+    if np.isfinite(representation_jump) and representation_jump > representation_dominance_factor * gain_scale:
+        hint = "legacy_to_conservative_representation_change_dominant"
+    elif amplitude_gain > gain_dominance_factor * max(smoothing_gain, 1.0e-12):
+        hint = "update_amplitude_overshoot_dominant"
+    elif smoothing_gain > gain_dominance_factor * max(amplitude_gain, 1.0e-12):
+        hint = "update_roughness_dominant"
+    else:
+        hint = "mixed_or_not_separable_from_short_nvt"
 
     report = {
         "schema_version": SCHEMA_VERSION,
@@ -97,7 +108,7 @@ def finalize(registry_path: Path, step35_report_path: Path, structure_root: Path
         "step35_reference": {
             "pre_update_sampled_mean_l1": step35_pre,
             "post_update_runtime_mean_l1": step35_post,
-            "candidate_order2_through_0p005": bool(step35.get("candidate_order2_through_0p005", False)),
+            "candidate_order2_through_configured_max_dt": bool(step35.get("candidate_order2_through_configured_max_dt", step35.get("candidate_order2_through_0p005", False))),
         },
         "candidate_results": rows,
         "ranking_by_structure_then_stiffness": [r["name"] for r in ranked],
@@ -109,13 +120,21 @@ def finalize(registry_path: Path, step35_report_path: Path, structure_root: Path
             "best_full_update_smoothed_l1": best_smoothed_full["dihedral_mean_l1"],
             "l1_gain_from_reducing_update_amplitude": float(amplitude_gain),
             "l1_gain_from_smoothing_full_update": float(smoothing_gain),
+            "zero_update_conservative_l1": float(zero_raw["dihedral_mean_l1"]),
+            "l1_jump_preupdate_sample_to_zero_update_conservative": representation_jump,
             "raw_fraction_l1_monotone_non_decreasing": raw_monotone_l1,
             "raw_fraction_target_p99_U2_monotone_non_decreasing": raw_monotone_u2,
             "diagnostic_hint": hint,
             "hint_is_gating": False,
         },
+        "heuristic_policy": {"representation_dominance_factor": representation_dominance_factor, "gain_dominance_factor": gain_dominance_factor, "gain_floor": gain_floor},
+        "model_config_provenance": str(model_config_provenance.resolve()) if model_config_provenance else None,
         "promotion_ready": False,
-        "next_step": "Choose at most one or two promising candidates for a dedicated NVE screen; do not promote from step 36.",
+        "next_step": (
+            "Diagnose legacy TabulatedDihedral energy/force consistency before any candidate NVE screen."
+            if hint == "legacy_to_conservative_representation_change_dominant"
+            else "Choose at most one or two promising candidates for a dedicated NVE screen; do not promote from step 36."
+        ),
     }
     output = output.expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -130,7 +149,8 @@ def finalize(registry_path: Path, step35_report_path: Path, structure_root: Path
             f"fraction={row['update_fraction']:.2f} smooth={row['smooth_sigma_rad']:.3f}"
         )
     print(
-        f"[LOCALIZE] amplitude_gain={amplitude_gain:+.6f} smoothing_gain={smoothing_gain:+.6f} "
+        f"[LOCALIZE] representation_jump={representation_jump:+.6f} "
+        f"amplitude_gain={amplitude_gain:+.6f} smoothing_gain={smoothing_gain:+.6f} "
         f"rawL1monotone={raw_monotone_l1} rawU2monotone={raw_monotone_u2}"
     )
     print(f"[HINT] {hint} (diagnostic only, non-gating)")
@@ -145,8 +165,17 @@ def main() -> None:
     parser.add_argument("--step35-report", required=True, type=Path)
     parser.add_argument("--structure-root", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--representation-dominance-factor", type=float, required=True)
+    parser.add_argument("--gain-dominance-factor", type=float, required=True)
+    parser.add_argument("--gain-floor", type=float, required=True)
+    parser.add_argument("--model-config-provenance", type=Path, default=None)
     args = parser.parse_args()
-    finalize(args.candidate_registry, args.step35_report, args.structure_root, args.output)
+    finalize(
+        args.candidate_registry, args.step35_report, args.structure_root, args.output,
+        representation_dominance_factor=args.representation_dominance_factor,
+        gain_dominance_factor=args.gain_dominance_factor, gain_floor=args.gain_floor,
+        model_config_provenance=args.model_config_provenance,
+    )
 
 
 if __name__ == "__main__":

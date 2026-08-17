@@ -13,7 +13,7 @@ from angle_regularization_diagnostics import (
     CandidateSpec,
     _build_candidate,
     _knot_u2_jump,
-    default_candidate_specs,
+    candidate_specs_from_json,
     same_barrier_k,
     wall_energy_gradient_curvature,
 )
@@ -77,8 +77,12 @@ def test_body_smoothing_reduces_high_frequency_curvature():
     assert new_p99 < 0.25 * cur_p99
 
 
-def test_default_candidates_preserve_endpoint_barrier_for_widened_walls():
-    specs = default_candidate_specs(0.1, 5000.0)
+def test_configured_candidates_preserve_endpoint_barrier_for_widened_walls():
+    specs = candidate_specs_from_json(
+        """[{"name":"wide15_same_barrier","body_sigma_rad":0.0,"wall_width_scale":1.5},
+             {"name":"wide20_same_barrier","body_sigma_rad":0.0,"wall_width_scale":2.0}]""",
+        0.1, 5000.0,
+    )
     old_barrier = 0.5 * 5000.0 * 0.1**2
     widened = [s for s in specs if "same_barrier" in s.name]
     assert len(widened) == 2

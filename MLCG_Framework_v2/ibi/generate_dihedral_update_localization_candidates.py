@@ -42,16 +42,26 @@ class CandidateSpec:
     smooth_sigma_rad: float
 
 
-DEFAULT_CANDIDATES = (
-    CandidateSpec("frac_0p00_raw", 0.00, 0.0),
-    CandidateSpec("frac_0p25_raw", 0.25, 0.0),
-    CandidateSpec("frac_0p50_raw", 0.50, 0.0),
-    CandidateSpec("frac_0p75_raw", 0.75, 0.0),
-    CandidateSpec("frac_1p00_raw", 1.00, 0.0),
-    CandidateSpec("frac_1p00_smooth_0p01", 1.00, 0.01),
-    CandidateSpec("frac_1p00_smooth_0p02", 1.00, 0.02),
-    CandidateSpec("frac_0p50_smooth_0p02", 0.50, 0.02),
-)
+def candidate_specs_from_json(raw_json: str) -> tuple[CandidateSpec, ...]:
+    payload = json.loads(raw_json)
+    if not isinstance(payload, list) or not payload:
+        raise ValueError("--candidate-specs-json must be a non-empty JSON list")
+    out = []
+    for row in payload:
+        if not isinstance(row, dict):
+            raise ValueError("Each dihedral localization candidate must be an object")
+        spec = CandidateSpec(str(row["name"]), float(row["fraction"]), float(row["smoothing_sigma_rad"]))
+        if not (0.0 <= spec.update_fraction <= 1.0) or spec.smooth_sigma_rad < 0.0:
+            raise ValueError(f"Invalid candidate {spec}")
+        out.append(spec)
+    names=[x.name for x in out]
+    if len(names) != len(set(names)):
+        raise ValueError("Candidate names must be unique")
+    if not any(np.isclose(x.update_fraction,1.0) and np.isclose(x.smooth_sigma_rad,0.0) for x in out):
+        raise ValueError("Candidate sweep must include the full raw update (fraction=1, smoothing=0)")
+    if not any(np.isclose(x.update_fraction,0.0) and np.isclose(x.smooth_sigma_rad,0.0) for x in out):
+        raise ValueError("Candidate sweep must include the zero raw update (fraction=0, smoothing=0)")
+    return tuple(out)
 
 
 def sha256_file(path: Path) -> str:
@@ -201,8 +211,9 @@ def generate(
     target_dataset: Path,
     output_dir: Path,
     *,
-    ibi_report: Path | None = None,
-    kT: float = 2.49,
+    ibi_report: Path,
+    kT: float,
+    candidate_specs: tuple[CandidateSpec, ...],
     overwrite: bool = False,
 ) -> dict:
     iteration0_priors = iteration0_priors.expanduser().resolve()
@@ -210,11 +221,11 @@ def generate(
     conservative_priors = conservative_priors.expanduser().resolve()
     target_dataset = target_dataset.expanduser().resolve()
     output_dir = output_dir.expanduser().resolve()
-    ibi_report = ibi_report.expanduser().resolve() if ibi_report is not None else None
+    ibi_report = ibi_report.expanduser().resolve()
     for path in (iteration0_priors, iteration1_priors, conservative_priors, target_dataset):
         if not path.is_file():
             raise FileNotFoundError(path)
-    if ibi_report is not None and not ibi_report.is_file():
+    if not ibi_report.is_file():
         raise FileNotFoundError(ibi_report)
     if output_dir.exists() and any(output_dir.iterdir()):
         if not overwrite:
@@ -222,13 +233,13 @@ def generate(
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    observed_alpha = 0.10
-    if ibi_report is not None:
-        ibi_meta = json.loads(ibi_report.read_text())
-        observed_alpha = float(ibi_meta.get("settings", {}).get("alpha", observed_alpha))
-        report_kT = float(ibi_meta.get("kT", kT))
-        if not np.isclose(report_kT, kT, rtol=0.0, atol=1.0e-12):
-            raise ValueError(f"kT mismatch between arguments ({kT}) and IBI report ({report_kT})")
+    ibi_meta = json.loads(ibi_report.read_text())
+    if "settings" not in ibi_meta or "alpha" not in ibi_meta["settings"]:
+        raise ValueError("IBI report must record the configured alpha")
+    observed_alpha = float(ibi_meta["settings"]["alpha"])
+    report_kT = float(ibi_meta["kT"])
+    if not np.isclose(report_kT, kT, rtol=0.0, atol=1.0e-12):
+        raise ValueError(f"kT mismatch between arguments ({kT}) and IBI report ({report_kT})")
 
     p0 = _load_priors(iteration0_priors)
     p1 = _load_priors(iteration1_priors)
@@ -267,7 +278,7 @@ def generate(
         }
 
     candidate_records = []
-    for spec in DEFAULT_CANDIDATES:
+    for spec in candidate_specs:
         candidate_dir = output_dir / "candidates" / spec.name
         candidate_dir.mkdir(parents=True, exist_ok=True)
         candidate_json = copy.deepcopy(template_source)
@@ -416,8 +427,9 @@ def main() -> None:
     parser.add_argument("--conservative-priors", required=True, type=Path)
     parser.add_argument("--target-dataset", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
-    parser.add_argument("--ibi-report", type=Path, default=None)
-    parser.add_argument("--kT", type=float, default=2.49)
+    parser.add_argument("--ibi-report", type=Path, required=True)
+    parser.add_argument("--kT", type=float, required=True)
+    parser.add_argument("--candidate-specs-json", required=True)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     generate(
@@ -428,6 +440,7 @@ def main() -> None:
         args.output_dir,
         ibi_report=args.ibi_report,
         kT=args.kT,
+        candidate_specs=candidate_specs_from_json(args.candidate_specs_json),
         overwrite=args.overwrite,
     )
 

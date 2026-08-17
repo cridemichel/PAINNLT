@@ -1,0 +1,665 @@
+{
+  "schema_version": 1,
+  "kind": "mlcg_model_dependent_workflow_config",
+  "model_id": "TEL22_IBI",
+  "policy": {
+    "core_invariant": "Universal method/physics/numerical invariant; generic code/tests.",
+    "model_parameter": "Must be supplied by external model configuration.",
+    "calibrated_parameter": "Must be external and provenance-tracked to selecting evidence."
+  },
+  "sections": {
+    "common": {
+      "IBI_MODEL": "tel22_model_ibi_conservative.pt",
+      "TRAINING_CONFIG": "tel22_training_config.json",
+      "IBI_DATASET": "tel22_dataset_ibi_residual.bin",
+      "IBI_TARGET_DATASET": "tel22_dataset.bin",
+      "IBI_RB_INFO": "rigid_bodies_info_ibi.json",
+      "IBI_SETTINGS": "ibi_settings.json",
+      "IBI_DEVICE": "cpu",
+      "IBI_ML_PRECISION": "float32",
+      "IBI_NEIGHBOR_SEARCH": "link-cell",
+      "IBI_KT": 2.49
+    },
+    "step11": {
+      "DBI_OUTDIR": "ibi_dbi_preview",
+      "IBI_SEED_PRIORS": "cg_priors_ibi_seed.json"
+    },
+    "step12": {
+      "IBI_ITERATIONS": 5,
+      "IBI_OUTDIR": "ibi_run_16ps",
+      "NEIGHBOR_SEARCH": "link-cell",
+      "VELOCITY_SEED": 314159,
+      "THERMOSTAT_SEED": 42
+    },
+    "step13": {
+      "IBI_PRIOR_CANDIDATES": [
+        "ibi_conservative/cg_priors.json",
+        "ibi_run_16ps_continue/best/cg_priors.json",
+        "ibi_run_16ps/best/cg_priors.json"
+      ],
+      "OUTPUT_DATASET": "tel22_dataset_ibi_residual.bin",
+      "OUTPUT_RB_INFO": "rigid_bodies_info_ibi.json",
+      "OUTPUT_PROVENANCE": "ibi_residual_build_manifest.json",
+      "IBI_FALLBACK_VALIDATION_REPORT": "ibi_validation_best/validation_report.json",
+      "AA_TOPOLOGY": "md.gro",
+      "AA_TRAJECTORY": "md_whole.trr",
+      "MAPPING_CONFIG": "tel22_topology.json"
+    },
+    "step14": {
+      "IBI_PARENT_DIR": "ibi_run_16ps",
+      "IBI_OUTDIR": "ibi_run_16ps_continue",
+      "IBI_ITERATIONS": 5,
+      "NEIGHBOR_SEARCH": "link-cell",
+      "VELOCITY_SEED": 314159,
+      "THERMOSTAT_SEED": 42
+    },
+    "step15": {
+      "IBI_BEST_DIR": "ibi_run_16ps_continue",
+      "IBI_VALIDATION_OUTDIR": "ibi_validation_best",
+      "NEIGHBOR_SEARCH": "link-cell",
+      "VALIDATION_VELOCITY_SEED": 271828,
+      "VALIDATION_THERMOSTAT_SEED": 161803,
+      "VALIDATION_RB_INFO": "rigid_bodies_info.json"
+    },
+    "step16": {
+      "IBI_TRAINING_PRIOR_CANDIDATES": [
+        "ibi_conservative/cg_priors.json",
+        "ibi_run_16ps_continue/best/cg_priors.json",
+        "ibi_run_16ps/best/cg_priors.json"
+      ],
+      "IBI_RESIDUAL_PROVENANCE": "ibi_residual_build_manifest.json"
+    },
+    "step17": {
+      "BASELINE_DATASET": "tel22_dataset.bin",
+      "MULTISEED_OUTDIR": "training_multiseed_benchmark",
+      "MULTISEED_SEEDS": [
+        11,
+        42,
+        73
+      ]
+    },
+    "step18": {
+      "POSTIBI_MODEL": "tel22_model_ibi.pt",
+      "POSTIBI_PRIOR_CANDIDATES": [
+        "ibi_conservative/cg_priors.json",
+        "ibi_run_16ps_continue/best/cg_priors.json",
+        "ibi_run_16ps/best/cg_priors.json"
+      ],
+      "IBI_RESIDUAL_PROVENANCE": "ibi_residual_build_manifest.json",
+      "POSTIBI_RUNTIME_OUTDIR": "postibi_runtime_validation",
+      "DEVICE": "auto",
+      "NEIGHBOR_SEARCH": "link-cell",
+      "POSTIBI_DT": 0.0005,
+      "POSTIBI_EQ_SD_STEPS": 1000,
+      "POSTIBI_EQ_CLASSICAL_STEPS": 1000,
+      "POSTIBI_EQ_ML_CAPPED_STEPS": 1000,
+      "POSTIBI_EQ_ML_UNCAPPED_STEPS": 2000,
+      "POSTIBI_EQ_CHUNK": 100,
+      "POSTIBI_NVT_STEPS": 4000,
+      "POSTIBI_NVT_LOG_INTERVAL": 100,
+      "POSTIBI_NVT_SAMPLE_START": 1000,
+      "POSTIBI_VELOCITY_SEED": 424242,
+      "POSTIBI_THERMOSTAT_SEED": 171717,
+      "POSTIBI_KT": 2.49
+    },
+    "step19": {
+      "AB_MODEL": "tel22_model_ibi.pt",
+      "AB_PRIOR_CANDIDATES": [
+        "ibi_conservative/cg_priors.json",
+        "ibi_run_16ps_continue/best/cg_priors.json",
+        "ibi_run_16ps/best/cg_priors.json"
+      ],
+      "IBI_RESIDUAL_PROVENANCE": "ibi_residual_build_manifest.json",
+      "AB_CHECKPOINT": "postibi_runtime_validation/equilibrated_postibi.npz",
+      "AB_OUTDIR": "ibi_ml_ab_validation",
+      "DEVICE": "auto",
+      "NEIGHBOR_SEARCH": "link-cell",
+      "AB_DT": 0.0005,
+      "AB_BURNIN_PS": 1.0,
+      "AB_PRODUCTION_PS": 8.0,
+      "AB_LOG_INTERVAL": 100,
+      "AB_THERMOSTAT_SEED": 272727,
+      "AB_KT": 2.49
+    },
+    "step21": {
+      "CONSERVATIVE_SOURCE_PRIOR_CANDIDATES": [
+        "ibi_run_16ps_continue/best/cg_priors.json",
+        "ibi_run_16ps/best/cg_priors.json"
+      ],
+      "CONSERVATIVE_IBI_OUTDIR": "ibi_conservative"
+    },
+    "step22": {
+      "CONSERVATIVE_IBI_OUTDIR": "ibi_conservative"
+    },
+    "step23": {
+      "IBI_VALIDATION_REPORT": "ibi_conservative/validation_report.json",
+      "IBI_RUNTIME_PARITY_REPORT": "ibi_conservative/runtime_parity_report.json",
+      "NVE_SOURCE_CHECKPOINT": "postibi_runtime_validation/equilibrated_postibi.npz",
+      "NVE_DEVICE": "cpu",
+      "NVE_ML_PRECISION": "float32",
+      "NVE_NEIGHBOR_SEARCH": "link-cell",
+      "NVE_DURATION_PS": 5.0,
+      "NVE_OUTPUT_DIR": "nve_certification_conservative_ibi_only",
+      "NVE_DTS": [
+        0.001,
+        0.0015,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "NVE_SLOPE_MIN": 1.7,
+      "NVE_SLOPE_MAX": 2.3,
+      "NVE_MIN_R2": 0.97,
+      "NVE_MAX_RELATIVE_DRIFT": 0.0001,
+      "NVE_PREFLIGHT_REPORT": "nve_certification_conservative_ibi_only_preflight.json",
+      "NVE_EQ_DIR": "nve_equilibration_conservative_ibi_only",
+      "NVE_EQ_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "NVE_EQ_REPORT": "nve_equilibration_conservative_ibi_only/equilibration_report.json",
+      "NVE_EQ_ENERGY": "nve_equilibration_conservative_ibi_only/nvt_energy.csv",
+      "NVE_EQ_LOG": "nve_equilibration_conservative_ibi_only/nvt_run.log",
+      "NVE_EQ_DT": 0.0005,
+      "NVE_EQ_DURATION_PS": 5.0,
+      "NVE_EQ_KT": 2.49,
+      "NVE_EQ_THERMOSTAT_SEED": 232323,
+      "NVE_EQ_LOG_INTERVAL": 100,
+      "NVE_REQUIRED_HAMILTONIAN_MODE": "conservative_classical_model_provenance_ml_disabled",
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step24": {
+      "IBI_VALIDATION_REPORT": "ibi_conservative/validation_report.json",
+      "IBI_RUNTIME_PARITY_REPORT": "ibi_conservative/runtime_parity_report.json",
+      "NVE_SOURCE_CHECKPOINT": "postibi_runtime_validation/equilibrated_postibi.npz",
+      "NVE_EQ_DIR": "nve_equilibration_conservative_ibi_only",
+      "NVE_EQ_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "NVE_EQ_REPORT": "nve_equilibration_conservative_ibi_only/equilibration_report.json",
+      "NVE_REQUIRED_HAMILTONIAN_MODE": "conservative_classical_model_provenance_ml_disabled",
+      "NVE_DEVICE": "cpu",
+      "NVE_ML_PRECISION": "float32",
+      "NVE_NEIGHBOR_SEARCH": "link-cell",
+      "NVE_DIAG_DURATION_PS": 2.0,
+      "NVE_DIAG_DTS": [
+        0.00025,
+        0.0005,
+        0.00075,
+        0.001,
+        0.0015,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "NVE_DIAG_FINE_MAX_DT": 0.001,
+      "NVE_DIAG_COARSE_MIN_DT": 0.0015,
+      "NVE_DIAG_LOCAL_TIMES_PS": [
+        0.012,
+        0.024,
+        0.048,
+        0.096
+      ],
+      "NVE_DIAG_OUTPUT_DIR": "nve_diagnostic_conservative_ibi_only",
+      "NVE_DIAG_PREFLIGHT_REPORT": "nve_diagnostic_conservative_ibi_only_preflight.json",
+      "NVE_MAX_RELATIVE_DRIFT": 0.0001,
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step25": {
+      "IBI_VALIDATION_REPORT": "ibi_conservative/validation_report.json",
+      "IBI_RUNTIME_PARITY_REPORT": "ibi_conservative/runtime_parity_report.json",
+      "NVE_SOURCE_CHECKPOINT": "postibi_runtime_validation/equilibrated_postibi.npz",
+      "NVE_EQ_DIR": "nve_equilibration_conservative_ibi_only",
+      "NVE_EQ_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "NVE_EQ_REPORT": "nve_equilibration_conservative_ibi_only/equilibration_report.json",
+      "NVE_REQUIRED_HAMILTONIAN_MODE": "conservative_classical_model_provenance_ml_disabled",
+      "NVE_STATE_DTS": [
+        0.001,
+        0.0005,
+        0.00025,
+        0.000125
+      ],
+      "NVE_STATE_REFERENCE_DT": 6.25e-05,
+      "NVE_STATE_DURATION_PS": 0.096,
+      "NVE_STATE_SAMPLE_INTERVAL_PS": 0.012,
+      "NVE_STATE_DEVICE": "cpu",
+      "NVE_STATE_ML_PRECISION": "float32",
+      "NVE_STATE_NEIGHBOR_SEARCH": "link-cell",
+      "NVE_STATE_OUTPUT_DIR": "nve_state_convergence_conservative_ibi_only",
+      "NVE_STATE_PREFLIGHT_REPORT": "nve_state_convergence_conservative_ibi_only_preflight.json",
+      "NVE_STATE_ORDER_MIN": 1.7,
+      "NVE_STATE_ORDER_MAX": 2.3,
+      "NVE_STATE_MIN_R2": 0.95,
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step26": {
+      "IBI_VALIDATION_REPORT": "ibi_conservative/validation_report.json",
+      "IBI_RUNTIME_PARITY_REPORT": "ibi_conservative/runtime_parity_report.json",
+      "NVE_PREFLIGHT_REPORT": "nve_certification_conservative_ibi_only_preflight.json",
+      "NVE_EQ_REPORT": "nve_equilibration_conservative_ibi_only/equilibration_report.json",
+      "STRICT_NVE_REPORT": "nve_certification_conservative_ibi_only/nve_certification_report.json",
+      "STATE_CONVERGENCE_REPORT": "nve_state_convergence_conservative_ibi_only/state_convergence_report.json",
+      "FINAL_NVE_DIR": "nve_final_certification_conservative_ibi_only",
+      "FINAL_NVE_REPORT": "nve_final_certification_conservative_ibi_only/conservative_ibi_nve_certification_report.json",
+      "NVE_STATE_ORDER_MIN": 1.7,
+      "NVE_STATE_ORDER_MAX": 2.3,
+      "NVE_STATE_MIN_R2": 0.95,
+      "NVE_MAX_RELATIVE_DRIFT": 0.0001,
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step27": {
+      "NVE_EQ_DIR": "nve_equilibration_conservative_ibi_only",
+      "ENERGY_LOC_DTS": [
+        0.001,
+        0.00075,
+        0.0005,
+        0.000375,
+        0.00025,
+        0.0001875,
+        0.000125
+      ],
+      "ENERGY_LOC_DURATION_PS": 0.25,
+      "ENERGY_LOC_MICRO_DURATION_PS": 0.096,
+      "ENERGY_LOC_TRACE_DT": 0.001,
+      "ENERGY_LOC_REVERSIBILITY_DT": 0.0005,
+      "ENERGY_LOC_REVERSIBILITY_DURATION_PS": 0.024,
+      "ENERGY_LOC_NEIGHBOR_DURATION_PS": 0.024,
+      "ENERGY_LOC_FD_MAX_BODIES": 8,
+      "ENERGY_LOC_DEVICE": "cpu",
+      "ENERGY_LOC_ML_PRECISION": "float32",
+      "ENERGY_LOC_OUTPUT_DIR": "conservative_ibi_energy_localization",
+      "ENERGY_LOC_FINE_MAX_DT": 0.001,
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step28": {
+      "SIGMA_REPLICA_BASE_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "SIGMA_REPLICA_LOCALIZATION_REPORT": "conservative_ibi_energy_localization/localization_report.json",
+      "SIGMA_REPLICA_DTS": [
+        0.001,
+        0.0005,
+        0.00025,
+        0.000125
+      ],
+      "SIGMA_REPLICA_DURATIONS_PS": [
+        0.125,
+        0.25,
+        0.5,
+        1,
+        2
+      ],
+      "SIGMA_REPLICA_COUNT": 4,
+      "SIGMA_REPLICA_EQ_DT": 0.0005,
+      "SIGMA_REPLICA_EQ_DURATION_PS": 1.0,
+      "SIGMA_REPLICA_KT": 2.49,
+      "SIGMA_REPLICA_SEED_BASE": 280000,
+      "SIGMA_REPLICA_BOOTSTRAP_SAMPLES": 1000,
+      "SIGMA_REPLICA_BOOTSTRAP_SEED": 20260816,
+      "SIGMA_REPLICA_DEVICE": "cpu",
+      "SIGMA_REPLICA_ML_PRECISION": "float32",
+      "SIGMA_REPLICA_NEIGHBOR_SEARCH": "link-cell",
+      "SIGMA_REPLICA_P_MIN": 1.7,
+      "SIGMA_REPLICA_P_MAX": 2.3,
+      "SIGMA_REPLICA_R2_MIN": 0.95,
+      "SIGMA_REPLICA_OUTPUT_DIR": "sigma_energy_replica_window_diagnostic",
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step29": {
+      "IBI_TIMESTEP_SOURCE_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "IBI_TIMESTEP_OUTPUT_DIR": "ibi_timestep_range_diagnostic",
+      "IBI_TIMESTEP_DTS": [
+        0.001,
+        0.0015,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "IBI_TIMESTEP_DURATION_PS": 1.0,
+      "IBI_TIMESTEP_BRANCH_DT": 0.0005,
+      "IBI_TIMESTEP_BRANCH_DURATION_PS": 0.25,
+      "IBI_TIMESTEP_BRANCH_KT": 2.49,
+      "IBI_TIMESTEP_SEED_BASE": 290000,
+      "IBI_TIMESTEP_DEVICE": "cpu",
+      "IBI_TIMESTEP_ML_PRECISION": "float32",
+      "IBI_TIMESTEP_NEIGHBOR_SEARCH": "link-cell",
+      "IBI_TIMESTEP_REFERENCE_PRIORS": "../tel22/cg_priors.json",
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step30": {
+      "IBI_ANGLE_REFERENCE_PRIORS": "../tel22/cg_priors.json",
+      "IBI_ANGLE_TARGET_DATASET": "tel22_dataset_ibi_residual.bin",
+      "IBI_ANGLE_RUNTIME_SAMPLE": "ibi_timestep_range_diagnostic/full_ibi/nvt_structured_sample.npz",
+      "IBI_ANGLE_REG_OUTPUT_DIR": "ibi_angle_regularization_diagnostic",
+      "IBI_ANGLE_REG_CANDIDATE_SPECS": [
+        {
+          "name": "c2_raw_wall_current",
+          "body_sigma_rad": 0.0,
+          "wall_width_scale": 1.0,
+          "note": "same nodal U; C2 periodic/interpolating body with current wall"
+        },
+        {
+          "name": "smooth_0p01_wall_current",
+          "body_sigma_rad": 0.01,
+          "wall_width_scale": 1.0
+        },
+        {
+          "name": "smooth_0p02_wall_current",
+          "body_sigma_rad": 0.02,
+          "wall_width_scale": 1.0
+        },
+        {
+          "name": "smooth_0p02_wall_1p5x_same_barrier",
+          "body_sigma_rad": 0.02,
+          "wall_width_scale": 1.5
+        },
+        {
+          "name": "smooth_0p02_wall_2x_same_barrier",
+          "body_sigma_rad": 0.02,
+          "wall_width_scale": 2.0
+        }
+      ],
+      "IBI_ANGLE_REG_HOTSPOT_COUNT": 12,
+      "IBI_ANGLE_REG_HOTSPOT_MIN_SEPARATION_RAD": 0.01,
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step31": {
+      "IBI_CONFIG_JSON": "tel22_training_config.json",
+      "IBI_SOURCE_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "IBI_ANGLE_REG_OUTPUT_DIR": "ibi_angle_regularization_diagnostic",
+      "IBI_ANGLE_VALIDATION_OUTPUT_DIR": "ibi_angle_regularization_validation",
+      "IBI_ANGLE_CANDIDATE_01_NAME": "smooth_0p01",
+      "IBI_ANGLE_CANDIDATE_02_NAME": "smooth_0p02",
+      "IBI_ANGLE_VALIDATION_DTS": [
+        0.001,
+        0.0015,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "IBI_ANGLE_VALIDATION_NVE_DURATION_PS": 1.0,
+      "IBI_ANGLE_VALIDATION_BRANCH_DT": 0.0005,
+      "IBI_ANGLE_VALIDATION_BRANCH_DURATION_PS": 0.25,
+      "IBI_ANGLE_VALIDATION_KT": 2.49,
+      "IBI_ANGLE_VALIDATION_THERMOSTAT_SEED": 310000,
+      "IBI_ANGLE_VALIDATION_DEVICE": "cpu",
+      "IBI_ANGLE_VALIDATION_ML_PRECISION": "float32",
+      "IBI_ANGLE_VALIDATION_NEIGHBOR_SEARCH": "link-cell",
+      "IBI_ANGLE_CANDIDATE_01_PRIORS": "ibi_angle_regularization_diagnostic/candidates/smooth_0p01_wall_current/cg_priors.json",
+      "IBI_ANGLE_CANDIDATE_02_PRIORS": "ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_current/cg_priors.json",
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step32": {
+      "IBI_SOURCE_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "IBI_ANGLE_STEP31_REPORT": "ibi_angle_regularization_validation/angle_candidate_validation_report.json",
+      "IBI_ANGLE_SWEEP_OUTPUT_DIR": "ibi_angle_smoothing_sweep",
+      "IBI_ANGLE_SWEEP_SIGMAS": [
+        0.0075,
+        0.0125,
+        0.015
+      ],
+      "IBI_ANGLE_SWEEP_REUSE_SIGMA": 0.01,
+      "IBI_ANGLE_SWEEP_REUSE_VARIANT": "smooth_0p01",
+      "IBI_ANGLE_SWEEP_DTS": [
+        0.001,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "IBI_ANGLE_SWEEP_NVE_DURATION_PS": 1.0,
+      "IBI_ANGLE_SWEEP_BRANCH_DT_PS": 0.0005,
+      "IBI_ANGLE_SWEEP_BRANCH_DURATION_PS": 0.25,
+      "IBI_ANGLE_SWEEP_KT": 2.49,
+      "IBI_ANGLE_SWEEP_SEED": 310000,
+      "IBI_ANGLE_SWEEP_DEVICE": "cpu",
+      "IBI_ANGLE_SWEEP_ML_PRECISION": "float32",
+      "IBI_ANGLE_SWEEP_NEIGHBOR_SEARCH": "link-cell",
+      "IBI_PRIORS": "ibi_conservative/cg_priors.json"
+    },
+    "step33": {
+      "IBI_ANGLE_FINAL_CONFIG": "tel22_training_config.json",
+      "IBI_ANGLE_FINAL_DATASET": "tel22_dataset_ibi_residual.bin",
+      "IBI_ANGLE_FINAL_RB_INFO": "rigid_bodies_info_ibi.json",
+      "IBI_ANGLE_FINAL_SOURCE_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "IBI_ANGLE_FINAL_IBI_CONFIG": "ibi_settings.json",
+      "IBI_ANGLE_FINAL_CURRENT_PRIORS": "ibi_conservative/cg_priors.json",
+      "IBI_ANGLE_FINAL_STEP32_REPORT": "ibi_angle_smoothing_sweep/angle_smoothing_sweep_report.json",
+      "IBI_ANGLE_FINAL_CANDIDATE_PRIORS": "ibi_angle_smoothing_sweep/candidates/smooth_0p0075_wall_current/cg_priors.json",
+      "IBI_ANGLE_FINAL_OUTPUT_DIR": "ibi_angle_final_candidate_validation",
+      "IBI_ANGLE_FINAL_CANDIDATE_NAME": "smooth_0p0075",
+      "IBI_ANGLE_FINAL_EXPECTED_SIGMA_RAD": 0.0075,
+      "IBI_ANGLE_FINAL_DTS": [
+        0.001,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "IBI_ANGLE_FINAL_NVE_DURATION_PS": 1.0,
+      "IBI_ANGLE_FINAL_SHORT_BRANCH_DT": 0.0005,
+      "IBI_ANGLE_FINAL_SHORT_BRANCH_DURATION_PS": 0.25,
+      "IBI_ANGLE_FINAL_NEW_REPLICA_SEEDS": [
+        330001,
+        330002
+      ],
+      "IBI_ANGLE_FINAL_LONG_BRANCH_DT": 0.0005,
+      "IBI_ANGLE_FINAL_LONG_BRANCH_DURATION_PS": 2.0,
+      "IBI_ANGLE_FINAL_LONG_THERMOSTAT_SEED": 330100,
+      "IBI_ANGLE_FINAL_KT": 2.49,
+      "IBI_ANGLE_FINAL_DEVICE": "cpu",
+      "IBI_ANGLE_FINAL_ML_PRECISION": "float32",
+      "IBI_ANGLE_FINAL_NEIGHBOR_SEARCH": "link-cell",
+      "IBI_ANGLE_FINAL_MIN_CLEAN_DT": 0.003,
+      "IBI_ANGLE_FINAL_FULL_CLEAN_DT": 0.005,
+      "IBI_ANGLE_FINAL_COMMON_P_MIN": 1.8,
+      "IBI_ANGLE_FINAL_COMMON_P_MAX": 2.2,
+      "IBI_ANGLE_FINAL_COMMON_R2_MIN": 0.95,
+      "IBI_ANGLE_FINAL_MIN_FULL_CLEAN_REPLICAS": 2,
+      "IBI_ANGLE_FINAL_MEDIAN_C2_SPREAD_MAX": 2.0,
+      "IBI_ANGLE_FINAL_MAX_RELATIVE_BLOCK_DRIFT": 2e-05,
+      "IBI_ANGLE_FINAL_WEIGHTED_ANGLE_DELTA_MAX": 0.03,
+      "IBI_ANGLE_FINAL_WEIGHTED_BOND_DELTA_MAX": 0.03,
+      "IBI_ANGLE_FINAL_MAX_GROUP_ANGLE_DELTA_MAX": 0.1,
+      "IBI_ANGLE_FINAL_KINETIC_RELATIVE_DELTA_MAX": 0.03,
+      "IBI_ANGLE_FINAL_CURVATURE_REDUCTION_MIN": 1.2
+    },
+    "step34": {
+      "IBI_PROMOTION_CURRENT_DIR": "ibi_conservative",
+      "IBI_PROMOTION_BACKUP_DIR": "ibi_conservative_pre_smooth_0p0075",
+      "IBI_PROMOTION_CANDIDATE_PRIORS": "ibi_angle_smoothing_sweep/candidates/smooth_0p0075_wall_current/cg_priors.json",
+      "IBI_PROMOTION_STEP33_REPORT": "ibi_angle_final_candidate_validation/angle_final_candidate_validation_report.json",
+      "IBI_PROMOTION_EXPECTED_CANDIDATE_SHA256": "c31f6d0d53f053071ab694f91d8271c83fc90a90ada291ba60c206adf82a3799",
+      "IBI_PROMOTION_EXPECTED_SIGMA_RAD": 0.0075,
+      "IBI_PROMOTION_CONFIG": "tel22_training_config.json",
+      "IBI_PROMOTION_DATASET": "tel22_dataset_ibi_residual.bin",
+      "IBI_PROMOTION_RB_INFO": "rigid_bodies_info_ibi.json",
+      "IBI_PROMOTION_SOURCE_CHECKPOINT": "nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+      "IBI_PROMOTION_OUTPUT_DIR": "ibi_promoted_final_certification",
+      "IBI_PROMOTION_DTS": [
+        0.001,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "IBI_PROMOTION_NVT_DT": 0.0005,
+      "IBI_PROMOTION_NVT_STEPS": 1000,
+      "IBI_PROMOTION_NVT_LOG_INTERVAL": 1,
+      "IBI_PROMOTION_NVT_KT": 2.49,
+      "IBI_PROMOTION_NVT_THERMOSTAT_SEED": 340001,
+      "IBI_PROMOTION_NVE_DURATION_PS": 1.0,
+      "IBI_PROMOTION_SIGMA_P_MIN": 1.8,
+      "IBI_PROMOTION_SIGMA_P_MAX": 2.2,
+      "IBI_PROMOTION_SIGMA_R2_MIN": 0.95,
+      "IBI_PROMOTION_SIGMA_C2_SPREAD_MAX": 2.0,
+      "IBI_PROMOTION_MAX_RELATIVE_DRIFT": 2e-05,
+      "IBI_PROMOTION_RICHARDSON_DTS": [
+        0.001,
+        0.0005,
+        0.00025,
+        0.000125
+      ],
+      "IBI_PROMOTION_RICHARDSON_REFERENCE_DT": 6.25e-05,
+      "IBI_PROMOTION_RICHARDSON_DURATION_PS": 0.096,
+      "IBI_PROMOTION_RICHARDSON_SAMPLE_INTERVAL_PS": 0.012,
+      "IBI_PROMOTION_STATE_P_MIN": 1.7,
+      "IBI_PROMOTION_STATE_P_MAX": 2.3,
+      "IBI_PROMOTION_STATE_R2_MIN": 0.95,
+      "IBI_PROMOTION_DEVICE": "cpu",
+      "IBI_PROMOTION_ML_PRECISION": "float32",
+      "IBI_PROMOTION_NEIGHBOR_SEARCH": "link-cell"
+    },
+    "step35": {
+      "IBI_DIHEDRAL_BASE_PRIORS": "ibi_conservative/cg_priors.json",
+      "IBI_DIHEDRAL_TARGET_DATASET": "tel22_dataset.bin",
+      "IBI_DIHEDRAL_RUNTIME_DATASET": "tel22_dataset_ibi_residual.bin",
+      "IBI_DIHEDRAL_CONFIG": "tel22_training_config.json",
+      "IBI_DIHEDRAL_RB_INFO": "rigid_bodies_info_ibi.json",
+      "IBI_DIHEDRAL_MODEL": "tel22_model_ibi_conservative.pt",
+      "IBI_DIHEDRAL_SETTINGS": "ibi_dihedral_test_settings.json",
+      "IBI_DIHEDRAL_SOURCE_CHECKPOINT": "ibi_promoted_final_certification/nvt/equilibrated_promoted_ibi_only.npz",
+      "IBI_DIHEDRAL_BASELINE_CERT": "ibi_promoted_final_certification/promoted_ibi_final_certification_report.json",
+      "IBI_DIHEDRAL_TEST_OUT": "ibi_dihedral_candidate_test",
+      "IBI_DIHEDRAL_ITERATIONS": 1,
+      "IBI_DIHEDRAL_GROUPING_STRATEGY": "consecutive_angle_types",
+      "IBI_DIHEDRAL_NVT_DT": 0.0005,
+      "IBI_DIHEDRAL_NVT_STEPS": 1000,
+      "IBI_DIHEDRAL_NVT_SAMPLE_START": 200,
+      "IBI_DIHEDRAL_NVT_LOG_INTERVAL": 10,
+      "IBI_DIHEDRAL_NVT_KT": 2.49,
+      "IBI_DIHEDRAL_NVT_VELOCITY_SEED": 350001,
+      "IBI_DIHEDRAL_NVT_THERMOSTAT_SEED": 350201,
+      "IBI_DIHEDRAL_NVE_DTS": [
+        0.001,
+        0.0015,
+        0.002,
+        0.003,
+        0.004,
+        0.005
+      ],
+      "IBI_DIHEDRAL_NVE_DURATION_PS": 0.5,
+      "IBI_DIHEDRAL_NVE_FINE_MAX_DT": 0.002,
+      "IBI_DIHEDRAL_NVE_COARSE_MIN_DT": 0.003,
+      "IBI_DIHEDRAL_NVE_P_MIN": 1.8,
+      "IBI_DIHEDRAL_NVE_P_MAX": 2.2,
+      "IBI_DIHEDRAL_NVE_R2_MIN": 0.95,
+      "IBI_DIHEDRAL_NVE_C2_SPREAD_MAX": 2.0,
+      "IBI_DIHEDRAL_NVE_MAX_RELATIVE_DRIFT": 2e-05,
+      "IBI_DIHEDRAL_NVE_REQUIRED_MAX_DT": 0.005,
+      "IBI_DIHEDRAL_IBI_VELOCITY_SEED": 350001,
+      "IBI_DIHEDRAL_IBI_THERMOSTAT_SEED": 350101,
+      "IBI_DIHEDRAL_DEVICE": "cpu",
+      "IBI_DIHEDRAL_ML_PRECISION": "float32",
+      "IBI_DIHEDRAL_NEIGHBOR_SEARCH": "link-cell"
+    },
+    "step36": {
+      "IBI_DIHEDRAL_STEP35_OUT": "ibi_dihedral_candidate_test",
+      "IBI_DIHEDRAL_UPDATE_LOCALIZATION_OUT": "ibi_dihedral_update_localization",
+      "IBI_DIHEDRAL_LOCALIZATION_NVT_STEPS": 600,
+      "IBI_DIHEDRAL_LOCALIZATION_SAMPLE_START": 200,
+      "IBI_DIHEDRAL_LOCALIZATION_DT": 0.0005,
+      "IBI_DIHEDRAL_LOCALIZATION_KT": 2.49,
+      "IBI_DIHEDRAL_LOCALIZATION_VELOCITY_SEED": 360001,
+      "IBI_DIHEDRAL_LOCALIZATION_THERMOSTAT_SEED": 360101,
+      "IBI_DIHEDRAL_LOCALIZATION_NEIGHBOR_SEARCH": "link-cell",
+      "IBI_DIHEDRAL_LOCALIZATION_CANDIDATES": [
+        {
+          "name": "frac_0p00_raw",
+          "fraction": 0.0,
+          "smoothing_sigma_rad": 0.0
+        },
+        {
+          "name": "frac_0p25_raw",
+          "fraction": 0.25,
+          "smoothing_sigma_rad": 0.0
+        },
+        {
+          "name": "frac_0p50_raw",
+          "fraction": 0.5,
+          "smoothing_sigma_rad": 0.0
+        },
+        {
+          "name": "frac_0p75_raw",
+          "fraction": 0.75,
+          "smoothing_sigma_rad": 0.0
+        },
+        {
+          "name": "frac_1p00_raw",
+          "fraction": 1.0,
+          "smoothing_sigma_rad": 0.0
+        },
+        {
+          "name": "frac_1p00_smooth_0p01",
+          "fraction": 1.0,
+          "smoothing_sigma_rad": 0.01
+        },
+        {
+          "name": "frac_1p00_smooth_0p02",
+          "fraction": 1.0,
+          "smoothing_sigma_rad": 0.02
+        },
+        {
+          "name": "frac_0p50_smooth_0p02",
+          "fraction": 0.5,
+          "smoothing_sigma_rad": 0.02
+        }
+      ],
+      "IBI_DIHEDRAL_REPRESENTATION_DOMINANCE_FACTOR": 5.0,
+      "IBI_DIHEDRAL_GAIN_DOMINANCE_FACTOR": 1.5,
+      "IBI_DIHEDRAL_GAIN_FLOOR": 0.01
+    },
+    "step37": {
+      "IBI_DIHEDRAL_STEP35_OUT": "ibi_dihedral_candidate_test",
+      "IBI_DIHEDRAL_STEP36_OUT": "ibi_dihedral_update_localization",
+      "IBI_DIHEDRAL_CONSERVATIVITY_ZERO_UPDATE_CANDIDATE": "frac_0p00_raw",
+      "IBI_DIHEDRAL_CONSERVATIVITY_OUT": "ibi_dihedral_legacy_conservativity_diagnostic",
+      "IBI_DIHEDRAL_CONSERVATIVITY_PROBES": 8,
+      "IBI_DIHEDRAL_CONSERVATIVITY_FD_EPS": 2e-06,
+      "IBI_DIHEDRAL_CONSERVATIVITY_SIN_MIN": 0.15,
+      "IBI_DIHEDRAL_CONSERVATIVITY_LEGACY_RESIDUAL_MIN": 1e-05,
+      "IBI_DIHEDRAL_CONSERVATIVITY_RATIO_MIN": 100.0,
+      "IBI_DIHEDRAL_CONSERVATIVITY_CONSERVATIVE_RESIDUAL_MAX": 1e-06
+    },
+    "step38": {
+      "IBI_DIHEDRAL_LOOP_BASE_PRIORS": "ibi_conservative/cg_priors.json",
+      "IBI_DIHEDRAL_LOOP_TARGET_DATASET": "tel22_dataset.bin",
+      "IBI_DIHEDRAL_LOOP_CONFIG": "tel22_training_config.json",
+      "IBI_DIHEDRAL_LOOP_RB_INFO": "rigid_bodies_info_ibi.json",
+      "IBI_DIHEDRAL_LOOP_SETTINGS": "ibi_dihedral_test_settings.json",
+      "IBI_DIHEDRAL_LOOP_STEP35_REPORT": "ibi_dihedral_candidate_test/dihedral_ibi_test_report.json",
+      "IBI_DIHEDRAL_LOOP_STEP37_REPORT": "ibi_dihedral_legacy_conservativity_diagnostic/tabulated_dihedral_conservativity_report.json",
+      "IBI_DIHEDRAL_LOOP_OUT": "ibi_dihedral_conservative_in_loop_test",
+      "IBI_DIHEDRAL_LOOP_ITERATIONS": 2,
+      "IBI_DIHEDRAL_LOOP_GROUPING_STRATEGY": "consecutive_angle_types",
+      "IBI_DIHEDRAL_LOOP_NEIGHBOR_SEARCH": "link-cell",
+      "IBI_DIHEDRAL_LOOP_VELOCITY_SEED": 380001,
+      "IBI_DIHEDRAL_LOOP_THERMOSTAT_SEED": 380101,
+      "IBI_DIHEDRAL_LOOP_DIRECTION_FLAT_TOLERANCE_L1": 0.02
+    },
+    "step39": {
+      "IBI_DIHEDRAL_REPLICA_STEP38_OUT": "ibi_dihedral_conservative_in_loop_test",
+      "IBI_DIHEDRAL_REPLICA_TARGET_DATASET": "tel22_dataset.bin",
+      "IBI_DIHEDRAL_REPLICA_CONFIG": "tel22_training_config.json",
+      "IBI_DIHEDRAL_REPLICA_RB_INFO": "rigid_bodies_info_ibi.json",
+      "IBI_DIHEDRAL_REPLICA_SETTINGS": "ibi_dihedral_test_settings.json",
+      "IBI_DIHEDRAL_REPLICA_OUT": "ibi_dihedral_conservative_replica_matrix",
+      "IBI_DIHEDRAL_REPLICA_COUNT": 3
+    }
+  },
+  "calibration_provenance": {
+    "angle_regularization_sigma_rad": {
+      "value": 0.0075,
+      "selected_by": "ibi_angle_smoothing_sweep/angle_smoothing_sweep_report.json",
+      "validated_by": "ibi_angle_final_candidate_validation/angle_final_candidate_validation_report.json",
+      "scope": "TEL22 only; not a framework default"
+    },
+    "promoted_angle_candidate_sha256": {
+      "value": "c31f6d0d53f053071ab694f91d8271c83fc90a90ada291ba60c206adf82a3799",
+      "validated_by": "ibi_angle_final_candidate_validation/angle_final_candidate_validation_report.json",
+      "scope": "TEL22 reviewed candidate identity"
+    },
+    "promoted_production_priors_sha256": {
+      "value": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+      "validated_by": "ibi_promoted_final_certification/promoted_ibi_final_certification_report.json",
+      "scope": "TEL22 promoted production prior identity"
+    }
+  }
+}

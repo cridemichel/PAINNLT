@@ -13,6 +13,8 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step23
 
 DRY_RUN=0
 OVERWRITE=0
@@ -23,41 +25,16 @@ for arg in "$@"; do
     esac
 done
 
-MODEL="${IBI_MODEL:-tel22_model_ibi_conservative.pt}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-PRIORS="${IBI_PRIORS:-ibi_conservative/cg_priors.json}"
-VALIDATION_REPORT="${IBI_VALIDATION_REPORT:-ibi_conservative/validation_report.json}"
-RUNTIME_PARITY_REPORT="${IBI_RUNTIME_PARITY_REPORT:-ibi_conservative/runtime_parity_report.json}"
-SOURCE_CHECKPOINT="${NVE_SOURCE_CHECKPOINT:-postibi_runtime_validation/equilibrated_postibi.npz}"
+MODEL="${IBI_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+PRIORS="${IBI_PRIORS}"
+VALIDATION_REPORT="${IBI_VALIDATION_REPORT}"
+RUNTIME_PARITY_REPORT="${IBI_RUNTIME_PARITY_REPORT}"
+SOURCE_CHECKPOINT="${NVE_SOURCE_CHECKPOINT}"
+REQUIRED_HAMILTONIAN_MODE="${NVE_REQUIRED_HAMILTONIAN_MODE}"
 
-NVE_DEVICE="${NVE_DEVICE:-cpu}"
-NVE_ML_PRECISION="${NVE_ML_PRECISION:-float32}"
-NVE_NEIGHBOR_SEARCH="${NVE_NEIGHBOR_SEARCH:-link-cell}"
-NVE_DURATION_PS="${NVE_DURATION_PS:-5.0}"
-NVE_OUTPUT_DIR="${NVE_OUTPUT_DIR:-nve_certification_conservative_ibi_only}"
-NVE_DTS="${NVE_DTS:-0.001 0.0015 0.002 0.003 0.004 0.005}"
-NVE_SLOPE_MIN="${NVE_SLOPE_MIN:-1.7}"
-NVE_SLOPE_MAX="${NVE_SLOPE_MAX:-2.3}"
-NVE_MIN_R2="${NVE_MIN_R2:-0.97}"
-NVE_MAX_RELATIVE_DRIFT="${NVE_MAX_RELATIVE_DRIFT:-1e-4}"
-NVE_PREFLIGHT_REPORT="${NVE_PREFLIGHT_REPORT:-${NVE_OUTPUT_DIR}_preflight.json}"
-
-# The NVE scan must start from a state thermalized with the Hamiltonian that is
-# actually being certified.  The older post-IBI checkpoint was generated with
-# PaiNN active and is now only the source state for this matched IBI-only NVT.
-NVE_EQ_DIR="${NVE_EQ_DIR:-nve_equilibration_conservative_ibi_only}"
-NVE_EQ_CHECKPOINT="${NVE_EQ_CHECKPOINT:-${NVE_EQ_DIR}/equilibrated_conservative_ibi_only.npz}"
-NVE_EQ_REPORT="${NVE_EQ_REPORT:-${NVE_EQ_DIR}/equilibration_report.json}"
-NVE_EQ_ENERGY="${NVE_EQ_ENERGY:-${NVE_EQ_DIR}/nvt_energy.csv}"
-NVE_EQ_LOG="${NVE_EQ_LOG:-${NVE_EQ_DIR}/nvt_run.log}"
-NVE_EQ_DT="${NVE_EQ_DT:-0.0005}"
-NVE_EQ_DURATION_PS="${NVE_EQ_DURATION_PS:-5.0}"
-NVE_EQ_KT="${NVE_EQ_KT:-2.49}"
-NVE_EQ_THERMOSTAT_SEED="${NVE_EQ_THERMOSTAT_SEED:-232323}"
-NVE_EQ_LOG_INTERVAL="${NVE_EQ_LOG_INTERVAL:-100}"
-REQUIRED_HAMILTONIAN_MODE="conservative_classical_model_provenance_ml_disabled"
 
 for path in \
     "${MODEL}" "${MODEL}.manifest.json" "${CONFIG}" "${DATASET}" "${RB_INFO}" \
@@ -130,6 +107,8 @@ if [[ "${OVERWRITE}" == "1" ]]; then
     rm -rf "${NVE_EQ_DIR}"
 fi
 mkdir -p "${NVE_EQ_DIR}"
+NVE_MODEL_CONFIG_PROVENANCE="${NVE_EQ_DIR}/model_config_provenance.json"
+write_model_dependent_provenance "${NVE_MODEL_CONFIG_PROVENANCE}"
 
 if [[ ! -s "${NVE_EQ_CHECKPOINT}" ]]; then
     echo "[INFO] Preparing dedicated conservative IBI-only NVT checkpoint..."
@@ -262,6 +241,7 @@ read -r -a DT_ARGS <<< "${NVE_DTS}"
     --provenance-artifact "conservative_validation=${VALIDATION_REPORT}" \
     --provenance-artifact "conservative_runtime_parity=${RUNTIME_PARITY_REPORT}" \
     --provenance-artifact "ibi_only_nvt_equilibration=${NVE_EQ_REPORT}" \
+    --provenance-artifact "model_config=${NVE_MODEL_CONFIG_PROVENANCE}" \
     "$@"
 
 cat <<EOF_DONE

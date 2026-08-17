@@ -251,6 +251,9 @@ def test_finalizer_requires_gating_sigma_and_richardson(tmp_path):
         state_report=state,
         residual_ml_status=stale,
         expected_candidate_sha256=candidate_sha,
+        sigma_p_min=1.8, sigma_p_max=2.2, sigma_r2_min=0.95,
+        sigma_c2_spread_max=2.0, full_dt_ps=0.005, max_relative_drift=2.0e-5,
+        state_p_min=1.7, state_p_max=2.3, state_r2_min=0.95,
     )
     assert report["pass"] is True
     assert report["gates"]["fresh_sigma_E_quadratic_scaling"]["pass"] is True
@@ -275,6 +278,9 @@ def test_finalizer_rejects_nonquadratic_fresh_sigma(tmp_path):
         state_report=state,
         residual_ml_status=stale,
         expected_candidate_sha256=candidate_sha,
+        sigma_p_min=1.8, sigma_p_max=2.2, sigma_r2_min=0.95,
+        sigma_c2_spread_max=2.0, full_dt_ps=0.005, max_relative_drift=2.0e-5,
+        state_p_min=1.7, state_p_max=2.3, state_r2_min=0.95,
     )
     assert report["pass"] is False
     assert report["gates"]["fresh_sigma_E_quadratic_scaling"]["checks"]["quadratic_exponent"] is False

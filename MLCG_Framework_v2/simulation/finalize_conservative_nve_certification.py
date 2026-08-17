@@ -60,10 +60,11 @@ def build_final_certification(
     equilibration_report_path: Path,
     strict_nve_report_path: Path,
     state_convergence_report_path: Path,
-    state_order_min: float = 1.7,
-    state_order_max: float = 2.3,
-    state_min_r2: float = 0.95,
-    max_relative_drift: float = 1.0e-4,
+    state_order_min: float,
+    state_order_max: float,
+    state_min_r2: float,
+    max_relative_drift: float,
+    model_config_provenance_path: Path | None = None,
 ) -> dict[str, Any]:
     paths = {
         "priors": Path(priors_path).resolve(),
@@ -76,6 +77,10 @@ def build_final_certification(
     }
     for label, path in paths.items():
         _require(path.is_file(), f"Missing {label} artifact: {path}")
+    if model_config_provenance_path is not None:
+        model_config_provenance_path = Path(model_config_provenance_path).resolve()
+        _require(model_config_provenance_path.is_file(), f"Missing model configuration provenance: {model_config_provenance_path}")
+        paths["model_config_provenance"] = model_config_provenance_path
 
     validation = _load_json(paths["validation"])
     parity = _load_json(paths["runtime_parity"])
@@ -270,10 +275,11 @@ def main() -> None:
     parser.add_argument("--strict-nve-report", required=True, type=Path)
     parser.add_argument("--state-convergence-report", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--state-order-min", type=float, default=1.7)
-    parser.add_argument("--state-order-max", type=float, default=2.3)
-    parser.add_argument("--state-min-r2", type=float, default=0.95)
-    parser.add_argument("--max-relative-drift", type=float, default=1.0e-4)
+    parser.add_argument("--state-order-min", type=float, required=True)
+    parser.add_argument("--state-order-max", type=float, required=True)
+    parser.add_argument("--state-min-r2", type=float, required=True)
+    parser.add_argument("--max-relative-drift", type=float, required=True)
+    parser.add_argument("--model-config-provenance", type=Path, default=None)
     args = parser.parse_args()
 
     report = build_final_certification(
@@ -288,6 +294,7 @@ def main() -> None:
         state_order_max=args.state_order_max,
         state_min_r2=args.state_min_r2,
         max_relative_drift=args.max_relative_drift,
+        model_config_provenance_path=args.model_config_provenance,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

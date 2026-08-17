@@ -9,12 +9,14 @@ BENCHMARK_TOOL="${FRAMEWORK_ROOT}/training/multiseed_benchmark.py"
 MANIFEST_TOOL="${FRAMEWORK_ROOT}/training/create_model_manifest.py"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step17
 
-BASELINE_DATASET="${BASELINE_DATASET:-tel22_dataset.bin}"
-IBI_DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-OUTDIR="${MULTISEED_OUTDIR:-training_multiseed_benchmark}"
-SEEDS_RAW="${MULTISEED_SEEDS:-11 42 73}"
+BASELINE_DATASET="${BASELINE_DATASET}"
+IBI_DATASET="${IBI_DATASET}"
+CONFIG="${TRAINING_CONFIG}"
+OUTDIR="${MULTISEED_OUTDIR}"
+SEEDS_RAW="${MULTISEED_SEEDS}"
 
 # The post-IBI case is allowed into the benchmark only if its residual dataset,
 # rigid-body metadata and selected validated priors still match the build
@@ -63,3 +65,5 @@ printf '\n[DONE] Paired baseline/post-IBI multi-seed benchmark: %s\n' "${OUTDIR}
 printf '[DONE] Per-run table: %s\n' "${OUTDIR}/benchmark_runs.csv"
 printf '[NOTE] Defaults use seeds: %s. Override with MULTISEED_SEEDS="11 23 42 73 101".\n' "${SEEDS_RAW}"
 printf '[NOTE] Resume an interrupted benchmark with RESUME=1; do not combine it with OVERWRITE=1.\n'
+
+write_model_dependent_provenance "${OUTDIR}/model_config_provenance.json"

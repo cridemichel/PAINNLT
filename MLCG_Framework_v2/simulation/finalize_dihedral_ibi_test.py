@@ -30,7 +30,10 @@ def load(path: Path, label: str) -> dict:
     return data
 
 
-def nve_metrics(report: dict) -> dict:
+def nve_metrics(
+    report: dict, *, p_min: float, p_max: float, r2_min: float, c2_spread_max: float,
+    max_relative_drift: float, required_max_dt: float,
+) -> dict:
     strict = report.get("strict_reference") or report.get("certification")
     if not isinstance(strict, dict):
         raise ValueError("NVE report has no strict_reference/certification block")
@@ -55,11 +58,11 @@ def nve_metrics(report: dict) -> dict:
     p = float(scaling["exponent_p"])
     r2 = float(scaling["loglog_r2"])
     checks = {
-        "quadratic_exponent": 1.8 <= p <= 2.2,
-        "loglog_r2": r2 >= 0.95,
-        "c2_spread": spread <= 2.0,
-        "relative_block_drift": max_drift <= 2.0e-5,
-        "full_dt_reached": max_dt >= 0.005 - 1.0e-12,
+        "quadratic_exponent": p_min <= p <= p_max,
+        "loglog_r2": r2 >= r2_min,
+        "c2_spread": spread <= c2_spread_max,
+        "relative_block_drift": max_drift <= max_relative_drift,
+        "full_dt_reached": max_dt >= required_max_dt - 1.0e-12,
     }
     return {
         "exponent_p": p,
@@ -84,6 +87,13 @@ def main() -> None:
     parser.add_argument("--candidate-priors", required=True, type=Path)
     parser.add_argument("--baseline-certification", type=Path, default=None)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--nve-p-min", type=float, required=True)
+    parser.add_argument("--nve-p-max", type=float, required=True)
+    parser.add_argument("--nve-r2-min", type=float, required=True)
+    parser.add_argument("--nve-c2-spread-max", type=float, required=True)
+    parser.add_argument("--nve-max-relative-drift", type=float, required=True)
+    parser.add_argument("--nve-required-max-dt", type=float, required=True)
+    parser.add_argument("--model-config-provenance", type=Path, default=None)
     args = parser.parse_args()
 
     seed = load(args.seed_report, "seed report")
@@ -97,7 +107,7 @@ def main() -> None:
     if not candidate.is_file():
         raise FileNotFoundError(candidate)
 
-    if seed.get("kind") != "tel22_periodic_dihedral_ibi_test_seed" or not seed.get("pass", False):
+    if seed.get("kind") not in {"tel22_periodic_dihedral_ibi_test_seed", "periodic_dihedral_ibi_test_seed"} or not seed.get("pass", False):
         raise ValueError("Invalid/failed dihedral seed report")
     if int(seed.get("dihedral_occurrences", 0)) <= 0 or int(seed.get("unique_groups", 0)) <= 0:
         raise ValueError("Dihedral test seed contains no derived torsions")
@@ -146,7 +156,11 @@ def main() -> None:
     if not fd_dihedrals:
         raise ValueError("Validation report has no dihedral finite-difference checks")
 
-    nve_summary = nve_metrics(nve)
+    nve_summary = nve_metrics(
+        nve, p_min=args.nve_p_min, p_max=args.nve_p_max, r2_min=args.nve_r2_min,
+        c2_spread_max=args.nve_c2_spread_max, max_relative_drift=args.nve_max_relative_drift,
+        required_max_dt=args.nve_required_max_dt,
+    )
     by_kind = structure.get("mean_l1_by_kind", {})
     dihedral_l1 = float(by_kind.get("dihedral", float("nan")))
     if not np.isfinite(dihedral_l1):
@@ -212,12 +226,15 @@ def main() -> None:
         "candidate_nve": nve_summary,
         "production_baseline_reference": baseline,
         "infrastructure_pass": True,
-        "candidate_order2_through_0p005": bool(nve_summary["pass"]),
+        "candidate_order2_through_configured_max_dt": bool(nve_summary["pass"]),
+        "nve_acceptance_policy": {"p_min": args.nve_p_min, "p_max": args.nve_p_max, "r2_min": args.nve_r2_min, "c2_spread_max": args.nve_c2_spread_max, "max_relative_drift": args.nve_max_relative_drift, "required_max_dt_ps": args.nve_required_max_dt},
+        "model_config_provenance": str(args.model_config_provenance.resolve()) if args.model_config_provenance else None,
+        "model_config_provenance_sha256": sha256_file(args.model_config_provenance.resolve()) if args.model_config_provenance else None,
         "promotion_ready": False,
         "notes": [
             "This test does not modify or promote production priors.",
             "A short IBI test is not a convergence/structure certification; promotion_ready remains false by design.",
-            "candidate_order2_through_0p005 reports whether the short conservative candidate passes the same basic sigma_E(dt) window used for the promoted angle prior.",
+            "candidate_order2_through_configured_max_dt reports whether the short conservative candidate passes the configured sigma_E(dt) acceptance window.",
         ],
     }
     out = args.output.expanduser().resolve()
@@ -246,7 +263,7 @@ def main() -> None:
             f"[REFERENCE production] p={baseline['exponent_p']:.6f} "
             f"R2={baseline['loglog_r2']:.6f} C2spread={baseline['c2_spread_max_over_min']:.3f}"
         )
-    print(f"[FINAL] infrastructure_pass=True candidate_order2_through_0p005={nve_summary['pass']} promotion_ready=False")
+    print(f"[FINAL] infrastructure_pass=True candidate_order2_through_configured_max_dt={nve_summary['pass']} promotion_ready=False")
     print(f"[DONE] report: {out}")
 
 

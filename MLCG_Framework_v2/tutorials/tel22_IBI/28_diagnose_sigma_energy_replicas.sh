@@ -13,30 +13,17 @@ fi
 PYPRESSO="${PYPRESSO:-${DEFAULT_PYPRESSO}}"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step28
 
-MODEL="${IBI_MODEL:-tel22_model_ibi_conservative.pt}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-PRIORS="${IBI_PRIORS:-ibi_conservative/cg_priors.json}"
-BASE_CHECKPOINT="${SIGMA_REPLICA_BASE_CHECKPOINT:-nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz}"
-LOCALIZATION_REPORT="${SIGMA_REPLICA_LOCALIZATION_REPORT:-conservative_ibi_energy_localization/localization_report.json}"
+MODEL="${IBI_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+PRIORS="${IBI_PRIORS}"
+BASE_CHECKPOINT="${SIGMA_REPLICA_BASE_CHECKPOINT}"
+LOCALIZATION_REPORT="${SIGMA_REPLICA_LOCALIZATION_REPORT}"
 
-# The default grid is intentionally power-of-two in dt so every requested
-# duration is an exact integer number of integration steps at every dt.
-SIGMA_REPLICA_DTS="${SIGMA_REPLICA_DTS:-0.001 0.0005 0.00025 0.000125}"
-SIGMA_REPLICA_DURATIONS_PS="${SIGMA_REPLICA_DURATIONS_PS:-0.125 0.25 0.5 1 2}"
-SIGMA_REPLICA_COUNT="${SIGMA_REPLICA_COUNT:-4}"
-SIGMA_REPLICA_EQ_DT="${SIGMA_REPLICA_EQ_DT:-0.0005}"
-SIGMA_REPLICA_EQ_DURATION_PS="${SIGMA_REPLICA_EQ_DURATION_PS:-1.0}"
-SIGMA_REPLICA_KT="${SIGMA_REPLICA_KT:-2.49}"
-SIGMA_REPLICA_SEED_BASE="${SIGMA_REPLICA_SEED_BASE:-280000}"
-SIGMA_REPLICA_BOOTSTRAP_SAMPLES="${SIGMA_REPLICA_BOOTSTRAP_SAMPLES:-1000}"
-SIGMA_REPLICA_BOOTSTRAP_SEED="${SIGMA_REPLICA_BOOTSTRAP_SEED:-20260816}"
-SIGMA_REPLICA_DEVICE="${SIGMA_REPLICA_DEVICE:-cpu}"
-SIGMA_REPLICA_ML_PRECISION="${SIGMA_REPLICA_ML_PRECISION:-float32}"
-SIGMA_REPLICA_NEIGHBOR_SEARCH="${SIGMA_REPLICA_NEIGHBOR_SEARCH:-link-cell}"
-SIGMA_REPLICA_OUTPUT_DIR="${SIGMA_REPLICA_OUTPUT_DIR:-sigma_energy_replica_window_diagnostic}"
 
 for path in "${MODEL}" "${MODEL}.manifest.json" "${CONFIG}" "${DATASET}" "${RB_INFO}" "${PRIORS}" "${BASE_CHECKPOINT}"; do
     if [[ ! -f "${path}" ]]; then
@@ -70,7 +57,7 @@ output       : ${SIGMA_REPLICA_OUTPUT_DIR}
 [NOTE] Diagnostic-only. No certification report is modified.
 EOF
 
-exec "${PYTHON_BIN}" "${FRAMEWORK_ROOT}/simulation/sigma_energy_replica_diagnostics.py" \
+"${PYTHON_BIN}" "${FRAMEWORK_ROOT}/simulation/sigma_energy_replica_diagnostics.py" \
     --pypresso "${PYPRESSO}" \
     --model "${MODEL}" \
     --config "${CONFIG}" \
@@ -87,9 +74,14 @@ exec "${PYTHON_BIN}" "${FRAMEWORK_ROOT}/simulation/sigma_energy_replica_diagnost
     --seed-base "${SIGMA_REPLICA_SEED_BASE}" \
     --bootstrap-samples "${SIGMA_REPLICA_BOOTSTRAP_SAMPLES}" \
     --bootstrap-seed "${SIGMA_REPLICA_BOOTSTRAP_SEED}" \
+    --second-order-p-min "${SIGMA_REPLICA_P_MIN}" \
+    --second-order-p-max "${SIGMA_REPLICA_P_MAX}" \
+    --second-order-r2-min "${SIGMA_REPLICA_R2_MIN}" \
     --device "${SIGMA_REPLICA_DEVICE}" \
     --ml-precision "${SIGMA_REPLICA_ML_PRECISION}" \
     --neighbor-search "${SIGMA_REPLICA_NEIGHBOR_SEARCH}" \
     --output-dir "${SIGMA_REPLICA_OUTPUT_DIR}" \
     "${EXTRA_ARGS[@]}" \
     "$@"
+
+write_model_dependent_provenance "${SIGMA_REPLICA_OUTPUT_DIR}/model_config_provenance.json"

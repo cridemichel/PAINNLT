@@ -41,6 +41,7 @@ DEFAULT_IBI_SETTINGS = {
         "left_guard_force": 100.0,
         "right_guard_force": 75.0,
         "force_max": 150.0,
+        "runtime_safety_fraction": 0.95,
     },
     "angle": {
         "hist_edges": 300,
@@ -74,12 +75,19 @@ def recursive_update(base, override):
 
 
 def load_ibi_settings(filename=None):
-    """Load IBI/extrapolation settings while retaining safe defaults."""
-    settings = copy.deepcopy(DEFAULT_IBI_SETTINGS)
-    if filename:
-        with open(filename, "r") as handle:
-            override = json.load(handle)
-        recursive_update(settings, override)
+    """Load IBI settings.
+
+    An explicitly supplied settings file is authoritative: model-dependent
+    values are never silently filled from framework defaults.  The built-in
+    defaults remain available only to low-level callers that intentionally do
+    not supply a settings file.
+    """
+    if filename is None:
+        return copy.deepcopy(DEFAULT_IBI_SETTINGS)
+    with open(filename, "r") as handle:
+        settings = json.load(handle)
+    if not isinstance(settings, dict):
+        raise ValueError("IBI settings JSON must contain an object")
     return settings
 
 
@@ -416,6 +424,32 @@ def _dihedral_force_factor(grid, derivative, force_max):
     return np.clip(factor, -force_max, force_max)
 
 
+def conservative_dihedral_from_potential(target_grid, potential):
+    """Return periodic ``U(phi), dU/dphi`` for conservative in-loop torsions.
+
+    Unlike ``table_from_potential(..., target_type="dihedral")``, this path does
+    not construct or integrate ESPResSo's legacy force-factor column.  The
+    scalar potential is fundamental and the nodal derivative is taken from the
+    same periodic cubic representation that is written to
+    ``ConservativeSplineDihedral``.
+    """
+    grid = np.asarray(target_grid, dtype=float)
+    energy = np.asarray(potential, dtype=float).copy()
+    if grid.shape != energy.shape:
+        raise ValueError("Potential and target grid must have matching shapes")
+    if not (
+        np.isclose(grid[0], 0.0, atol=1.0e-12)
+        and np.isclose(grid[-1], 2.0 * np.pi, atol=1.0e-10)
+    ):
+        raise ValueError("Conservative dihedral grid must span exactly 0..2*pi")
+    energy[-1] = energy[0]
+    energy -= np.min(energy)
+    spline = CubicSpline(grid, energy, bc_type="periodic")
+    derivative = np.asarray(spline(grid, 1), dtype=float)
+    derivative[-1] = derivative[0]
+    return energy, derivative
+
+
 def table_from_potential(target_grid, potential, target_type, periodic=False, settings=None):
     """Create an ESPResSo-compatible table from a scalar potential profile."""
     settings = settings or DEFAULT_IBI_SETTINGS
@@ -480,7 +514,8 @@ def validate_extrapolated_table(x, energy, force, target_type, support=None):
 
 
 def calculate_dbi_potential(values, bins, target_grid, kT=None, periodic=False,
-                            jacobian_type=None, settings=None):
+                            jacobian_type=None, settings=None,
+                            conservative_dihedral=False):
     settings = settings or DEFAULT_IBI_SETTINGS
     kT = float(settings["kT"] if kT is None else kT)
     values = np.asarray(values, dtype=float)
@@ -513,10 +548,13 @@ def calculate_dbi_potential(values, bins, target_grid, kT=None, periodic=False,
     potential_grid, support = extrapolate_supported_potential(
         bin_centers, smoothed, support_mask, target_grid, settings, jacobian_type
     )
-    energy, force = table_from_potential(
-        target_grid, potential_grid, target_type=jacobian_type,
-        periodic=periodic, settings=settings,
-    )
+    if jacobian_type == "dihedral" and conservative_dihedral:
+        energy, force = conservative_dihedral_from_potential(target_grid, potential_grid)
+    else:
+        energy, force = table_from_potential(
+            target_grid, potential_grid, target_type=jacobian_type,
+            periodic=periodic, settings=settings,
+        )
     validate_extrapolated_table(target_grid, energy, force, jacobian_type, support)
     return target_grid, energy, force, target_hist, bin_centers, counts, support
 
@@ -535,6 +573,7 @@ def update_ibi_potential(
     target_type="bond",
     settings=None,
     previous_force=None,
+    conservative_dihedral=False,
 ):
     """Apply a support-aware IBI update and reconstruct safe outer tails."""
     settings = settings or DEFAULT_IBI_SETTINGS
@@ -555,9 +594,12 @@ def update_ibi_potential(
     if np.count_nonzero(update_mask) < int(settings["min_support_points"]):
         print(f"[WARN] {target_type}: insufficient target/simulation overlap; preserving previous potential")
         if previous_force is None:
-            previous_force = table_from_potential(
-                target_grid, V_i, target_type, periodic=periodic, settings=settings
-            )[1]
+            if target_type == "dihedral" and conservative_dihedral:
+                previous_force = conservative_dihedral_from_potential(target_grid, V_i)[1]
+            else:
+                previous_force = table_from_potential(
+                    target_grid, V_i, target_type, periodic=periodic, settings=settings
+                )[1]
         return target_grid, V_i.copy(), np.asarray(previous_force, dtype=float).copy()
 
     delta_values = alpha * kT * np.log(
@@ -606,10 +648,13 @@ def update_ibi_potential(
         )
 
     potential_grid -= np.min(potential_grid)
-    energy, force = table_from_potential(
-        target_grid, potential_grid, target_type=target_type,
-        periodic=periodic, settings=settings,
-    )
+    if target_type == "dihedral" and conservative_dihedral:
+        energy, force = conservative_dihedral_from_potential(target_grid, potential_grid)
+    else:
+        energy, force = table_from_potential(
+            target_grid, potential_grid, target_type=target_type,
+            periodic=periodic, settings=settings,
+        )
     validate_extrapolated_table(target_grid, energy, force, target_type, support)
     return target_grid, energy, force
 

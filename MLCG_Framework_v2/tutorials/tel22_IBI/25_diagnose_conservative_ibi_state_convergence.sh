@@ -13,32 +13,19 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step25
 
-MODEL="${IBI_MODEL:-tel22_model_ibi_conservative.pt}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-PRIORS="${IBI_PRIORS:-ibi_conservative/cg_priors.json}"
-VALIDATION_REPORT="${IBI_VALIDATION_REPORT:-ibi_conservative/validation_report.json}"
-RUNTIME_PARITY_REPORT="${IBI_RUNTIME_PARITY_REPORT:-ibi_conservative/runtime_parity_report.json}"
-SOURCE_CHECKPOINT="${NVE_SOURCE_CHECKPOINT:-postibi_runtime_validation/equilibrated_postibi.npz}"
-NVE_EQ_DIR="${NVE_EQ_DIR:-nve_equilibration_conservative_ibi_only}"
-NVE_EQ_CHECKPOINT="${NVE_EQ_CHECKPOINT:-${NVE_EQ_DIR}/equilibrated_conservative_ibi_only.npz}"
-NVE_EQ_REPORT="${NVE_EQ_REPORT:-${NVE_EQ_DIR}/equilibration_report.json}"
-REQUIRED_HAMILTONIAN_MODE="conservative_classical_model_provenance_ml_disabled"
+MODEL="${IBI_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+PRIORS="${IBI_PRIORS}"
+VALIDATION_REPORT="${IBI_VALIDATION_REPORT}"
+RUNTIME_PARITY_REPORT="${IBI_RUNTIME_PARITY_REPORT}"
+SOURCE_CHECKPOINT="${NVE_SOURCE_CHECKPOINT}"
+REQUIRED_HAMILTONIAN_MODE="${NVE_REQUIRED_HAMILTONIAN_MODE}"
 
-NVE_STATE_DTS="${NVE_STATE_DTS:-0.001 0.0005 0.00025 0.000125}"
-NVE_STATE_REFERENCE_DT="${NVE_STATE_REFERENCE_DT:-0.0000625}"
-NVE_STATE_DURATION_PS="${NVE_STATE_DURATION_PS:-0.096}"
-NVE_STATE_SAMPLE_INTERVAL_PS="${NVE_STATE_SAMPLE_INTERVAL_PS:-0.012}"
-NVE_STATE_DEVICE="${NVE_STATE_DEVICE:-cpu}"
-NVE_STATE_ML_PRECISION="${NVE_STATE_ML_PRECISION:-float32}"
-NVE_STATE_NEIGHBOR_SEARCH="${NVE_STATE_NEIGHBOR_SEARCH:-link-cell}"
-NVE_STATE_OUTPUT_DIR="${NVE_STATE_OUTPUT_DIR:-nve_state_convergence_conservative_ibi_only}"
-NVE_STATE_PREFLIGHT_REPORT="${NVE_STATE_PREFLIGHT_REPORT:-${NVE_STATE_OUTPUT_DIR}_preflight.json}"
-NVE_STATE_ORDER_MIN="${NVE_STATE_ORDER_MIN:-1.7}"
-NVE_STATE_ORDER_MAX="${NVE_STATE_ORDER_MAX:-2.3}"
-NVE_STATE_MIN_R2="${NVE_STATE_MIN_R2:-0.95}"
 
 for path in \
     "${MODEL}" "${MODEL}.manifest.json" "${CONFIG}" "${DATASET}" "${RB_INFO}" \
@@ -105,3 +92,5 @@ report : ${NVE_STATE_OUTPUT_DIR}/state_convergence_report.json
 plan   : ${NVE_STATE_OUTPUT_DIR}/run_plan.json
 [NOTE] Use Richardson position/velocity/orientation/omega orders to decide whether the underlying NVE trajectory is second-order convergent.
 EOF_DONE
+
+write_model_dependent_provenance "${NVE_STATE_OUTPUT_DIR}/model_config_provenance.json"

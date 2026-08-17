@@ -7,19 +7,17 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 CHECKER="${FRAMEWORK_ROOT}/training/residual_input_provenance.py"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step16
 
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-if [ -n "${IBI_PRIORS:-}" ]; then
-    PRIORS="${IBI_PRIORS}"
-elif [ -f "ibi_conservative/cg_priors.json" ]; then
-    PRIORS="ibi_conservative/cg_priors.json"
-elif [ -f "ibi_run_16ps_continue/best/cg_priors.json" ]; then
-    PRIORS="ibi_run_16ps_continue/best/cg_priors.json"
-else
-    PRIORS="ibi_run_16ps/best/cg_priors.json"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+if [[ -z "${IBI_PRIORS:-}" ]]; then
+  for candidate in ${IBI_TRAINING_PRIOR_CANDIDATES}; do [[ -f "${candidate}" ]] && { IBI_PRIORS="${candidate}"; break; }; done
 fi
-PROVENANCE="${IBI_RESIDUAL_PROVENANCE:-ibi_residual_build_manifest.json}"
+[[ -n "${IBI_PRIORS:-}" ]] || { echo "[ERROR] No configured training prior candidate exists." >&2; exit 1; }
+PRIORS="${IBI_PRIORS}"
+PROVENANCE="${IBI_RESIDUAL_PROVENANCE}"
 
 for path in "${DATASET}" "${RB_INFO}" "${PRIORS}" "${PROVENANCE}"; do
     if [ ! -f "${path}" ]; then
@@ -34,3 +32,5 @@ done
     --dataset "${DATASET}" \
     --rb-info "${RB_INFO}" \
     --priors "${PRIORS}"
+
+write_model_dependent_provenance "${PROVENANCE%.json}_check_model_config_provenance.json"

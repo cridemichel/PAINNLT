@@ -1,0 +1,820 @@
+{
+  "diagnostic_hint": "U2_vs_U0_lower_L1_in_all_3_seed_pairs",
+  "framework": "MLCG_Framework_v2",
+  "infrastructure_pass": true,
+  "kind": "conservative_dihedral_ibi_matched_replica_matrix",
+  "matrix_complete": true,
+  "notes": [
+    "All U0/U1/U2 priors are sampled with the same three velocity/thermostat seed pairs and the same dataset-start protocol.",
+    "The three step-38 diagonal samples are reused; the other six matrix cells are new matched MD runs.",
+    "With only three paired replicas, mean/SD and sign consistency are diagnostic; no universal significance or promotion threshold is imposed.",
+    "Negative paired delta means the later prior has lower structural L1 for the same seed pair."
+  ],
+  "paired_differences": {
+    "U1_minus_U0": {
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "max": 0.02064072383682336,
+          "mean": -0.012807744361263362,
+          "min": -0.044395474210168595,
+          "n": 3,
+          "sd": 0.032558002464908316,
+          "sem": 0.018797371487391315,
+          "values": [
+            0.02064072383682336,
+            -0.014668482710444852,
+            -0.044395474210168595
+          ]
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "max": -0.01879138705616301,
+          "mean": -0.04682260424621373,
+          "min": -0.0620580950271068,
+          "n": 3,
+          "sd": 0.024306377052416582,
+          "sem": 0.014033293334237256,
+          "values": [
+            -0.059618330655371365,
+            -0.01879138705616301,
+            -0.0620580950271068
+          ]
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "max": 0.03999870861885524,
+          "mean": -0.002364763924515604,
+          "min": -0.056468940130525835,
+          "n": 3,
+          "sd": 0.049293862758754525,
+          "sem": 0.028459824933163395,
+          "values": [
+            0.009375939738123784,
+            -0.056468940130525835,
+            0.03999870861885524
+          ]
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "max": -0.025354019750979284,
+          "mean": -0.04708630063491037,
+          "min": -0.07274928542522285,
+          "n": 3,
+          "sd": 0.023940877740441433,
+          "sem": 0.01382227220807978,
+          "values": [
+            -0.07274928542522285,
+            -0.04315559672852898,
+            -0.025354019750979284
+          ]
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "max": 0.0036181558171703987,
+          "mean": -0.02568515466035498,
+          "min": -0.04373461655466149,
+          "n": 3,
+          "sd": 0.02560386872672066,
+          "sem": 0.014782400501668016,
+          "values": [
+            0.0036181558171703987,
+            -0.04373461655466149,
+            -0.036939003243573854
+          ]
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "max": 0.03478685006340826,
+          "mean": -0.0017038988066207332,
+          "min": -0.04007413910838031,
+          "n": 3,
+          "sd": 0.03746586834675159,
+          "sem": 0.021630929175420113,
+          "values": [
+            0.03478685006340826,
+            -0.04007413910838031,
+            0.00017559262510985496
+          ]
+        }
+      },
+      "overall": {
+        "max": -0.01065765777084482,
+        "mean": -0.022745077772313122,
+        "min": -0.03614886038145071,
+        "n": 3,
+        "sd": 0.012796482349454186,
+        "sem": 0.007388052529137669,
+        "values": [
+          -0.01065765777084482,
+          -0.03614886038145071,
+          -0.02142871516464384
+        ]
+      },
+      "per_seed": [
+        {
+          "delta_l1": -0.01065765777084482,
+          "replica": 1
+        },
+        {
+          "delta_l1": -0.03614886038145071,
+          "replica": 2
+        },
+        {
+          "delta_l1": -0.02142871516464384,
+          "replica": 3
+        }
+      ],
+      "sign_convention": "U1-U0; negative means lower/better L1 for U1",
+      "sign_hint": "U1_minus_U0_lower_L1_in_all_3_seed_pairs"
+    },
+    "U2_minus_U0": {
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "max": -0.01844382354948637,
+          "mean": -0.02495092527003105,
+          "min": -0.03729806469701219,
+          "n": 3,
+          "sd": 0.010698136876190811,
+          "sem": 0.006176572205296227,
+          "values": [
+            -0.01844382354948637,
+            -0.01911088756359458,
+            -0.03729806469701219
+          ]
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "max": -0.0317199424019563,
+          "mean": -0.05214655455627981,
+          "min": -0.07866885563120496,
+          "n": 3,
+          "sd": 0.02406071862838762,
+          "sem": 0.013891462376995437,
+          "values": [
+            -0.0317199424019563,
+            -0.04605086563567817,
+            -0.07866885563120496
+          ]
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "max": 0.05434810297535442,
+          "mean": 0.011951312572313485,
+          "min": -0.01594532899789114,
+          "n": 3,
+          "sd": 0.03732267918806377,
+          "sem": 0.021548258876106664,
+          "values": [
+            0.05434810297535442,
+            -0.0025488362605228243,
+            -0.01594532899789114
+          ]
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "max": 0.0010339119954394516,
+          "mean": -0.06098388368253257,
+          "min": -0.12744230935667633,
+          "n": 3,
+          "sd": 0.06435312159718157,
+          "sem": 0.0371542920773255,
+          "values": [
+            -0.12744230935667633,
+            -0.05654325368636082,
+            0.0010339119954394516
+          ]
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "max": 0.008489342746238915,
+          "mean": -0.018115921559876735,
+          "min": -0.04535969031161724,
+          "n": 3,
+          "sd": 0.02693019413709885,
+          "sem": 0.015548154834382905,
+          "values": [
+            0.008489342746238915,
+            -0.01747741711425188,
+            -0.04535969031161724
+          ]
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "max": 0.04499073261145231,
+          "mean": 0.00877963125548705,
+          "min": -0.014691249634182446,
+          "n": 3,
+          "sd": 0.03181539979851631,
+          "sem": 0.01836862963804896,
+          "values": [
+            0.04499073261145231,
+            -0.014691249634182446,
+            -0.003960589210808718
+          ]
+        }
+      },
+      "overall": {
+        "max": -0.011629649495845662,
+        "mean": -0.022577723540153267,
+        "min": -0.030033102808849077,
+        "n": 3,
+        "sd": 0.009686122085626608,
+        "sem": 0.005592285193540102,
+        "values": [
+          -0.011629649495845662,
+          -0.026070418315765065,
+          -0.030033102808849077
+        ]
+      },
+      "per_seed": [
+        {
+          "delta_l1": -0.011629649495845662,
+          "replica": 1
+        },
+        {
+          "delta_l1": -0.026070418315765065,
+          "replica": 2
+        },
+        {
+          "delta_l1": -0.030033102808849077,
+          "replica": 3
+        }
+      ],
+      "sign_convention": "U2-U0; negative means lower/better L1 for U2",
+      "sign_hint": "U2_minus_U0_lower_L1_in_all_3_seed_pairs"
+    },
+    "U2_minus_U1": {
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "max": 0.007097409513156405,
+          "mean": -0.012143180908767684,
+          "min": -0.03908454738630973,
+          "n": 3,
+          "sd": 0.0240347612773691,
+          "sem": 0.013876475893397446,
+          "values": [
+            -0.03908454738630973,
+            -0.0044424048531497284,
+            0.007097409513156405
+          ]
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "max": 0.027898388253415063,
+          "mean": -0.005323950310066087,
+          "min": -0.02725947857951516,
+          "n": 3,
+          "sd": 0.029259898040661682,
+          "sem": 0.016893210010237025,
+          "values": [
+            0.027898388253415063,
+            -0.02725947857951516,
+            -0.016610760604098163
+          ]
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "max": 0.05392010387000301,
+          "mean": 0.014316076496829089,
+          "min": -0.05594403761674638,
+          "n": 3,
+          "sd": 0.061011303352996725,
+          "sem": 0.035224892414462576,
+          "values": [
+            0.044972163237230633,
+            0.05392010387000301,
+            -0.05594403761674638
+          ]
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "max": 0.026387931746418736,
+          "mean": -0.013897583047622194,
+          "min": -0.05469302393145348,
+          "n": 3,
+          "sd": 0.04054288299901792,
+          "sem": 0.0234074444132065,
+          "values": [
+            -0.05469302393145348,
+            -0.01338765695783184,
+            0.026387931746418736
+          ]
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "max": 0.026257199440409607,
+          "mean": 0.007569233100478245,
+          "min": -0.008420687068043387,
+          "n": 3,
+          "sd": 0.01749567212285886,
+          "sem": 0.010101131009785994,
+          "values": [
+            0.004871186929068516,
+            0.026257199440409607,
+            -0.008420687068043387
+          ]
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "max": 0.025382889474197867,
+          "mean": 0.010483530062107782,
+          "min": -0.004136181835918573,
+          "n": 3,
+          "sd": 0.014761522441876597,
+          "sem": 0.008522568955466155,
+          "values": [
+            0.010203882548044052,
+            0.025382889474197867,
+            -0.004136181835918573
+          ]
+        }
+      },
+      "overall": {
+        "max": 0.010078442065685644,
+        "mean": 0.00016735423215985534,
+        "min": -0.008604387644205236,
+        "n": 3,
+        "sd": 0.009393381361350615,
+        "sem": 0.0054232712575765915,
+        "values": [
+          -0.0009719917250008425,
+          0.010078442065685644,
+          -0.008604387644205236
+        ]
+      },
+      "per_seed": [
+        {
+          "delta_l1": -0.0009719917250008425,
+          "replica": 1
+        },
+        {
+          "delta_l1": 0.010078442065685644,
+          "replica": 2
+        },
+        {
+          "delta_l1": -0.008604387644205236,
+          "replica": 3
+        }
+      ],
+      "sign_convention": "U2-U1; negative means lower/better L1 for U2",
+      "sign_hint": "U2_minus_U1_mixed_sign_across_3_seed_pairs"
+    }
+  },
+  "plan": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/replica_matrix_plan.json",
+  "prior_statistics": {
+    "U0": {
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "max": 0.41341619025534565,
+          "mean": 0.403690744056552,
+          "min": 0.3956699440044483,
+          "n": 3,
+          "sd": 0.008995091876320147,
+          "sem": 0.005193318716178853,
+          "values": [
+            0.40198609790986195,
+            0.3956699440044483,
+            0.41341619025534565
+          ]
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "max": 0.6087690716484507,
+          "mean": 0.5620738533513228,
+          "min": 0.5002979613436653,
+          "n": 3,
+          "sd": 0.055785889634932036,
+          "sem": 0.03220799839771077,
+          "values": [
+            0.5002979613436653,
+            0.577154527061852,
+            0.6087690716484507
+          ]
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "max": 0.7140287243609594,
+          "mean": 0.6704456449804352,
+          "min": 0.5960617126201692,
+          "n": 3,
+          "sd": 0.06473463812343971,
+          "sem": 0.03737456074646093,
+          "values": [
+            0.5960617126201692,
+            0.7012464979601771,
+            0.7140287243609594
+          ]
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "max": 0.7191990077880214,
+          "mean": 0.6885306488098593,
+          "min": 0.6704024161535385,
+          "n": 3,
+          "sd": 0.02670614002268808,
+          "sem": 0.015418797131114803,
+          "values": [
+            0.6759905224880182,
+            0.7191990077880214,
+            0.6704024161535385
+          ]
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "max": 0.5550287776802263,
+          "mean": 0.5357693023785418,
+          "min": 0.5044892753849508,
+          "n": 3,
+          "sd": 0.027330030557920788,
+          "sem": 0.015779000499576267,
+          "values": [
+            0.5550287776802263,
+            0.5477898540704481,
+            0.5044892753849508
+          ]
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "max": 0.5634767339771736,
+          "mean": 0.44318928234643784,
+          "min": 0.34466881279875167,
+          "n": 3,
+          "sd": 0.11101611470574202,
+          "sem": 0.06409518370974653,
+          "values": [
+            0.34466881279875167,
+            0.5634767339771736,
+            0.4214223002633884
+          ]
+        }
+      },
+      "overall_dihedral_mean_l1": {
+        "max": 0.5840894274770201,
+        "mean": 0.5506165793205248,
+        "min": 0.5123389808067822,
+        "n": 3,
+        "sd": 0.03611572882888098,
+        "sem": 0.02085142576133396,
+        "values": [
+          0.5123389808067822,
+          0.5840894274770201,
+          0.5554213296777722
+        ]
+      }
+    },
+    "U1": {
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "max": 0.4226268217466853,
+          "mean": 0.39088299969528856,
+          "min": 0.36902071604517706,
+          "n": 3,
+          "sd": 0.028136048816462728,
+          "sem": 0.016244355358117208,
+          "values": [
+            0.4226268217466853,
+            0.3810014612940035,
+            0.36902071604517706
+          ]
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "max": 0.558363140005689,
+          "mean": 0.515251249105109,
+          "min": 0.44067963068829397,
+          "n": 3,
+          "sd": 0.06484317954003462,
+          "sem": 0.03743722716255022,
+          "values": [
+            0.44067963068829397,
+            0.558363140005689,
+            0.5467109766213439
+          ]
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "max": 0.7540274329798147,
+          "mean": 0.6680808810559196,
+          "min": 0.6054376523582929,
+          "n": 3,
+          "sd": 0.07698710529256794,
+          "sem": 0.044448525964794164,
+          "values": [
+            0.6054376523582929,
+            0.6447775578296513,
+            0.7540274329798147
+          ]
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "max": 0.6760434110594924,
+          "mean": 0.6414443481749489,
+          "min": 0.6032412370627953,
+          "n": 3,
+          "sd": 0.036534654882474864,
+          "sem": 0.02109329283114694,
+          "values": [
+            0.6032412370627953,
+            0.6760434110594924,
+            0.6450483964025592
+          ]
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "max": 0.5586469334973967,
+          "mean": 0.5100841477181868,
+          "min": 0.46755027214137695,
+          "n": 3,
+          "sd": 0.04584660561289994,
+          "sem": 0.02646955009203839,
+          "values": [
+            0.5586469334973967,
+            0.5040552375157866,
+            0.46755027214137695
+          ]
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "max": 0.5234025948687933,
+          "mean": 0.44148538353981714,
+          "min": 0.3794556628621599,
+          "n": 3,
+          "sd": 0.07400549994314816,
+          "sem": 0.04272709531368943,
+          "values": [
+            0.3794556628621599,
+            0.5234025948687933,
+            0.42159789288849825
+          ]
+        }
+      },
+      "overall_dihedral_mean_l1": {
+        "max": 0.5479405670955694,
+        "mean": 0.5278715015482117,
+        "min": 0.5016813230359374,
+        "n": 3,
+        "sd": 0.023729315902256916,
+        "sem": 0.013700126923853698,
+        "values": [
+          0.5016813230359374,
+          0.5479405670955694,
+          0.5339926145131284
+        ]
+      }
+    },
+    "U2": {
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "max": 0.3835422743603756,
+          "mean": 0.3787398187865209,
+          "min": 0.37611812555833346,
+          "n": 3,
+          "sd": 0.0041648877133634386,
+          "sem": 0.002404599042454946,
+          "values": [
+            0.3835422743603756,
+            0.37655905644085375,
+            0.37611812555833346
+          ]
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "max": 0.5311036614261738,
+          "mean": 0.5099272987950428,
+          "min": 0.46857801894170903,
+          "n": 3,
+          "sd": 0.03581304139505838,
+          "sem": 0.020676669089936168,
+          "values": [
+            0.46857801894170903,
+            0.5311036614261738,
+            0.5301002160172458
+          ]
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "max": 0.6986976616996543,
+          "mean": 0.6823969575527488,
+          "min": 0.6504098155955236,
+          "n": 3,
+          "sd": 0.02770338009569989,
+          "sem": 0.015994553955714853,
+          "values": [
+            0.6504098155955236,
+            0.6986976616996543,
+            0.6980833953630683
+          ]
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "max": 0.6714363281489779,
+          "mean": 0.6275467651273268,
+          "min": 0.5485482131313418,
+          "n": 3,
+          "sd": 0.06855547413042125,
+          "sem": 0.03958052144362113,
+          "values": [
+            0.5485482131313418,
+            0.6626557541016606,
+            0.6714363281489779
+          ]
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "max": 0.5635181204264652,
+          "mean": 0.5176533808186651,
+          "min": 0.45912958507333357,
+          "n": 3,
+          "sd": 0.053333201244748836,
+          "sem": 0.030791938095400227,
+          "values": [
+            0.5635181204264652,
+            0.5303124369561962,
+            0.45912958507333357
+          ]
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "max": 0.5487854843429911,
+          "mean": 0.4519689136019249,
+          "min": 0.389659545410204,
+          "n": 3,
+          "sd": 0.08499015461302815,
+          "sem": 0.04906908864429972,
+          "values": [
+            0.389659545410204,
+            0.5487854843429911,
+            0.4174617110525797
+          ]
+        }
+      },
+      "overall_dihedral_mean_l1": {
+        "max": 0.558019009161255,
+        "mean": 0.5280388557803716,
+        "min": 0.5007093313109365,
+        "n": 3,
+        "sd": 0.028746637525917287,
+        "sem": 0.016596878913884946,
+        "values": [
+          0.5007093313109365,
+          0.558019009161255,
+          0.5253882268689232
+        ]
+      }
+    }
+  },
+  "priors": {
+    "U0": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+    "U1": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+    "U2": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json"
+  },
+  "promotion_ready": false,
+  "protocol": {
+    "burn_in_steps": 500,
+    "checkpoint_used": false,
+    "dt_ps": 0.0005,
+    "init_kT": 2.49,
+    "kT": 2.49,
+    "ml_active": false,
+    "neighbor_search": "link-cell",
+    "production_steps": 2000,
+    "sample_interval": 10,
+    "starting_state": "target_dataset_initial_frame_plus_initialized_velocities",
+    "total_steps": 2500
+  },
+  "samples": [
+    {
+      "action": "REUSE step38",
+      "dihedral_mean_l1": 0.5123389808067822,
+      "needs_new_md": false,
+      "prior": "U0",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+      "replica": 1,
+      "reused_step38": true,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_001",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_001/trajectory.npz",
+      "sample_sha256": "74b98c7b997eb27058d482b6f665efd50c7151674420c5345291e5dde2e93d68",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U0/seedpair_01.json",
+      "structure_report_sha256": "668503e8ba5cfbed43b9357750ea5edc77ab64c52980dd593eefc63cb2ca0425",
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "action": "NEW MD",
+      "dihedral_mean_l1": 0.5840894274770201,
+      "needs_new_md": true,
+      "prior": "U0",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+      "replica": 2,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_02_v380002_t380102",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_02_v380002_t380102/trajectory.npz",
+      "sample_sha256": "9e76c9a56ee2d231bf9fb757fb5a9f32c3d7c83a68ebc59a308a29c838652f8e",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U0/seedpair_02.json",
+      "structure_report_sha256": "e0a97e58c02ebb69f87d4fe00ed2c39fbb932072a63a589a63aa1bcc585614c4",
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "action": "NEW MD",
+      "dihedral_mean_l1": 0.5554213296777722,
+      "needs_new_md": true,
+      "prior": "U0",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+      "replica": 3,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_03_v380003_t380103",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_03_v380003_t380103/trajectory.npz",
+      "sample_sha256": "a9d7bfc275aa649c6e77682f300056107990896a337cad40da80902d30121858",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U0/seedpair_03.json",
+      "structure_report_sha256": "d9c88edc57466a18e36eff3916bbeaa68c1b97ceca9dcd553f23f85a54d6f81b",
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    },
+    {
+      "action": "NEW MD",
+      "dihedral_mean_l1": 0.5016813230359374,
+      "needs_new_md": true,
+      "prior": "U1",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+      "replica": 1,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_01_v380001_t380101",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_01_v380001_t380101/trajectory.npz",
+      "sample_sha256": "01cf5832de8d74a07a6d291cff3b8ae6b9d18b0541c251e10123f0aa10cb8ff3",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U1/seedpair_01.json",
+      "structure_report_sha256": "74146e42d092299939ecc6fca75b630ebaf75e413d56712e05acb63d09474572",
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "action": "REUSE step38",
+      "dihedral_mean_l1": 0.5479405670955694,
+      "needs_new_md": false,
+      "prior": "U1",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+      "replica": 2,
+      "reused_step38": true,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_002",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_002/trajectory.npz",
+      "sample_sha256": "4661374c2b31d890b58ef82462819a3546a837c540749958710b28fdf7478fb0",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U1/seedpair_02.json",
+      "structure_report_sha256": "bb1e4d9417894f9aec2f20d62aa3b489d2032cd66e48aba94d671820a271a23e",
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "action": "NEW MD",
+      "dihedral_mean_l1": 0.5339926145131284,
+      "needs_new_md": true,
+      "prior": "U1",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+      "replica": 3,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_03_v380003_t380103",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_03_v380003_t380103/trajectory.npz",
+      "sample_sha256": "86bf736b253eb57251fd9ba16be3b94d775cc7913349c5272d832f2ffe670de6",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U1/seedpair_03.json",
+      "structure_report_sha256": "650341f9bbb0a7e2fadfdbceb3f2db0377563bb4e09c3da7ecea663ec9a29c42",
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    },
+    {
+      "action": "NEW MD",
+      "dihedral_mean_l1": 0.5007093313109365,
+      "needs_new_md": true,
+      "prior": "U2",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+      "replica": 1,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_01_v380001_t380101",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_01_v380001_t380101/trajectory.npz",
+      "sample_sha256": "38fc42a06ef1f2354de34ab0125ba7122064e13217821bf338ae46a815a294e7",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U2/seedpair_01.json",
+      "structure_report_sha256": "2b17b736bac42fbf15be534ba042882663ebb34423a11973cc71a335ef84289b",
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "action": "NEW MD",
+      "dihedral_mean_l1": 0.558019009161255,
+      "needs_new_md": true,
+      "prior": "U2",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+      "replica": 2,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_02_v380002_t380102",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_02_v380002_t380102/trajectory.npz",
+      "sample_sha256": "e49ad1f7790a87bbaa3d926ab3f32d83ec527d447eec73e23c62216ebbf1411b",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U2/seedpair_02.json",
+      "structure_report_sha256": "3c0906667499b6bccfccfa40b698d547c36fc94073437d3ee406f503a884f62d",
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "action": "REUSE step38",
+      "dihedral_mean_l1": 0.5253882268689232,
+      "needs_new_md": false,
+      "prior": "U2",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+      "replica": 3,
+      "reused_step38": true,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/final_nvt",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/final_nvt/trajectory.npz",
+      "sample_sha256": "dc1222ab7e07829ec9e8fb137b6b1aa2c7e83520541b671eb29ff2e0e915ea63",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U2/seedpair_03.json",
+      "structure_report_sha256": "da1e1fd39af0a2bc8fe8e08f8d8318f4aa36ee140983f3375fd5c9be3243564d",
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    }
+  ],
+  "schema_version": 1,
+  "seed_pairs": [
+    {
+      "replica": 1,
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "replica": 2,
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "replica": 3,
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    }
+  ],
+  "test_only": true
+}

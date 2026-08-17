@@ -3178,6 +3178,61 @@ but those nearest-state half-pair metrics are not rigorous lower bounds. NVE cer
 be interpreted as resolving this model-accuracy question: it verifies conservation/integration, not
 force predictability.
 
+## 27.1 Architectural rule: every model-dependent choice is configurable
+
+The IBI/conservative path explicitly separates three classes of information:
+
+- **CORE_INVARIANT**: universal properties of the method, implemented in generic
+  code and covered by tests. Examples include `F=-grad(U)`, periodic torsional
+  splines, the conservative table schema, the IBI update formula, conservative
+  validation and runtime/preprocessing parity.
+- **MODEL_PARAMETER**: any choice that can change with molecule, mapping, dataset,
+  temperature, Hamiltonian or sampling protocol. It must come from external
+  configuration.
+- **CALIBRATED_PARAMETER**: a `MODEL_PARAMETER` selected by a sweep or diagnostic
+  study, such as a smoothing width or accepted NVE window. It must be configured
+  together with calibration provenance.
+
+The TEL22 IBI model-dependent workflow configuration is:
+
+```text
+tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+Workflow wrappers in steps 11–39 that contain model-dependent decisions load it
+through `tutorials/tel22_IBI/model_config.sh`. Step 20 only installs the generic
+ESPResSo kernel and therefore has no model-dependent section. The external config
+contains bonded/dihedral grouping, `ibi`/`dbi` choices, mixing, histogram/support
+settings, sampling and seed policy, regularization/candidate sweeps, replica
+counts, timestep grids, fine/coarse windows and validation thresholds.
+
+Validate a workflow config before running it:
+
+```bash
+python3 simulation/model_dependent_config.py validate \
+  --config tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+A different model can supply a different file without editing the generic core:
+
+```bash
+IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
+  bash tutorials/tel22_IBI/38_test_conservative_in_loop_dihedral_ibi.sh --run
+```
+
+Environment overrides remain available, but the model-config provenance sidecar (`model_config_provenance*.json`)
+records whether each resolved value came from the model config or from an
+`environment_override`. Explicit `ibi_settings.json` files are **authoritative
+and complete**: production workflows no longer silently merge missing
+model-dependent fields from internal defaults. Missing required settings fail as
+configuration errors. Low-level Python helper defaults remain only for API/test
+or exploratory use; production/tutorial wrappers supply explicit model values.
+
+TEL22 values such as `sigma_angle=0.0075 rad`, IBI mixing, replica counts, seeds,
+structural thresholds and NVE grids are therefore TEL22 configuration/results,
+not properties of the method. The JSON `calibration_provenance` block links
+calibrated values to the diagnostic/validation step that selected them.
+
 ---
 
 # 28. Troubleshooting

@@ -6,7 +6,7 @@ conservative spline kernel.  It combines:
 
 1. U'' knot-jump inspection for every unique conservative table;
 2. minimal bond/angle/rigid-angle NVE dynamics and reversibility;
-3. full TEL22 no-IBI / bond-only / angle-only / full sigma(E) scans;
+3. configured no-IBI / bond-only / angle-only / full sigma(E) scans;
 4. full-system translational/rotational finite-difference gradient checks;
 5. knot-crossing vs per-step energy-error correlation;
 6. kinetic/bonded/non-bonded energy decomposition;
@@ -128,17 +128,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rb-info", required=True, type=Path)
     parser.add_argument("--dataset", required=True, type=Path)
     parser.add_argument("--checkpoint", required=True, type=Path)
-    parser.add_argument("--output-dir", type=Path, default=Path("conservative_ibi_energy_localization"))
-    parser.add_argument("--dts", nargs="+", type=float, default=[0.001, 0.00075, 0.0005, 0.000375, 0.00025, 0.0001875, 0.000125])
-    parser.add_argument("--duration-ps", type=float, default=0.25)
-    parser.add_argument("--micro-duration-ps", type=float, default=0.096)
-    parser.add_argument("--trace-dt", type=float, default=0.001)
-    parser.add_argument("--reversibility-dt", type=float, default=0.0005)
-    parser.add_argument("--reversibility-duration-ps", type=float, default=0.024)
-    parser.add_argument("--neighbor-duration-ps", type=float, default=0.024)
-    parser.add_argument("--device", default="cpu")
-    parser.add_argument("--ml-precision", choices=("float32", "float64"), default="float32")
-    parser.add_argument("--fd-max-bodies", type=int, default=8)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--dts", nargs="+", type=float, required=True)
+    parser.add_argument("--duration-ps", type=float, required=True)
+    parser.add_argument("--micro-duration-ps", type=float, required=True)
+    parser.add_argument("--trace-dt", type=float, required=True)
+    parser.add_argument("--reversibility-dt", type=float, required=True)
+    parser.add_argument("--reversibility-duration-ps", type=float, required=True)
+    parser.add_argument("--neighbor-duration-ps", type=float, required=True)
+    parser.add_argument("--device", required=True)
+    parser.add_argument("--ml-precision", choices=("float32", "float64"), required=True)
+    parser.add_argument("--fd-max-bodies", type=int, required=True)
+    parser.add_argument("--fine-max-dt", type=float, required=True)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
@@ -204,7 +205,7 @@ def main() -> None:
         args.pypresso, str(ROOT / "simulation" / "diagnose_conservative_spline_dynamics.py"),
         "--priors", str(args.priors), "--output", str(micro_report),
         "--duration-ps", f"{args.micro_duration_ps:.17g}",
-        "--dts", *[f"{x:.17g}" for x in args.dts if x <= 0.001],
+        "--dts", *[f"{x:.17g}" for x in args.dts if x <= args.fine_max_dt],
         "--reversibility-dt", f"{args.reversibility_dt:.17g}",
         "--reversibility-duration-ps", f"{args.reversibility_duration_ps:.17g}",
     ], log=args.output_dir / "minimal_dynamics.log", dry_run=False)
