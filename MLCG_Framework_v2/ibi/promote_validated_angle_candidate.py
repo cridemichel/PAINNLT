@@ -293,8 +293,6 @@ def promote(
     for kind, new_entry in _iter_unique_file_entries(promoted):
         if str(new_entry.get("type", "")).lower() != "conservative_spline":
             raise ValueError("Promotion certification currently supports conservative_spline bonded files only")
-        if kind == "dihedral":
-            raise ValueError("Promotion certification does not support conservative spline dihedrals")
         old_entry = _find_matching_entry(old_payload, kind, new_entry)
         old_table = load_conservative_spline(old_entry, kind=kind, priors_path=backup_dir / "cg_priors.json")
         new_table = load_conservative_spline(new_entry, kind=kind, priors_path=stage_priors)

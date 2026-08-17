@@ -23,6 +23,7 @@ from conservative_spline import (  # noqa: E402
     ConservativeSplinePrior,
     conservative_angle_forces,
     conservative_distance_forces,
+    conservative_dihedral_forces,
     conservative_spline_value,
     load_conservative_spline,
 )
@@ -86,6 +87,44 @@ class ConservativeSplineTests(unittest.TestCase):
         expected = fd_force(pos, energy)
         self.assertTrue(np.allclose(actual, expected, rtol=5e-5, atol=4e-6))
 
+    def test_dihedral_cartesian_force_is_energy_gradient_and_periodic(self):
+        x = np.linspace(0.0, 2.0 * np.pi, 257)
+        k = 2.7
+        u = k * (1.0 - np.cos(x))
+        d = k * np.sin(x)
+        t = ConservativeSplinePrior(x, u, d, 0.0, float(2.0 * np.pi), "dihedral", Path("synthetic.dat"))
+        self.assertAlmostEqual(
+            conservative_spline_value(t, 0.23)[0],
+            conservative_spline_value(t, 2.0 * np.pi + 0.23)[0],
+            places=12,
+        )
+        box = np.array([30.0, 30.0, 30.0])
+        pos = np.array([[0.2,0.4,0.1],[1.1,0.9,0.6],[2.0,1.5,1.2],[2.8,2.2,0.5]])
+        actual = np.vstack(conservative_dihedral_forces(*pos, box, t))
+        from prior_kernels import espresso_dihedral_geometry
+        def energy(coords):
+            geom = espresso_dihedral_geometry(*coords, box)
+            return conservative_spline_value(t, geom[0])[0]
+        expected = fd_force(pos, energy)
+        self.assertTrue(np.allclose(actual, expected, rtol=7e-5, atol=7e-6))
+
+    def test_dihedral_planar_pi_has_finite_nonzero_gradient(self):
+        x = np.linspace(0.0, 2.0 * np.pi, 257)
+        u = np.sin(x)
+        d = np.cos(x)
+        t = ConservativeSplinePrior(x, u, d, 0.0, float(2.0*np.pi), "dihedral", Path("planar.dat"))
+        box = np.array([30.0, 30.0, 30.0])
+        pos = np.array([[0.,0.,0.],[1.,0.,0.],[1.,1.,0.],[2.,1.,0.]])
+        actual = np.vstack(conservative_dihedral_forces(*pos, box, t))
+        self.assertTrue(np.all(np.isfinite(actual)))
+        self.assertGreater(float(np.max(np.abs(actual))), 0.5)
+        from prior_kernels import espresso_dihedral_geometry
+        def energy(coords):
+            geom = espresso_dihedral_geometry(*coords, box)
+            return conservative_spline_value(t, geom[0])[0]
+        expected = fd_force(pos, energy, eps=1.0e-4)
+        self.assertTrue(np.allclose(actual, expected, rtol=1e-5, atol=2e-6))
+
     def test_conversion_is_read_only_and_validates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -115,15 +154,27 @@ class ConservativeSplineTests(unittest.TestCase):
             self.assertTrue(result["pass"])
             self.assertEqual(report["converted_unique_tables"], 2)
 
-    def test_tabulated_dihedral_fails_closed(self):
+    def test_tabulated_dihedral_converts_periodically(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            x = np.linspace(0, 2*np.pi, 51)
-            np.savetxt(root / "d.dat", np.column_stack([x, 1-np.cos(x), np.zeros_like(x)]))
+            x = np.linspace(0.0, 2.0 * np.pi, 129)
+            u = 1.0 - np.cos(x)
+            force_factor = -np.ones_like(x)
+            np.savetxt(root / "d.dat", np.column_stack([x, u, force_factor]))
             priors = root / "p.json"
-            priors.write_text(json.dumps({"bonds":[],"angles":[],"dihedrals":[{"type":"tabulated","file":"d.dat","min":0.0,"max":float(2*np.pi)}]}))
-            with self.assertRaisesRegex(ValueError, "bond\\+angle only"):
-                convert(priors, root / "out")
+            priors.write_text(json.dumps({
+                "bonds": [], "angles": [],
+                "dihedrals": [{"type":"tabulated","file":"d.dat","min":0.0,"max":float(2*np.pi)}],
+            }))
+            report = convert(priors, root / "out")
+            converted = json.loads((root / "out/cg_priors.json").read_text())
+            entry = converted["dihedrals"][0]
+            self.assertEqual(entry["type"], "conservative_spline")
+            table = load_conservative_spline(entry, kind="dihedral", priors_path=root / "out/cg_priors.json")
+            self.assertAlmostEqual(table.energy[0], table.energy[-1], places=12)
+            self.assertAlmostEqual(table.derivative[0], table.derivative[-1], places=12)
+            self.assertEqual(report["converted_unique_tables"], 1)
+            self.assertTrue(validate(root / "out/conversion_report.json")["pass"])
 
     def test_runtime_loader_rejects_nonuniform_grid(self):
         class DummySpline:
@@ -215,7 +266,11 @@ class ConservativeSplineTests(unittest.TestCase):
             self.assertEqual(len(interaction.kwargs["derivative"]), len(x))
 
     def test_conservative_splines_are_not_flagged_as_nonconservative_tables(self):
-        p = {"bonds":[{"type":"conservative_spline"}], "angles":[{"type":"conservative_spline"}]}
+        p = {
+            "bonds": [{"type": "conservative_spline"}],
+            "angles": [{"type": "conservative_spline"}],
+            "dihedrals": [{"type": "conservative_spline"}],
+        }
         self.assertEqual(nonconservative_prior_entries(p), [])
 
 
@@ -237,6 +292,8 @@ class ConservativeSplineTests(unittest.TestCase):
                     '  throw BondUnknownTypeError();\n}\n'
                     'auto calc_bonded_three_body_force(Bonded_IA_Parameters const &iaparams, Vec const &vec1, Vec const &vec2) {\n'
                     '  if (auto const *iap = std::get_if<IBMTriel>(&iaparams)) {\n    return iap->forces(vec1, vec2);\n  }\n'
+                    '  throw BondUnknownTypeError();\n}\n'
+                    'auto calc_bonded_dihedral_force(Bonded_IA_Parameters const &iaparams, Vec const &v12, Vec const &v23, Vec const &v34) {\n'
                     '  throw BondUnknownTypeError();\n}\n',
                 "src/core/energy_inline.hpp":
                     'auto calc_pair_bonded_energy(Bonded_IA_Parameters const &iaparams, Vec const &dx) {\n'
@@ -244,6 +301,8 @@ class ConservativeSplineTests(unittest.TestCase):
                     '  throw BondUnknownTypeError();\n}\n'
                     'auto calc_angle_bonded_energy(Bonded_IA_Parameters const &iaparams, Vec const &vec1, Vec const &vec2) {\n'
                     '  if (std::get_if<IBMTriel>(&iaparams)) {\n    return 0.0;\n  }\n'
+                    '  throw BondUnknownTypeError();\n}\n'
+                    'auto calc_dihedral_bonded_energy(Bonded_IA_Parameters const &iaparams, Vec const &v12, Vec const &v23, Vec const &v34) {\n'
                     '  throw BondUnknownTypeError();\n}\n',
                 "src/script_interface/interactions/BondedInteraction.hpp":
                     'class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n',
@@ -283,13 +342,17 @@ class ConservativeSplineTests(unittest.TestCase):
                 "    _so_name = \"Interactions::ConservativeSplineAngleBond\"\n"
                 "    _type_number = BONDED_IA.CONSERVATIVE_SPLINE_ANGLE\n\n\n"
                 "@script_interface_register\n"
+                "class ConservativeSplineDihedral(BondedInteraction):\n"
+                "    _so_name = \"Interactions::ConservativeSplineDihedralBond\"\n"
+                "    _type_number = BONDED_IA.CONSERVATIVE_SPLINE_DIHEDRAL\n\n\n"
+                "@script_interface_register\n"
                 "class BondedInteractions(ScriptObjectMap):\n"
                 "    pass\n"
             )
             self.assertTrue(installer._ensure_python_default_params(interactions))
             text = interactions.read_text()
-            self.assertEqual(text.count("def get_default_params(self):"), 2)
-            self.assertEqual(text.count("return {}"), 2)
+            self.assertEqual(text.count("def get_default_params(self):"), 3)
+            self.assertEqual(text.count("return {}"), 3)
             self.assertFalse(installer._ensure_python_default_params(interactions))
 
     def test_function_locator_ignores_later_call_sites(self):
@@ -403,8 +466,31 @@ struct Vector3d {
   Vector3d(double x, double y, double z) : x{x}, y{y}, z{z} {}
   double norm() const { return std::sqrt(x*x+y*y+z*z); }
   double operator[](int i) const { return i == 0 ? x : (i == 1 ? y : z); }
+  Vector3d &operator/=(double s) { x/=s; y/=s; z/=s; return *this; }
 };
+inline Vector3d operator+(Vector3d const &a, Vector3d const &b) { return {a.x+b.x,a.y+b.y,a.z+b.z}; }
+inline Vector3d operator-(Vector3d const &a, Vector3d const &b) { return {a.x-b.x,a.y-b.y,a.z-b.z}; }
+inline Vector3d operator-(Vector3d const &a) { return {-a.x,-a.y,-a.z}; }
 inline Vector3d operator*(double s, Vector3d const &v) { return {s*v.x,s*v.y,s*v.z}; }
+inline Vector3d operator/(Vector3d const &v, double s) { return {v.x/s,v.y/s,v.z/s}; }
+inline double operator*(Vector3d const &a, Vector3d const &b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
+}
+inline Utils::Vector3d vector_product(Utils::Vector3d const &a, Utils::Vector3d const &b) {
+  return {a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x};
+}
+''')
+            (td / "dihedral.hpp").write_text(r'''#pragma once
+#include <utils/Vector.hpp>
+#include <algorithm>
+#include <cmath>
+inline constexpr double dihe_tiny_length_value=1.e-4;
+inline constexpr double dihe_tiny_sin_value=1.e-10;
+inline bool calc_dihedral_angle(Utils::Vector3d const &a, Utils::Vector3d const &b, Utils::Vector3d const &c,
+ Utils::Vector3d &axb, double &la, Utils::Vector3d &bxc, double &lb, double &cosphi, double &phi) {
+  axb=vector_product(a,b); bxc=vector_product(b,c); la=axb.norm(); lb=bxc.norm();
+  if (la<=dihe_tiny_length_value || lb<=dihe_tiny_length_value) { phi=-1.; cosphi=0.; return true; }
+  axb/=la; bxc/=lb; cosphi=std::clamp(axb*bxc,-1.0,1.0); phi=std::acos(cosphi);
+  if ((axb*c)<0.) phi=2.*std::acos(-1.)-phi; return false;
 }
 ''')
             (td / "angle_common.hpp").write_text(r'''#pragma once
@@ -439,6 +525,13 @@ int main() {
   ConservativeSplineAngleBond a(0.0, std::acos(-1.0), u, du);
   auto e = a.energy(Utils::Vector3d{1,0,0}, Utils::Vector3d{0,1,0});
   if (!std::isfinite(e)) return 4;
+  std::vector<double> ud{0.0, 0.0, 0.0};
+  std::vector<double> dud{1.0, -1.0, 1.0};
+  ConservativeSplineDihedralBond d(0.0, 2.0*std::acos(-1.0), ud, dud);
+  auto df = d.forces(Utils::Vector3d{1,0,0}, Utils::Vector3d{0,1,0}, Utils::Vector3d{1,0,0});
+  if (!df) return 5;
+  auto const f1 = std::get<1>(*df);
+  if (!std::isfinite(f1[2]) || std::abs(f1[2]) < 0.5) return 6;
   return 0;
 }
 ''')

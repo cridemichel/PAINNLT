@@ -70,13 +70,6 @@ def validate_conservative_nve_inputs(
             "Selected priors contain no conservative_spline bonded interactions; "
             "use the generic NVE certifier for an analytic-only Hamiltonian."
         )
-    unsupported_conservative = [item for item in conservative if item.startswith("dihedrals[")]
-    if unsupported_conservative:
-        raise ValueError(
-            "Strict conservative-IBI NVE certification currently certifies bond+angle splines only; "
-            "unsupported conservative torsions: " + ", ".join(unsupported_conservative)
-        )
-
     validated = validate_ibi_validation_report(
         validation_file,
         priors_file,

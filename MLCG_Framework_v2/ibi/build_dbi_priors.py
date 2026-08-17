@@ -268,10 +268,19 @@ def load_continuation_priors(
                     force = -derivative
                 elif kind == "angle":
                     force = derivative
+                elif kind == "dihedral":
+                    sin_phi = np.sin(grid)
+                    force = np.zeros_like(derivative)
+                    regular = np.abs(sin_phi) > 1.0e-6
+                    force[regular] = -derivative[regular] / sin_phi[regular]
+                    good = np.flatnonzero(regular)
+                    if good.size == 0:
+                        raise ValueError(f"Conservative dihedral group {name!r} has no regular grid points")
+                    for point in np.flatnonzero(~regular):
+                        nearest = good[np.argmin(np.abs(good - point))]
+                        force[point] = force[nearest]
                 else:
-                    raise ValueError(
-                        f"Conservative spline continuation diagnostics are certified only for bond+angle, got {kind}"
-                    )
+                    raise ValueError(f"Unsupported conservative spline continuation kind: {kind}")
             else:
                 table_paths = []
                 for entry in entries:

@@ -482,6 +482,10 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
         dihedral = espressomd.interactions.TabulatedDihedral(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
         )
+    elif d_type == "conservative_spline":
+        dihedral = create_conservative_spline_interaction(
+            espressomd.interactions, d, kind="dihedral", priors_path=args.priors
+        )
     else:
         print(f"[WARNING] Unknown dihedral type: {d_type}")
         continue

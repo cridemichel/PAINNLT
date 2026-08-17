@@ -2,7 +2,7 @@
 """Synthetic ESPResSo smoke test for MLCG conservative bonded splines.
 
 Run with the rebuilt ``pypresso``.  The test is independent of any IBI run: it
-creates small synthetic distance and angle spline tables, loads them through the
+creates small synthetic distance, angle and periodic dihedral spline tables, loads them through the
 same runtime loader used by production, and checks directly in ESPResSo that
 particle forces are the negative Cartesian finite-difference gradient of the
 reported bonded energy.
@@ -54,7 +54,9 @@ def evaluate(system, *, kind, positions, entry, priors_path):
         particles[0].add_bond((interaction, particles[1].id))
     elif kind == "angle":
         particles[1].add_bond((interaction, particles[0].id, particles[2].id))
-    else:  # defensive: callers are intentionally limited to the certified scope
+    elif kind == "dihedral":
+        particles[1].add_bond((interaction, particles[0].id, particles[2].id, particles[3].id))
+    else:
         raise ValueError(kind)
     system.integrator.run(0, recalc_forces=True)
     forces = np.asarray([np.asarray(p.f, dtype=float) for p in particles])
@@ -128,7 +130,7 @@ def main():
     parser.add_argument("--net-force-atol", type=float, default=1.0e-12)
     args = parser.parse_args()
 
-    for name in ("ConservativeSplineDistance", "ConservativeSplineAngle"):
+    for name in ("ConservativeSplineDistance", "ConservativeSplineAngle", "ConservativeSplineDihedral"):
         if not hasattr(espressomd.interactions, name):
             raise RuntimeError(
                 f"Missing espressomd.interactions.{name}; install/rebuild the conservative spline plugin first"
@@ -188,6 +190,33 @@ def main():
             eps=args.fd_eps,
         )
 
+        xd = np.linspace(0.0, 2.0 * np.pi, 129)
+        kd = 2.3
+        ud = kd * (1.0 - np.cos(xd))
+        dud = kd * np.sin(xd)
+        write_table(root / "dihedral.dat", xd, ud, dud)
+        dihedral_entry = {
+            "type": "conservative_spline",
+            "spline_schema": "pchip_hermite_v1",
+            "file": "dihedral.dat",
+            "min": 0.0,
+            "max": float(2.0 * np.pi),
+        }
+        dihedral_positions = center + np.asarray([
+            [0.2, 0.4, 0.1],
+            [1.1, 0.9, 0.6],
+            [2.0, 1.5, 1.2],
+            [2.8, 2.2, 0.5],
+        ])
+        dihedral_error, dihedral_net, dihedral_energy = probe(
+            system,
+            kind="dihedral",
+            positions=dihedral_positions,
+            entry=dihedral_entry,
+            priors_path=priors_path,
+            eps=args.fd_eps,
+        )
+
     print("[CONSERVATIVE SPLINE SYNTHETIC RUNTIME SMOKE]")
     print(
         f"bond : E={bond_energy:.12g} max |F + grad(U)|={bond_error:.3e} "
@@ -197,15 +226,19 @@ def main():
         f"angle: E={angle_energy:.12g} max |F + grad(U)|={angle_error:.3e} "
         f"max |sum(F)|={angle_net:.3e}"
     )
-    worst_force = max(bond_error, angle_error)
-    worst_net = max(bond_net, angle_net)
+    print(
+        f"dihed: E={dihedral_energy:.12g} max |F + grad(U)|={dihedral_error:.3e} "
+        f"max |sum(F)|={dihedral_net:.3e}"
+    )
+    worst_force = max(bond_error, angle_error, dihedral_error)
+    worst_net = max(bond_net, angle_net, dihedral_net)
     if worst_force > args.force_atol or worst_net > args.net_force_atol:
         raise RuntimeError(
             "Conservative spline runtime smoke failed: "
             f"max|F+gradU|={worst_force:.6g}, max|sumF|={worst_net:.6g}"
         )
     print(
-        "[PASS] ESPResSo conservative distance/angle splines return forces equal to "
+        "[PASS] ESPResSo conservative distance/angle/dihedral splines return forces equal to "
         "the negative Cartesian gradient of their bonded energy."
     )
 

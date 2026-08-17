@@ -33,8 +33,12 @@ def _fixture(tmp_path: Path):
     xa = np.linspace(0.0, np.pi, 101)
     ua = 40.0 * (xa - 1.7) ** 2
     da = 80.0 * (xa - 1.7)
+    xd = np.linspace(0.0, 2.0 * np.pi, 129)
+    ud = 3.0 * (1.0 - np.cos(xd))
+    dd = 3.0 * np.sin(xd)
     _write_table(current / "bond.dat", xb, ub, db)
     _write_table(current / "angle.dat", xa, ua, da)
+    _write_table(current / "dihedral.dat", xd, ud, dd)
 
     priors = {
         "bonds": [{
@@ -45,13 +49,18 @@ def _fixture(tmp_path: Path):
             "type": "conservative_spline", "name": "a", "file": "angle.dat",
             "min": 0.0, "max": float(np.pi), "spline_schema": "pchip_hermite_v1",
         }],
+        "dihedrals": [{
+            "type": "conservative_spline", "name": "d", "file": "dihedral.dat",
+            "min": 0.0, "max": float(2.0 * np.pi), "spline_schema": "pchip_hermite_v1",
+        }],
     }
     current_priors = current / "cg_priors.json"
     current_priors.write_text(json.dumps(priors, indent=2, sort_keys=True) + "\n")
     source_sha = sha256_file(current_priors)
 
-    # Candidate keeps the bond byte-identical and changes only the angle table.
+    # Candidate keeps bond/dihedral byte-identical and changes only the angle table.
     (candidate_dir / "bond.dat").write_bytes((current / "bond.dat").read_bytes())
+    (candidate_dir / "dihedral.dat").write_bytes((current / "dihedral.dat").read_bytes())
     ua2 = ua + 0.01 * np.sin(2.0 * xa)
     da2 = da + 0.02 * np.cos(2.0 * xa)
     _write_table(candidate_dir / "angle.dat", xa, ua2, da2)
@@ -131,6 +140,7 @@ def test_promotion_is_transactional_and_candidate_tables_are_identical(tmp_path)
     assert promoted["regularization_candidate"]["validated"] is True
     assert promoted["regularization_candidate"]["promoted"] is True
     assert promoted["angles"][0]["regularization"]["validated"] is True
+    assert (current / "dihedral.dat").read_bytes() == (candidate.parent / "dihedral.dat").read_bytes()
     assert json.loads((current / "residual_ml_status.json").read_text())["status"] == "stale_for_ml_active_use"
     assert verify_promoted(
         current_dir=current,
