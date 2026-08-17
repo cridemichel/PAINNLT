@@ -1,0 +1,66 @@
+{
+  "architecture": {
+    "cutoff": 1.2616,
+    "hidden_channels": 64,
+    "n_layers": 2,
+    "num_rbf": 32,
+    "num_species": 8,
+    "toxvaerd_alpha": 0.1,
+    "variant": "painn_canonical_context_silu_v2"
+  },
+  "artifacts": {
+    "config": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_training_config.json",
+      "sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7"
+    },
+    "dataset": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset_ibi_residual.bin",
+      "sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c"
+    },
+    "model": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_model_ibi_conservative.pt",
+      "sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33"
+    },
+    "model_manifest": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_model_ibi_conservative.pt.manifest.json",
+      "sha256": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f"
+    },
+    "priors": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+      "sha256": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3"
+    },
+    "rb_info": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/rigid_bodies_info_ibi.json",
+      "sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+    },
+    "residual_manifest": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_residual_build_manifest.json",
+      "sha256": "a7999c57c332b08ec922712b5983b4d433ea05740a3a65f31a6ebc1df7ca61a3"
+    }
+  },
+  "framework": "MLCG_Framework_v2",
+  "kind": "runtime_hamiltonian_preflight",
+  "model_best_validation_loss": 1.549541711807251,
+  "pass": true,
+  "prior_artifact_sha256": {
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_A_G_G.dat": "3110611769306d94adf2929ea77dcb977c15930b224e8d26da00b7da06c3fc00",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_G_G_G.dat": "1c7c1ce6b460f811b6e427effa6648a9afac540a884668b07ac7cd5131157f4f",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_G_G_T.dat": "7748683d82506328a852ac69318e84683443f732b41762655d158dfa83d1b9f3",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_G_T_T.dat": "e8d1d9bc0fb1c89612f828dcb922b424e14bad8f789aced07ca76fc13774c1f2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_T_A_G.dat": "a209dc82f1c7d0a8e1a5197ead726d7e4df01ae44b2a8e825fa59b28403fe43d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_T_T_A.dat": "31959f8c763e178b241dfc62da448f5b09c1f76f152158e8a8842503b2d28e85",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/bond_conservative_bb_A_G.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/bond_conservative_bb_G_G.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/bond_conservative_bb_G_T.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/bond_conservative_bb_T_A.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/bond_conservative_bb_T_T.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3"
+  },
+  "residual_validation": {
+    "max_abs_dU_dq_error": 2.7819266392725694e-06,
+    "mode": "conservative_spline_validation",
+    "runtime_max_energy_abs_error": 2.8421709430404007e-13,
+    "runtime_max_force_abs_error": 2.842170943040401e-14
+  },
+  "schema_version": 1
+}

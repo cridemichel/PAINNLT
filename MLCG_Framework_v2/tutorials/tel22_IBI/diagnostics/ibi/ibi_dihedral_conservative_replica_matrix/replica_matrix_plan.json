@@ -1,0 +1,174 @@
+{
+  "config": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_training_config.json",
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+  "final_sampling_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/final_sampling_protocol.json",
+  "ibi_config": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_test_settings.json",
+  "ibi_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/ibi_report.json",
+  "kind": "conservative_dihedral_ibi_matched_replica_matrix_plan",
+  "new_md_runs": 6,
+  "prior_checks": {
+    "U0": {
+      "active_entries": 190,
+      "nonconservative_entries": [],
+      "pass": true
+    },
+    "U1": {
+      "active_entries": 190,
+      "nonconservative_entries": [],
+      "pass": true
+    },
+    "U2": {
+      "active_entries": 190,
+      "nonconservative_entries": [],
+      "pass": true
+    }
+  },
+  "priors": {
+    "U0": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+    "U1": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+    "U2": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json"
+  },
+  "protocol": {
+    "burn_in_steps": 500,
+    "checkpoint_used": false,
+    "dt_ps": 0.0005,
+    "init_kT": 2.49,
+    "kT": 2.49,
+    "ml_active": false,
+    "neighbor_search": "link-cell",
+    "production_steps": 2000,
+    "sample_interval": 10,
+    "starting_state": "target_dataset_initial_frame_plus_initialized_velocities",
+    "total_steps": 2500
+  },
+  "rb_info": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/rigid_bodies_info_ibi.json",
+  "reused_step38_samples": 3,
+  "rows": [
+    {
+      "needs_new_md": false,
+      "prior": "U0",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+      "replica": 1,
+      "reused_step38": true,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_001",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_001/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U0/seedpair_01.json",
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "needs_new_md": true,
+      "prior": "U0",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+      "replica": 2,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_02_v380002_t380102",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_02_v380002_t380102/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U0/seedpair_02.json",
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "needs_new_md": true,
+      "prior": "U0",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+      "replica": 3,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_03_v380003_t380103",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U0/seedpair_03_v380003_t380103/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U0/seedpair_03.json",
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    },
+    {
+      "needs_new_md": true,
+      "prior": "U1",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+      "replica": 1,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_01_v380001_t380101",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_01_v380001_t380101/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U1/seedpair_01.json",
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "needs_new_md": false,
+      "prior": "U1",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+      "replica": 2,
+      "reused_step38": true,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_002",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_002/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U1/seedpair_02.json",
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "needs_new_md": true,
+      "prior": "U1",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+      "replica": 3,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_03_v380003_t380103",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U1/seedpair_03_v380003_t380103/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U1/seedpair_03.json",
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    },
+    {
+      "needs_new_md": true,
+      "prior": "U2",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+      "replica": 1,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_01_v380001_t380101",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_01_v380001_t380101/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U2/seedpair_01.json",
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "needs_new_md": true,
+      "prior": "U2",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+      "replica": 2,
+      "reused_step38": false,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_02_v380002_t380102",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_02_v380002_t380102/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U2/seedpair_02.json",
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "needs_new_md": false,
+      "prior": "U2",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+      "replica": 3,
+      "reused_step38": true,
+      "run_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/final_nvt",
+      "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/final_nvt/trajectory.npz",
+      "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/structure/U2/seedpair_03.json",
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    }
+  ],
+  "schema_version": 1,
+  "seed_pairs": [
+    {
+      "replica": 1,
+      "thermostat_seed": 380101,
+      "velocity_seed": 380001
+    },
+    {
+      "replica": 2,
+      "thermostat_seed": 380102,
+      "velocity_seed": 380002
+    },
+    {
+      "replica": 3,
+      "thermostat_seed": 380103,
+      "velocity_seed": 380003
+    }
+  ]
+}

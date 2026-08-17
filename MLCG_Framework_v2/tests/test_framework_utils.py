@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "simulation"))
 from framework_utils import (  # noqa: E402
     configure_neighbor_search,
     input_hashes,
+    mask_excluded_particle_distances,
     nonconservative_prior_entries,
     particle_is_virtual,
     rigid_body_quaternion,
@@ -75,6 +76,9 @@ class FakeCellSystem:
     def set_hybrid_decomposition(self, **kwargs):
         self.calls.append(("hybrid", kwargs))
 
+    def set_n_square(self, **kwargs):
+        self.calls.append(("nsquare", kwargs))
+
 
 class FakeNeighborSystem:
     def __init__(self):
@@ -102,15 +106,37 @@ def quat_to_body_to_space_matrix(q):
 
 
 class FrameworkUtilsTests(unittest.TestCase):
+    def test_mask_excluded_particle_distances_matches_nonbonded_topology(self):
+        distances = np.array([
+            [np.inf, 0.12, 0.55],
+            [0.12, np.inf, 0.70],
+            [0.55, 0.70, np.inf],
+        ])
+        result = mask_excluded_particle_distances(
+            distances, [101, 205, 309], {(101, 205), (999, 101)}
+        )
+        self.assertTrue(np.isinf(result[0, 1]))
+        self.assertTrue(np.isinf(result[1, 0]))
+        self.assertAlmostEqual(result[0, 2], 0.55)
+        self.assertAlmostEqual(result[2, 1], 0.70)
+
+    def test_mask_excluded_particle_distances_rejects_invalid_layout(self):
+        with self.assertRaises(ValueError):
+            mask_excluded_particle_distances(np.zeros((2, 2)), [1], [])
+        with self.assertRaises(ValueError):
+            mask_excluded_particle_distances(np.zeros((2, 2)), [1, 1], [])
+
     def test_configure_neighbor_search_modes(self):
         system = FakeNeighborSystem()
         configure_neighbor_search(system, "verlet")
         configure_neighbor_search(system, "link-cell")
+        configure_neighbor_search(system, "nsquare")
         self.assertEqual(
             system.cell_system.calls,
             [
                 ("regular", {"use_verlet_lists": True}),
                 ("regular", {"use_verlet_lists": False}),
+                ("nsquare", {"use_verlet_lists": False}),
             ],
         )
         with self.assertRaises(ValueError):

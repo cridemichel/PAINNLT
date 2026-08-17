@@ -1,0 +1,426 @@
+#!/usr/bin/env python3
+"""Generate initial DBI tables for bonded IBI/DBI priors.
+
+Seed ``cg_priors.json`` entries may use ``type: ibi`` or ``type: dbi``.
+Entries sharing the same ``name`` are pooled into one target distribution.  The
+output JSON converts those entries to ``type: tabulated`` and preserves
+``ibi_mode`` for later iterative sampling.  Only bonded distance, angle and
+dihedral priors are handled here; this command is not an RDF/nonbonded IBI
+implementation.
+"""
+from __future__ import annotations
+
+import argparse
+import copy
+import json
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "preprocessing"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from conservative_spline import SCHEMA, load_conservative_spline, save_conservative_spline  # noqa: E402
+from geometry_io import pool_requested, read_target_distributions, requested_mode  # noqa: E402
+from ibi_core import (  # noqa: E402
+    calculate_dbi_potential,
+    histogram_density,
+    load_ibi_settings,
+    save_tabulated_potential,
+)
+
+
+def safe_group_name(name: str) -> str:
+    value = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(name)).strip("._")
+    return value or "unnamed"
+
+
+def _copy_fixed_file_priors(output, source_priors: Path, outdir: Path, output_priors: Path):
+    """Copy pre-existing fixed tabulated/conservative tables for portability."""
+    for json_key in ("bonds", "angles", "dihedrals"):
+        for idx, entry in enumerate(output.get(json_key, [])):
+            entry_type = str(entry.get("type", "")).lower()
+            if entry_type not in {"tabulated", "conservative_spline"}:
+                continue
+            if requested_mode(entry) is not None:
+                # Converted IBI/DBI entries are regenerated below.
+                continue
+            if "file" not in entry:
+                raise ValueError(f"Fixed {entry_type} {json_key}[{idx}] is missing 'file'")
+            source = Path(str(entry["file"])).expanduser()
+            if not source.is_absolute():
+                source = source_priors.parent / source
+            source = source.resolve()
+            if not source.is_file():
+                raise FileNotFoundError(
+                    f"Missing fixed tabulated table for {json_key}[{idx}]: {source}"
+                )
+            suffix = source.suffix or ".dat"
+            destination = outdir / f"fixed_{json_key}_{idx}{suffix}"
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if source != destination.resolve():
+                shutil.copy2(source, destination)
+            entry["file"] = os.path.relpath(destination, output_priors.parent)
+
+
+def _grid_spec(kind: str, settings: dict, values):
+    cfg = settings[kind]
+    vals = np.asarray(values, dtype=float)
+    if kind == "bond":
+        bins = np.linspace(float(cfg["hist_min"]), float(cfg["hist_max"]), int(cfg["hist_edges"]))
+        grid = np.linspace(float(cfg["table_min"]), float(cfg["table_max"]), int(cfg["table_points"]))
+        periodic = False
+    elif kind == "angle":
+        bins = np.linspace(0.0, np.pi, int(cfg["hist_edges"]))
+        grid = np.linspace(0.0, np.pi, int(cfg["table_points"]))
+        periodic = False
+    elif kind == "dihedral":
+        vals = np.mod(vals, 2.0 * np.pi)
+        bins = np.linspace(0.0, 2.0 * np.pi, int(cfg["hist_edges"]))
+        grid = np.linspace(0.0, 2.0 * np.pi, int(cfg["table_points"]))
+        periodic = True
+    else:
+        raise ValueError(f"Unsupported DBI kind {kind!r}")
+    return vals, bins, grid, periodic
+
+
+def build_initial_dbi_priors(
+    dataset: str | Path,
+    priors_path: str | Path,
+    outdir: str | Path,
+    *,
+    output_priors: str | Path | None = None,
+    ibi_config: str | Path | None = None,
+    conservative_dihedrals: bool = False,
+):
+    """Generate initial bonded DBI tables and return their metadata.
+
+    The returned dictionary contains the converted priors, the output-priors
+    path and per-group target histograms needed by the iterative IBI driver.
+    """
+    dataset = Path(dataset).resolve()
+    priors_path = Path(priors_path).resolve()
+    outdir = Path(outdir).resolve()
+    outdir.mkdir(parents=True, exist_ok=True)
+    output_priors = (
+        Path(output_priors).resolve()
+        if output_priors is not None
+        else outdir / "cg_priors_dbi.json"
+    )
+    settings = load_ibi_settings(ibi_config)
+    priors = json.loads(priors_path.read_text())
+    output = copy.deepcopy(priors)
+    _copy_fixed_file_priors(output, priors_path, outdir, output_priors)
+
+    print(f"[INFO] Reading target geometry distributions from {dataset}")
+    bond_values, angle_values, dihedral_values = read_target_distributions(dataset, priors)
+
+    specs = [
+        ("bonds", "bond", bond_values),
+        ("angles", "angle", angle_values),
+        ("dihedrals", "dihedral", dihedral_values),
+    ]
+    generated = 0
+    group_state = {"bonds": {}, "angles": {}, "dihedrals": {}}
+    used_filenames = set()
+
+    for json_key, kind, values in specs:
+        groups = pool_requested(priors, values, json_key)
+        for name, group in groups.items():
+            vals, bins, grid, periodic = _grid_spec(kind, settings, group["values"])
+            if vals.size == 0:
+                raise ValueError(f"No target samples for {kind} group {name!r}")
+
+            use_conservative_dihedral = bool(conservative_dihedrals and kind == "dihedral")
+            x, energy, force, target_density, hist_x, counts, support = calculate_dbi_potential(
+                vals,
+                bins,
+                grid,
+                periodic=periodic,
+                jacobian_type=kind,
+                settings=settings,
+                conservative_dihedral=use_conservative_dihedral,
+            )
+
+            stem = (
+                f"{kind}_conservative_{safe_group_name(name)}.dat"
+                if use_conservative_dihedral
+                else f"{kind}_tabulated_{safe_group_name(name)}.dat"
+            )
+            if stem in used_filenames:
+                raise ValueError(
+                    f"IBI group names produce a duplicate table filename {stem!r}; "
+                    "rename the groups so their sanitized names are unique"
+                )
+            used_filenames.add(stem)
+            table_path = outdir / stem
+            if use_conservative_dihedral:
+                save_conservative_spline(table_path, x, energy, force)
+            else:
+                save_tabulated_potential(table_path, x, energy, force)
+            rel_table = Path(os.path.relpath(table_path, output_priors.parent))
+
+            for idx in group["indices"]:
+                entry = output[json_key][idx]
+                entry["ibi_mode"] = group["mode"]
+                entry["type"] = "conservative_spline" if use_conservative_dihedral else "tabulated"
+                entry["file"] = str(rel_table)
+                entry["min"] = float(x[0])
+                entry["max"] = float(x[-1])
+                if use_conservative_dihedral:
+                    entry["spline_schema"] = SCHEMA
+                    entry["ibi_runtime_representation"] = "conservative_spline"
+
+            group_state[json_key][name] = {
+                "kind": kind,
+                "mode": group["mode"],
+                "indices": list(group["indices"]),
+                "values": vals,
+                "bins": bins,
+                "grid": x,
+                "energy": energy,
+                "force": force,
+                "target_density": target_density,
+                "hist_x": hist_x,
+                "target_counts": counts,
+                "support": support,
+                "table_path": table_path,
+                "representation": "conservative_spline" if use_conservative_dihedral else "tabulated",
+                "third_column_semantics": "dU_dphi" if use_conservative_dihedral else "espresso_force",
+            }
+            label = "DBI-CONS" if use_conservative_dihedral else "DBI"
+            print(
+                f"[{label}] {kind} {name}: N={vals.size}, "
+                f"support={support[0]:.6g}..{support[1]:.6g}, table={table_path}"
+            )
+            generated += 1
+
+    if generated == 0:
+        raise ValueError("No type=ibi or type=dbi bonded priors were requested")
+
+    output_priors.parent.mkdir(parents=True, exist_ok=True)
+    output_priors.write_text(json.dumps(output, indent=2) + "\n")
+    return {
+        "priors": output,
+        "output_priors": output_priors,
+        "settings": settings,
+        "groups": group_state,
+        "generated": generated,
+    }
+
+
+def load_continuation_priors(
+    dataset: str | Path,
+    priors_path: str | Path,
+    *,
+    ibi_config: str | Path | None = None,
+    allow_conservative_spline: bool = False,
+    conservative_dihedral_update: bool = False,
+):
+    """Load an evaluated IBI/DBI prior set and reconstruct target histograms.
+
+    By default only legacy ``type=tabulated`` evaluated priors are accepted,
+    preserving the fail-closed semantics required by the IBI continuation
+    driver.  Diagnostic consumers may explicitly set
+    ``allow_conservative_spline=True`` to read the post-conversion
+    ``type=conservative_spline`` representation.  That opt-in does *not* make
+    conservative splines valid restart inputs for the iterative IBI updater; it
+    only exposes their evaluated grid/energy/force data to read-only analyses.
+    """
+    dataset = Path(dataset).resolve()
+    priors_path = Path(priors_path).resolve()
+    settings = load_ibi_settings(ibi_config)
+    priors = json.loads(priors_path.read_text())
+
+    print(f"[INFO] Reading target geometry distributions from {dataset}")
+    bond_values, angle_values, dihedral_values = read_target_distributions(dataset, priors)
+    specs = [
+        ("bonds", "bond", bond_values),
+        ("angles", "angle", angle_values),
+        ("dihedrals", "dihedral", dihedral_values),
+    ]
+    group_state = {"bonds": {}, "angles": {}, "dihedrals": {}}
+    generated = 0
+
+    for json_key, kind, values in specs:
+        groups = pool_requested(priors, values, json_key)
+        for name, group in groups.items():
+            entries = [priors[json_key][idx] for idx in group["indices"]]
+            representations = {str(entry.get("type", "")).lower() for entry in entries}
+            allowed_representations = {"tabulated"}
+            if allow_conservative_spline:
+                allowed_representations.add("conservative_spline")
+            if len(representations) != 1 or not representations.issubset(allowed_representations):
+                accepted = "tabulated/conservative_spline" if allow_conservative_spline else "tabulated"
+                raise ValueError(
+                    f"Continuation group {kind} {name!r} is not fully {accepted}; "
+                    "resume from an evaluated cg_priors.json, not from the original IBI seed"
+                )
+            representation = next(iter(representations))
+            if any(requested_mode(entry) != group["mode"] for entry in entries):
+                raise ValueError(f"Continuation group {kind} {name!r} has inconsistent ibi_mode values")
+            if any("file" not in entry for entry in entries):
+                raise ValueError(f"Continuation group {kind} {name!r} is missing a table file")
+
+            if representation == "conservative_spline":
+                splines = [
+                    load_conservative_spline(entry, kind=kind, priors_path=priors_path)
+                    for entry in entries
+                ]
+                table_paths = [spline.path.resolve() for spline in splines]
+                if len(set(table_paths)) != 1:
+                    raise ValueError(
+                        f"Continuation group {kind} {name!r} references multiple tables: {table_paths}"
+                    )
+                spline = splines[0]
+                table_path = spline.path.resolve()
+                grid = np.asarray(spline.x, dtype=float)
+                energy = np.asarray(spline.energy, dtype=float)
+                derivative = np.asarray(spline.derivative, dtype=float)
+                if kind == "bond":
+                    force = -derivative
+                elif kind == "angle":
+                    force = derivative
+                elif kind == "dihedral":
+                    if conservative_dihedral_update:
+                        force = derivative.copy()
+                    else:
+                        sin_phi = np.sin(grid)
+                        force = np.zeros_like(derivative)
+                        regular = np.abs(sin_phi) > 1.0e-6
+                        force[regular] = -derivative[regular] / sin_phi[regular]
+                        good = np.flatnonzero(regular)
+                        if good.size == 0:
+                            raise ValueError(f"Conservative dihedral group {name!r} has no regular grid points")
+                        for point in np.flatnonzero(~regular):
+                            nearest = good[np.argmin(np.abs(good - point))]
+                            force[point] = force[nearest]
+                else:
+                    raise ValueError(f"Unsupported conservative spline continuation kind: {kind}")
+            else:
+                table_paths = []
+                for entry in entries:
+                    table_path = Path(str(entry["file"])).expanduser()
+                    if not table_path.is_absolute():
+                        table_path = priors_path.parent / table_path
+                    table_paths.append(table_path.resolve())
+                if len(set(table_paths)) != 1:
+                    raise ValueError(
+                        f"Continuation group {kind} {name!r} references multiple tables: {table_paths}"
+                    )
+                table_path = table_paths[0]
+                if not table_path.is_file():
+                    raise FileNotFoundError(f"Missing continuation table for {kind} {name!r}: {table_path}")
+
+                table = np.loadtxt(table_path, dtype=float)
+                if table.ndim == 1:
+                    table = table.reshape(1, -1)
+                if table.ndim != 2 or table.shape[1] != 3 or table.shape[0] < 2:
+                    raise ValueError(
+                        f"Continuation table must contain at least two x/energy/force rows: {table_path}"
+                    )
+                if not np.isfinite(table).all():
+                    raise ValueError(f"Continuation table contains non-finite values: {table_path}")
+                grid, energy, force = (np.asarray(table[:, col], dtype=float) for col in range(3))
+                spacing = np.diff(grid)
+                if np.any(spacing <= 0.0) or not np.allclose(
+                    spacing, spacing[0], rtol=1.0e-10, atol=1.0e-12
+                ):
+                    raise ValueError(f"Continuation table grid must be strictly increasing and uniform: {table_path}")
+
+                for entry in entries:
+                    if "min" in entry and not np.isclose(float(entry["min"]), grid[0], rtol=0.0, atol=1.0e-10):
+                        raise ValueError(f"Continuation table minimum disagrees with prior metadata for {kind} {name!r}")
+                    if "max" in entry and not np.isclose(float(entry["max"]), grid[-1], rtol=0.0, atol=1.0e-10):
+                        raise ValueError(f"Continuation table maximum disagrees with prior metadata for {kind} {name!r}")
+
+            vals, bins, _default_grid, periodic = _grid_spec(kind, settings, group["values"])
+            if vals.size == 0:
+                raise ValueError(f"No target samples for continuation {kind} group {name!r}")
+            if kind == "angle" and not (
+                np.isclose(grid[0], 0.0, atol=1.0e-10)
+                and np.isclose(grid[-1], np.pi, atol=1.0e-10)
+            ):
+                raise ValueError(f"Continuation angle table must span [0, pi]: {table_path}")
+            if kind == "dihedral" and not (
+                np.isclose(grid[0], 0.0, atol=1.0e-10)
+                and np.isclose(grid[-1], 2.0 * np.pi, atol=1.0e-10)
+            ):
+                raise ValueError(f"Continuation dihedral table must span [0, 2*pi]: {table_path}")
+
+            target_counts, target_density, hist_x = histogram_density(vals, bins)
+            group_state[json_key][name] = {
+                "kind": kind,
+                "mode": group["mode"],
+                "indices": list(group["indices"]),
+                "values": vals,
+                "bins": bins,
+                "grid": grid,
+                "energy": energy,
+                "force": force,
+                "target_density": target_density,
+                "hist_x": hist_x,
+                "target_counts": target_counts,
+                "table_path": table_path,
+                "periodic": periodic,
+                "representation": representation,
+                "third_column_semantics": (
+                    "dU_dphi"
+                    if representation == "conservative_spline" and kind == "dihedral" and conservative_dihedral_update
+                    else "espresso_force"
+                ),
+            }
+            label = "DIAGNOSTIC" if representation == "conservative_spline" else "RESUME"
+            print(
+                f"[{label}] {kind} {name}: N={vals.size}, mode={group['mode']}, "
+                f"table={table_path}"
+            )
+            generated += 1
+
+    if generated == 0:
+        accepted = "tabulated/conservative_spline" if allow_conservative_spline else "tabulated"
+        raise ValueError(
+            f"Evaluated priors contain no {accepted} entries with ibi_mode=ibi/dbi"
+        )
+
+    return {
+        "priors": copy.deepcopy(priors),
+        "output_priors": priors_path,
+        "settings": settings,
+        "groups": group_state,
+        "generated": generated,
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Build initial bonded DBI/IBI tables from a CG dataset")
+    parser.add_argument("--dataset", required=True)
+    parser.add_argument("--priors", required=True, help="Seed priors containing type=ibi/dbi entries")
+    parser.add_argument("--outdir", default="ibi_priors")
+    parser.add_argument("--output-priors", default=None)
+    parser.add_argument("--ibi-config", required=True, help="Authoritative external IBI settings JSON")
+    parser.add_argument(
+        "--conservative-dihedrals", action="store_true",
+        help="Generate requested dihedral IBI/DBI groups directly as ConservativeSplineDihedral tables",
+    )
+    args = parser.parse_args()
+
+    result = build_initial_dbi_priors(
+        args.dataset,
+        args.priors,
+        args.outdir,
+        output_priors=args.output_priors,
+        ibi_config=args.ibi_config,
+        conservative_dihedrals=args.conservative_dihedrals,
+    )
+    print(f"[SUCCESS] Generated {result['generated']} pooled bonded tables")
+    print(f"[SUCCESS] Priors: {result['output_priors']}")
+
+
+if __name__ == "__main__":
+    main()

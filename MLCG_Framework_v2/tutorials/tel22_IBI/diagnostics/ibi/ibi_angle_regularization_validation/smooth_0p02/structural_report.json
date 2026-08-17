@@ -1,0 +1,121 @@
+{
+  "angle_curvature_runtime": {
+    "groups": {
+      "ang_A_G_G": {
+        "max_abs": 780.5450602167914,
+        "n": 10040,
+        "p95_abs": 424.23857730065936,
+        "p99_abs": 512.4806685139466
+      },
+      "ang_G_G_G": {
+        "max_abs": 10583.4512805044,
+        "n": 10040,
+        "p95_abs": 743.9267766672248,
+        "p99_abs": 9764.593507215703
+      },
+      "ang_G_G_T": {
+        "max_abs": 1483.792045918047,
+        "n": 7530,
+        "p95_abs": 812.5625055305221,
+        "p99_abs": 1433.616548975596
+      },
+      "ang_G_T_T": {
+        "max_abs": 926.9959409812578,
+        "n": 7530,
+        "p95_abs": 709.4160817081895,
+        "p99_abs": 913.5414407879618
+      },
+      "ang_T_A_G": {
+        "max_abs": 726.5604348413747,
+        "n": 7530,
+        "p95_abs": 519.9918503229374,
+        "p99_abs": 673.3912874121352
+      },
+      "ang_T_T_A": {
+        "max_abs": 5788.76884396777,
+        "n": 7530,
+        "p95_abs": 847.9184409599161,
+        "p99_abs": 4999.6217127091595
+      }
+    },
+    "max_abs": 10583.4512805044,
+    "n": 50200,
+    "p95_abs": 694.4944249080302,
+    "p99_abs": 1405.7078960005038
+  },
+  "angles": {
+    "groups": {
+      "ang_A_G_G": {
+        "l1_runtime_vs_target": 0.861768611827201,
+        "runtime_samples": 10040,
+        "target_samples": 2040
+      },
+      "ang_G_G_G": {
+        "l1_runtime_vs_target": 0.7382352941176468,
+        "runtime_samples": 10040,
+        "target_samples": 2040
+      },
+      "ang_G_G_T": {
+        "l1_runtime_vs_target": 0.8560789521651958,
+        "runtime_samples": 7530,
+        "target_samples": 1530
+      },
+      "ang_G_T_T": {
+        "l1_runtime_vs_target": 1.011082467515558,
+        "runtime_samples": 7530,
+        "target_samples": 1530
+      },
+      "ang_T_A_G": {
+        "l1_runtime_vs_target": 1.2815092570892905,
+        "runtime_samples": 7530,
+        "target_samples": 1530
+      },
+      "ang_T_T_A": {
+        "l1_runtime_vs_target": 1.0913418222534697,
+        "runtime_samples": 7530,
+        "target_samples": 1530
+      }
+    },
+    "summary": {
+      "max_l1": 1.2815092570892905,
+      "mean_l1": 0.973336067494727,
+      "n_groups": 6,
+      "weighted_mean_l1": 0.9560026560424966
+    }
+  },
+  "bonds": {
+    "groups": {
+      "bb_A_G": {
+        "l1_runtime_vs_target": 0.6745840168736819,
+        "runtime_samples": 10040,
+        "target_samples": 2040
+      },
+      "bb_G_G": {
+        "l1_runtime_vs_target": 0.4851398328255604,
+        "runtime_samples": 20080,
+        "target_samples": 4080
+      },
+      "bb_G_T": {
+        "l1_runtime_vs_target": 1.0250240866598963,
+        "runtime_samples": 7530,
+        "target_samples": 1530
+      },
+      "bb_T_A": {
+        "l1_runtime_vs_target": 0.7662838840715566,
+        "runtime_samples": 7530,
+        "target_samples": 1530
+      },
+      "bb_T_T": {
+        "l1_runtime_vs_target": 0.7716324245501655,
+        "runtime_samples": 7530,
+        "target_samples": 1530
+      }
+    },
+    "summary": {
+      "max_l1": 1.0250240866598963,
+      "mean_l1": 0.7445328489961721,
+      "n_groups": 5,
+      "weighted_mean_l1": 0.6794417102830508
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "iteration": 2,
+  "continuation_step": 2,
+  "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+  "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_002/trajectory.npz",
+  "groups": {
+    "dihedrals:dih_A_G_G_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 8040,
+      "distribution_l1": 0.3810014612940035,
+      "sample_min": 0.0,
+      "sample_max": 6.28315844127855
+    },
+    "dihedrals:dih_G_G_G_T": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.558363140005689,
+      "sample_min": 0.00021614272937700135,
+      "sample_max": 6.282804332630362
+    },
+    "dihedrals:dih_G_G_T_T": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.6447775578296513,
+      "sample_min": 0.0010946114076980033,
+      "sample_max": 6.281875725726347
+    },
+    "dihedrals:dih_G_T_T_A": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.6760434110594924,
+      "sample_min": 0.003130482958060873,
+      "sample_max": 6.283134859540991
+    },
+    "dihedrals:dih_T_T_A_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.5234025948687933,
+      "sample_min": 2.052244379796949,
+      "sample_max": 5.314432329861835
+    },
+    "dihedrals:dih_T_A_G_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.5040552375157866,
+      "sample_min": 0.0012779623763723722,
+      "sample_max": 6.276021602579944
+    }
+  }
+}

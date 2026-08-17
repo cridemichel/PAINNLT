@@ -1,0 +1,146 @@
+{
+  "diagnostic": "MLCG reversible switched non-bonded Morse",
+  "dynamic_roundtrip": {
+    "initial_force_norm": 1.261068724481716e-07,
+    "outside_distance": 15.001199999999997,
+    "outside_energy": 0.0,
+    "outside_force_norm": 0.0,
+    "raised": false,
+    "reentry_distance": 14.998950000000004,
+    "reentry_energy": -5.406310771190888e-10,
+    "reentry_force_norm": 1.5445779505937333e-06,
+    "relative_speed": 7.5,
+    "start_distance": 14.9997,
+    "time_step": 0.0001
+  },
+  "epsilon": 1.4999999999999999e-05,
+  "morse_parameters": {
+    "D": 50.0,
+    "a": 0.3,
+    "r0": 1.5748742931065052,
+    "r_cut": 15.0,
+    "r_switch": 11.643718573276626
+  },
+  "static_probes": {
+    "above_cutoff": {
+      "analytic_energy": 0.0,
+      "analytic_radial_force": 0.0,
+      "distance": 15.000015,
+      "non_bonded_energy": 0.0,
+      "p0_force": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "p1_force": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "radial_force": -0.0,
+      "success": true
+    },
+    "at_cutoff": {
+      "analytic_energy": 0.0,
+      "analytic_radial_force": 0.0,
+      "distance": 15.0,
+      "non_bonded_energy": 0.0,
+      "p0_force": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "p1_force": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "radial_force": -0.0,
+      "success": true
+    },
+    "below_cutoff": {
+      "analytic_energy": 1.568477341507932e-15,
+      "analytic_radial_force": -3.1528417447584466e-10,
+      "distance": 14.999985,
+      "non_bonded_energy": -7.842386707539666e-16,
+      "p0_force": [
+        3.1528487402425865e-10,
+        0.0,
+        0.0
+      ],
+      "p1_force": [
+        -3.1528487402425865e-10,
+        0.0,
+        0.0
+      ],
+      "radial_force": -3.1528487402425865e-10,
+      "success": true
+    },
+    "equilibrium": {
+      "analytic_energy": -50.0,
+      "analytic_radial_force": 0.0,
+      "distance": 1.5748742931065052,
+      "non_bonded_energy": -50.0,
+      "p0_force": [
+        -1.3322676295501885e-14,
+        0.0,
+        0.0
+      ],
+      "p1_force": [
+        1.3322676295501885e-14,
+        0.0,
+        0.0
+      ],
+      "radial_force": 1.3322676295501885e-14,
+      "success": true
+    },
+    "switch_midpoint": {
+      "analytic_energy": -1.4521984437726487,
+      "analytic_radial_force": -2.051695087300857,
+      "distance": 13.321859286638313,
+      "non_bonded_energy": -1.452198443772645,
+      "p0_force": [
+        2.051695087300855,
+        0.0,
+        0.0
+      ],
+      "p1_force": [
+        -2.051695087300855,
+        0.0,
+        0.0
+      ],
+      "radial_force": -2.051695087300855,
+      "success": true
+    },
+    "switch_start": {
+      "analytic_energy": -4.758012307749897,
+      "analytic_radial_force": -1.3917269531755827,
+      "distance": 11.643718573276626,
+      "non_bonded_energy": -4.75801230774989,
+      "p0_force": [
+        1.391726953175581,
+        0.0,
+        0.0
+      ],
+      "p1_force": [
+        -1.391726953175581,
+        0.0,
+        0.0
+      ],
+      "radial_force": -1.391726953175581,
+      "success": true
+    }
+  },
+  "summary": {
+    "all_static_probes_succeed": true,
+    "dynamic_crossing_succeeds": true,
+    "energy_zero_above_cutoff": true,
+    "energy_zero_at_cutoff": true,
+    "force_zero_above_cutoff": true,
+    "force_zero_at_cutoff": true,
+    "max_energy_abs_error": 6.217248937900877e-15,
+    "max_radial_force_abs_error": 1.3322676295501885e-14,
+    "outside_force_zero": true,
+    "reentry_force_restored": true
+  }
+}

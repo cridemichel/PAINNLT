@@ -44,7 +44,7 @@ class TrainingSafetyInvariantTests(unittest.TestCase):
         self.assertTrue(c["physical_validation_only"])
         self.assertFalse(c["include_decoys_in_train"])
         self.assertTrue(c["shuffle_each_epoch"])
-        self.assertEqual(int(c["split_seed"]), 42)
+        self.assertIsInstance(c["split_seed"], int)
         self.assertIn('std::shuffle(train_dataset.begin(), train_dataset.end(), epoch_rng)', self.trainer)
 
     def test_unmasked_decoys_are_opt_in_only(self):

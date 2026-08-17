@@ -1,0 +1,117 @@
+{
+  "artifact_sha256": {
+    "equilibration": "eeb344bc1b6201d87fe013c969db6230f9214b71d51903a3406addfae7bfd447",
+    "nve_preflight": "7b16bb5cb0c6cb87baadba5d28c6981cf9335d17d9a166aae97c81c553233d8f",
+    "priors": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3",
+    "runtime_parity": "a58e472e405ed2eebaf71c1ba225db316942cb0c587c79083fb4d54cc6ca996f",
+    "state_convergence": "03b0db3c26fe8fa0212fe5dd9884f70e3fee8f5eddf50cb88625a5999f01308c",
+    "strict_nve": "e260c12cdcea26f63f4d9f088a1a1420e68c7c937152dd33ed8b37eb75d79cf5",
+    "validation": "8853188442988d119f25afab2e729c9fc1cd5e93de6a27c225c16c8ab7e88470"
+  },
+  "artifacts": {
+    "equilibration": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only/equilibration_report.json",
+    "nve_preflight": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_conservative_ibi_only_preflight.json",
+    "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+    "runtime_parity": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/runtime_parity_report.json",
+    "state_convergence": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_state_convergence_conservative_ibi_only/state_convergence_report.json",
+    "strict_nve": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_conservative_ibi_only/nve_certification_report.json",
+    "validation": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/validation_report.json"
+  },
+  "certification_basis": "conservative_kernel_parity_plus_drift_plus_richardson_state_order_v1",
+  "checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+  "framework": "MLCG_Framework_v2",
+  "gates": {
+    "conservative_kernel": {
+      "max_fd_abs_dU_dq_error": 2.7819266392725694e-06,
+      "n_tables_checked": 11,
+      "pass": true
+    },
+    "energy_drift": {
+      "drift_failures": [],
+      "max_allowed_relative_block_mean_drift": 0.0001,
+      "max_observed_relative_block_mean_drift": 2.96501399025155e-05,
+      "n_runs": 6,
+      "pass": true
+    },
+    "provenance_consistency": {
+      "pass": true
+    },
+    "runtime_parity": {
+      "energy_atol": 1e-10,
+      "force_atol": 1e-09,
+      "pass": true,
+      "worst_energy_abs_error": 2.8421709430404007e-13,
+      "worst_force_abs_error": 2.842170943040401e-14
+    },
+    "sigma_E_scaling": {
+      "exponent_p": 0.9944731010203272,
+      "gating": false,
+      "legacy_scaling_pass": false,
+      "loglog_r2": 0.7900938818725628,
+      "observable": "sigma_E",
+      "reason": "Long-window sigma_E is retained as an energy/shadow-Hamiltonian diagnostic; the gating trajectory-order test is Richardson state convergence.",
+      "status": "diagnostic_only"
+    },
+    "vv_second_order": {
+      "metrics": {
+        "omega_body_rms_per_ps": {
+          "max_exponent_p": 2.15355358839589,
+          "median_exponent_p": 1.9964504976100543,
+          "median_loglog_r2": 0.9976088042794576,
+          "min_exponent_p": 1.9458422922117276,
+          "min_loglog_r2": 0.994922253957389,
+          "pass": true,
+          "reported_consistent_with_second_order": true
+        },
+        "orientation_rms_rad": {
+          "max_exponent_p": 2.054651577857801,
+          "median_exponent_p": 1.988266867656458,
+          "median_loglog_r2": 0.9990440051287374,
+          "min_exponent_p": 1.9074768501497206,
+          "min_loglog_r2": 0.9976205223314113,
+          "pass": true,
+          "reported_consistent_with_second_order": true
+        },
+        "position_rms_nm": {
+          "max_exponent_p": 1.9389141293908088,
+          "median_exponent_p": 1.8757976130822698,
+          "median_loglog_r2": 0.9984968380574044,
+          "min_exponent_p": 1.84754687823585,
+          "min_loglog_r2": 0.9980273731548274,
+          "pass": true,
+          "reported_consistent_with_second_order": true
+        },
+        "velocity_rms_nm_per_ps": {
+          "max_exponent_p": 2.0035620163294254,
+          "median_exponent_p": 1.8956060548228286,
+          "median_loglog_r2": 0.9978545536653936,
+          "min_exponent_p": 1.7954934217535856,
+          "min_loglog_r2": 0.9905765366060427,
+          "pass": true,
+          "reported_consistent_with_second_order": true
+        }
+      },
+      "min_median_loglog_r2": 0.95,
+      "order_window": [
+        1.7,
+        2.3
+      ],
+      "pass": true
+    }
+  },
+  "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+  "kind": "conservative_ibi_nve_composite_certification",
+  "legacy_step23_drift_pass": true,
+  "legacy_step23_pass": false,
+  "legacy_step23_scaling_pass": false,
+  "ml_active": false,
+  "notes": [
+    "The original step-23 sigma_E scaling result is preserved and is not rewritten.",
+    "sigma_E scaling is non-gating in this composite certification because Richardson state convergence directly measures the trajectory integrator order.",
+    "This report certifies only the IBI-only Hamiltonian recorded above; it does not certify an ML-active Hamiltonian."
+  ],
+  "pass": true,
+  "schema_version": 1,
+  "scope": "WCA + Morse + bonded conservative IBI; PaiNN disabled",
+  "selected_priors_sha256": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3"
+}

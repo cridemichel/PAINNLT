@@ -1,0 +1,555 @@
+{
+  "schema_version": 1,
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+  "seed_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/cg_priors_ibi_seed.json",
+  "config": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_training_config.json",
+  "rb_info": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/rigid_bodies_info.json",
+  "iterations_requested": 5,
+  "iterations_completed": 5,
+  "ibi_groups": 11,
+  "dbi_groups": 0,
+  "kT": 2.49,
+  "dt_ps": 0.0005,
+  "burn_in_steps": 4000,
+  "production_steps": 16000,
+  "sample_interval": 20,
+  "neighbor_search": "link-cell",
+  "velocity_seed": 314159,
+  "thermostat_seed": 42,
+  "settings": {
+    "kT": 2.49,
+    "alpha": 0.15,
+    "min_count": 5,
+    "relative_density_threshold": 0.0001,
+    "max_gap_bins": 3,
+    "min_support_points": 8,
+    "avgpoints": 7,
+    "taper_bins": 12,
+    "histogram_smoothing_sigma": 1.5,
+    "update_smoothing_sigma": 1.0,
+    "max_update_kT": 1.5,
+    "bond": {
+      "hist_min": 0.01,
+      "hist_max": 2.0,
+      "hist_edges": 300,
+      "table_min": 0.01,
+      "table_max": 3.0,
+      "table_points": 3001,
+      "left_function": "exponential",
+      "right_function": "exponential",
+      "left_curvature": 6.0,
+      "right_curvature": 1.0,
+      "left_guard": 0.05,
+      "right_guard": 1.5,
+      "left_guard_force": 200.0,
+      "right_guard_force": 150.0,
+      "force_max": 300.0,
+      "runtime_safety_fraction": 0.95
+    },
+    "angle": {
+      "hist_edges": 300,
+      "table_points": 2001,
+      "wall_width": 0.1,
+      "wall_k": 5000.0,
+      "force_max": 250.0
+    },
+    "dihedral": {
+      "hist_edges": 300,
+      "table_points": 2001,
+      "force_max": 150.0
+    },
+    "simulation": {
+      "dt": 0.0005,
+      "burn_in_steps": 4000,
+      "steps": 16000,
+      "log_interval": 20
+    }
+  },
+  "inputs_sha256": {
+    "dataset": "40bcf2e5a23d0b75d1444730d7e1d63979e1d0198b88477c19e8fb187d5f8d9e",
+    "seed_priors": "f2bf03c29ccf23451703409a33a3d7c1655d3f7db766ad43b87b6882db0b6e51",
+    "config": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+    "rb_info": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+    "pypresso": "ae16e444b873e89b7f0c995941720affbc2062b5d1715631a7a00721bb49144a",
+    "ibi_config": "d08b24653587c80b93bb0bb1a9c082b1c80912a98bf99d1c1e8c60d61b125778"
+  },
+  "final_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/cg_priors_final.json",
+  "final_internal_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/final/cg_priors.json",
+  "metrics": [
+    {
+      "iteration": 1,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/iteration_000/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/sampling/iteration_001/trajectory.npz",
+      "groups": {
+        "bonds:bb_A_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.18789380920907683,
+          "sample_min": 0.40217531728889266,
+          "sample_max": 0.8550197449965727
+        },
+        "bonds:bb_G_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 64080,
+          "distribution_l1": 0.12255636336931774,
+          "sample_min": 0.5248440982373271,
+          "sample_max": 0.7779298055384276
+        },
+        "bonds:bb_G_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.4189958630143693,
+          "sample_min": 0.3162284021013972,
+          "sample_max": 1.2042796944425822
+        },
+        "bonds:bb_T_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.24642236420161073,
+          "sample_min": 0.28529941941544074,
+          "sample_max": 0.8709171068693224
+        },
+        "bonds:bb_T_A": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.19633791094465258,
+          "sample_min": 0.37000408689235426,
+          "sample_max": 0.8073604483610306
+        },
+        "angles:ang_A_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.3111111111111111,
+          "sample_min": 1.3245483791209975,
+          "sample_max": 3.0906640829370304
+        },
+        "angles:ang_G_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.3080267312917679,
+          "sample_min": 1.6612207841786102,
+          "sample_max": 3.0852443046593736
+        },
+        "angles:ang_G_G_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.26229957650975466,
+          "sample_min": 1.2068799654924522,
+          "sample_max": 3.061943910547531
+        },
+        "angles:ang_G_T_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.2937602506670583,
+          "sample_min": 0.07874459281266052,
+          "sample_max": 2.037585278448879
+        },
+        "angles:ang_T_T_A": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.47503855474774165,
+          "sample_min": 0.9391872830954674,
+          "sample_max": 3.0607538412596274
+        },
+        "angles:ang_T_A_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3774742356368266,
+          "sample_min": 0.22574489988564894,
+          "sample_max": 3.0717757590359818
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/iteration_001/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/sampling/iteration_002/trajectory.npz",
+      "groups": {
+        "bonds:bb_A_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.16572299331717708,
+          "sample_min": 0.42974652293284804,
+          "sample_max": 0.8145678394141639
+        },
+        "bonds:bb_G_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 64080,
+          "distribution_l1": 0.12712234706616726,
+          "sample_min": 0.5088960059947263,
+          "sample_max": 0.80120745978712
+        },
+        "bonds:bb_G_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.2873858657070819,
+          "sample_min": 0.5333321679814511,
+          "sample_max": 1.2715676256215838
+        },
+        "bonds:bb_T_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.23615088981909851,
+          "sample_min": 0.3115549884492241,
+          "sample_max": 0.8748151747302868
+        },
+        "bonds:bb_T_A": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.166718072996989,
+          "sample_min": 0.38619845225160937,
+          "sample_max": 0.7686231399337559
+        },
+        "angles:ang_A_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.27864801351252105,
+          "sample_min": 0.8896508695411043,
+          "sample_max": 3.0620173155747223
+        },
+        "angles:ang_G_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.3001432033487554,
+          "sample_min": 0.9887319580248607,
+          "sample_max": 3.073811671243786
+        },
+        "angles:ang_G_G_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.28870774277251454,
+          "sample_min": 1.6781677369406989,
+          "sample_max": 3.0724988339585213
+        },
+        "angles:ang_G_T_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.35385669873442505,
+          "sample_min": 0.13249005201371988,
+          "sample_max": 2.0338544341291502
+        },
+        "angles:ang_T_T_A": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.37140339281780127,
+          "sample_min": 1.177061596572547,
+          "sample_max": 3.0472839364563344
+        },
+        "angles:ang_T_A_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.38067121979878077,
+          "sample_min": 0.8213780147983206,
+          "sample_max": 3.0716763409629064
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/iteration_002/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/sampling/iteration_003/trajectory.npz",
+      "groups": {
+        "bonds:bb_A_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.1678049496952339,
+          "sample_min": 0.40031792262580085,
+          "sample_max": 0.8224325768320676
+        },
+        "bonds:bb_G_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 64080,
+          "distribution_l1": 0.09906917823309101,
+          "sample_min": 0.4889922364492332,
+          "sample_max": 0.781579971651073
+        },
+        "bonds:bb_G_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.44564882132628336,
+          "sample_min": 0.48479150675498106,
+          "sample_max": 1.2228381009038714
+        },
+        "bonds:bb_T_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.28328804680423986,
+          "sample_min": 0.2501122376232073,
+          "sample_max": 1.0716774290493933
+        },
+        "bonds:bb_T_A": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.1766174634647866,
+          "sample_min": 0.39590821172154084,
+          "sample_max": 0.7999260132781392
+        },
+        "angles:ang_A_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.3014393772490269,
+          "sample_min": 1.4162443193769827,
+          "sample_max": 3.055487716016757
+        },
+        "angles:ang_G_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.1728317544246165,
+          "sample_min": 1.7849694984277253,
+          "sample_max": 3.0744690132200247
+        },
+        "angles:ang_G_G_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.29464639788499675,
+          "sample_min": 1.3602848627384359,
+          "sample_max": 3.097233876598387
+        },
+        "angles:ang_G_T_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.27196886245134755,
+          "sample_min": 0.3153080952852138,
+          "sample_max": 2.058439786880682
+        },
+        "angles:ang_T_T_A": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.5348265648331743,
+          "sample_min": 1.2737506170545072,
+          "sample_max": 3.0498064434028933
+        },
+        "angles:ang_T_A_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.45138185111747575,
+          "sample_min": 0.36209077167919923,
+          "sample_max": 3.0642429165437264
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/iteration_003/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/sampling/iteration_004/trajectory.npz",
+      "groups": {
+        "bonds:bb_A_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.19373209958140558,
+          "sample_min": 0.4002129815258078,
+          "sample_max": 0.835111845303014
+        },
+        "bonds:bb_G_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 64080,
+          "distribution_l1": 0.10073621208783141,
+          "sample_min": 0.49389225757156363,
+          "sample_max": 0.791056225863191
+        },
+        "bonds:bb_G_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3788744461579887,
+          "sample_min": 0.433463213248629,
+          "sample_max": 1.2542099367632629
+        },
+        "bonds:bb_T_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3506352353675552,
+          "sample_min": 0.2648492989306736,
+          "sample_max": 0.9463968861141162
+        },
+        "bonds:bb_T_A": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.1624391079777729,
+          "sample_min": 0.3840106459088042,
+          "sample_max": 0.7800555374875056
+        },
+        "angles:ang_A_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.2811265330102076,
+          "sample_min": 0.7288096569591231,
+          "sample_max": 3.0687544661290147
+        },
+        "angles:ang_G_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.24849452889770154,
+          "sample_min": 1.4755783578164847,
+          "sample_max": 3.0644683299056035
+        },
+        "angles:ang_G_G_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3565543071161045,
+          "sample_min": 0.6525094462482983,
+          "sample_max": 3.08611140114749
+        },
+        "angles:ang_G_T_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3557807642407776,
+          "sample_min": 0.48326738683389836,
+          "sample_max": 1.959168778527244
+        },
+        "angles:ang_T_T_A": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.38424518371643296,
+          "sample_min": 0.7896177871884931,
+          "sample_max": 3.074049171653672
+        },
+        "angles:ang_T_A_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3760691292746813,
+          "sample_min": 0.7256961962076254,
+          "sample_max": 3.0643167058702883
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/iteration_004/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run/sampling/iteration_005/trajectory.npz",
+      "groups": {
+        "bonds:bb_A_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.23831974737460526,
+          "sample_min": 0.4094964359072199,
+          "sample_max": 0.8808467886620296
+        },
+        "bonds:bb_G_G": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 64080,
+          "distribution_l1": 0.08129176764338694,
+          "sample_min": 0.5004808204518153,
+          "sample_max": 0.7812450527000717
+        },
+        "bonds:bb_G_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.2241609752515239,
+          "sample_min": 0.5747075946451884,
+          "sample_max": 1.1307281595968228
+        },
+        "bonds:bb_T_T": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.21342439597561869,
+          "sample_min": 0.23182772865584655,
+          "sample_max": 0.9938878682924733
+        },
+        "bonds:bb_T_A": {
+          "kind": "bond",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.2864605517612787,
+          "sample_min": 0.36520168208352843,
+          "sample_max": 0.8130073022044825
+        },
+        "angles:ang_A_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.2751707424542851,
+          "sample_min": 1.546390561861552,
+          "sample_max": 3.0773906093089667
+        },
+        "angles:ang_G_G_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 32040,
+          "distribution_l1": 0.21575604024381306,
+          "sample_min": 1.8628016596188612,
+          "sample_max": 3.071044407237896
+        },
+        "angles:ang_G_G_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.246608406158968,
+          "sample_min": 1.6202874102213285,
+          "sample_max": 3.082480689298836
+        },
+        "angles:ang_G_T_T": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3431054319355706,
+          "sample_min": 0.2825167609247524,
+          "sample_max": 1.947447051823754
+        },
+        "angles:ang_T_T_A": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.40639396832390834,
+          "sample_min": 0.7778064922607697,
+          "sample_max": 3.074343174663672
+        },
+        "angles:ang_T_A_G": {
+          "kind": "angle",
+          "mode": "ibi",
+          "samples": 24030,
+          "distribution_l1": 0.3818707008396368,
+          "sample_min": 0.9160556889107874,
+          "sample_max": 2.976954515124162
+        }
+      }
+    }
+  ]
+}

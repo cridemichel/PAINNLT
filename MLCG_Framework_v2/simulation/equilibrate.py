@@ -12,6 +12,7 @@ from framework_utils import (
     get_rb_data_by_sites,
     input_hashes,
     particle_is_virtual,
+    resolve_referenced_path,
     rigid_body_quaternion,
     save_checkpoint,
     validate_model_manifest,
@@ -19,6 +20,8 @@ from framework_utils import (
     wca_topology_exclusion_pairs,
     wca_direct_bonded_site_exclusions,
 )
+
+from conservative_spline_runtime import create_conservative_spline_interaction
 
 from espresso_interactions import (
     configure_pair_specific_morse,
@@ -250,7 +253,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "morse":
         continue
     elif b_type == "tabulated":
-        data = np.loadtxt(b["file"])
+        data = np.loadtxt(resolve_referenced_path(b["file"], args.priors))
         rmin_tab = float(b["min"])
         rmax_tab = float(b["max"])
         r_vals = data[:, 0]
@@ -259,6 +262,10 @@ for idx, b in enumerate(priors.get("bonds", [])):
         
         bond = espressomd.interactions.TabulatedDistance(
             min=rmin_tab, max=rmax_tab, energy=energy, force=force
+        )
+    elif b_type == "conservative_spline":
+        bond = create_conservative_spline_interaction(
+            espressomd.interactions, b, kind="bond", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
@@ -284,11 +291,15 @@ for idx, a in enumerate(priors.get("angles", [])):
         angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
     elif a_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(a["file"])
+        data = np.loadtxt(resolve_referenced_path(a["file"], args.priors))
         min_tab = float(a["min"]) # Typically 0.0 radians
         max_tab = float(a["max"]) # Typically pi radians
         angle = espressomd.interactions.TabulatedAngle(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    elif a_type == "conservative_spline":
+        angle = create_conservative_spline_interaction(
+            espressomd.interactions, a, kind="angle", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown angle type: {a_type}")
@@ -317,11 +328,15 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
         dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
     elif d_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(d["file"])
+        data = np.loadtxt(resolve_referenced_path(d["file"], args.priors))
         min_tab = float(d.get("min", -np.pi))
         max_tab = float(d.get("max", np.pi))
         dihedral = espressomd.interactions.TabulatedDihedral(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    elif d_type == "conservative_spline":
+        dihedral = create_conservative_spline_interaction(
+            espressomd.interactions, d, kind="dihedral", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown dihedral type: {d_type}")

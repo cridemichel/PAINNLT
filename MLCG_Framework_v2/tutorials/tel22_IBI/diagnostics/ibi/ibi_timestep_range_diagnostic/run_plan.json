@@ -1,0 +1,27 @@
+{
+  "branch_dt_ps": 0.0005,
+  "branch_duration_ps": 0.25,
+  "branch_sample_start_step": 250,
+  "dts_ps": [
+    0.001,
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005
+  ],
+  "duration_ps": 1.0,
+  "estimated_total_steps": 13800,
+  "ibi_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+  "kind": "ibi_timestep_range_localization_plan",
+  "old_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/cg_priors.json",
+  "resume": true,
+  "schema_version": 1,
+  "source_checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+  "variants": [
+    "old_tel22",
+    "ibi_bonds_only",
+    "ibi_angles_only",
+    "full_ibi"
+  ]
+}

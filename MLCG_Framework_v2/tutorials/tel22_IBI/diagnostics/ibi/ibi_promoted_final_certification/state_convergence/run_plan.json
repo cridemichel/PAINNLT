@@ -1,0 +1,75 @@
+{
+  "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_promoted_final_certification/nvt/equilibrated_promoted_ibi_only.npz",
+  "checkpoint_motion": {
+    "omega_rms": 0.4677171266039262,
+    "real_particles": 220,
+    "velocity_rms": 0.17978815429987133
+  },
+  "checkpoint_provenance": {
+    "energy_gauge": "isolated_species_zero_v1",
+    "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+    "input_hashes": {
+      "config_sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+      "dataset_sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c",
+      "model_manifest_sha256": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f",
+      "model_sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33",
+      "priors_sha256": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+      "rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+    },
+    "sampling_ensemble": "NVT_Langevin",
+    "schema_version": 3,
+    "source_checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06"
+  },
+  "checkpoint_sha256": "c0b1a8979592497cd46ca0fb9a37af9403634ca86b97c9a1719469dc222277d4",
+  "diagnostic_only": true,
+  "duration_ps": 0.096,
+  "input_hashes": {
+    "config_sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+    "dataset_sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c",
+    "model_manifest_sha256": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f",
+    "model_sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33",
+    "priors_sha256": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+    "rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+  },
+  "kind": "conservative_ibi_nve_state_convergence_plan",
+  "reference_dt_ps": 6.25e-05,
+  "runs": [
+    {
+      "dt_ps": 0.001,
+      "log_interval_steps": 12,
+      "steps": 96
+    },
+    {
+      "dt_ps": 0.0005,
+      "log_interval_steps": 24,
+      "steps": 192
+    },
+    {
+      "dt_ps": 0.00025,
+      "log_interval_steps": 48,
+      "steps": 384
+    },
+    {
+      "dt_ps": 0.000125,
+      "log_interval_steps": 96,
+      "steps": 768
+    },
+    {
+      "dt_ps": 6.25e-05,
+      "log_interval_steps": 192,
+      "steps": 1536
+    }
+  ],
+  "sample_interval_ps": 0.012,
+  "sample_times_ps": [
+    0.012,
+    0.024,
+    0.036000000000000004,
+    0.048,
+    0.06,
+    0.07200000000000001,
+    0.084,
+    0.096
+  ],
+  "schema_version": 1
+}

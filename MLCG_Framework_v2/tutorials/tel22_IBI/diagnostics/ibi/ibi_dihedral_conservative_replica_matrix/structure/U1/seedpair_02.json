@@ -1,0 +1,59 @@
+{
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+  "groups": {
+    "dihedrals:dih_A_G_G_G": {
+      "distribution_l1": 0.3810014612940035,
+      "kind": "dihedral",
+      "sample_max": 6.28315844127855,
+      "sample_min": 0.0,
+      "samples": 8040
+    },
+    "dihedrals:dih_G_G_G_T": {
+      "distribution_l1": 0.558363140005689,
+      "kind": "dihedral",
+      "sample_max": 6.282804332630362,
+      "sample_min": 0.00021614272937700135,
+      "samples": 6030
+    },
+    "dihedrals:dih_G_G_T_T": {
+      "distribution_l1": 0.6447775578296513,
+      "kind": "dihedral",
+      "sample_max": 6.281875725726347,
+      "sample_min": 0.0010946114076980033,
+      "samples": 6030
+    },
+    "dihedrals:dih_G_T_T_A": {
+      "distribution_l1": 0.6760434110594924,
+      "kind": "dihedral",
+      "sample_max": 6.283134859540991,
+      "sample_min": 0.003130482958060873,
+      "samples": 6030
+    },
+    "dihedrals:dih_T_A_G_G": {
+      "distribution_l1": 0.5040552375157866,
+      "kind": "dihedral",
+      "sample_max": 6.276021602579944,
+      "sample_min": 0.0012779623763723722,
+      "samples": 6030
+    },
+    "dihedrals:dih_T_T_A_G": {
+      "distribution_l1": 0.5234025948687933,
+      "kind": "dihedral",
+      "sample_max": 5.314432329861835,
+      "sample_min": 2.052244379796949,
+      "samples": 6030
+    }
+  },
+  "max_l1": 0.6760434110594924,
+  "mean_l1": 0.5479405670955694,
+  "mean_l1_by_kind": {
+    "dihedral": 0.5479405670955694
+  },
+  "mode": "full_runtime_bonded_structure",
+  "note": "Structural L1 is reported diagnostically for the complete IBI+ML Hamiltonian. No universal pass threshold is imposed by the generic core.",
+  "pass": true,
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+  "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_002/trajectory.npz",
+  "schema_version": 1,
+  "threshold_applied": false
+}

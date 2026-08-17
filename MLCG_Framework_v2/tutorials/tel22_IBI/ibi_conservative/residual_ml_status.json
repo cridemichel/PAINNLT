@@ -1,0 +1,18 @@
+{
+  "certified_use": "classical IBI-only Hamiltonian with PaiNN disabled",
+  "kind": "residual_ml_staleness_after_prior_promotion",
+  "painn_model": {
+    "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_model_ibi_conservative.pt",
+    "sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33"
+  },
+  "pre_promotion_priors_sha256": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3",
+  "promoted_priors_sha256": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+  "reason": "Residual labels and PaiNN were built/trained against the pre-promotion conservative priors.",
+  "requires_rebuild_before_ml_active_use": true,
+  "residual_dataset": {
+    "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset_ibi_residual.bin",
+    "sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c"
+  },
+  "schema_version": 1,
+  "status": "stale_for_ml_active_use"
+}

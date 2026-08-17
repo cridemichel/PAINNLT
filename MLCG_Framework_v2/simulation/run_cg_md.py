@@ -16,15 +16,21 @@ from framework_utils import (
     ensure_single_rank,
     get_rb_data_by_sites,
     input_hashes,
+    mask_excluded_particle_distances,
     particle_is_virtual,
+    resolve_referenced_path,
     nonconservative_prior_entries,
     rigid_body_quaternion,
+    save_checkpoint,
+    sha256_file,
     validate_checkpoint,
     validate_model_manifest,
     validate_wca_exclusion_policy,
     wca_topology_exclusion_pairs,
     wca_direct_bonded_site_exclusions,
 )
+
+from conservative_spline_runtime import create_conservative_spline_interaction
 
 from espresso_interactions import (
     configure_pair_specific_morse,
@@ -37,6 +43,7 @@ from espresso_interactions import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=False, default=None, help="Trained ML potential (.pt)")
+parser.add_argument("--disable_ml", action="store_true", help="Validate --model provenance but do not activate PaiNN; useful for matched classical/ML A/B runs")
 parser.add_argument("--config", type=str, required=True, help="NN config JSON")
 parser.add_argument("--priors", type=str, required=True, help="cg_priors.json")
 parser.add_argument("--rb_info", type=str, required=True, help="rigid_bodies_info.json")
@@ -48,12 +55,18 @@ parser.add_argument("--no_log", action="store_true", help="Disable energy and tr
 parser.add_argument("--no_vtf", action="store_true", help="Disable VTF trajectory output while keeping the energy log")
 parser.add_argument("--energy_file", type=str, default="energy.csv", help="Energy CSV output path")
 parser.add_argument("--trajectory_file", type=str, default="cg_trajectory.vtf", help="VTF trajectory output path")
+parser.add_argument("--sample_npz", type=str, default=None, help="Structured COM/site trajectory for analysis/IBI")
+parser.add_argument("--state_sample_npz", type=str, default=None, help="Structured real-particle mechanical-state trajectory for convergence diagnostics")
+parser.add_argument("--out_checkpoint", type=str, default=None, help="Save the final mechanical state as a provenance-bound checkpoint")
+parser.add_argument("--sample_start_step", type=int, default=0, help="First logged step included in --sample_npz")
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
-parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal in ESPResSo regular decomposition")
+parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
+parser.add_argument("--velocity_seed", type=int, default=314159, help="Seed used by --init_kT")
+parser.add_argument("--thermostat_seed", type=int, default=42, help="Langevin thermostat seed")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
 parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
 parser.add_argument("--allow_missing_model_manifest", action="store_true", help="Allow legacy .pt files without the patched training manifest")
@@ -61,7 +74,15 @@ parser.add_argument("--allow_legacy_checkpoint", action="store_true", help="Allo
 parser.add_argument("--allow_checkpoint_mismatch", action="store_true", help="Continue despite checkpoint hash or particle-identity mismatches")
 parser.add_argument("--allow_unsafe_mpi", action="store_true", help="Allow the uncertified multi-rank PaiNN path")
 parser.add_argument("--allow_nonconservative_tables", action="store_true", help="Allow explicitly tabulated priors during NVE despite separate energy/force interpolation")
+parser.add_argument("--generalized_fd_report", type=str, default=None, help="Write a zero-step finite-difference force/torque consistency report for real particles")
+parser.add_argument("--generalized_fd_eps_pos", type=float, default=1.0e-6, help="Cartesian displacement for --generalized_fd_report (nm)")
+parser.add_argument("--generalized_fd_eps_rot", type=float, default=1.0e-6, help="Lab-frame rotation angle for --generalized_fd_report (rad)")
+parser.add_argument("--generalized_fd_max_bodies", type=int, default=8, help="Maximum number of real bodies sampled by --generalized_fd_report; 0 means all")
 args = parser.parse_args()
+
+if args.disable_ml and not args.model:
+    raise ValueError("--disable_ml requires --model so the disabled branch remains bound to the same model provenance")
+ml_active = bool(args.model and not args.disable_ml)
 
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
@@ -97,6 +118,16 @@ if args.steps < 0:
     raise ValueError("--steps must be non-negative")
 if args.log_interval <= 0:
     raise ValueError("--log_interval must be positive")
+if args.sample_start_step < 0 or args.sample_start_step > args.steps:
+    raise ValueError("--sample_start_step must lie between 0 and --steps")
+if args.sample_npz and args.sample_start_step % args.log_interval != 0:
+    raise ValueError("--sample_start_step must be a multiple of --log_interval")
+if args.init_kT is not None and args.init_kT <= 0.0:
+    raise ValueError("--init_kT must be positive")
+if args.generalized_fd_eps_pos <= 0.0 or args.generalized_fd_eps_rot <= 0.0:
+    raise ValueError("generalized finite-difference epsilons must be positive")
+if args.generalized_fd_max_bodies < 0:
+    raise ValueError("--generalized_fd_max_bodies must be non-negative")
 
 # Plan pair-specific reversible Morse contacts before creating particles.
 # Physical CG-site types remain untouched; explicit contacts are carried by
@@ -129,7 +160,7 @@ system.integrator.set_vv()
 if args.nve:
     system.thermostat.turn_off()
 else:
-    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=args.thermostat_seed)
 
 
 print(f"[INFO] Running {args.steps} integration steps...")
@@ -234,24 +265,37 @@ if args.checkpoint:
                 p.omega_body = omega[i]
 
 if args.init_kT is not None:
-    print(f"[INFO] Initializing velocities to kT={args.init_kT}...")
-    for p in system.part:
-        if not particle_is_virtual(p):
-            mass = p.mass
-            # Translational velocity
-            p.v = np.sqrt(args.init_kT / mass) * np.random.randn(3)
-            # Rotational velocity
-            if any(p.rotation):
-                I = p.rinertia
-                # Only apply to axes that are allowed to rotate
-                omega = np.zeros(3)
-                for axis in range(3):
-                    if p.rotation[axis]:
-                        omega[axis] = np.sqrt(args.init_kT / I[axis]) * np.random.randn()
-                p.omega_body = omega
+    print(f"[INFO] Initializing velocities to kT={args.init_kT} with seed={args.velocity_seed}...")
+    rng = np.random.default_rng(args.velocity_seed)
+    real_particles = [p for p in system.part if not particle_is_virtual(p)]
+    for p in real_particles:
+        mass = float(p.mass)
+        p.v = np.sqrt(args.init_kT / mass) * rng.standard_normal(3)
+        if any(p.rotation):
+            inertia = np.asarray(p.rinertia, dtype=float)
+            omega = np.zeros(3, dtype=float)
+            for axis in range(3):
+                if p.rotation[axis]:
+                    omega[axis] = np.sqrt(args.init_kT / inertia[axis]) * rng.standard_normal()
+            p.omega_body = omega
+
+    # Remove the global translational drift without changing internal thermal motion.
+    total_mass = sum(float(p.mass) for p in real_particles)
+    if total_mass > 0.0:
+        com_velocity = sum(
+            (float(p.mass) * np.asarray(p.v, dtype=float) for p in real_particles),
+            start=np.zeros(3, dtype=float),
+        ) / total_mass
+        for p in real_particles:
+            p.v = np.asarray(p.v, dtype=float) - com_velocity
 
 
 print("[INFO] Setting up WCA exclusions (intra-rigid-body + 1-2/1-3)...")
+
+# Keep the safety-distance diagnostic aligned with the actual ESPResSo
+# nonbonded topology.  Without this mask, close topologically excluded pairs
+# (especially all-site 1-3 exclusions) can falsely trigger min_dist < 0.15 nm.
+diagnostic_nonbonded_excluded_pid_pairs = set()
 
 mol_to_vs = {}
 for (m_idx, s_idx), pid in mol_vs_parts.items():
@@ -281,6 +325,9 @@ for mol_i, mol_j in sorted(wca_one_three_pairs):
         for pid_j in mol_to_vs.get(mol_j, []):
             try:
                 system.part.by_id(pid_i).add_exclusion(system.part.by_id(pid_j))
+                diagnostic_nonbonded_excluded_pid_pairs.add(
+                    (min(int(pid_i), int(pid_j)), max(int(pid_i), int(pid_j)))
+                )
             except Exception:
                 pass
 
@@ -296,6 +343,9 @@ for (mol_i, mol_j), site_pairs in sorted(direct_site_exclusions.items()):
             )
         try:
             system.part.by_id(pid_i).add_exclusion(system.part.by_id(pid_j))
+            diagnostic_nonbonded_excluded_pid_pairs.add(
+                (min(int(pid_i), int(pid_j)), max(int(pid_i), int(pid_j)))
+            )
         except Exception:
             pass
         applied_direct_site_exclusions += 1
@@ -304,6 +354,10 @@ print(
     f"[INFO] Non-bonded topology exclusions active (WCA/type-pair potentials): {len(wca_direct_pairs)} 1-2 molecule pairs "
     f"with {applied_direct_site_exclusions} bonded site-pair exclusions; "
     f"{len(wca_one_three_pairs)} 1-3 all-sites exclusions (policy v3)."
+)
+print(
+    f"[INFO] Safety min-distance diagnostic masks "
+    f"{len(diagnostic_nonbonded_excluded_pid_pairs)} excluded physical-site pairs."
 )
 
 
@@ -347,7 +401,7 @@ for idx, b in enumerate(priors.get("bonds", [])):
     elif b_type == "morse":
         continue
     elif b_type == "tabulated":
-        data = np.loadtxt(b["file"])
+        data = np.loadtxt(resolve_referenced_path(b["file"], args.priors))
         rmin_tab = float(b["min"])
         rmax_tab = float(b["max"])
         r_vals = data[:, 0]
@@ -356,6 +410,10 @@ for idx, b in enumerate(priors.get("bonds", [])):
         
         bond = espressomd.interactions.TabulatedDistance(
             min=rmin_tab, max=rmax_tab, energy=energy, force=force
+        )
+    elif b_type == "conservative_spline":
+        bond = create_conservative_spline_interaction(
+            espressomd.interactions, b, kind="bond", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown bond type: {b_type}")
@@ -381,11 +439,15 @@ for idx, a in enumerate(priors.get("angles", [])):
         angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
     elif a_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(a["file"])
+        data = np.loadtxt(resolve_referenced_path(a["file"], args.priors))
         min_tab = float(a["min"]) # Typically 0.0 radians
         max_tab = float(a["max"]) # Typically pi radians
         angle = espressomd.interactions.TabulatedAngle(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    elif a_type == "conservative_spline":
+        angle = create_conservative_spline_interaction(
+            espressomd.interactions, a, kind="angle", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown angle type: {a_type}")
@@ -414,11 +476,15 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
         dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
     elif d_type == "tabulated":
         import numpy as np
-        data = np.loadtxt(d["file"])
+        data = np.loadtxt(resolve_referenced_path(d["file"], args.priors))
         min_tab = float(d.get("min", -np.pi))
         max_tab = float(d.get("max", np.pi))
         dihedral = espressomd.interactions.TabulatedDihedral(
             min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+        )
+    elif d_type == "conservative_spline":
+        dihedral = create_conservative_spline_interaction(
+            espressomd.interactions, d, kind="dihedral", priors_path=args.priors
         )
     else:
         print(f"[WARNING] Unknown dihedral type: {d_type}")
@@ -503,7 +569,7 @@ for contact in morse_contacts:
         f"r_cut={contact['r_cut']:.6g})"
     )
 
-if args.model:
+if ml_active:
     print("[INFO] Activating ML Potential...")
     espressomd.painn.activate_painn_potential(
         model_path=args.model,
@@ -516,6 +582,8 @@ if args.model:
         device=args.device,
         precision=args.ml_precision
     )
+elif args.disable_ml:
+    print("[INFO] PaiNN disabled by --disable_ml; --model is retained only for provenance/checkpoint validation.")
 else:
     print("[INFO] No --model provided. Running PURELY CLASSICAL Coarse-Grained MD.")
 
@@ -556,6 +624,9 @@ def log_diagnostics(step):
     mask = mol_ids[:, None] == mol_ids[None, :]
     dist_matrix[mask] = np.inf
     np.fill_diagonal(dist_matrix, np.inf)
+    mask_excluded_particle_distances(
+        dist_matrix, pids, diagnostic_nonbonded_excluded_pid_pairs
+    )
     
     num_species = nn_config["num_species"]
     min_dists = {}
@@ -620,10 +691,12 @@ def measure_energies():
 
     e_class = energies["total"]
     e_ml = 0.0
-    if args.model:
+    if ml_active:
         e_ml = espressomd.painn.get_painn_energy()
     
     e_tot = e_class + e_ml
+    e_bonded = float(energies.get("bonded", 0.0))
+    e_non_bonded = float(energies.get("non_bonded", 0.0))
 
     e_kin = energies["kinetic"]
     e_kin_trans = 0.0
@@ -636,7 +709,126 @@ def measure_energies():
         e_kin_rot += 0.5 * sum(
             I * w**2 for I, w in zip(p.rinertia, p.omega_body)
         )
-    return e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml
+    return e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded
+
+
+def run_generalized_fd_probe(report_path):
+    """Check full-system generalized gradients against force and torque.
+
+    Translation uses central Cartesian finite differences. Rotation uses
+    ``ParticleHandle.rotate(axis, angle)`` with lab-frame Cartesian axes and is
+    compared with ``torque_lab``. The probe restores the exact state before
+    returning and never advances physical time.
+    """
+    system.integrator.run(0, recalc_forces=True)
+    real_particles = [p for p in system.part if float(p.mass) > 1.0e-4]
+    if not real_particles:
+        raise RuntimeError("No real particles available for generalized FD probe")
+    rotational = [p for p in real_particles if any(bool(v) for v in p.rotation)]
+    rotational_ids = {int(p.id) for p in rotational}
+    nonrot = [p for p in real_particles if int(p.id) not in rotational_ids]
+    ordered = rotational + nonrot
+    if args.generalized_fd_max_bodies:
+        ordered = ordered[:args.generalized_fd_max_bodies]
+
+    base = {}
+    for p in ordered:
+        base[int(p.id)] = {
+            "pos": np.asarray(p.pos, dtype=float).copy(),
+            "quat": np.asarray(p.quat, dtype=float).copy(),
+            "force": np.asarray(p.f, dtype=float).copy(),
+            "torque_lab": np.asarray(p.torque_lab, dtype=float).copy(),
+            "rotation": [bool(v) for v in p.rotation],
+        }
+
+    def total_energy():
+        return float(measure_energies()[0])
+
+    axes = np.eye(3, dtype=float)
+    rows = []
+    worst_force = 0.0
+    worst_torque = 0.0
+    for p in ordered:
+        pid = int(p.id)
+        info = base[pid]
+        translation = []
+        for axis_index, axis in enumerate(axes):
+            p.pos = info["pos"] + args.generalized_fd_eps_pos * axis
+            system.integrator.run(0, recalc_forces=True)
+            e_plus = total_energy()
+            p.pos = info["pos"] - args.generalized_fd_eps_pos * axis
+            system.integrator.run(0, recalc_forces=True)
+            e_minus = total_energy()
+            p.pos = info["pos"]
+            system.integrator.run(0, recalc_forces=True)
+            fd = -(e_plus - e_minus) / (2.0 * args.generalized_fd_eps_pos)
+            actual = float(info["force"][axis_index])
+            error = abs(fd - actual)
+            worst_force = max(worst_force, error)
+            translation.append({
+                "axis": int(axis_index), "actual_force": actual,
+                "fd_force": float(fd), "abs_error": float(error),
+            })
+
+        rotation = []
+        if any(info["rotation"]):
+            for axis_index, axis in enumerate(axes):
+                p.quat = info["quat"]
+                p.rotate(axis, float(args.generalized_fd_eps_rot))
+                system.integrator.run(0, recalc_forces=True)
+                e_plus = total_energy()
+                p.quat = info["quat"]
+                p.rotate(axis, -float(args.generalized_fd_eps_rot))
+                system.integrator.run(0, recalc_forces=True)
+                e_minus = total_energy()
+                p.quat = info["quat"]
+                system.integrator.run(0, recalc_forces=True)
+                fd = -(e_plus - e_minus) / (2.0 * args.generalized_fd_eps_rot)
+                actual = float(info["torque_lab"][axis_index])
+                error = abs(fd - actual)
+                worst_torque = max(worst_torque, error)
+                rotation.append({
+                    "axis": int(axis_index), "actual_torque_lab": actual,
+                    "fd_torque": float(fd), "abs_error": float(error),
+                })
+        rows.append({
+            "particle_id": pid,
+            "rotation_flags": info["rotation"],
+            "translation": translation,
+            "rotation": rotation,
+        })
+
+    # Restore every sampled particle and refresh all dependent virtual sites.
+    for p in ordered:
+        info = base[int(p.id)]
+        p.pos = info["pos"]
+        p.quat = info["quat"]
+    system.integrator.run(0, recalc_forces=True)
+    report = {
+        "schema_version": 1,
+        "kind": "full_system_generalized_energy_gradient",
+        "hamiltonian_mode": (
+            "conservative_classical_model_provenance_ml_disabled" if args.disable_ml
+            else "painn_active" if ml_active else "classical_only"
+        ),
+        "eps_position_nm": float(args.generalized_fd_eps_pos),
+        "eps_rotation_rad": float(args.generalized_fd_eps_rot),
+        "n_bodies": int(len(rows)),
+        "worst_force_abs_error": float(worst_force),
+        "worst_torque_abs_error": float(worst_torque),
+        "particles": rows,
+    }
+    path = os.path.abspath(report_path)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w") as handle:
+        json.dump(report, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    print(
+        "[GENERALIZED FD] "
+        f"bodies={len(rows)} max|dF|={worst_force:.3e} max|dTau|={worst_torque:.3e} "
+        f"report={path}"
+    )
+    return report
 
 
 def stringify_pair(value):
@@ -645,8 +837,57 @@ def stringify_pair(value):
     return ":".join(str(int(v)) for v in value)
 
 
+sample_steps = []
+sample_com = []
+sample_sites = []
+sample_site_keys = sorted(mol_vs_parts)
+state_sample_steps = []
+state_sample_positions = []
+state_sample_velocities = []
+state_sample_quaternions = []
+state_sample_omegas = []
+state_sample_particle_ids = sorted(
+    int(p.id) for p in system.part if float(p.mass) > 1.0e-4
+)
+state_sample_rotation_flags = np.asarray([
+    [bool(v) for v in system.part.by_id(pid).rotation]
+    for pid in state_sample_particle_ids
+], dtype=bool)
+if sorted(mol_com_parts) != list(range(num_molecules)):
+    raise RuntimeError("COM particle mapping is not contiguous in molecule-index order")
+
+
+def record_structured_sample(step):
+    if args.sample_npz is None or step < args.sample_start_step:
+        return
+    sample_steps.append(int(step))
+    sample_com.append(np.asarray([
+        system.part.by_id(mol_com_parts[mol]).pos for mol in range(num_molecules)
+    ], dtype=float))
+    sample_sites.append(np.asarray([
+        system.part.by_id(mol_vs_parts[key]).pos for key in sample_site_keys
+    ], dtype=float))
+
+
+def record_state_sample(step):
+    if args.state_sample_npz is None:
+        return
+    state_sample_steps.append(int(step))
+    particles = [system.part.by_id(pid) for pid in state_sample_particle_ids]
+    state_sample_positions.append(np.asarray([p.pos for p in particles], dtype=float))
+    state_sample_velocities.append(np.asarray([p.v for p in particles], dtype=float))
+    state_sample_quaternions.append(np.asarray([p.quat for p in particles], dtype=float))
+    omega = []
+    for particle in particles:
+        try:
+            omega.append(particle.omega_body)
+        except Exception:
+            omega.append([0.0, 0.0, 0.0])
+    state_sample_omegas.append(np.asarray(omega, dtype=float))
+
+
 def record_state(step, energy_writer, energy_handle, vtf_handle):
-    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml = measure_energies()
+    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded = measure_energies()
     g_dist, g_pair, g_pids, max_f = log_diagnostics(step)
     real_particles = [p for p in system.part if p.mass > 1e-4]
     max_t = max(
@@ -671,6 +912,8 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
             e_kin_rot,
             e_class,
             e_ml,
+            e_bonded,
+            e_non_bonded,
             g_dist,
             stringify_pair(g_pair),
             stringify_pair(g_pids),
@@ -683,9 +926,14 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
         vtf_handle.write(f"\ntimestep {step}\n")
         espressomd.io.writer.vtf.writevcf(system, vtf_handle)
 
+    record_structured_sample(step)
+    record_state_sample(step)
     unsafe = max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15
     return unsafe
 
+
+if args.generalized_fd_report is not None:
+    run_generalized_fd_probe(args.generalized_fd_report)
 
 simulation_ok = True
 with ExitStack() as stack:
@@ -704,6 +952,8 @@ with ExitStack() as stack:
             "E_kin_rot",
             "E_class",
             "E_ml",
+            "E_bonded",
+            "E_non_bonded",
             "min_dist",
             "min_pair",
             "min_pids",
@@ -752,6 +1002,147 @@ with ExitStack() as stack:
             break
 
 if simulation_ok:
+    if args.sample_npz is not None:
+        if not sample_steps:
+            raise RuntimeError("Structured sampling produced no frames")
+        sample_path = os.path.abspath(args.sample_npz)
+        sample_dir = os.path.dirname(sample_path)
+        if sample_dir:
+            os.makedirs(sample_dir, exist_ok=True)
+        np.savez_compressed(
+            sample_path,
+            schema_version=np.asarray(1, dtype=np.int32),
+            complete=np.asarray(1, dtype=np.int8),
+            steps=np.asarray(sample_steps, dtype=np.int64),
+            time_ps=np.asarray(sample_steps, dtype=float) * float(args.dt),
+            com=np.asarray(sample_com, dtype=float),
+            sites=np.asarray(sample_sites, dtype=float),
+            site_molecule=np.asarray([key[0] for key in sample_site_keys], dtype=np.int32),
+            site_index=np.asarray([key[1] for key in sample_site_keys], dtype=np.int32),
+            box=np.asarray(system.box_l, dtype=float),
+        )
+        print(
+            f"[INFO] Structured sampling: {len(sample_steps)} frames written to {sample_path} "
+            f"(start step {sample_steps[0]}, end step {sample_steps[-1]})"
+        )
+    if args.state_sample_npz is not None:
+        if not state_sample_steps:
+            raise RuntimeError("Mechanical-state sampling produced no frames")
+        state_path = os.path.abspath(args.state_sample_npz)
+        state_dir = os.path.dirname(state_path)
+        if state_dir:
+            os.makedirs(state_dir, exist_ok=True)
+        if args.disable_ml:
+            state_hamiltonian_mode = "conservative_classical_model_provenance_ml_disabled"
+        elif ml_active:
+            state_hamiltonian_mode = "painn_active"
+        else:
+            state_hamiltonian_mode = "classical_only"
+        state_metadata = {
+            "schema_version": 1,
+            "kind": "mlcg_real_particle_state_trajectory",
+            "dt_ps": float(args.dt),
+            "log_interval_steps": int(args.log_interval),
+            "hamiltonian_mode": state_hamiltonian_mode,
+            "sampling_ensemble": "NVE" if args.nve else "NVT_Langevin",
+            "input_hashes": input_hashes(
+                dataset=args.dataset,
+                config=args.config,
+                priors=args.priors,
+                rb_info=args.rb_info,
+                model=args.model,
+            ),
+            "source_checkpoint_sha256": (
+                sha256_file(args.checkpoint) if args.checkpoint is not None else None
+            ),
+            "ml_active": bool(ml_active),
+            "ml_disabled_by_flag": bool(args.disable_ml),
+        }
+        np.savez_compressed(
+            state_path,
+            schema_version=np.asarray(1, dtype=np.int32),
+            complete=np.asarray(1, dtype=np.int8),
+            steps=np.asarray(state_sample_steps, dtype=np.int64),
+            time_ps=np.asarray(state_sample_steps, dtype=float) * float(args.dt),
+            particle_ids=np.asarray(state_sample_particle_ids, dtype=np.int64),
+            rotation_flags=state_sample_rotation_flags,
+            positions=np.asarray(state_sample_positions, dtype=float),
+            velocities=np.asarray(state_sample_velocities, dtype=float),
+            quaternions=np.asarray(state_sample_quaternions, dtype=float),
+            omega_body=np.asarray(state_sample_omegas, dtype=float),
+            box=np.asarray(system.box_l, dtype=float),
+            metadata_json=np.asarray(json.dumps(state_metadata, sort_keys=True)),
+        )
+        print(
+            f"[INFO] Mechanical-state sampling: {len(state_sample_steps)} frames written to {state_path} "
+            f"(start step {state_sample_steps[0]}, end step {state_sample_steps[-1]})"
+        )
+    if args.out_checkpoint is not None:
+        checkpoint_path = os.path.abspath(args.out_checkpoint)
+        checkpoint_dir = os.path.dirname(checkpoint_path)
+        if checkpoint_dir:
+            os.makedirs(checkpoint_dir, exist_ok=True)
+        # A saved checkpoint is a pure mechanical state.  Turn off the thermostat
+        # before the final force refresh so NVE consumers inherit only positions,
+        # orientations and finite translational/rotational velocities.
+        system.thermostat.turn_off()
+        system.integrator.run(0, recalc_forces=True)
+        positions = []
+        velocities = []
+        quaternions = []
+        omegas = []
+        for i in range(len(system.part)):
+            particle = system.part.by_id(i)
+            positions.append(particle.pos)
+            velocities.append(particle.v)
+            quaternions.append(particle.quat)
+            try:
+                omegas.append(particle.omega_body)
+            except Exception:
+                omegas.append([0.0, 0.0, 0.0])
+        hashes = input_hashes(
+            dataset=args.dataset,
+            config=args.config,
+            priors=args.priors,
+            rb_info=args.rb_info,
+            model=args.model,
+        )
+        if args.disable_ml:
+            hamiltonian_mode = "conservative_classical_model_provenance_ml_disabled"
+        elif ml_active:
+            hamiltonian_mode = "painn_active"
+        else:
+            hamiltonian_mode = "classical_only"
+        source_checkpoint_sha256 = (
+            sha256_file(args.checkpoint) if args.checkpoint is not None else None
+        )
+        save_checkpoint(
+            checkpoint_path,
+            system=system,
+            pos=np.asarray(positions, dtype=float),
+            vel=np.asarray(velocities, dtype=float),
+            quat=np.asarray(quaternions, dtype=float),
+            omega=np.asarray(omegas, dtype=float),
+            hashes=hashes,
+            config=runtime_nn_config,
+            dt=args.dt,
+            kT=args.kT,
+            extra_metadata={
+                "checkpoint_origin": "run_cg_md_final_state",
+                "hamiltonian_mode": hamiltonian_mode,
+                "sampling_ensemble": "NVE" if args.nve else "NVT_Langevin",
+                "completed_steps": int(completed),
+                "source_checkpoint_sha256": source_checkpoint_sha256,
+                "neighbor_search": args.neighbor_search,
+                "thermostat_seed": None if args.nve else int(args.thermostat_seed),
+                "ml_active": bool(ml_active),
+                "ml_disabled_by_flag": bool(args.disable_ml),
+            },
+        )
+        print(
+            f"[INFO] Final checkpoint saved: {checkpoint_path} "
+            f"(hamiltonian_mode={hamiltonian_mode})"
+        )
     print("\n[INFO] Simulation finished successfully.")
 else:
     print("\n[ERROR] Simulation terminated by a safety guardrail.")

@@ -1,0 +1,125 @@
+{
+  "delta_mean_l1_b_minus_a": 0.08854170126548633,
+  "group_wins": {
+    "IBI+PaiNN": 1,
+    "IBI-only": 10,
+    "ties": 0
+  },
+  "groups": {
+    "angles:ang_A_G_G": {
+      "delta_b_minus_a": 0.18765071245889658,
+      "kind": "angle",
+      "l1_a": 0.3644075021312872,
+      "l1_b": 0.5520582145901838,
+      "samples_a": 6440,
+      "samples_b": 6440
+    },
+    "angles:ang_G_G_G": {
+      "delta_b_minus_a": 0.012136158811350606,
+      "kind": "angle",
+      "l1_a": 0.28304713189623687,
+      "l1_b": 0.2951832907075875,
+      "samples_a": 6440,
+      "samples_b": 6440
+    },
+    "angles:ang_G_G_T": {
+      "delta_b_minus_a": -0.036203466894003944,
+      "kind": "angle",
+      "l1_a": 0.3815856777493604,
+      "l1_b": 0.3453822108553565,
+      "samples_a": 4830,
+      "samples_b": 4830
+    },
+    "angles:ang_G_T_T": {
+      "delta_b_minus_a": 0.04895871392035073,
+      "kind": "angle",
+      "l1_a": 0.3619778346121057,
+      "l1_b": 0.4109365485324564,
+      "samples_a": 4830,
+      "samples_b": 4830
+    },
+    "angles:ang_T_A_G": {
+      "delta_b_minus_a": 0.11318962367555707,
+      "kind": "angle",
+      "l1_a": 0.6600414078674949,
+      "l1_b": 0.773231031543052,
+      "samples_a": 4830,
+      "samples_b": 4830
+    },
+    "angles:ang_T_T_A": {
+      "delta_b_minus_a": 0.018227580887427375,
+      "kind": "angle",
+      "l1_a": 0.5043072301384323,
+      "l1_b": 0.5225348110258596,
+      "samples_a": 4830,
+      "samples_b": 4830
+    },
+    "bonds:bb_A_G": {
+      "delta_b_minus_a": 0.036761661186213546,
+      "kind": "bond",
+      "l1_a": 0.23159176714163926,
+      "l1_b": 0.2683534283278528,
+      "samples_a": 6440,
+      "samples_b": 6440
+    },
+    "bonds:bb_G_G": {
+      "delta_b_minus_a": 0.10447874802094745,
+      "kind": "bond",
+      "l1_a": 0.17614176105224696,
+      "l1_b": 0.2806205090731944,
+      "samples_a": 12880,
+      "samples_b": 12880
+    },
+    "bonds:bb_G_T": {
+      "delta_b_minus_a": 0.14199650874842695,
+      "kind": "bond",
+      "l1_a": 0.7011001502050096,
+      "l1_b": 0.8430966589534366,
+      "samples_a": 4830,
+      "samples_b": 4830
+    },
+    "bonds:bb_T_A": {
+      "delta_b_minus_a": 0.06623634961230868,
+      "kind": "bond",
+      "l1_a": 0.20752648885641217,
+      "l1_b": 0.27376283846872085,
+      "samples_a": 4830,
+      "samples_b": 4830
+    },
+    "bonds:bb_T_T": {
+      "delta_b_minus_a": 0.28052612349287526,
+      "kind": "bond",
+      "l1_a": 0.39469816912272154,
+      "l1_b": 0.6752242926155968,
+      "samples_a": 4830,
+      "samples_b": 4830
+    }
+  },
+  "label_a": "IBI-only",
+  "label_b": "IBI+PaiNN",
+  "max_l1_a": 0.7011001502050096,
+  "max_l1_b": 0.8430966589534366,
+  "mean_l1_a": 0.38785682916117703,
+  "mean_l1_b": 0.47639853042666336,
+  "mean_l1_by_kind_a": {
+    "angle": 0.42589446406581954,
+    "bond": 0.3422116672756059
+  },
+  "mean_l1_by_kind_b": {
+    "angle": 0.4832210178757492,
+    "bond": 0.4682115454877603
+  },
+  "mode": "matched_runtime_structure_ab",
+  "note": "Lower L1 is better. delta_b_minus_a < 0 favors B. This matched A/B report is diagnostic and imposes no universal structural threshold.",
+  "paired_group_delta_by_kind": {
+    "angle": 0.05732655380992974,
+    "bond": 0.12599987821215436
+  },
+  "paired_group_delta_mean": 0.08854170126548638,
+  "paired_group_delta_std": 0.09027086685676354,
+  "pass": true,
+  "report_a": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_ml_ab_validation/ibi_only/runtime_structure_report.json",
+  "report_b": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_ml_ab_validation/ibi_plus_ml/runtime_structure_report.json",
+  "schema_version": 1,
+  "threshold_applied": false
+}

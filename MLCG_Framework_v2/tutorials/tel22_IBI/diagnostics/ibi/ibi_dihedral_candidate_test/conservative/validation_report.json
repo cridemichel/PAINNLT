@@ -1,0 +1,285 @@
+{
+  "conservative_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/cg_priors.json",
+  "conservative_priors_sha256": "8b97bca796fd7980368220da45a9228f0c20dac619580c18cc973c478ff25f4f",
+  "conversion_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/conversion_report.json",
+  "fidelity": [
+    {
+      "dense_points": 5761,
+      "energy_max_abs": 0.003769850180645129,
+      "energy_rms_abs": 0.000161315445916488,
+      "energy_rms_relative_to_range": 3.674146162128359e-05,
+      "file": "dihedral_conservative_dih_A_G_G_G.dat",
+      "force_max_abs": 8091.628013666948,
+      "force_p99_abs": 0.33930148984724373,
+      "force_rms_abs": 168.52402745567798,
+      "force_rms_relative": 13.829371401017033,
+      "kind": "dihedral"
+    },
+    {
+      "dense_points": 5761,
+      "energy_max_abs": 0.031466197312900346,
+      "energy_rms_abs": 0.0009408569247691724,
+      "energy_rms_relative_to_range": 0.00033231654004775763,
+      "file": "dihedral_conservative_dih_G_G_G_T.dat",
+      "force_max_abs": 68455.87748876151,
+      "force_p99_abs": 0.9144782484035604,
+      "force_rms_abs": 1431.0244108487234,
+      "force_rms_relative": 76.36957223244177,
+      "kind": "dihedral"
+    },
+    {
+      "dense_points": 5761,
+      "energy_max_abs": 0.001449225183244085,
+      "energy_rms_abs": 0.0001391497226105693,
+      "energy_rms_relative_to_range": 3.4024855324263535e-05,
+      "file": "dihedral_conservative_dih_G_G_T_T.dat",
+      "force_max_abs": 1038.5429523397106,
+      "force_p99_abs": 0.40751406826729003,
+      "force_rms_abs": 21.054133924177844,
+      "force_rms_relative": 1.6294819689900357,
+      "kind": "dihedral"
+    },
+    {
+      "dense_points": 5761,
+      "energy_max_abs": 0.3208604037860323,
+      "energy_rms_abs": 0.009467897226379347,
+      "energy_rms_relative_to_range": 0.0018885323970632081,
+      "file": "dihedral_conservative_dih_G_T_T_A.dat",
+      "force_max_abs": 701381.6004784823,
+      "force_p99_abs": 4.771994435205899,
+      "force_rms_abs": 14671.69160872188,
+      "force_rms_relative": 520.1629236191858,
+      "kind": "dihedral"
+    },
+    {
+      "dense_points": 5761,
+      "energy_max_abs": 0.05822387354744141,
+      "energy_rms_abs": 0.0017254736634959968,
+      "energy_rms_relative_to_range": 0.00034677836512872896,
+      "file": "dihedral_conservative_dih_T_T_A_G.dat",
+      "force_max_abs": 127271.81005265075,
+      "force_p99_abs": 1.9304034798709286,
+      "force_rms_abs": 2661.2748243414676,
+      "force_rms_relative": 110.00442410884304,
+      "kind": "dihedral"
+    },
+    {
+      "dense_points": 5761,
+      "energy_max_abs": 0.0005719432878175112,
+      "energy_rms_abs": 8.411223408801931e-05,
+      "energy_rms_relative_to_range": 1.643790983248638e-05,
+      "file": "dihedral_conservative_dih_T_A_G_G.dat",
+      "force_max_abs": 75.15490384200534,
+      "force_p99_abs": 0.03022147020608347,
+      "force_rms_abs": 1.5080019929573356,
+      "force_rms_relative": 0.24269525850984602,
+      "kind": "dihedral"
+    }
+  ],
+  "finite_difference_checks": [
+    {
+      "file": "bond_conservative_bb_A_G.dat",
+      "kind": "bond",
+      "max_abs_dU_dq_error": 9.928112376655918e-08,
+      "max_relative_error": 5.608165815449789e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "bond_conservative_bb_G_G.dat",
+      "kind": "bond",
+      "max_abs_dU_dq_error": 1.1387348308744549e-07,
+      "max_relative_error": 6.091885010920567e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "bond_conservative_bb_G_T.dat",
+      "kind": "bond",
+      "max_abs_dU_dq_error": 1.5857636981309042e-07,
+      "max_relative_error": 5.285878993769659e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "bond_conservative_bb_T_T.dat",
+      "kind": "bond",
+      "max_abs_dU_dq_error": 1.4431799399972078e-07,
+      "max_relative_error": 4.810599799990673e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "bond_conservative_bb_T_A.dat",
+      "kind": "bond",
+      "max_abs_dU_dq_error": 1.4968509276513942e-07,
+      "max_relative_error": 6.097832056831496e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "angle_conservative_ang_A_G_G.dat",
+      "kind": "angle",
+      "max_abs_dU_dq_error": 7.100095444911858e-08,
+      "max_relative_error": 3.676704694760228e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "angle_conservative_ang_G_G_G.dat",
+      "kind": "angle",
+      "max_abs_dU_dq_error": 8.856193289830117e-08,
+      "max_relative_error": 4.4077141111107333e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "angle_conservative_ang_G_G_T.dat",
+      "kind": "angle",
+      "max_abs_dU_dq_error": 7.278396196852555e-08,
+      "max_relative_error": 6.279222832221855e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "angle_conservative_ang_G_T_T.dat",
+      "kind": "angle",
+      "max_abs_dU_dq_error": 6.731386292813113e-08,
+      "max_relative_error": 5.062636043500958e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "angle_conservative_ang_T_T_A.dat",
+      "kind": "angle",
+      "max_abs_dU_dq_error": 7.424802106470452e-08,
+      "max_relative_error": 1.203449451203653e-09,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "angle_conservative_ang_T_A_G.dat",
+      "kind": "angle",
+      "max_abs_dU_dq_error": 7.654381306565483e-08,
+      "max_relative_error": 4.2024502811658317e-10,
+      "provenance": "passthrough"
+    },
+    {
+      "file": "dihedral_conservative_dih_A_G_G_G.dat",
+      "kind": "dihedral",
+      "max_abs_dU_dq_error": 4.599284508799428e-09,
+      "max_relative_error": 6.716771479287065e-10,
+      "provenance": "converted"
+    },
+    {
+      "file": "dihedral_conservative_dih_G_G_G_T.dat",
+      "kind": "dihedral",
+      "max_abs_dU_dq_error": 2.683759703359101e-08,
+      "max_relative_error": 4.133873798828347e-10,
+      "provenance": "converted"
+    },
+    {
+      "file": "dihedral_conservative_dih_G_G_T_T.dat",
+      "kind": "dihedral",
+      "max_abs_dU_dq_error": 4.2523140564298956e-09,
+      "max_relative_error": 7.944639390800035e-10,
+      "provenance": "converted"
+    },
+    {
+      "file": "dihedral_conservative_dih_G_T_T_A.dat",
+      "kind": "dihedral",
+      "max_abs_dU_dq_error": 2.7404371394368354e-07,
+      "max_relative_error": 1.159022173374824e-09,
+      "provenance": "converted"
+    },
+    {
+      "file": "dihedral_conservative_dih_T_T_A_G.dat",
+      "kind": "dihedral",
+      "max_abs_dU_dq_error": 5.019506943426677e-08,
+      "max_relative_error": 9.146419663319527e-10,
+      "provenance": "converted"
+    },
+    {
+      "file": "dihedral_conservative_dih_T_A_G_G.dat",
+      "kind": "dihedral",
+      "max_abs_dU_dq_error": 1.2171099683655484e-09,
+      "max_relative_error": 9.799681621736056e-10,
+      "provenance": "converted"
+    }
+  ],
+  "framework": "MLCG_Framework_v2",
+  "kind": "ibi_conservative_spline_validation",
+  "pass": true,
+  "passthrough": [
+    {
+      "byte_identical": true,
+      "file": "bond_conservative_bb_A_G.dat",
+      "kind": "bond",
+      "output_sha256": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+      "source_sha256": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2"
+    },
+    {
+      "byte_identical": true,
+      "file": "bond_conservative_bb_G_G.dat",
+      "kind": "bond",
+      "output_sha256": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+      "source_sha256": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023"
+    },
+    {
+      "byte_identical": true,
+      "file": "bond_conservative_bb_G_T.dat",
+      "kind": "bond",
+      "output_sha256": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+      "source_sha256": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8"
+    },
+    {
+      "byte_identical": true,
+      "file": "bond_conservative_bb_T_T.dat",
+      "kind": "bond",
+      "output_sha256": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+      "source_sha256": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1"
+    },
+    {
+      "byte_identical": true,
+      "file": "bond_conservative_bb_T_A.dat",
+      "kind": "bond",
+      "output_sha256": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+      "source_sha256": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39"
+    },
+    {
+      "byte_identical": true,
+      "file": "angle_conservative_ang_A_G_G.dat",
+      "kind": "angle",
+      "output_sha256": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+      "source_sha256": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a"
+    },
+    {
+      "byte_identical": true,
+      "file": "angle_conservative_ang_G_G_G.dat",
+      "kind": "angle",
+      "output_sha256": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+      "source_sha256": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96"
+    },
+    {
+      "byte_identical": true,
+      "file": "angle_conservative_ang_G_G_T.dat",
+      "kind": "angle",
+      "output_sha256": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+      "source_sha256": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d"
+    },
+    {
+      "byte_identical": true,
+      "file": "angle_conservative_ang_G_T_T.dat",
+      "kind": "angle",
+      "output_sha256": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+      "source_sha256": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b"
+    },
+    {
+      "byte_identical": true,
+      "file": "angle_conservative_ang_T_T_A.dat",
+      "kind": "angle",
+      "output_sha256": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+      "source_sha256": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee"
+    },
+    {
+      "byte_identical": true,
+      "file": "angle_conservative_ang_T_A_G.dat",
+      "kind": "angle",
+      "output_sha256": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+      "source_sha256": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067"
+    }
+  ],
+  "schema_version": 1,
+  "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/cg_priors_final.json",
+  "source_priors_sha256": "01e6b120c34990261b27281367f04a25aed0b81ff167b7ef2f24a444e0629e6a"
+}
