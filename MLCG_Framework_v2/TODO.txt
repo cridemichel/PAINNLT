@@ -1,0 +1,3 @@
+17/08/26
+tel22 e tel22_IBI nell'ensemble NVE scalano quadraticamente e non hanno drift,
+quindi richiedere a chatGPT di produrre una patch per le ottimizzazioni
