@@ -18,6 +18,7 @@ import argparse
 import copy
 import hashlib
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from conservative_spline import (  # noqa: E402
     SCHEMA,
     ConservativeSplinePrior,
     conservative_spline_value,
+    load_conservative_spline,
     save_conservative_spline,
 )
 from prior_kernels import load_tabulated_prior, tabulated_value  # noqa: E402
@@ -118,13 +120,61 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
     source_data = json.loads(source_priors_bytes)
     converted = copy.deepcopy(source_data)
     table_cache: dict[tuple[str, str], dict] = {}
+    passthrough_cache: dict[tuple[str, str], dict] = {}
     records: list[dict] = []
+    passthrough_records: list[dict] = []
+    output_sources: dict[str, str] = {}
+
+    def reserve_output(filename: str, source_path: Path) -> Path:
+        source_key = str(source_path.resolve())
+        previous = output_sources.get(filename)
+        if previous is not None and previous != source_key:
+            raise ValueError(
+                f"Conservative conversion output-name collision for {filename!r}: "
+                f"{previous} vs {source_key}"
+            )
+        output_sources[filename] = source_key
+        return output_dir / filename
 
     for json_key, kind in (("bonds", "bond"), ("angles", "angle"), ("dihedrals", "dihedral")):
         for idx, entry in enumerate(converted.get(json_key, [])):
-            if str(entry.get("type", "")).lower() != "tabulated":
-                continue
+            entry_type = str(entry.get("type", "")).lower()
             source_entry = source_data[json_key][idx]
+            if entry_type == "conservative_spline":
+                spline = load_conservative_spline(source_entry, kind=kind, priors_path=priors_path)
+                source_path = spline.path.resolve()
+                cache_key = (kind, str(source_path))
+                if cache_key not in passthrough_cache:
+                    out_name = source_path.name
+                    out_path = reserve_output(out_name, source_path)
+                    if source_path != out_path.resolve():
+                        shutil.copy2(source_path, out_path)
+                    source_hash = sha256_file(source_path)
+                    output_hash = sha256_file(out_path)
+                    if output_hash != source_hash:
+                        raise RuntimeError(
+                            f"Passthrough conservative spline was not copied byte-identically: {source_path}"
+                        )
+                    rec = {
+                        "kind": kind,
+                        "source_path": str(source_path),
+                        "source_sha256": source_hash,
+                        "output_file": out_name,
+                        "output_path": str(out_path),
+                        "output_sha256": output_hash,
+                        "points": int(len(spline.x)),
+                        "min": float(spline.minimum),
+                        "max": float(spline.maximum),
+                        "spline_schema": str(source_entry.get("spline_schema", SCHEMA)),
+                        "byte_identical": True,
+                    }
+                    passthrough_cache[cache_key] = rec
+                    passthrough_records.append(rec)
+                rec = passthrough_cache[cache_key]
+                entry["file"] = rec["output_file"]
+                continue
+            if entry_type != "tabulated":
+                continue
             source = load_tabulated_prior(source_entry, kind=kind, priors_path=priors_path)
             cache_key = (kind, str(source.path.resolve()))
             if cache_key not in table_cache:
@@ -144,7 +194,7 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
                     source_energy = source.energy
                 derivative = np.asarray(interpolator(source.x, 1), dtype=np.float64)
                 out_name = _safe_stem(source.path, kind)
-                out_path = output_dir / out_name
+                out_path = reserve_output(out_name, source.path)
                 save_conservative_spline(out_path, source.x, source_energy, derivative)
                 spline = ConservativeSplinePrior(
                     x=source.x.copy(), energy=np.asarray(source_energy).copy(), derivative=derivative,
@@ -186,6 +236,10 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
         source = Path(rec["source_path"])
         if sha256_file(source) != rec["source_sha256"]:
             raise RuntimeError(f"Source IBI table changed during conversion: {source}")
+    for rec in passthrough_records:
+        source = Path(rec["source_path"])
+        if sha256_file(source) != rec["source_sha256"]:
+            raise RuntimeError(f"Source conservative spline changed during conversion: {source}")
 
     report = {
         "schema_version": SCHEMA_VERSION,
@@ -197,7 +251,9 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
         "output_priors_sha256": sha256_file(output_priors),
         "spline_schema": SCHEMA,
         "converted_unique_tables": len(records),
+        "passthrough_unique_tables": len(passthrough_records),
         "records": records,
+        "passthrough_records": passthrough_records,
         "source_artifacts_unchanged": True,
     }
     report_path = output_dir / "conversion_report.json"
@@ -206,7 +262,8 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
     print("[CONSERVATIVE IBI CONVERSION]")
     print(f"source priors : {priors_path}")
     print(f"output priors : {output_priors}")
-    print(f"unique tables : {len(records)}")
+    print(f"converted tables   : {len(records)}")
+    print(f"passthrough tables : {len(passthrough_records)}")
     for rec in records:
         m = rec["fidelity"]
         print(
@@ -215,7 +272,7 @@ def convert(priors_path: Path, output_dir: Path, *, overwrite: bool = False) -> 
             f"dF_rms/scale={m['force_rms_relative']:.3e} "
             f"dF_p99={m['force_p99_abs']:.6g}"
         )
-    print("[PASS] Source IBI artifacts were preserved byte-identically; conservative spline artifacts were written separately.")
+    print("[PASS] Source IBI artifacts were preserved; pre-existing conservative splines were copied byte-identically and converted artifacts were written separately.")
     return report
 
 

@@ -1,0 +1,59 @@
+{
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+  "groups": {
+    "dihedrals:dih_A_G_G_G": {
+      "distribution_l1": 1.3741785123866297,
+      "kind": "dihedral",
+      "sample_max": 6.280796666894781,
+      "sample_min": 0.0011573757142576504,
+      "samples": 1640
+    },
+    "dihedrals:dih_G_G_G_T": {
+      "distribution_l1": 1.4054290865405645,
+      "kind": "dihedral",
+      "sample_max": 6.280516528015984,
+      "sample_min": 0.01626380914952476,
+      "samples": 1230
+    },
+    "dihedrals:dih_G_G_T_T": {
+      "distribution_l1": 1.2911506782171356,
+      "kind": "dihedral",
+      "sample_max": 5.735857763609628,
+      "sample_min": 0.34153092506062044,
+      "samples": 1230
+    },
+    "dihedrals:dih_G_T_T_A": {
+      "distribution_l1": 1.5144372253524931,
+      "kind": "dihedral",
+      "sample_max": 6.279666432649142,
+      "sample_min": 0.0012936847450481825,
+      "samples": 1230
+    },
+    "dihedrals:dih_T_A_G_G": {
+      "distribution_l1": 1.578094187960433,
+      "kind": "dihedral",
+      "sample_max": 6.278653102964337,
+      "sample_min": 0.0005638307192967114,
+      "samples": 1230
+    },
+    "dihedrals:dih_T_T_A_G": {
+      "distribution_l1": 1.5736196598732497,
+      "kind": "dihedral",
+      "sample_max": 6.283142361603879,
+      "sample_min": 0.002760195990469134,
+      "samples": 1230
+    }
+  },
+  "max_l1": 1.578094187960433,
+  "mean_l1": 1.4561515583884177,
+  "mean_l1_by_kind": {
+    "dihedral": 1.4561515583884177
+  },
+  "mode": "full_runtime_bonded_structure",
+  "note": "Structural L1 is reported diagnostically for the complete IBI+ML Hamiltonian. No universal pass threshold is imposed by the generic core.",
+  "pass": true,
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/candidates/frac_0p75_raw/cg_priors.json",
+  "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization/short_nvt/frac_0p75_raw/trajectory.npz",
+  "schema_version": 1,
+  "threshold_applied": false
+}

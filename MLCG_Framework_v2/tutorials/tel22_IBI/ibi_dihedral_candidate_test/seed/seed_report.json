@@ -1,0 +1,21 @@
+{
+  "base_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+  "base_priors_sha256": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+  "dihedral_occurrences": 190,
+  "frozen_inherited_bond_angle_entries": 590,
+  "groups": {
+    "dih_A_G_G_G": 40,
+    "dih_G_G_G_T": 30,
+    "dih_G_G_T_T": 30,
+    "dih_G_T_T_A": 30,
+    "dih_T_A_G_G": 30,
+    "dih_T_T_A_G": 30
+  },
+  "kind": "tel22_periodic_dihedral_ibi_test_seed",
+  "output_seed": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/seed/cg_priors_dihedral_ibi_seed.json",
+  "output_seed_sha256": "3ae597842a008cd0f401fa096255e230182dacd9e65e8c19a7a4277b5a93e19c",
+  "pass": true,
+  "schema_version": 1,
+  "test_only": true,
+  "unique_groups": 6
+}

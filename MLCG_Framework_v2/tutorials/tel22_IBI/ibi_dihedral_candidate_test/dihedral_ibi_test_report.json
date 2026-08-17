@@ -1,0 +1,84 @@
+{
+  "candidate_nve": {
+    "c2_spread_max_over_min": 8.323080915516888,
+    "checks": {
+      "c2_spread": false,
+      "full_dt_reached": true,
+      "loglog_r2": false,
+      "quadratic_exponent": false,
+      "relative_block_drift": false
+    },
+    "exponent_p": 2.943666188876896,
+    "loglog_r2": 0.925496787546517,
+    "max_dt_ps": 0.005,
+    "max_relative_block_drift": 0.0001433759715234207,
+    "pass": false
+  },
+  "candidate_order2_through_0p005": false,
+  "candidate_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/cg_priors.json",
+  "candidate_priors_sha256": "8b97bca796fd7980368220da45a9228f0c20dac619580c18cc973c478ff25f4f",
+  "conversion": {
+    "converted_dihedral_tables": 6,
+    "passthrough_byte_identical": true,
+    "passthrough_conservative_tables": 11
+  },
+  "dihedral_seed": {
+    "groups": {
+      "dih_A_G_G_G": 40,
+      "dih_G_G_G_T": 30,
+      "dih_G_G_T_T": 30,
+      "dih_G_T_T_A": 30,
+      "dih_T_A_G_G": 30,
+      "dih_T_T_A_G": 30
+    },
+    "occurrences": 190,
+    "unique_groups": 6
+  },
+  "ibi_isolation": {
+    "dbi_groups": 0,
+    "expected_dihedral_groups": 6,
+    "ibi_groups": 6,
+    "non_dihedral_groups_updated": 0,
+    "pass": true
+  },
+  "ibi_iterations_completed": 1,
+  "ibi_last_sampled_dihedral_l1": {
+    "dihedrals:dih_A_G_G_G": 0.45250694948143577,
+    "dihedrals:dih_G_G_G_T": 0.5794959094096342,
+    "dihedrals:dih_G_G_T_T": 0.6763636589057447,
+    "dihedrals:dih_G_T_T_A": 0.6910857314850427,
+    "dihedrals:dih_T_A_G_G": 0.5690752945093469,
+    "dihedrals:dih_T_T_A_G": 0.6431957857769971
+  },
+  "infrastructure_pass": true,
+  "kernel_validation": {
+    "max_dihedral_fd_abs_error": 2.7404371394368354e-07,
+    "pass": true,
+    "runtime_max_energy_abs_error": 2.8421709430404007e-13,
+    "runtime_max_force_abs_error": 1.8146595337498184e-13
+  },
+  "kind": "periodic_conservative_dihedral_ibi_test",
+  "notes": [
+    "This test does not modify or promote production priors.",
+    "A short IBI test is not a convergence/structure certification; promotion_ready remains false by design.",
+    "candidate_order2_through_0p005 reports whether the short conservative candidate passes the same basic sigma_E(dt) window used for the promoted angle prior."
+  ],
+  "production_baseline_reference": {
+    "c2_spread_max_over_min": 1.4869257659163815,
+    "exponent_p": 1.8772609676916239,
+    "loglog_r2": 0.9844121323579362,
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_promoted_final_certification/promoted_ibi_final_certification_report.json"
+  },
+  "production_modified": false,
+  "promotion_performed": false,
+  "promotion_ready": false,
+  "runtime_structure": {
+    "diagnostic_only": true,
+    "dihedral_mean_l1": 1.389253078153042,
+    "mean_l1_by_kind": {
+      "dihedral": 1.389253078153042
+    }
+  },
+  "schema_version": 1,
+  "scope": "test-only one/few-iteration periodic backbone IBI -> ConservativeSplineDihedral"
+}
