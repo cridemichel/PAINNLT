@@ -59,7 +59,7 @@ Apply:
 python3 tutorials/organize_tel22_diagnostics.py --run
 ```
 
-The helper fingerprints retained GROMACS files before/after the migration, refuses destination collisions, and writes `tutorials/tel22_IBI/diagnostics/layout_migration_manifest.json`.
+The helper fingerprints retained GROMACS files before/after the migration, refuses destination collisions, and writes `tutorials/tel22_IBI/diagnostics/layout_migration_manifest.json`. A partially applied transition may leave a zero-byte script stub at the tutorial root after the complete script has already been installed under `diagnostics/scripts/`; that exact case is treated as a stale placeholder and removed safely. Non-empty source/destination collisions still abort the migration.
 
 ## Deliberately retained
 

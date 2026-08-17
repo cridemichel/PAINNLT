@@ -189,8 +189,29 @@ def move_plan(tutorial_dir: Path, scripts: tuple[str, ...], artifacts: dict[str,
     return plan
 
 
+def _is_stale_script_placeholder(src: Path, dst: Path, kind: str) -> bool:
+    """Return True only for a zero-byte root stub beside a real relocated script.
+
+    A partially applied transition patch can leave an empty source path while
+    the complete script already exists below diagnostics/scripts.  Treat that
+    exact state as recoverable; every non-empty source/destination collision
+    remains fail-closed.
+    """
+    return (
+        kind == "diagnostic-script"
+        and src.is_file()
+        and dst.is_file()
+        and src.stat().st_size == 0
+        and dst.stat().st_size > 0
+    )
+
+
 def preflight(plan: list[tuple[Path, Path, str]]) -> None:
-    collisions = [(s, d) for s, d, _ in plan if s.exists() and d.exists()]
+    collisions = [
+        (src, dst)
+        for src, dst, kind in plan
+        if src.exists() and dst.exists() and not _is_stale_script_placeholder(src, dst, kind)
+    ]
     if collisions:
         details = "\n".join(f"  {s} -> {d}" for s, d in collisions)
         raise RuntimeError("diagnostic-layout destination collision(s):\n" + details)
@@ -199,7 +220,12 @@ def preflight(plan: list[tuple[Path, Path, str]]) -> None:
 def apply_plan(plan: list[tuple[Path, Path, str]], run: bool) -> list[dict]:
     records = []
     for src, dst, kind in plan:
-        if src.exists():
+        if src.exists() and dst.exists() and _is_stale_script_placeholder(src, dst, kind):
+            status = "removed-stale-placeholder" if run else "planned-remove-stale-placeholder"
+            print(f"[{'REMOVE' if run else 'DRY-RUN'}:stale-placeholder] {src}; relocated script: {dst}")
+            if run:
+                src.unlink()
+        elif src.exists():
             status = "moved" if run else "planned"
             print(f"[{'MOVE' if run else 'DRY-RUN'}:{kind}] {src} -> {dst}")
             if run:
