@@ -3070,9 +3070,23 @@ Stabilità fisica del modello/prior, non semplicemente precisione dell'integrato
 
 ## 26.1 Test Python
 
+Installare la dipendenza di test una volta nell'ambiente Python attivo:
+
 ```bash
-python3 -m unittest discover -s tests -p 'test_*.py'
+python3 -m pip install -r requirements-test.txt
 ```
+
+Dalla root del repository:
+
+```bash
+python3 -m pytest -q
+```
+
+`pytest.ini` imposta `testpaths = tests`, quindi il comando senza argomenti e
+`python3 -m pytest -q tests` hanno lo stesso scope. Questo evita di raccogliere
+accidentalmente la test-suite upstream contenuta in un eventuale checkout
+`espresso/`, che richiede l'ambiente di build/test ESPResSo e non fa parte dei
+test del framework MLCG.
 
 Coprono:
 
