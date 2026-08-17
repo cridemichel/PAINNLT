@@ -1,0 +1,126 @@
+{
+  "comparison": {
+    "legacy_conservativity_diagnostic": {
+      "hint": "legacy_tabulated_energy_force_inconsistency_dominant",
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_legacy_conservativity_diagnostic/tabulated_dihedral_conservativity_report.json"
+    },
+    "legacy_step35": {
+      "post_conversion_runtime_mean_l1": 1.389253078153042,
+      "pre_update_sampled_mean_l1": 0.601953888261367
+    }
+  },
+  "conservative_in_loop": true,
+  "convergence_direction": "flat_within_short_run",
+  "final_prior_check": {
+    "active_dihedral_entries": 190,
+    "legacy_active_entries": [],
+    "pass": true,
+    "tables": {
+      "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_A_G_G_G.dat": {
+        "max": 6.283185307179586,
+        "min": 0.0,
+        "points": 1441,
+        "sha256": "2ff0a89b88fb97d4c002aa58869746ab572276a603b618748a39a16449788d89"
+      },
+      "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_G_G_G_T.dat": {
+        "max": 6.283185307179586,
+        "min": 0.0,
+        "points": 1441,
+        "sha256": "28e88c77045cb5d4c706083172516184279724605d864120047a182124c7c003"
+      },
+      "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_G_G_T_T.dat": {
+        "max": 6.283185307179586,
+        "min": 0.0,
+        "points": 1441,
+        "sha256": "aeb91faac936eef7b73d816d10a11889b77a1d4a620384ca572c3faef95b44e9"
+      },
+      "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_G_T_T_A.dat": {
+        "max": 6.283185307179586,
+        "min": 0.0,
+        "points": 1441,
+        "sha256": "993922e8435777cc5f8f0cd874a67a1c22f061828b5b90dd716bc750c678f9cd"
+      },
+      "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_T_A_G_G.dat": {
+        "max": 6.283185307179586,
+        "min": 0.0,
+        "points": 1441,
+        "sha256": "bafaddd73091871bd7868ac488b5cb61ba85357ce005ecd26472e411f10cbbee"
+      },
+      "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_T_T_A_G.dat": {
+        "max": 6.283185307179586,
+        "min": 0.0,
+        "points": 1441,
+        "sha256": "2e49c898a73ede4e72aecc8ff8d49d5891127c2186595549e9071be425c17aef"
+      }
+    },
+    "unique_conservative_tables": 6
+  },
+  "final_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+  "final_priors_sha256": "1cd0333ff51849dee7022116bee88e865871beb279b4873159f843281b3b7456",
+  "final_runtime_dihedral_mean_l1": 0.5253882268689232,
+  "final_sampling_protocol": {
+    "checks": {
+      "burn_in_steps": true,
+      "dataset_start": true,
+      "dt_ps": true,
+      "kT": true,
+      "kind": true,
+      "matched_flag": true,
+      "ml_inactive": true,
+      "neighbor_search": true,
+      "no_checkpoint": true,
+      "production_steps": true,
+      "sample_interval": true,
+      "sampled_iteration": true,
+      "source_priors": true,
+      "thermostat_seed": true,
+      "velocity_seed": true
+    },
+    "expected_iteration": 3,
+    "expected_thermostat_seed": 380103,
+    "expected_velocity_seed": 380003,
+    "pass": true
+  },
+  "final_sampling_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/final_sampling_protocol.json",
+  "final_sampling_report_sha256": "1d6bb0870f4847c151738b23bcf165566a667c38034d4922dd6cd5c22e820859",
+  "framework": "MLCG_Framework_v2",
+  "ibi_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/ibi_report.json",
+  "ibi_report_sha256": "d588b56f714a88c6263c8131ac898c16cc20f4b61d306e679dadbd24b23e6379",
+  "infrastructure_pass": true,
+  "initial_to_final_l1_improvement": -0.013049246062140973,
+  "initial_to_final_relative_improvement": -0.025469945780022974,
+  "iterations_completed": 2,
+  "kernel_parity": {
+    "max_energy_abs_error": 2.8421709430404007e-13,
+    "max_force_abs_error": 9.453549054683208e-14,
+    "pass": true
+  },
+  "kind": "conservative_in_loop_dihedral_ibi_test",
+  "l1_sequence": [
+    0.5123389808067822,
+    0.5479405670955694,
+    0.5253882268689232
+  ],
+  "notes": [
+    "Every sampled active torsional IBI group used ConservativeSplineDihedral; legacy TabulatedDihedral is fail-closed in this mode.",
+    "The final post-update prior is sampled with the same dataset-start, burn-in, production length, sampling interval, thermostat/init-kT, neighbor-search, and deterministic seed progression used inside the IBI loop.",
+    "This short test diagnoses convergence direction only; it is not a structural or NVE certification and never promotes priors."
+  ],
+  "parity_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/runtime_parity_report.json",
+  "promotion_ready": false,
+  "sampled_l1_series": [
+    {
+      "iteration": 1,
+      "mean_dihedral_l1": 0.5123389808067822,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json"
+    },
+    {
+      "iteration": 2,
+      "mean_dihedral_l1": 0.5479405670955694,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json"
+    }
+  ],
+  "schema_version": 1,
+  "structure_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/runtime_structure_report.json",
+  "test_only": true
+}

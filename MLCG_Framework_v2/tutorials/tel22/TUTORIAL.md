@@ -5,7 +5,11 @@ No code under `preprocessing/`, `training/`, `simulation/` or `tests/` imports
 TEL22 files.
 
 The repository intentionally does not bundle atomistic trajectories, GROMACS
-working files, trained weights or diagnostic/ablation outputs. Prepare an AA
+working files, trained weights or diagnostic/ablation outputs.
+
+Artifact cleanup and retention policy are documented in `../TEL22_CLEANUP.md`.
+Use `bash ../cleanup_tel22_artifacts.sh --dry-run` before deleting local
+outputs; destructive cleanup is never the default. Prepare an AA
 trajectory containing forces separately, then run:
 
 ```bash
@@ -31,7 +35,7 @@ After equilibration, certify the complete conservative Hamiltonian from the same
 `equilibrated.npz` checkpoint at several Velocity-Verlet time steps:
 
 ```bash
-PYRESSO=../../espresso/build/pypresso bash 06_certify_nve.sh
+PYRESSO=../../espresso/build/pypresso bash diagnostics/scripts/06_certify_nve.sh
 ```
 
 The wrapper defaults to CPU, uses the same physical duration for every
@@ -59,7 +63,7 @@ NVE_DURATION_PS=10 \
 NVE_DTS="0.001 0.002 0.005 0.01" \
 NVE_MAX_RELATIVE_DRIFT=1e-5 \
 PYRESSO=../../espresso/build/pypresso \
-bash 06_certify_nve.sh --overwrite
+bash diagnostics/scripts/06_certify_nve.sh --overwrite
 ```
 
 The certification path refuses explicitly tabulated bonded priors. Analytic
@@ -71,7 +75,7 @@ If an NVE/production run approaches the short-range safety guardrail, diagnose t
 actual minimum-distance PID pair before changing WCA parameters or exclusions:
 
 ```bash
-bash 06b_diagnose_short_range.sh
+bash diagnostics/scripts/06b_diagnose_short_range.sh
 ```
 
 By default this reads `nve_certification/dt_0p005/energy.csv`, uses a 0.20 nm
@@ -80,7 +84,7 @@ short-range threshold, and writes
 or threshold with, for example:
 
 ```bash
-NVE_DT_TAG=0p002 SHORT_RANGE_THRESHOLD_NM=0.25 bash 06b_diagnose_short_range.sh
+NVE_DT_TAG=0p002 SHORT_RANGE_THRESHOLD_NM=0.25 bash diagnostics/scripts/06b_diagnose_short_range.sh
 ```
 
 The diagnostic reconstructs the same runtime particle-ID order as
@@ -124,7 +128,7 @@ TEL22 uses harmonic site-0 bonds and harmonic backbone angles for covalent-chain
 
 The TEL22 Morse records remain in `bonds` with `type="morse"`, but at runtime they are **not ESPResSo bonded interactions**. TEL22 currently selects explicit COM-COM endpoints (`site_i=site_j=-1`). The generic framework also accepts COM-site and site-site endpoints. Runtime pair specificity is implemented with coincident technical virtual markers attached to the selected rigid bodies, so physical CG-site types seen by PaiNN/WCA are never changed. The hybrid cell system is selected before these long-cutoff marker interactions are registered; otherwise ESPResSo would validate the 15 nm marker cutoff against the default regular decomposition and reject the TEL22 box before the N-square routing becomes active. For a site endpoint, the marker occupies exactly that site position and its force is transferred to the parent body with the corresponding torque. The validated switched form has `U(r0)=-D`, smoothly reaches `U=F=0` at `r_cut`, can cross the cutoff without an exception, and can re-enter/rebind without topology changes. The old `MorseBond` broken-bond behavior is retained only as a diagnostic regression path.
 
-Before regenerating a production checkpoint after changing the pair-specific marker machinery, the framework also provides `09_diagnose_morse_site_torque.sh --assert-expected`. Unlike the TEL22 model itself, this diagnostic creates a synthetic `site<->site` contact with both endpoints displaced from their rigid-body COMs. It verifies the switched-Morse energy, equal-and-opposite translational forces, the two analytic rigid-body torques, marker/site coincidence, and preservation of the physical CG site types. It therefore exercises the generic site-addressable path that TEL22's current COM-COM contacts do not cover.
+Before regenerating a production checkpoint after changing the pair-specific marker machinery, the framework also provides `diagnostics/scripts/09_diagnose_morse_site_torque.sh --assert-expected`. Unlike the TEL22 model itself, this diagnostic creates a synthetic `site<->site` contact with both endpoints displaced from their rigid-body COMs. It verifies the switched-Morse energy, equal-and-opposite translational forces, the two analytic rigid-body torques, marker/site coincidence, and preservation of the physical CG site types. It therefore exercises the generic site-addressable path that TEL22's current COM-COM contacts do not cover.
 
 TEL22 does **not** enable `morse_type_pairs` by default. That optional generic mechanism is intended for transferable bead-type attractions and would act on every non-excluded virtual-site pair carrying the selected CG types. Enabling it in TEL22 would add those energies/forces on top of the existing pair-specific quartet contacts, so it should only be done deliberately and requires regenerating dataset/priors, retraining the residual model, re-equilibrating, and repeating NVE certification.
 
@@ -141,3 +145,10 @@ a = 0.3 nm^-1
 At 300 K, one contact depth `D` is about 20 `kBT`. Six pair contacts in one idealized quartet plane therefore correspond to an energetic scale of roughly `6D = 300 kJ/mol` before entropy, the ML residual, backbone priors, and other interactions are considered. Unfolding is allowed by the topology, but it may still be rare on short trajectories; `D`, `a`, and the switching range must be calibrated to the intended thermodynamics and kinetics.
 
 Do not define unfolding as "ESPResSo bond deletion". For TEL22, use geometric/contact-state observables (and, when needed, free-energy or kinetic analysis). Crossing `r_cut` simply means that the switched Morse contribution is zero until the pair re-enters the interaction range.
+
+
+## Artifact cleanup and deduplication audit
+
+See `../TEL22_CLEANUP.md`. Before sharing files between `tel22` and `tel22_IBI`,
+run `python3 tutorials/audit_tel22_dedup.py` from the repository root. The
+phase-2 audit computes SHA256/reference evidence and is non-destructive.

@@ -1,0 +1,152 @@
+{
+  "artifact_sha256": {
+    "preflight": "3f93374a4434a791de150022ce419a4ff8e0d23a5b95e505acbbb6e1fcf15163",
+    "priors": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+    "promotion": "4f7b63117a812e6448a21f280029a4594377aa77840a41492ba2e4d57c46b6ce",
+    "residual_ml_status": "34095adf0c65dff3e166fc98ab29b745927763a39f42e3fdb4c520f6b7fa00f0",
+    "runtime_parity": "5e367397e1d447712aeb3ac8808fd33265045b5a5a6c1ac8448b822a34916e39",
+    "state_convergence": "be7599005781aa061f0dd0634f4145c600d3d25a9796a5ce0da71ea4943c411f",
+    "step33": "4c14c90df5e350f08e61b881fee06f965f214276a955010e5a036cf5cef1ee49",
+    "strict_nve": "6724d7196b352d2f7feb2d33ec83e67dc88d92d479c9dc6a2f8d5d72839c4d0a",
+    "validation": "8c8ce2ace79584113f45135c27c444223b5c5432aac124701eb2605f29546371"
+  },
+  "artifacts": {
+    "preflight": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_promoted_final_certification/promoted_nve_preflight.json",
+    "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+    "promotion": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/promotion_report.json",
+    "residual_ml_status": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/residual_ml_status.json",
+    "runtime_parity": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/runtime_parity_report.json",
+    "state_convergence": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_promoted_final_certification/state_convergence/state_convergence_report.json",
+    "step33": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_final_candidate_validation/angle_final_candidate_validation_report.json",
+    "strict_nve": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_promoted_final_certification/nve_sigma_scaling/nve_certification_report.json",
+    "validation": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/validation_report.json"
+  },
+  "certification_basis": "post_promotion_identity_plus_gating_sigmaE_dt2_plus_richardson_v1",
+  "framework": "MLCG_Framework_v2",
+  "gates": {
+    "conservative_kernel_and_runtime_parity": {
+      "max_fd_abs_dU_dq_error": 2.7819266392725694e-06,
+      "pass": true,
+      "runtime_max_energy_abs_error": 2.8421709430404007e-13,
+      "runtime_max_force_abs_error": 2.842170943040401e-14
+    },
+    "fresh_preflight": {
+      "pass": true
+    },
+    "fresh_richardson_state_order": {
+      "metrics": {
+        "omega_body": {
+          "median_exponent_p": 2.0187807404672076,
+          "median_loglog_r2": 0.9985099423723007,
+          "pass": true,
+          "source_metric_key": "omega_body_rms_per_ps"
+        },
+        "orientation": {
+          "median_exponent_p": 2.0350427884441737,
+          "median_loglog_r2": 0.9998784248953604,
+          "pass": true,
+          "source_metric_key": "orientation_rms_rad"
+        },
+        "position": {
+          "median_exponent_p": 2.0039358098636932,
+          "median_loglog_r2": 0.99957131775703,
+          "pass": true,
+          "source_metric_key": "position_rms_nm"
+        },
+        "velocity": {
+          "median_exponent_p": 2.215433689293108,
+          "median_loglog_r2": 0.9981703535521395,
+          "pass": true,
+          "source_metric_key": "velocity_rms_nm_per_ps"
+        }
+      },
+      "pass": true,
+      "thresholds": {
+        "p_max": 2.3,
+        "p_min": 1.7,
+        "r2_min": 0.95
+      }
+    },
+    "fresh_sigma_E_quadratic_scaling": {
+      "c2_spread_max_over_min": 1.4869257659163815,
+      "checks": {
+        "c2_spread": true,
+        "full_dt_reached": true,
+        "loglog_r2": true,
+        "quadratic_exponent": true,
+        "relative_block_drift": true,
+        "strict_certifier_pass": true
+      },
+      "dt_ps": [
+        0.005,
+        0.004,
+        0.003,
+        0.002,
+        0.001
+      ],
+      "exponent_p": 1.8772609676916239,
+      "loglog_r2": 0.9844121323579362,
+      "max_dt_ps": 0.005,
+      "max_relative_block_drift": 9.358058298313518e-06,
+      "pass": true,
+      "sigma_E": [
+        0.024782797872600557,
+        0.011190100990809883,
+        0.0068373501863046695,
+        0.0034776277587939904,
+        0.0010399280929026028
+      ],
+      "sigma_over_dt2": [
+        991.3119149040222,
+        699.3813119256178,
+        759.7055762560743,
+        869.4069396984976,
+        1039.9280929026029
+      ],
+      "thresholds": {
+        "c2_spread_max": 2.0,
+        "full_dt_ps": 0.005,
+        "max_relative_block_drift": 2e-05,
+        "p_max": 2.2,
+        "p_min": 1.8,
+        "r2_min": 0.95
+      }
+    },
+    "ml_residual_exclusion": {
+      "certified_use": "classical IBI-only Hamiltonian with PaiNN disabled",
+      "pass": true,
+      "status": "stale_for_ml_active_use"
+    },
+    "promotion_identity": {
+      "candidate_priors_sha256": "c31f6d0d53f053071ab694f91d8271c83fc90a90ada291ba60c206adf82a3799",
+      "pass": true,
+      "promoted_priors_sha256": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+      "runtime_table_identity_with_validated_candidate": true
+    },
+    "step33_replica_and_structure_validation": {
+      "angle_p99_curvature_reduction": 2.4157049730688183,
+      "full_clean_replicas": 3,
+      "median_c2_spread": 1.3893060483058863,
+      "n_replicas": 3,
+      "pass": true,
+      "replica_common_p": 1.947046202850563,
+      "replica_within_r2": 0.9848441128877053,
+      "structural_delta_angle_l1": 0.009561395772701764,
+      "structural_delta_bond_l1": -0.019844139554872464
+    }
+  },
+  "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+  "kind": "promoted_conservative_ibi_hamiltonian_certification",
+  "ml_active": false,
+  "notes": [
+    "sigma_E scaling is gating in this post-promotion certification.",
+    "Step-33 three-replica/structure evidence is retained as candidate-validation evidence and is bridged to production by byte-identical runtime tables.",
+    "A fresh production-path NVE scan and fresh Richardson state-convergence run are also required.",
+    "The pre-promotion residual dataset and PaiNN model are stale for ML-active use and are not part of this certified Hamiltonian."
+  ],
+  "pass": true,
+  "schema_version": 1,
+  "scope": "WCA + Morse + bonded conservative smooth_0p0075 IBI; PaiNN disabled",
+  "selected_priors_sha256": "09346069794e43fee786e0e24fe5da0bbce7feea3fdbd2c10a8cd66f2ac6d0b6",
+  "validated_candidate_priors_sha256": "c31f6d0d53f053071ab694f91d8271c83fc90a90ada291ba60c206adf82a3799"
+}

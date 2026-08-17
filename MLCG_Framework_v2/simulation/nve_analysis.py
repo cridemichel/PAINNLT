@@ -179,6 +179,168 @@ def certify_metrics(
     }
 
 
+
+def fit_metric_scaling(
+    run_metrics: Iterable[dict[str, Any]],
+    metric: str,
+    *,
+    label: str | None = None,
+) -> dict[str, Any]:
+    """Fit a positive per-run metric to C*dt**p without imposing certification thresholds."""
+    runs = sorted(run_metrics, key=lambda item: float(item["dt_ps"]))
+    if len(runs) < 3:
+        raise ValueError("At least three time steps are required for a diagnostic power-law fit")
+    dts = np.asarray([float(item["dt_ps"]) for item in runs], dtype=float)
+    values = np.asarray([float(item[metric]) for item in runs], dtype=float)
+    if np.any(dts <= 0.0) or np.any(values <= 0.0) or not np.isfinite(values).all():
+        raise ValueError(f"Time steps and {metric} values must be finite and positive")
+
+    x = np.log(dts)
+    y = np.log(values)
+    slope, intercept = np.polyfit(x, y, 1)
+    predicted = slope * x + intercept
+    ss_res = float(np.sum((y - predicted) ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    r2 = 1.0 if ss_tot <= np.finfo(float).eps else 1.0 - ss_res / ss_tot
+    return {
+        "observable": label or metric,
+        "metric_key": metric,
+        "model": f"{label or metric} = C * dt^p",
+        "n_points": int(len(runs)),
+        "dt_min_ps": float(np.min(dts)),
+        "dt_max_ps": float(np.max(dts)),
+        "exponent_p": float(slope),
+        "prefactor_C": float(math.exp(intercept)),
+        "loglog_r2": float(r2),
+    }
+
+
+def analyze_local_energy_windows(
+    times_ps: Iterable[float],
+    energies: Iterable[float],
+    windows_ps: Iterable[float],
+) -> dict[str, dict[str, float]]:
+    """Measure short-time energy error at exact, common physical-time windows.
+
+    The requested windows must coincide with sampled times.  This is deliberate:
+    interpolating E(t) would introduce a second numerical approximation into the
+    timestep-order diagnostic.
+    """
+    t = np.asarray(list(times_ps), dtype=float)
+    e = np.asarray(list(energies), dtype=float)
+    if t.ndim != 1 or e.ndim != 1 or t.size != e.size or t.size < 3:
+        raise ValueError("times and energies must contain at least three aligned samples")
+    if not np.isfinite(t).all() or not np.isfinite(e).all():
+        raise ValueError("Local NVE diagnostic contains non-finite values")
+    elapsed = t - t[0]
+    if np.any(np.diff(elapsed) <= 0.0):
+        raise ValueError("NVE energy sample times must be strictly increasing")
+
+    result: dict[str, dict[str, float]] = {}
+    for requested in windows_ps:
+        requested = float(requested)
+        if requested <= 0.0 or requested > float(elapsed[-1]):
+            raise ValueError(
+                f"Local diagnostic window {requested:g} ps is outside trajectory duration "
+                f"{elapsed[-1]:g} ps"
+            )
+        idx = int(np.argmin(np.abs(elapsed - requested)))
+        tolerance = max(1.0e-12, 1.0e-9 * max(1.0, requested))
+        if abs(float(elapsed[idx]) - requested) > tolerance:
+            raise ValueError(
+                f"Local diagnostic time {requested:g} ps is not sampled exactly; nearest "
+                f"sample is {elapsed[idx]:.17g} ps. Choose windows commensurate with every "
+                "fine-regime timestep."
+            )
+        if idx < 2:
+            raise ValueError(
+                f"Local diagnostic window {requested:g} ps contains fewer than three samples"
+            )
+        segment = e[: idx + 1]
+        delta = segment - segment[0]
+        key = format(requested, ".12g")
+        result[key] = {
+            "requested_time_ps": requested,
+            "actual_time_ps": float(elapsed[idx]),
+            "samples": int(idx + 1),
+            "endpoint_abs_delta_E": float(abs(segment[-1] - segment[0])),
+            "prefix_rms_delta_E": float(np.sqrt(np.mean(delta * delta))),
+            "prefix_sigma_E": float(np.std(segment)),
+            "prefix_max_abs_delta_E": float(np.max(np.abs(delta))),
+        }
+    return result
+
+
+def build_nve_diagnostics(
+    run_metrics: Iterable[dict[str, Any]],
+    *,
+    fine_max_dt: float,
+    coarse_min_dt: float,
+    local_times_ps: Iterable[float],
+) -> dict[str, Any]:
+    """Build global/fine/coarse and short-time power-law fits for diagnosis only."""
+    runs = sorted(list(run_metrics), key=lambda item: float(item["dt_ps"]))
+    fine = [item for item in runs if float(item["dt_ps"]) <= float(fine_max_dt)]
+    coarse = [item for item in runs if float(item["dt_ps"]) >= float(coarse_min_dt)]
+    if len(fine) < 3:
+        raise ValueError("Fine-regime diagnostic requires at least three dt values")
+    if len(coarse) < 3:
+        raise ValueError("Coarse-regime diagnostic requires at least three dt values")
+
+    split_fits: dict[str, dict[str, Any]] = {}
+    for name, subset in (("global", runs), ("fine", fine), ("coarse", coarse)):
+        split_fits[name] = {
+            "dt_values_ps": [float(item["dt_ps"]) for item in subset],
+            "sigma_E": fit_metric_scaling(subset, "sigma_E", label="sigma_E"),
+            "rms_delta_E": fit_metric_scaling(subset, "rms_delta_E", label="rms_delta_E"),
+        }
+
+    def safe_fit(rows, metric, label):
+        try:
+            result = fit_metric_scaling(rows, metric, label=label)
+            result["available"] = True
+            return result
+        except ValueError as exc:
+            return {
+                "available": False,
+                "observable": label,
+                "metric_key": metric,
+                "reason": str(exc),
+            }
+
+    local_fits: dict[str, Any] = {}
+    for requested in local_times_ps:
+        key = format(float(requested), ".12g")
+        rows = []
+        for item in fine:
+            local_map = item.get("local_energy_windows")
+            if not isinstance(local_map, dict) or key not in local_map:
+                raise ValueError(f"Fine-regime run dt={item['dt_ps']} lacks local window {key} ps")
+            local = local_map[key]
+            rows.append({"dt_ps": float(item["dt_ps"]), **local})
+        local_fits[key] = {
+            "time_ps": float(requested),
+            "dt_values_ps": [float(item["dt_ps"]) for item in rows],
+            "endpoint_abs_delta_E": safe_fit(
+                rows, "endpoint_abs_delta_E", f"|Delta E({key} ps)|"
+            ),
+            "prefix_rms_delta_E": safe_fit(
+                rows, "prefix_rms_delta_E", f"RMS Delta E[0,{key} ps]"
+            ),
+            "prefix_sigma_E": safe_fit(
+                rows, "prefix_sigma_E", f"Sigma E[0,{key} ps]"
+            ),
+        }
+
+    return {
+        "purpose": "diagnostic_only_not_a_certification_gate",
+        "fine_max_dt_ps": float(fine_max_dt),
+        "coarse_min_dt_ps": float(coarse_min_dt),
+        "split_fits": split_fits,
+        "local_energy_fits": local_fits,
+    }
+
+
 def energy_standard_deviation(energies):
     """Population standard deviation of the sampled total energy time series.
 

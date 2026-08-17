@@ -1,0 +1,95 @@
+{
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset_ibi_residual.bin",
+  "groups": {
+    "angles:ang_A_G_G": {
+      "distribution_l1": 0.5520582145901838,
+      "kind": "angle",
+      "sample_max": 3.100420841530553,
+      "sample_min": 1.165267627101039,
+      "samples": 6440
+    },
+    "angles:ang_G_G_G": {
+      "distribution_l1": 0.2951832907075875,
+      "kind": "angle",
+      "sample_max": 3.0681074998007167,
+      "sample_min": 1.3059335172894793,
+      "samples": 6440
+    },
+    "angles:ang_G_G_T": {
+      "distribution_l1": 0.3453822108553565,
+      "kind": "angle",
+      "sample_max": 3.0943159487494003,
+      "sample_min": 1.275676110145716,
+      "samples": 4830
+    },
+    "angles:ang_G_T_T": {
+      "distribution_l1": 0.4109365485324564,
+      "kind": "angle",
+      "sample_max": 2.1584470333079975,
+      "sample_min": 0.43836121590128235,
+      "samples": 4830
+    },
+    "angles:ang_T_A_G": {
+      "distribution_l1": 0.773231031543052,
+      "kind": "angle",
+      "sample_max": 3.078783219914642,
+      "sample_min": 0.3827944101545678,
+      "samples": 4830
+    },
+    "angles:ang_T_T_A": {
+      "distribution_l1": 0.5225348110258596,
+      "kind": "angle",
+      "sample_max": 3.043219802867027,
+      "sample_min": 0.73683353584586,
+      "samples": 4830
+    },
+    "bonds:bb_A_G": {
+      "distribution_l1": 0.2683534283278528,
+      "kind": "bond",
+      "sample_max": 0.9178233976181703,
+      "sample_min": 0.37718299019222296,
+      "samples": 6440
+    },
+    "bonds:bb_G_G": {
+      "distribution_l1": 0.2806205090731944,
+      "kind": "bond",
+      "sample_max": 0.8582683521758231,
+      "sample_min": 0.4355893789715236,
+      "samples": 12880
+    },
+    "bonds:bb_G_T": {
+      "distribution_l1": 0.8430966589534366,
+      "kind": "bond",
+      "sample_max": 1.4311981026878746,
+      "sample_min": 0.40677605794874255,
+      "samples": 4830
+    },
+    "bonds:bb_T_A": {
+      "distribution_l1": 0.27376283846872085,
+      "kind": "bond",
+      "sample_max": 0.8791927393249886,
+      "sample_min": 0.3345272307045875,
+      "samples": 4830
+    },
+    "bonds:bb_T_T": {
+      "distribution_l1": 0.6752242926155968,
+      "kind": "bond",
+      "sample_max": 1.021619174273344,
+      "sample_min": 0.3408960314939355,
+      "samples": 4830
+    }
+  },
+  "max_l1": 0.8430966589534366,
+  "mean_l1": 0.47639853042666336,
+  "mean_l1_by_kind": {
+    "angle": 0.4832210178757492,
+    "bond": 0.4682115454877603
+  },
+  "mode": "full_runtime_bonded_structure",
+  "note": "Structural L1 is reported diagnostically for the complete IBI+ML Hamiltonian. No universal pass threshold is imposed by the generic core.",
+  "pass": true,
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+  "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_ml_ab_validation/ibi_plus_ml/sample.npz",
+  "schema_version": 1,
+  "threshold_applied": false
+}

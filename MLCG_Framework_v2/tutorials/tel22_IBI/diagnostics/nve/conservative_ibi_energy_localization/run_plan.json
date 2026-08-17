@@ -1,0 +1,28 @@
+{
+  "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+  "dts_ps": [
+    0.001,
+    0.00075,
+    0.0005,
+    0.000375,
+    0.00025,
+    0.0001875,
+    0.000125
+  ],
+  "duration_ps": 0.25,
+  "kind": "conservative_ibi_energy_localization_plan",
+  "micro_duration_ps": 0.096,
+  "neighbor_modes": [
+    "link-cell",
+    "nsquare"
+  ],
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+  "schema_version": 1,
+  "trace_dt_ps": 0.001,
+  "variants": [
+    "no_ibi",
+    "bonds_only",
+    "angles_only",
+    "full"
+  ]
+}

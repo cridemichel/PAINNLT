@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "metric": "unweighted mean distribution_l1 across pooled type=ibi groups",
+  "important_semantics": "sampling_iteration i evaluates source_priors before update i; therefore the best evaluated priors are taken from source_priors, not from iteration_i written after the update",
+  "reports": [
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/ibi_report.json",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/ibi_report.json"
+  ],
+  "iterations": [
+    {
+      "sampling_iteration": 1,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/iteration_000/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/ibi_report.json",
+      "mean_l1": 0.27788469068092103,
+      "max_l1": 0.5129016586855439,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.3380080056174042,
+        "bond": 0.20573671275714117
+      }
+    },
+    {
+      "sampling_iteration": 2,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/iteration_001/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/ibi_report.json",
+      "mean_l1": 0.2795940352935981,
+      "max_l1": 0.47379293170526615,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.3384779597174425,
+        "bond": 0.20893332598498482
+      }
+    },
+    {
+      "sampling_iteration": 3,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/iteration_002/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/ibi_report.json",
+      "mean_l1": 0.2607516636772249,
+      "max_l1": 0.4302588659865365,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.32099161199631493,
+        "bond": 0.18846372569431685
+      }
+    },
+    {
+      "sampling_iteration": 4,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/iteration_003/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/ibi_report.json",
+      "mean_l1": 0.2619040090436644,
+      "max_l1": 0.4292096851232684,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.3196188316398112,
+        "bond": 0.19264622192828826
+      }
+    },
+    {
+      "sampling_iteration": 5,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/iteration_004/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps/ibi_report.json",
+      "mean_l1": 0.24579500965491335,
+      "max_l1": 0.4185260029475041,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.29720786572662233,
+        "bond": 0.1840995823688626
+      }
+    },
+    {
+      "sampling_iteration": 6,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/resume_start/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/ibi_report.json",
+      "mean_l1": 0.25516499825755073,
+      "max_l1": 0.4432229856339787,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.31987248574216276,
+        "bond": 0.17751601327601624
+      }
+    },
+    {
+      "sampling_iteration": 7,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/iteration_006/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/ibi_report.json",
+      "mean_l1": 0.24601380858591426,
+      "max_l1": 0.38977518136132216,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.29565120655799276,
+        "bond": 0.18644893101942012
+      }
+    },
+    {
+      "sampling_iteration": 8,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/iteration_007/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/ibi_report.json",
+      "mean_l1": 0.23333156119374293,
+      "max_l1": 0.3918980375827199,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.27628167444366875,
+        "bond": 0.1817914252938319
+      }
+    },
+    {
+      "sampling_iteration": 9,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/iteration_008/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/ibi_report.json",
+      "mean_l1": 0.23082642384457425,
+      "max_l1": 0.4105244679591594,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.2717349178549899,
+        "bond": 0.18173623103207553
+      }
+    },
+    {
+      "sampling_iteration": 10,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/iteration_009/cg_priors.json",
+      "source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/ibi_report.json",
+      "mean_l1": 0.23110922392162056,
+      "max_l1": 0.4214367654203049,
+      "groups": 11,
+      "mean_l1_by_kind": {
+        "angle": 0.2783632642452497,
+        "bond": 0.1744043755332656
+      }
+    }
+  ],
+  "best_sampling_iteration": 9,
+  "best_mean_l1": 0.23082642384457425,
+  "best_max_l1": 0.4105244679591594,
+  "best_source_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/ibi_report.json",
+  "best_source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/iteration_008/cg_priors.json",
+  "best_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run_16ps_continue/best/cg_priors.json",
+  "final_priors_are_evaluated": false
+}

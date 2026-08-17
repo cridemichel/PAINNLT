@@ -1,0 +1,796 @@
+{
+  "analysis_mode": "existing_complete_replicas",
+  "analysis_notes": [
+    "sigma_E is numpy population standard deviation (ddof=0) of E_tot; no detrending is applied.",
+    "Each replica/dt trajectory is run once to the maximum duration; shorter windows are exact prefixes of that trajectory.",
+    "Replica fixed-effects fits estimate a common log-log slope while allowing one log-prefactor per initial-state replica.",
+    "Replica checkpoints are independently Langevin-branched from the same conservative IBI-only checkpoint using distinct thermostat seeds.",
+    "When --analyze-existing is used, no dynamics are launched; only complete provenance-valid replicas are included.",
+    "Replica bootstrap intervals are disabled when fewer than three replicas are available; fixed-effects and per-replica fits are still reported."
+  ],
+  "base_checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz",
+  "base_checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+  "by_duration": {
+    "0.125": {
+      "aggregate_by_dt": [
+        {
+          "dt_ps": 0.000125,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.5317353008225629,
+          "sigma_geometric_mean": 4.797953614949893e-05,
+          "sigma_max": 7.124751947679938e-05,
+          "sigma_mean": 5.1778959989762046e-05,
+          "sigma_median": 5.1778959989762046e-05,
+          "sigma_min": 3.231040050272472e-05,
+          "sigma_sem_across_replicas": 1.9468559487037324e-05,
+          "sigma_std_across_replicas": 2.7532700866435573e-05
+        },
+        {
+          "dt_ps": 0.00025,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.5126349019023263,
+          "sigma_geometric_mean": 0.00013153818030107735,
+          "sigma_max": 0.00019229757088028355,
+          "sigma_mean": 0.00014113711471989754,
+          "sigma_median": 0.00014113711471989754,
+          "sigma_min": 8.997665855951155e-05,
+          "sigma_sem_across_replicas": 5.1160456160386e-05,
+          "sigma_std_across_replicas": 7.235181095921204e-05
+        },
+        {
+          "dt_ps": 0.0005,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.4204456884983227,
+          "sigma_geometric_mean": 0.0005003686725204513,
+          "sigma_max": 0.0006798691615409899,
+          "sigma_mean": 0.0005240647212466366,
+          "sigma_median": 0.0005240647212466366,
+          "sigma_min": 0.0003682602809522832,
+          "sigma_sem_across_replicas": 0.00015580444029435336,
+          "sigma_std_across_replicas": 0.00022034075254222368
+        },
+        {
+          "dt_ps": 0.001,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.4009600133828721,
+          "sigma_geometric_mean": 0.0018702083796857509,
+          "sigma_max": 0.0025031680801655036,
+          "sigma_mean": 0.0019502345644245977,
+          "sigma_median": 0.0019502345644245977,
+          "sigma_min": 0.0013973010486836917,
+          "sigma_sem_across_replicas": 0.000552933515740906,
+          "sigma_std_across_replicas": 0.0007819660770514265
+        }
+      ],
+      "duration_ps": 0.125,
+      "fit_geometric_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.7781417863315878,
+        "loglog_r2": 0.9960696657240843,
+        "metric_key": "sigma_geometric_mean",
+        "model": "sigma_geometric_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_geometric_mean",
+        "prefactor_C": 380.328067249749
+      },
+      "fit_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.7598061139708434,
+        "loglog_r2": 0.9961245955269536,
+        "metric_key": "sigma_mean",
+        "model": "sigma_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_mean",
+        "prefactor_C": 348.6314524751441
+      },
+      "fit_median_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.7598061139708434,
+        "loglog_r2": 0.9961245955269536,
+        "metric_key": "sigma_median",
+        "model": "sigma_median = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_median",
+        "prefactor_C": 348.6314524751441
+      },
+      "fixed_effects_fit": {
+        "bootstrap": {
+          "p025": null,
+          "p50": null,
+          "p975": null,
+          "requested_samples": 1000,
+          "samples": 0,
+          "seed": 20260816,
+          "status": "disabled_too_few_replicas"
+        },
+        "exponent_p": 1.778141786331588,
+        "model": "log(sigma_E[r,dt]) = alpha_replica[r] + p*log(dt)",
+        "n_observations": 8,
+        "n_replicas": 2,
+        "replica_log_intercepts": {
+          "0": 6.138579258974076,
+          "1": 5.743489171283933
+        },
+        "within_loglog_r2": 0.9555450618120712
+      },
+      "n_replicas": 2,
+      "per_replica_fits": [
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.4702894451034814,
+          "loglog_r2": 0.9901682052743092,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 40.12221416707947,
+          "replica_index": 0
+        },
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.0859941275596934,
+          "loglog_r2": 0.9812424272684036,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 3605.22074219461,
+          "replica_index": 1
+        }
+      ],
+      "per_replica_slope_summary": {
+        "fraction_second_order_like": 0.5,
+        "max_p": 2.0859941275596934,
+        "median_p": 1.7781417863315874,
+        "median_r2": 0.9857053162713564,
+        "min_p": 1.4702894451034814
+      }
+    },
+    "0.25": {
+      "aggregate_by_dt": [
+        {
+          "dt_ps": 0.000125,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.4816174709555004,
+          "sigma_geometric_mean": 5.3674428584129125e-05,
+          "sigma_max": 7.652801492069189e-05,
+          "sigma_mean": 5.7086815596806714e-05,
+          "sigma_median": 5.7086815596806714e-05,
+          "sigma_min": 3.764561627292153e-05,
+          "sigma_sem_across_replicas": 1.944119932388518e-05,
+          "sigma_std_across_replicas": 2.7494007752637065e-05
+        },
+        {
+          "dt_ps": 0.00025,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.23334091728079911,
+          "sigma_geometric_mean": 0.00012534975219879972,
+          "sigma_max": 0.00014806139631970118,
+          "sigma_mean": 0.0001270916605945598,
+          "sigma_median": 0.0001270916605945598,
+          "sigma_min": 0.00010612192486941839,
+          "sigma_sem_across_replicas": 2.0969735725141395e-05,
+          "sigma_std_across_replicas": 2.965568466187457e-05
+        },
+        {
+          "dt_ps": 0.0005,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.3666331916416219,
+          "sigma_geometric_mean": 0.0004119040181707464,
+          "sigma_max": 0.0005370511204777327,
+          "sigma_mean": 0.00042648530905596387,
+          "sigma_median": 0.00042648530905596387,
+          "sigma_min": 0.00031591949763419504,
+          "sigma_sem_across_replicas": 0.00011056581142176883,
+          "sigma_std_across_replicas": 0.00015636367004745154
+        },
+        {
+          "dt_ps": 0.001,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.8486588852604119,
+          "sigma_geometric_mean": 0.0027504840608533047,
+          "sigma_max": 0.005501762903090881,
+          "sigma_mean": 0.0034384031334374386,
+          "sigma_median": 0.0034384031334374386,
+          "sigma_min": 0.0013750433637839958,
+          "sigma_sem_across_replicas": 0.0020633597696534424,
+          "sigma_std_across_replicas": 0.002918031370298924
+        }
+      ],
+      "duration_ps": 0.25,
+      "fit_geometric_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.8754269470864526,
+        "loglog_r2": 0.9676271614699025,
+        "metric_key": "sigma_geometric_mean",
+        "model": "sigma_geometric_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_geometric_mean",
+        "prefactor_C": 878.303285854661
+      },
+      "fit_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.9483938590433927,
+        "loglog_r2": 0.9554859436057287,
+        "metric_key": "sigma_mean",
+        "model": "sigma_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_mean",
+        "prefactor_C": 1704.8944815771197
+      },
+      "fit_median_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.9483938590433927,
+        "loglog_r2": 0.9554859436057287,
+        "metric_key": "sigma_median",
+        "model": "sigma_median = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_median",
+        "prefactor_C": 1704.8944815771197
+      },
+      "fixed_effects_fit": {
+        "bootstrap": {
+          "p025": null,
+          "p50": null,
+          "p975": null,
+          "requested_samples": 1000,
+          "samples": 0,
+          "seed": 20260817,
+          "status": "disabled_too_few_replicas"
+        },
+        "exponent_p": 1.8754269470864533,
+        "model": "log(sigma_E[r,dt]) = alpha_replica[r] + p*log(dt)",
+        "n_observations": 8,
+        "n_replicas": 2,
+        "replica_log_intercepts": {
+          "0": 6.801304622933012,
+          "1": 6.754679301205105
+        },
+        "within_loglog_r2": 0.8955844139761522
+      },
+      "n_replicas": 2,
+      "per_replica_fits": [
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.4360899867752297,
+          "loglog_r2": 0.986591434772895,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 27.37649101782362,
+          "replica_index": 0
+        },
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.3147639073976753,
+          "loglog_r2": 0.9295516565007926,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 28178.069331122813,
+          "replica_index": 1
+        }
+      ],
+      "per_replica_slope_summary": {
+        "fraction_second_order_like": 0.0,
+        "max_p": 2.3147639073976753,
+        "median_p": 1.8754269470864524,
+        "median_r2": 0.9580715456368438,
+        "min_p": 1.4360899867752297
+      }
+    },
+    "0.5": {
+      "aggregate_by_dt": [
+        {
+          "dt_ps": 0.000125,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.36449115580469316,
+          "sigma_geometric_mean": 6.394809577213324e-05,
+          "sigma_max": 8.324196269499228e-05,
+          "sigma_mean": 6.61840672027984e-05,
+          "sigma_median": 6.61840672027984e-05,
+          "sigma_min": 4.912617171060452e-05,
+          "sigma_sem_across_replicas": 1.7057895492193882e-05,
+          "sigma_std_across_replicas": 2.412350715060347e-05
+        },
+        {
+          "dt_ps": 0.00025,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.2627492143435429,
+          "sigma_geometric_mean": 0.00014213271644923756,
+          "sigma_max": 0.0001715262211429979,
+          "sigma_mean": 0.00014465121803000104,
+          "sigma_median": 0.00014465121803000104,
+          "sigma_min": 0.00011777621491700417,
+          "sigma_sem_across_replicas": 2.6875003112996856e-05,
+          "sigma_std_across_replicas": 3.800699389121931e-05
+        },
+        {
+          "dt_ps": 0.0005,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.727580186555086,
+          "sigma_geometric_mean": 0.0007269586094449034,
+          "sigma_max": 0.0012839143496777147,
+          "sigma_mean": 0.0008477609420366936,
+          "sigma_median": 0.0008477609420366936,
+          "sigma_min": 0.0004116075343956726,
+          "sigma_sem_across_replicas": 0.000436153407641021,
+          "sigma_std_across_replicas": 0.000616814064361173
+        },
+        {
+          "dt_ps": 0.001,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.637625787135511,
+          "sigma_geometric_mean": 0.0030747652916127996,
+          "sigma_max": 0.004997909321437046,
+          "sigma_mean": 0.0034447682990288307,
+          "sigma_median": 0.0034447682990288307,
+          "sigma_min": 0.001891627276620615,
+          "sigma_sem_across_replicas": 0.0015531410224082153,
+          "sigma_std_across_replicas": 0.0021964730981677135
+        }
+      ],
+      "duration_ps": 0.5,
+      "fit_geometric_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.9116927784032944,
+        "loglog_r2": 0.9825556114052342,
+        "metric_key": "sigma_geometric_mean",
+        "model": "sigma_geometric_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_geometric_mean",
+        "prefactor_C": 1497.112616463281
+      },
+      "fit_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.9656416585774306,
+        "loglog_r2": 0.9801863937766235,
+        "metric_key": "sigma_mean",
+        "model": "sigma_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_mean",
+        "prefactor_C": 2489.5902095400697
+      },
+      "fit_median_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.9656416585774306,
+        "loglog_r2": 0.9801863937766235,
+        "metric_key": "sigma_median",
+        "model": "sigma_median = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_median",
+        "prefactor_C": 2489.5902095400697
+      },
+      "fixed_effects_fit": {
+        "bootstrap": {
+          "p025": null,
+          "p50": null,
+          "p975": null,
+          "requested_samples": 1000,
+          "samples": 0,
+          "seed": 20260818,
+          "status": "disabled_too_few_replicas"
+        },
+        "exponent_p": 1.911692778403295,
+        "model": "log(sigma_E[r,dt]) = alpha_replica[r] + p*log(dt)",
+        "n_observations": 8,
+        "n_replicas": 2,
+        "replica_log_intercepts": {
+          "0": 7.350971869714735,
+          "1": 7.271615349662316
+        },
+        "within_loglog_r2": 0.9151526937269273
+      },
+      "n_replicas": 2,
+      "per_replica_fits": [
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.6964948018932544,
+          "loglog_r2": 0.8942299517832546,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 281.65730612119216,
+          "replica_index": 0
+        },
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.1268907549133345,
+          "loglog_r2": 0.9486995001712466,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 7957.706537919963,
+          "replica_index": 1
+        }
+      ],
+      "per_replica_slope_summary": {
+        "fraction_second_order_like": 0.0,
+        "max_p": 2.1268907549133345,
+        "median_p": 1.9116927784032944,
+        "median_r2": 0.9214647259772506,
+        "min_p": 1.6964948018932544
+      }
+    },
+    "1": {
+      "aggregate_by_dt": [
+        {
+          "dt_ps": 0.000125,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.09350251605498537,
+          "sigma_geometric_mean": 5.900137578298789e-05,
+          "sigma_max": 6.304026302911411e-05,
+          "sigma_mean": 5.9130758255419795e-05,
+          "sigma_median": 5.9130758255419795e-05,
+          "sigma_min": 5.522125348172549e-05,
+          "sigma_sem_across_replicas": 3.909504773694308e-06,
+          "sigma_std_across_replicas": 5.528874673120848e-06
+        },
+        {
+          "dt_ps": 0.00025,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.01793780937135284,
+          "sigma_geometric_mean": 0.0001373058779126128,
+          "sigma_max": 0.00013905864484359035,
+          "sigma_mean": 0.00013731692430213343,
+          "sigma_median": 0.00013731692430213343,
+          "sigma_min": 0.00013557520376067655,
+          "sigma_sem_across_replicas": 1.7417205414568994e-06,
+          "sigma_std_across_replicas": 2.4631648115921577e-06
+        },
+        {
+          "dt_ps": 0.0005,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.9132514058908879,
+          "sigma_geometric_mean": 0.0008733881287220304,
+          "sigma_max": 0.0018825494859777564,
+          "sigma_mean": 0.0011438741511516828,
+          "sigma_median": 0.0011438741511516828,
+          "sigma_min": 0.0004051988163256092,
+          "sigma_sem_across_replicas": 0.0007386753348260735,
+          "sigma_std_across_replicas": 0.0010446446767015203
+        },
+        {
+          "dt_ps": 0.001,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.5034136007165801,
+          "sigma_geometric_mean": 0.002952898656563039,
+          "sigma_max": 0.004284687246500959,
+          "sigma_mean": 0.003159875355940255,
+          "sigma_median": 0.003159875355940255,
+          "sigma_min": 0.002035063465379551,
+          "sigma_sem_across_replicas": 0.001124811890560704,
+          "sigma_std_across_replicas": 0.0015907242307494692
+        }
+      ],
+      "duration_ps": 1.0,
+      "fit_geometric_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 1.9604947850245766,
+        "loglog_r2": 0.9820304750118334,
+        "metric_key": "sigma_geometric_mean",
+        "model": "sigma_geometric_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_geometric_mean",
+        "prefactor_C": 2221.9676603202324
+      },
+      "fit_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 2.027779217263549,
+        "loglog_r2": 0.9713814938259044,
+        "metric_key": "sigma_mean",
+        "model": "sigma_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_mean",
+        "prefactor_C": 4129.216305329559
+      },
+      "fit_median_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 2.027779217263549,
+        "loglog_r2": 0.9713814938259044,
+        "metric_key": "sigma_median",
+        "model": "sigma_median = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_median",
+        "prefactor_C": 4129.216305329559
+      },
+      "fixed_effects_fit": {
+        "bootstrap": {
+          "p025": null,
+          "p50": null,
+          "p975": null,
+          "requested_samples": 1000,
+          "samples": 0,
+          "seed": 20260819,
+          "status": "disabled_too_few_replicas"
+        },
+        "exponent_p": 1.9604947850245773,
+        "model": "log(sigma_E[r,dt]) = alpha_replica[r] + p*log(dt)",
+        "n_observations": 8,
+        "n_replicas": 2,
+        "replica_log_intercepts": {
+          "0": 7.824808266437067,
+          "1": 7.587488565127607
+        },
+        "within_loglog_r2": 0.9161027958240494
+      },
+      "n_replicas": 2,
+      "per_replica_fits": [
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.879689171602507,
+          "loglog_r2": 0.8880678054081097,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 1316.3362509307512,
+          "replica_index": 0
+        },
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.0413003984466482,
+          "loglog_r2": 0.9443402620217576,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 3750.6680227169145,
+          "replica_index": 1
+        }
+      ],
+      "per_replica_slope_summary": {
+        "fraction_second_order_like": 0.0,
+        "max_p": 2.0413003984466482,
+        "median_p": 1.9604947850245775,
+        "median_r2": 0.9162040337149336,
+        "min_p": 1.879689171602507
+      }
+    },
+    "2": {
+      "aggregate_by_dt": [
+        {
+          "dt_ps": 0.000125,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.06658313697389172,
+          "sigma_geometric_mean": 6.930024893659302e-05,
+          "sigma_max": 7.2643558417581e-05,
+          "sigma_mean": 6.937718430794011e-05,
+          "sigma_median": 6.937718430794011e-05,
+          "sigma_min": 6.61108101982992e-05,
+          "sigma_sem_across_replicas": 3.266374109640902e-06,
+          "sigma_std_across_replicas": 4.619350565638507e-06
+        },
+        {
+          "dt_ps": 0.00025,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.27636180877964817,
+          "sigma_geometric_mean": 0.00024855419418093804,
+          "sigma_max": 0.0003029671372354908,
+          "sigma_mean": 0.0002534404805268339,
+          "sigma_median": 0.0002534404805268339,
+          "sigma_min": 0.000203913823818177,
+          "sigma_sem_across_replicas": 4.9526656708656896e-05,
+          "sigma_std_across_replicas": 7.004126961637902e-05
+        },
+        {
+          "dt_ps": 0.0005,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.7260154708723233,
+          "sigma_geometric_mean": 0.0009702590881507429,
+          "sigma_max": 0.0017110437450449287,
+          "sigma_mean": 0.0011306179069942165,
+          "sigma_median": 0.0011306179069942165,
+          "sigma_min": 0.0005501920689435044,
+          "sigma_sem_across_replicas": 0.0005804258380507121,
+          "sigma_std_across_replicas": 0.0008208460921230868
+        },
+        {
+          "dt_ps": 0.001,
+          "n_replicas": 2,
+          "sigma_cv_across_replicas": 0.10322568083984611,
+          "sigma_geometric_mean": 0.004934645885939037,
+          "sigma_max": 0.0053089949214640796,
+          "sigma_mean": 0.004947843977335959,
+          "sigma_median": 0.004947843977335959,
+          "sigma_min": 0.004586693033207838,
+          "sigma_sem_across_replicas": 0.00036115094412812087,
+          "sigma_std_across_replicas": 0.0005107445632498365
+        }
+      ],
+      "duration_ps": 2.0,
+      "fit_geometric_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 2.04266362369312,
+        "loglog_r2": 0.9968063649970322,
+        "metric_key": "sigma_geometric_mean",
+        "model": "sigma_geometric_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_geometric_mean",
+        "prefactor_C": 6017.558270906021
+      },
+      "fit_mean_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 2.0625977295000215,
+        "loglog_r2": 0.99896836849362,
+        "metric_key": "sigma_mean",
+        "model": "sigma_mean = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_mean",
+        "prefactor_C": 7368.091223328426
+      },
+      "fit_median_sigma": {
+        "dt_max_ps": 0.001,
+        "dt_min_ps": 0.000125,
+        "exponent_p": 2.0625977295000215,
+        "loglog_r2": 0.99896836849362,
+        "metric_key": "sigma_median",
+        "model": "sigma_median = C * dt^p",
+        "n_points": 4,
+        "observable": "sigma_median",
+        "prefactor_C": 7368.091223328426
+      },
+      "fixed_effects_fit": {
+        "bootstrap": {
+          "p025": null,
+          "p50": null,
+          "p975": null,
+          "requested_samples": 1000,
+          "samples": 0,
+          "seed": 20260820,
+          "status": "disabled_too_few_replicas"
+        },
+        "exponent_p": 2.0426636236931213,
+        "model": "log(sigma_E[r,dt]) = alpha_replica[r] + p*log(dt)",
+        "n_observations": 8,
+        "n_replicas": 2,
+        "replica_log_intercepts": {
+          "0": 8.923811098750265,
+          "1": 8.48106260761826
+        },
+        "within_loglog_r2": 0.9799895517780436
+      },
+      "n_replicas": 2,
+      "per_replica_fits": [
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 2.107202365690269,
+          "loglog_r2": 0.9941693762435542,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 12540.656998736727,
+          "replica_index": 0
+        },
+        {
+          "dt_max_ps": 0.001,
+          "dt_min_ps": 0.000125,
+          "exponent_p": 1.978124881695973,
+          "loglog_r2": 0.9664055948881292,
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 4,
+          "observable": "sigma_E",
+          "prefactor_C": 2887.4888729831055,
+          "replica_index": 1
+        }
+      ],
+      "per_replica_slope_summary": {
+        "fraction_second_order_like": 1.0,
+        "max_p": 2.107202365690269,
+        "median_p": 2.0426636236931213,
+        "median_r2": 0.9802874855658417,
+        "min_p": 1.978124881695973
+      }
+    }
+  },
+  "diagnostic_only": true,
+  "dts_ps": [
+    0.001,
+    0.0005,
+    0.00025,
+    0.000125
+  ],
+  "durations_ps": [
+    0.125,
+    0.25,
+    0.5,
+    1.0,
+    2.0
+  ],
+  "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+  "input_hashes": {
+    "config_sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+    "dataset_sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c",
+    "model_manifest_sha256": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f",
+    "model_sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33",
+    "priors_sha256": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3",
+    "rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+  },
+  "kind": "conservative_ibi_sigma_energy_replica_window_diagnostic",
+  "localization_reference": {
+    "full_fine_sigma_fit": {
+      "dt_max_ps": 0.001,
+      "dt_min_ps": 0.000125,
+      "exponent_p": 2.1633242454772326,
+      "loglog_r2": 0.9707572311966206,
+      "metric_key": "sigma_E",
+      "model": "sigma_E = C * dt^p",
+      "n_points": 7,
+      "observable": "sigma_E",
+      "prefactor_C": 5109.820385150575
+    },
+    "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/conservative_ibi_energy_localization/localization_report.json",
+    "sha256": "25751787d00bd4ff5baddb1298531483d2a596a67e63abfe9eefaac1e08fa1d8"
+  },
+  "model_active": false,
+  "replicas": [
+    {
+      "analysis_source": "existing_complete_replica",
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/sigma_energy_replica_window_diagnostic/replicas/replica_00/nvt_checkpoint.npz",
+      "checkpoint_sha256": "307518c3067149b4558dbab29b97ce990e5ca724ec180443aa0166bd129c5920",
+      "equilibration_dt_ps": 0.0005,
+      "equilibration_duration_ps": 1.0,
+      "equilibration_kT_kj_mol": 2.49,
+      "equilibration_steps": 2000,
+      "replica_index": 0,
+      "source_checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+      "thermostat_seed": 280000
+    },
+    {
+      "analysis_source": "existing_complete_replica",
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/sigma_energy_replica_window_diagnostic/replicas/replica_01/nvt_checkpoint.npz",
+      "checkpoint_sha256": "67277d35e9ae78232c43d5376d45af4707e41f5efd0e71a01431d1109d7e8e16",
+      "equilibration_dt_ps": 0.0005,
+      "equilibration_duration_ps": 1.0,
+      "equilibration_kT_kj_mol": 2.49,
+      "equilibration_steps": 2000,
+      "replica_index": 1,
+      "source_checkpoint_sha256": "7ec8480b027482a3ddf07a6b84baed482063b9428b26e869a822d32d0518ae06",
+      "thermostat_seed": 280001
+    }
+  ],
+  "replicas_requested": 4,
+  "replicas_used": 2,
+  "schema_version": 1,
+  "skipped_replicas": [
+    {
+      "reason": "Energy trace has 5938 samples but 8001 are required for duration=2 ps at dt=0.00025 ps",
+      "replica_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/sigma_energy_replica_window_diagnostic/replicas/replica_02",
+      "replica_index": 2
+    },
+    {
+      "reason": "missing checkpoint: /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/sigma_energy_replica_window_diagnostic/replicas/replica_03/nvt_checkpoint.npz",
+      "replica_dir": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/sigma_energy_replica_window_diagnostic/replicas/replica_03",
+      "replica_index": 3
+    }
+  ]
+}

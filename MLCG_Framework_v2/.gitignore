@@ -1,3 +1,18 @@
+# Python/test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Editor/patch leftovers
+*.orig
+*.rej
+*.bak
+*.pre_*
+.DS_Store
+
+# Non-canonical local test build / retired training checkpoint
+/training/build_test/
+/training/best_cg_model_old.pt
 # Python
 __pycache__/
 *.py[cod]

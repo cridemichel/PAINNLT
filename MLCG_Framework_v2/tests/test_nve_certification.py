@@ -119,5 +119,47 @@ class NVECertificationTests(unittest.TestCase):
 
 
 
+class NVEDiagnosticHelperTests(unittest.TestCase):
+    def test_local_energy_windows_and_fine_scaling_are_quadratic(self):
+        from nve_analysis import analyze_local_energy_windows, build_nve_diagnostics
+
+        runs = []
+        local_times = [0.012, 0.024, 0.048, 0.096]
+        for dt in (0.00025, 0.0005, 0.00075, 0.001, 0.0015, 0.002, 0.003):
+            steps = int(round(0.12 / dt))
+            t = np.arange(steps + 1, dtype=float) * dt
+            # Same bounded phase at a given physical time, amplitude exactly dt^2.
+            energy = -1000.0 + 2.0e7 * dt**2 * (1.0 + 0.25 * np.sin(2.0 * np.pi * t / 0.12))
+            metrics = analyze_energy_series(t, energy)
+            metrics["dt_ps"] = dt
+            if dt <= 0.001:
+                metrics["local_energy_windows"] = analyze_local_energy_windows(
+                    t, energy, local_times
+                )
+            runs.append(metrics)
+
+        diagnostics = build_nve_diagnostics(
+            runs,
+            fine_max_dt=0.001,
+            coarse_min_dt=0.0015,
+            local_times_ps=local_times,
+        )
+        fine = diagnostics["split_fits"]["fine"]["sigma_E"]
+        self.assertAlmostEqual(fine["exponent_p"], 2.0, delta=0.01)
+        self.assertGreater(fine["loglog_r2"], 0.9999)
+        for item in diagnostics["local_energy_fits"].values():
+            fit = item["endpoint_abs_delta_E"]
+            self.assertAlmostEqual(fit["exponent_p"], 2.0, places=10)
+            self.assertGreater(fit["loglog_r2"], 0.999999999)
+
+    def test_local_energy_windows_reject_noncommensurate_time(self):
+        from nve_analysis import analyze_local_energy_windows
+
+        t = np.arange(21, dtype=float) * 0.001
+        e = -10.0 + 0.01 * np.sin(t)
+        with self.assertRaises(ValueError):
+            analyze_local_energy_windows(t, e, [0.0125])
+
+
 if __name__ == "__main__":
     unittest.main()

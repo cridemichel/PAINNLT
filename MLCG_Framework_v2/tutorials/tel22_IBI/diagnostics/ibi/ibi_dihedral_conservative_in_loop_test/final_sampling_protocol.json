@@ -1,0 +1,22 @@
+{
+  "burn_in_steps": 500,
+  "checkpoint_used": false,
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+  "dt_ps": 0.0005,
+  "ibi_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/ibi_report.json",
+  "init_kT": 2.49,
+  "kT": 2.49,
+  "kind": "matched_final_ibi_sampling_protocol",
+  "matched_to_ibi_loop": true,
+  "ml_active": false,
+  "neighbor_search": "link-cell",
+  "production_steps": 2000,
+  "sample_interval": 10,
+  "sampled_iteration": 3,
+  "schema_version": 1,
+  "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+  "starting_state": "target_dataset_initial_frame_plus_initialized_velocities",
+  "thermostat_seed": 380103,
+  "total_steps": 2500,
+  "velocity_seed": 380003
+}

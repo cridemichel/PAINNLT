@@ -1,0 +1,209 @@
+{
+  "schema_version": 2,
+  "run_mode": "initial_dbi",
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+  "seed_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/seed/cg_priors_dihedral_ibi_seed.json",
+  "resume_priors": null,
+  "iteration_offset": 0,
+  "config": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_training_config.json",
+  "rb_info": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/rigid_bodies_info_ibi.json",
+  "iterations_requested": 2,
+  "iterations_completed": 2,
+  "ibi_groups": 6,
+  "dbi_groups": 0,
+  "kT": 2.49,
+  "dt_ps": 0.0005,
+  "burn_in_steps": 500,
+  "production_steps": 2000,
+  "sample_interval": 10,
+  "neighbor_search": "link-cell",
+  "conservative_dihedrals_in_loop": true,
+  "dihedral_runtime_representation": "conservative_spline",
+  "velocity_seed": 380001,
+  "thermostat_seed": 380101,
+  "settings": {
+    "kT": 2.49,
+    "alpha": 0.1,
+    "min_count": 5,
+    "relative_density_threshold": 0.0001,
+    "max_gap_bins": 3,
+    "min_support_points": 8,
+    "avgpoints": 7,
+    "taper_bins": 12,
+    "histogram_smoothing_sigma": 2.0,
+    "update_smoothing_sigma": 1.5,
+    "max_update_kT": 1.0,
+    "bond": {
+      "hist_min": 0.01,
+      "hist_max": 2.0,
+      "hist_edges": 300,
+      "table_min": 0.01,
+      "table_max": 3.0,
+      "table_points": 3001,
+      "left_function": "exponential",
+      "right_function": "exponential",
+      "left_curvature": 6.0,
+      "right_curvature": 1.0,
+      "left_guard": 0.05,
+      "right_guard": 1.5,
+      "left_guard_force": 200.0,
+      "right_guard_force": 150.0,
+      "force_max": 300.0,
+      "runtime_safety_fraction": 0.95
+    },
+    "angle": {
+      "hist_edges": 300,
+      "table_points": 2001,
+      "wall_width": 0.1,
+      "wall_k": 5000.0,
+      "force_max": 250.0
+    },
+    "dihedral": {
+      "hist_edges": 240,
+      "table_points": 1441,
+      "force_max": 150.0
+    },
+    "simulation": {
+      "dt": 0.0005,
+      "burn_in_steps": 500,
+      "steps": 2000,
+      "log_interval": 10
+    }
+  },
+  "inputs_sha256": {
+    "dataset": "40bcf2e5a23d0b75d1444730d7e1d63979e1d0198b88477c19e8fb187d5f8d9e",
+    "config": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+    "rb_info": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+    "pypresso": "ae16e444b873e89b7f0c995941720affbc2062b5d1715631a7a00721bb49144a",
+    "seed_priors": "3ae597842a008cd0f401fa096255e230182dacd9e65e8c19a7a4277b5a93e19c",
+    "ibi_config": "c0ef557cc5582a1f4227264246b544d115af3d2c94e81f0c1634a4ff096c63a2"
+  },
+  "final_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+  "final_internal_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/cg_priors.json",
+  "metrics": [
+    {
+      "iteration": 1,
+      "continuation_step": 1,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_001/trajectory.npz",
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 8040,
+          "distribution_l1": 0.40198609790986195,
+          "sample_min": 0.00011416269159768266,
+          "sample_max": 6.2823192289816205
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.5002979613436653,
+          "sample_min": 0.00019380089604804972,
+          "sample_max": 6.2829026867031885
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.5960617126201692,
+          "sample_min": 0.012541145267195623,
+          "sample_max": 6.28096175769673
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.6759905224880182,
+          "sample_min": 0.6305871269413514,
+          "sample_max": 6.273491277486747
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.34466881279875167,
+          "sample_min": 2.254742379457233,
+          "sample_max": 4.191463221026346
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.5550287776802263,
+          "sample_min": 0.08366339198867556,
+          "sample_max": 2.8826615648458116
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "continuation_step": 2,
+      "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_001/cg_priors.json",
+      "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_002/trajectory.npz",
+      "groups": {
+        "dihedrals:dih_A_G_G_G": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 8040,
+          "distribution_l1": 0.3810014612940035,
+          "sample_min": 0.0,
+          "sample_max": 6.28315844127855
+        },
+        "dihedrals:dih_G_G_G_T": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.558363140005689,
+          "sample_min": 0.00021614272937700135,
+          "sample_max": 6.282804332630362
+        },
+        "dihedrals:dih_G_G_T_T": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.6447775578296513,
+          "sample_min": 0.0010946114076980033,
+          "sample_max": 6.281875725726347
+        },
+        "dihedrals:dih_G_T_T_A": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.6760434110594924,
+          "sample_min": 0.003130482958060873,
+          "sample_max": 6.283134859540991
+        },
+        "dihedrals:dih_T_T_A_G": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.5234025948687933,
+          "sample_min": 2.052244379796949,
+          "sample_max": 5.314432329861835
+        },
+        "dihedrals:dih_T_A_G_G": {
+          "kind": "dihedral",
+          "mode": "ibi",
+          "runtime_representation": "conservative_spline",
+          "samples": 6030,
+          "distribution_l1": 0.5040552375157866,
+          "sample_min": 0.0012779623763723722,
+          "sample_max": 6.276021602579944
+        }
+      }
+    }
+  ]
+}

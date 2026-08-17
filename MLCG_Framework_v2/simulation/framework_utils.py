@@ -43,6 +43,43 @@ def particle_is_virtual(particle: Any) -> bool:
     )
 
 
+def mask_excluded_particle_distances(
+    dist_matrix: np.ndarray,
+    particle_ids: Iterable[int],
+    excluded_pairs: Iterable[tuple[int, int]],
+) -> np.ndarray:
+    """Mask excluded particle pairs in a square distance matrix.
+
+    The runtime safety diagnostic must use the same nonbonded exclusions as
+    ESPResSo.  Otherwise topologically excluded 1-2/1-3 site pairs can approach
+    closely without WCA and trigger a false ``min_dist`` abort.  The matrix is
+    modified in place and also returned for convenience.  Excluded particle
+    ids that are not represented in the matrix are ignored.
+    """
+    matrix = np.asarray(dist_matrix)
+    ids = [int(pid) for pid in particle_ids]
+    if matrix.shape != (len(ids), len(ids)):
+        raise ValueError(
+            "dist_matrix shape must match the number of particle_ids: "
+            f"shape={matrix.shape}, n_ids={len(ids)}"
+        )
+    if len(set(ids)) != len(ids):
+        raise ValueError("particle_ids must be unique")
+
+    index = {pid: i for i, pid in enumerate(ids)}
+    for raw_i, raw_j in excluded_pairs:
+        pid_i, pid_j = int(raw_i), int(raw_j)
+        if pid_i == pid_j:
+            continue
+        i = index.get(pid_i)
+        j = index.get(pid_j)
+        if i is None or j is None:
+            continue
+        matrix[i, j] = np.inf
+        matrix[j, i] = np.inf
+    return matrix
+
+
 def validate_wca_exclusion_policy(priors: dict[str, Any]) -> None:
     """Require the selective 1-2 / all-sites 1-3 WCA policy (schema v3)."""
     meta = priors.get("wca_exclusions", {})
@@ -172,6 +209,14 @@ def wca_direct_bonded_site_exclusions(
             f"missing={missing}, extra={extra}. Rebuild cg_priors.json."
         )
     return result
+
+def resolve_referenced_path(path: str | Path, reference_file: str | Path) -> Path:
+    """Resolve an input path relative to the file that references it."""
+    value = Path(path).expanduser()
+    if value.is_absolute():
+        return value
+    return Path(reference_file).expanduser().resolve().parent / value
+
 
 def sha256_file(path: str | Path) -> str:
     path = Path(path)
@@ -333,6 +378,7 @@ def save_checkpoint(
     config: dict[str, Any],
     dt: float,
     kT: float,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> None:
     metadata = {
         "schema_version": CHECKPOINT_SCHEMA_VERSION,
@@ -343,6 +389,15 @@ def save_checkpoint(
         "created_with_dt_ps": float(dt),
         "created_with_kT_kJ_mol": float(kT),
     }
+    if extra_metadata:
+        reserved = set(metadata)
+        overlap = reserved.intersection(extra_metadata)
+        if overlap:
+            raise ValueError(
+                "extra checkpoint metadata may not override reserved keys: "
+                + ", ".join(sorted(overlap))
+            )
+        metadata.update(extra_metadata)
     signature = particle_signature(system)
     np.savez_compressed(
         path,
@@ -453,8 +508,10 @@ def configure_neighbor_search(
 ) -> None:
     """Select ESPResSo pair traversal explicitly.
 
-    ``verlet`` and ``link-cell`` control whether Verlet lists are used.  When
-    ``n_square_types`` is provided, ESPResSo's hybrid decomposition is used:
+    ``verlet`` and ``link-cell`` select regular/hybrid decomposition with or
+    without Verlet lists. ``nsquare`` selects ESPResSo's all-pairs N-square
+    decomposition and deliberately ignores ``n_square_types``/``cutoff_regular``.
+    When ``n_square_types`` is provided for the other modes, ESPResSo's hybrid decomposition is used:
     those particle types are handled by the N-square sub-decomposition while
     the remaining short-range particles stay in the regular decomposition.
     This prevents sparse long-range technical interaction carriers from inflating
@@ -465,9 +522,13 @@ def configure_neighbor_search(
         use_verlet_lists = True
     elif normalized == "link-cell":
         use_verlet_lists = False
+    elif normalized == "nsquare":
+        system.cell_system.set_n_square(use_verlet_lists=False)
+        print("[INFO] Neighbor search: nsquare (all-pairs decomposition)")
+        return
     else:
         raise ValueError(
-            f"Unknown neighbor-search mode {mode!r}; expected 'verlet' or 'link-cell'"
+            f"Unknown neighbor-search mode {mode!r}; expected 'verlet', 'link-cell', or 'nsquare'"
         )
 
     if n_square_types:

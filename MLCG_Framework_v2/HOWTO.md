@@ -1,9 +1,9 @@
 # MLCG Framework v2 — Guida tecnica completa
 
-> Stato documentato: **14 agosto 2026**.
+> Stato documentato: **17 agosto 2026**.
 > Questa guida descrive il framework nella configurazione corrente, inclusi i fix recenti per:
 > Morse switched non-bonded reversibile (pair-specific e type-pair) in ESPResSo, validazione tollerante ai round-trip `float32` del manifest,
-> dummy neighbor-list limitata ai soli tipi ML, e certificazione NVE basata su `sigma_E = std(E)`.
+> dummy neighbor-list limitata ai soli tipi ML, conversione IBI conservativa, **regolarizzazione opzionale degli angoli IBI**, e certificazione NVE post-promozione con `sigma_E = std(E)` nuovamente gating sullo scaling `O(dt^2)`.
 
 ---
 
@@ -15,7 +15,7 @@
 4. [Mapping atomistico → coarse grained](#4-mapping-atomistico--coarse-grained)
 5. [Forze e torque generalizzati di riferimento](#5-forze-e-torque-generalizzati-di-riferimento)
 6. [Rigid body: masse, inerzie, Kabsch e virtual sites](#6-rigid-body-masse-inerzie-kabsch-e-virtual-sites)
-7. [Prior analitici e Direct Boltzmann Inversion](#7-prior-analitici-e-direct-boltzmann-inversion)
+7. [Prior analitici, DBI e IBI bonded](#7-prior-analitici-dbi-e-ibi-bonded)
 8. [WCA pair-specific: costruzione, guardrail e sottrazione](#8-wca-pair-specific-costruzione-guardrail-e-sottrazione)
 9. [Target residuo del force matching](#9-target-residuo-del-force-matching)
 10. [Architettura PaiNN implementata](#10-architettura-painn-implementata)
@@ -388,7 +388,7 @@ La forza sui virtual sites viene trasferita dal meccanismo di virtual sites al c
 
 ---
 
-# 7. Prior analitici e Direct Boltzmann Inversion
+# 7. Prior analitici, DBI e IBI bonded
 
 Il builder esegue un primo pass sulla traiettoria per costruire statistiche geometriche e un secondo pass per sottrarre i prior.
 
@@ -566,6 +566,458 @@ k \approx \frac{1}{\beta\,\mathrm{Var}(\phi)}.
 \]
 
 Nel preprocessing la forza del cosine dihedral è valutata tramite differenza centrale con passo `1e-6 nm`, per evitare mismatch silenziosi di convenzione segno/indice. Se un nuovo sistema usa dihedrals, è raccomandato un test di parity esplicito con ESPResSo.
+
+## 7.6 Prior tabulati bonded: DBI iniziale e IBI iterativa
+
+La v2 supporta ora un workflow **bonded DBI/IBI** per distanze, angoli e diedri site-addressable. Il core resta generico: TEL22 non è codificato nel modulo `ibi/`, e gli stessi endpoint `(mol, site)` usati dal runtime sono usati per estrarre le distribuzioni sia dal dataset atomistico mappato sia dalle traiettorie CG campionate.
+
+Questo primo livello IBI è deliberatamente limitato ai prior bonded. **Non** implementa ancora IBI non-bonded/RDF.
+
+### 7.6.1 Dichiarare i gruppi da invertire
+
+Nel file seed dei prior, un termine bonded può essere marcato con `type="ibi"` oppure `type="dbi"`:
+
+```json
+{
+  "bonds": [
+    {
+      "name": "backbone",
+      "type": "ibi",
+      "mol_i": 0, "site_i": 0,
+      "mol_j": 1, "site_j": 0
+    }
+  ]
+}
+```
+
+- `type="ibi"`: genera il potenziale iniziale mediante Direct Boltzmann Inversion e poi lo aggiorna iterativamente;
+- `type="dbi"`: genera soltanto la tabella iniziale e la mantiene fissa durante le eventuali iterazioni;
+- entry della stessa categoria con lo stesso `name` vengono pooled nella stessa distribuzione target e condividono la stessa tabella;
+- gli endpoint possono essere COM (`site=-1`) oppure siti CG fisici (`site>=0`).
+
+Durante la costruzione del **dataset seed** i termini `ibi/dbi` non vengono sottratti: servono a dichiarare quali coordinate geometriche devono essere invertite. Dopo la generazione, tali entry vengono convertite in `type="tabulated"` e conservano `ibi_mode="ibi"` o `ibi_mode="dbi"`.
+
+### 7.6.2 Generare soltanto la DBI iniziale
+
+```bash
+python3 ibi/build_dbi_priors.py \
+  --dataset cg_dataset_seed.bin \
+  --priors cg_priors_seed.json \
+  --outdir ibi_priors_dbi \
+  --ibi-config ibi_settings.json
+```
+
+Il comando legge esclusivamente le coordinate dal dataset binario; le forze residue contenute nel dataset non entrano nella Boltzmann inversion. Le tabelle prodotte sono referenziate relativamente al JSON dei prior, quindi l'intera directory di output può essere spostata mantenendo intatti i riferimenti.
+
+### 7.6.3 Eseguire l'IBI iterativa
+
+```bash
+python3 ibi/run_ibi_loop.py \
+  --dataset cg_dataset_seed.bin \
+  --priors cg_priors_seed.json \
+  --config training/cg_model_config.json \
+  --rb_info rigid_bodies_info.json \
+  --pypresso espresso/build/pypresso \
+  --iterations 5 \
+  --outdir ibi_priors \
+  --ibi-config ibi_settings.json
+```
+
+Per ogni iterazione il driver:
+
+1. parte dalla DBI corrente;
+2. esegue una simulazione **NVT priors-only**, senza PaiNN, con `simulation/run_cg_md.py`;
+3. scarta il burn-in e salva una traiettoria NPZ strutturata di COM e soli siti CG fisici; i marker tecnici Morse pair-specific non entrano nel campionamento IBI;
+4. ricalcola le stesse coordinate bond/angle/dihedral usate sul target;
+5. applica \(\Delta U=\alpha k_BT\ln[P_i/P_{target}]\) soltanto ai gruppi `ibi`;
+6. lascia invariati i gruppi `dbi`;
+7. scrive metriche e un nuovo `cg_priors.json`.
+
+Un file di configurazione minimale è, per esempio:
+
+```json
+{
+  "kT": 2.49,
+  "alpha": 0.25,
+  "simulation": {
+    "dt": 0.0005,
+    "burn_in_steps": 8000,
+    "steps": 40000,
+    "log_interval": 40
+  }
+}
+```
+
+`steps` indica qui la parte produttiva campionata dopo `burn_in_steps`; entrambi devono essere multipli di `log_interval`. L'output finale auto-consistente è `ibi_priors/cg_priors_final.json`, con le tabelle definitive sotto `ibi_priors/final/`.
+
+### 7.6.4 Convenzioni delle tabelle ESPResSo
+
+Le tre colonne dei file sono `x energy force`, ma la terza colonna non ha la stessa semantica per ogni interazione:
+
+- `TabulatedDistance`: `force = -dU/dr`;
+- `TabulatedAngle`: `force = +dU/dtheta`, su dominio esatto `0..pi`;
+- `TabulatedDihedral`: la colonna è il **fattore torsionale ESPResSo**, non il semplice `-dU/dphi`; lontano dalle singolarità geometriche vale
+
+\[
+\mathrm{factor}(\phi)=-\frac{dU/d\phi}{\sin\phi}.
+\]
+
+La v1 trattava il diedro tabulato come se la terza colonna fosse sempre `-dU/dphi`; questa convenzione non viene portata nella v2. Le tabelle dihedrali coprono `0..2*pi`. Poiché la geometria ESPResSo è numericamente singolare a `phi=0` e `phi=pi`, un target dihedrale con forte peso o forte pendenza in prossimità di quei punti richiede particolare cautela.
+
+Il controllo runtime/preprocessing dedicato è:
+
+```bash
+espresso/build/pypresso simulation/diagnose_tabulated_prior_parity.py
+```
+
+Deve terminare con `[PASS]` prima di usare tabelle IBI per generare target residui.
+
+### 7.6.5 Passaggio obbligatorio dopo l'IBI
+
+La tabella finale cambia il prior esplicito e quindi cambia il target che PaiNN deve apprendere. **Non usare direttamente il vecchio dataset residuale.** Rilanciare `preprocessing/build_cg_dataset.py` sulla traiettoria atomistica originale usando:
+
+```text
+--priors ibi_priors/cg_priors_final.json
+```
+
+Il Pass 2 sottrae allora, per bond/angle/dihedral tabulati, le stesse forze e gli stessi torque site-aware applicati dal runtime. Solo il dataset così rigenerato deve essere usato per il training residuale.
+
+ESPResSo interpola separatamente le colonne energia e forza delle tabelle. Per questo il framework continua a rifiutare per default una **certificazione NVE stretta** quando sono attivi prior tabulati; l'IBI viene campionata in NVT. Questa limitazione è distinta dalla baseline pre-IBI analitica già certificata.
+
+### 7.6.6 Conversione IBI conservativa per NVE stretta
+
+Per bond e angle convergenti il framework dispone anche della rappresentazione
+`type="conservative_spline"`.  La sorgente di verità è una sola spline cubica
+Hermite dell'energia `U(q)`; ESPResSo calcola `dU/dq` dallo stesso polinomio e
+quindi non interpola più energia e forza come due tabelle indipendenti.  Il
+supporto certificato corrente è **bond + angle**; i dihedrals tabulati restano
+fuori da questa fase conservativa.
+
+Nel tutorial TEL22 IBI la sequenza è:
+
+```bash
+cd tutorials/tel22_IBI
+bash ./20_install_conservative_spline.sh
+bash ./21_convert_best_ibi_to_conservative.sh
+bash ./22_validate_conservative_spline.sh
+```
+
+`20_install_conservative_spline.sh` ricompila ESPResSo, verifica i binding
+Python e lancia uno smoke test sintetico che confronta le forze runtime con
+`-grad U` ottenuto per differenze finite direttamente dall'energia bonded di
+ESPResSo.  `22_validate_conservative_spline.sh` aggiunge il gate sulle tabelle
+reali convertite: coerenza `U/dU_dq` e parità energia/forze tra preprocessing e
+runtime per ogni spline unica.
+
+Il superamento di questi gate non rende valido il vecchio modello PaiNN: i
+prior espliciti sono cambiati.  Occorre ricostruire il dataset residuale usando
+**esattamente** il `cg_priors.json` conservativo, riaddestrare PaiNN, ripetere i
+controlli strutturali matched e solo dopo eseguire la certificazione NVE stretta
+con scaling di Velocity-Verlet e drift su finestra lunga.
+
+#### 7.6.6.1 Gate post-conversione e training residuale conservativo
+
+Dopo un `[PASS]` di `22_validate_conservative_spline.sh`, il workflow TEL22 IBI
+prosegue in modo fail-closed:
+
+```bash
+bash ./13_rebuild_residual_dataset.sh
+bash ./16_check_ibi_training_inputs.sh
+```
+
+Quando `ibi_conservative/cg_priors.json` esiste, gli script `13`, `16`, `03`,
+`18` e `19` lo preferiscono automaticamente ai vecchi prior tabulati. Il rebuild
+scrive `ibi_residual_build_manifest.json`, che lega tramite SHA256 dataset
+residuale, rigid-body metadata, priors conservativi, ogni tabella spline e i
+report `validation_report.json` e `runtime_parity_report.json`. Il preflight `16`
+deve terminare con `[PASS]` prima del training.
+
+Il training residuale parte da zero sul nuovo target:
+
+```bash
+bash ./03_train_model.sh
+```
+
+Se l'output di default `tel22_model_ibi.pt` esiste già, lo script rifiuta la
+sovrascrittura o un resume implicito. Quando il dataset residuale è stato
+rigenerato per i prior conservativi, **non** usare `--resume` da un modello
+precedente: scegliere un nuovo artefatto, per esempio:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./03_train_model.sh
+```
+
+Il manifest del modello registra l'hash del dataset/config di training. Se viene
+usato un nome modello non di default, lo stesso `IBI_MODEL` va propagato ai gate
+runtime successivi, per esempio:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./diagnostics/scripts/18_validate_postibi_runtime.sh
+
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  OVERWRITE=1 bash ./diagnostics/scripts/19_validate_ibi_ml_ab.sh
+```
+
+La certificazione NVE stretta appartiene solo alla fine di questa catena: prima
+servono modello residuale nuovo, provenance coerente e validazione runtime del
+medesimo Hamiltoniano `prior conservativi + PaiNN residuale`.
+
+
+#### 7.6.6.2 Certificazione NVE del candidato conservative IBI-only
+
+Se il matched A/B del passo `19` mostra che il residual PaiNN non migliora la
+struttura, il candidato fisico da certificare puo essere il ramo **IBI-only**.
+Il gate dedicato e:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./diagnostics/scripts/23_certify_conservative_ibi_nve.sh --overwrite
+```
+
+Il modello indicato da `IBI_MODEL` **non viene attivato** ne durante la preparazione
+del checkpoint NVT dedicato ne durante le traiettorie NVE. Il vecchio
+`diagnostics/ml/postibi_runtime_validation/equilibrated_postibi.npz` resta soltanto lo **stato
+sorgente**: il passo `23` esegue prima una NVT Langevin con `--disable_ml` e salva
+`diagnostics/nve/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz`.
+Solo questo nuovo checkpoint, termalizzato con l'Hamiltoniana realmente
+certificata, viene riutilizzato identicamente per tutti i timestep NVE.
+
+Il checkpoint dedicato registra `hamiltonian_mode`, ensemble e SHA256 del
+checkpoint sorgente. Il certificatore li ricontrolla in modo fail-closed prima
+del primo run NVE. Ogni traiettoria NVE passa `--disable_ml`, spegne il
+termostato, imposta force cap a zero e usa Velocity-Verlet.
+
+Prima delle traiettorie, `simulation/conservative_nve_preflight.py` ricontrolla
+che `ibi_conservative/cg_priors.json`, tutte le spline referenziate,
+`validation_report.json` e `runtime_parity_report.json` siano ancora
+byte-identici agli artefatti Phase-2 validati. I vecchi prior `tabulated` sono
+rifiutati e la certificazione conservative resta limitata a spline **bond +
+angle**; un dihedral conservative fa fallire il preflight.
+
+Il default usa 5 ps per timestep e la griglia
+`0.001 0.0015 0.002 0.003 0.004 0.005 ps`. Il criterio resta quello generale:
+fit `sigma_E ~ dt^p` con `1.7 <= p <= 2.3`, `R2 >= 0.97` e drift relativo a
+blocchi `<= 1e-4`. Gli output sono separati sotto
+`diagnostics/nve/nve_certification_conservative_ibi_only/` e il report registra esplicitamente
+`hamiltonian_mode=conservative_classical_model_provenance_ml_disabled`.
+
+Questo gate certifica **solo** `WCA + Morse + bonded conservative IBI` nel range
+di stati visitato. Non promuove il residual PaiNN; se in futuro un nuovo modello
+ML supera il matched A/B, il suo Hamiltoniano completo deve essere certificato
+separatamente con PaiNN attivo.
+
+
+#### 7.6.6.3 Diagnostica NVE fine-dt e short-time (non certificante)
+
+Se il passo `23` passa il drift ma fallisce il fit globale `sigma_E ~ dt^p`, non
+si devono modificare subito spline o prior. Usare prima il gate **diagnostico**:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+NVE_DIAG_DURATION_PS=2 \
+  bash ./diagnostics/scripts/24_diagnose_conservative_ibi_nve_scaling.sh --overwrite
+```
+
+Il passo `24` riusa il checkpoint NVT IBI-only provenance-bound preparato dal
+passo `23`; non esegue una nuova termalizzazione e non attiva PaiNN. Il default
+scansiona
+`0.00025 0.0005 0.00075 0.001 0.0015 0.002 0.003 0.004 0.005 ps` e calcola
+fit separati di `sigma_E` e `rms_delta_E` per:
+
+- **fine**: `dt <= 0.001 ps`;
+- **coarse**: `dt >= 0.0015 ps`;
+- **global**: tutti i timestep.
+
+Per il solo regime fine vengono inoltre misurati gli errori energetici a tempi
+fisici comuni `0.012 0.024 0.048 0.096 ps`. Questi tempi sono multipli esatti di
+tutti i `dt` fini di default, quindi l'energia viene letta da campioni reali e
+**non interpolata**. Per ogni finestra il report contiene il fit in potenza di
+`|Delta E(t)|`, RMS di `Delta E` sul prefisso e `sigma_E` sul prefisso.
+
+Output:
+
+```text
+diagnostics/nve/nve_diagnostic_conservative_ibi_only/nve_diagnostic_report.json
+diagnostics/nve/nve_diagnostic_conservative_ibi_only/nve_diagnostic_runs.csv
+```
+
+Questo step e deliberatamente **diagnostic-only**: termina con successo quando
+i run sono stati prodotti e analizzati anche se il vecchio criterio strict
+resterebbe `FAIL`. Non modifica le soglie del passo `23` e non puo essere usato
+come certificazione. Se il fit fine/short-time recupera `p ~= 2` con buon `R2`,
+il problema e compatibile con l'assenza di un regime asintotico ai timestep piu
+grandi o con contaminazione della metrica a lunga finestra; se anche il regime
+fine non recupera l'ordine atteso, il passo successivo e una diagnostica per
+componenti dell'Hamiltoniana, non un rilassamento delle soglie.
+
+
+#### 7.6.6.4 Certificazione composita conservative IBI-only dello step 26 (storica)
+
+Dopo i passi `22`, `23` e `25`, il verdetto finale viene assemblato senza
+rilanciare dinamica:
+
+```bash
+cd tutorials/tel22_IBI
+bash ./diagnostics/scripts/26_finalize_conservative_ibi_nve_certification.sh
+```
+
+Il gate finale richiede contemporaneamente:
+
+- validazione finite-difference delle spline conservative: PASS;
+- parity energia/forza preprocessing <-> ESPResSo: PASS;
+- provenance coerente di prior e checkpoint NVT IBI-only;
+- relative block-mean drift NVE entro soglia;
+- convergenza Richardson dello stato compatibile con secondo ordine per
+  posizione, velocita', orientazione e `omega_body`.
+
+Di default ogni metrica di stato deve avere `1.7 <= median p <= 2.3` e
+`median R2 >= 0.95`. Nello **step 26 storico** il fit `sigma_E ~ dt^p` del passo
+`23` restava nel report come `diagnostic_only`. Questa scelta e' stata utile per
+separare l'ordine della traiettoria dal problema energetico, ma **non e' piu il
+criterio finale corrente**: gli step 27--34 hanno localizzato la stiffness degli
+angoli IBI e la certificazione post-promozione dello step 34 rende nuovamente
+obbligatorio lo scaling `sigma_E = O(dt^2)`, oltre a Richardson.
+
+Output:
+
+```text
+diagnostics/nve/nve_final_certification_conservative_ibi_only/
+    conservative_ibi_nve_certification_report.json
+```
+
+Un PASS certifica esclusivamente `WCA + Morse + bonded conservative IBI` con
+PaiNN disabilitato. Un Hamiltoniano ML-active richiede una certificazione
+separata.
+
+
+### 7.6.7 IBI angolare regolarizzato: opzione supportata, non default universale
+
+Per gli **angoli IBI gia' convertiti in `type="conservative_spline"`** il
+framework supporta una regolarizzazione opzionale del potenziale. Questa path e'
+una trasformazione post-IBI esplicita del prior: **non e' un flag automatico di
+`run_ibi_loop.py`**, non e' un nuovo integratore e non e' un rilassamento della
+certificazione NVE.
+
+La motivazione numerica e' che l'update IBI
+
+\[
+\Delta U(\theta)=\alpha k_B T\ln\frac{P_{\mathrm{sim}}(\theta)}
+                                      {P_{\mathrm{target}}(	heta)}
+\]
+
+puo' incorporare piccole componenti ad alta frequenza dovute a sampling finito o
+alla rappresentabilita' marginale. Una perturbazione energetica piccola su una
+scala angolare corta puo' produrre una grande `U''(theta)` e quindi modi angolari
+artificialmente veloci. In questo caso il potenziale IBI grezzo resta utilizzabile
+con timestep sufficientemente piccoli, ma la regolarizzazione puo' recuperare un
+range di timestep piu ampio senza modificare materialmente la distribuzione
+strutturale.
+
+L'implementazione corrente e' `ibi/generate_angle_smoothing_candidate.py`. Per
+ogni tabella angolare:
+
+1. separa analiticamente il wall quadratico configurato dall'IBI;
+2. applica un filtro Gaussiano **solo al body de-walled** `U_body(theta)`;
+3. riaggiunge lo stesso wall, senza abbassarne la barriera;
+4. costruisce una `CubicSpline` C2 sull'energia regolarizzata;
+5. esporta energia e derivate nodali nella stessa rappresentazione Hermite
+   conservativa usata dal runtime.
+
+Bond e dihedral non vengono smussati da questo comando. Il runtime ESPResSo non
+cambia: energia e forza continuano a derivare dallo stesso polinomio Hermite.
+
+Esempio generico:
+
+```bash
+python3 ibi/generate_angle_smoothing_candidate.py \
+  --source-priors ibi_conservative/cg_priors.json \
+  --ibi-config ibi_settings.json \
+  --body-sigma-rad 0.0075 \
+  --output-dir ibi_angle_candidate \
+  --dry-run
+
+python3 ibi/generate_angle_smoothing_candidate.py \
+  --source-priors ibi_conservative/cg_priors.json \
+  --ibi-config ibi_settings.json \
+  --body-sigma-rad 0.0075 \
+  --output-dir ibi_angle_candidate \
+  --overwrite
+```
+
+L'output e' deliberatamente marcato `validated=false` e **non modifica mai** i
+prior sorgente. Il valore di `body_sigma_rad` e' system-specific: `0.0075 rad` e'
+validato per il TEL22 corrente, non e' un default trasferibile ad altri modelli.
+
+La selezione di un candidato deve usare almeno quattro classi di evidenza:
+
+- struttura: distribuzioni angle/bond e delta L1 rispetto al prior non
+  regolarizzato;
+- stiffness occupata: `P95/P99/max |U''|` valutata sulle configurazioni realmente
+  visitate, non solo sugli estremi della tabella;
+- NVE: plateau **contiguo** di `sigma_E/dt^2` e fit `sigma_E ~ dt^p`, senza
+  scegliere il candidato soltanto perche' il `p` globale e' vicino a 2;
+- robustezza: repliche indipendenti e una validazione strutturale piu lunga prima
+  della promozione.
+
+Regolarizzare un prior cambia la decomposizione del target residuale. Un dataset
+residuale o un modello PaiNN costruito prima della regolarizzazione diventa
+**stale per uso ML-active** e deve essere ricostruito/retrainato prima di poter
+riattivare la rete.
+
+### 7.6.8 TEL22: path validata `smooth_0p0075` e certificazione post-promozione
+
+Nel caso TEL22 gli step diagnostici 29--32 hanno localizzato la perdita del range
+Verlet negli angoli IBI: il controllo con prior armonici originali conserva lo
+scaling quadratico, mentre l'introduzione degli angle IBI aumenta fortemente la
+curvatura occupata. La scansione locale ha selezionato
+`smooth_0p0075_wall_current` come miglior compromesso tra struttura e regolarita'
+NVE.
+
+Lo step 33 valida **un solo candidato**, senza ulteriore tuning:
+
+```bash
+cd tutorials/tel22_IBI
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./33_validate_final_ibi_angle_candidate.sh --overwrite
+```
+
+Il risultato TEL22 validato e':
+
+```text
+common sigma_E exponent p = 1.947046
+within-replica R2          = 0.984844
+full clean range           = 3/3 repliche fino a dt=0.005 ps
+Delta weighted angle L1    = +0.009561
+Delta weighted bond L1     = -0.019844
+angle P99 |U''| reduction  = 2.416x
+```
+
+Solo dopo questo PASS lo step 34 promuove transazionalmente il candidate nei
+prior di produzione, conserva un backup del prior precedente e ricertifica la
+**path di produzione**:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./34_promote_and_certify_ibi_angle_prior.sh --promote
+```
+
+La certificazione corrente richiede contemporaneamente finite-difference/parity,
+preflight, scaling energetico e Richardson. `sigma_E` e' nuovamente un gate:
+
+```text
+fresh production sigma_E: p=1.877261, R2=0.984412,
+                          C2 spread=1.487, max dt=0.005 ps, PASS
+Richardson median p:      position=2.004, velocity=2.215,
+                          orientation=2.035, omega_body=2.019, PASS
+FINAL:                    pass=True, ML_active=False
+```
+
+Il certificato finale copre quindi soltanto
+`WCA + Morse + bonded conservative regularized IBI` con PaiNN disabilitato. Il
+residual dataset e il modello PaiNN pre-promozione sono marcati stale e non
+fanno parte dell'Hamiltoniana certificata.
 
 ---
 
@@ -1796,7 +2248,7 @@ La pipeline TEL22 è:
       ↓
 04_equilibrate.sh
       ↓
-06_certify_nve.sh
+diagnostics/scripts/06_certify_nve.sh
       ↓
 05_run_espresso.sh
 ```
@@ -2189,7 +2641,7 @@ Per una produzione derivata da equilibrazione è normalmente preferibile caricar
 
 ---
 
-## 21.10 `06_certify_nve.sh`
+## 21.10 `diagnostics/scripts/06_certify_nve.sh`
 
 Certifica la conservatività numerica del sistema completo.
 
@@ -2207,7 +2659,7 @@ Uso raccomandato:
 NVE_DTS="0.001 0.002 0.005 0.01" \
 NVE_DURATION_PS=5.0 \
 PYRESSO=../../espresso/build/pypresso \
-bash 06_certify_nve.sh --overwrite
+bash diagnostics/scripts/06_certify_nve.sh --overwrite
 ```
 
 Il wrapper chiama `simulation/certify_nve.py`.
@@ -2618,9 +3070,23 @@ Stabilità fisica del modello/prior, non semplicemente precisione dell'integrato
 
 ## 26.1 Test Python
 
+Installare la dipendenza di test una volta nell'ambiente Python attivo:
+
 ```bash
-python3 -m unittest discover -s tests -p 'test_*.py'
+python3 -m pip install -r requirements-test.txt
 ```
+
+Dalla root del repository:
+
+```bash
+python3 -m pytest -q
+```
+
+`pytest.ini` imposta `testpaths = tests`, quindi il comando senza argomenti e
+`python3 -m pytest -q tests` hanno lo stesso scope. Questo evita di raccogliere
+accidentalmente la test-suite upstream contenuta in un eventuale checkout
+`espresso/`, che richiede l'ambiente di build/test ESPResSo e non fa parte dei
+test del framework MLCG.
 
 Coprono:
 
@@ -2652,7 +3118,7 @@ Il percorso esatto dipende dalla build locale.
 
 ## 26.4 Morse smoke test
 
-Dopo il rebuild di ESPResSo eseguire `tutorials/tel22/08_diagnose_morse_reversibility.sh --assert-expected`: il test verifica `U(r_cut)=F(r_cut)=0`, attraversamento del cutoff senza eccezioni e re-entry/rebinding. I test unitari coprono inoltre la configurazione `morse_type_pairs`.
+Dopo il rebuild di ESPResSo eseguire `tutorials/tel22/diagnostics/scripts/08_diagnose_morse_reversibility.sh --assert-expected`: il test verifica `U(r_cut)=F(r_cut)=0`, attraversamento del cutoff senza eccezioni e re-entry/rebinding. I test unitari coprono inoltre la configurazione `morse_type_pairs`.
 
 ## 26.5 Diagnostica runtime Morse site-site: forza e torque
 
@@ -2660,7 +3126,7 @@ Dopo modifiche alla logica dei Morse pair-specific o dei virtual marker, eseguir
 
 ```bash
 cd tutorials/tel22
-bash ./09_diagnose_morse_site_torque.sh --assert-expected
+bash ./diagnostics/scripts/09_diagnose_morse_site_torque.sh --assert-expected
 ```
 
 Il test non usa TEL22: costruisce due rigid body sintetici con un sito CG virtuale fuori dal COM per ciascun corpo, crea i marker tecnici tramite gli stessi helper usati in produzione e attiva un solo Morse pair-specific `site<->site`. Confronta quindi l'energia ESPResSo, le forze sui due COM e i torque `torque_lab` con la previsione analitica `tau=(r_site-r_COM) x F`. Verifica anche che marker e sito restino coincidenti e che i tipi fisici dei siti CG non vengano modificati. Questo e' il test runtime che certifica la generalizzazione `COM/site` oltre al caso TEL22 COM-COM.
@@ -2720,6 +3186,65 @@ tabulated priors = 0
 Il run AA corto da 50 ps produce 51 frame a 1 ps ed è adatto a smoke test, non a un training definitivo.
 
 Per un dataset scientifico si deve usare una traiettoria sufficientemente lunga e rappresentativa.
+
+## 27.1 Regola architetturale: ogni scelta model-dependent è configurabile
+
+Nel percorso IBI/conservative il framework distingue esplicitamente tre classi:
+
+- **CORE_INVARIANT**: proprietà universali del metodo, quindi codificate nel core
+  e coperte da test. Esempi: `F=-grad(U)`, periodicità della spline torsionale,
+  schema della tabella conservativa, formula IBI, controlli di conservatività e
+  runtime/preprocessing parity.
+- **MODEL_PARAMETER**: qualunque scelta che possa cambiare cambiando molecola,
+  mapping, dataset, temperatura, Hamiltoniano o protocollo di sampling. Deve
+  provenire da configurazione esterna.
+- **CALIBRATED_PARAMETER**: un `MODEL_PARAMETER` scelto tramite sweep/diagnostica
+  (per esempio una larghezza di smoothing o una finestra NVE accettata). Deve
+  essere configurato e accompagnato dalla provenance della calibrazione.
+
+La configurazione model-dependent del tutorial IBI è:
+
+```text
+tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+I wrapper degli step 11–39 che contengono decisioni dipendenti dal modello la
+caricano tramite `tutorials/tel22_IBI/model_config.sh`. Lo step 20 installa solo
+il kernel ESPResSo generico e quindi non richiede una sezione model-dependent.
+La configurazione include grouping bonded/torsionale, `ibi`/`dbi`, mixing,
+binning/supporto, sampling, seed policy, regularizzazione e candidate sweep,
+numero di repliche, timestep grid, finestre fine/coarse e soglie di validazione.
+
+Validare il file prima di un workflow:
+
+```bash
+python3 simulation/model_dependent_config.py validate \
+  --config tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+Per un altro modello si usa un file diverso senza modificare il core:
+
+```bash
+IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
+  bash tutorials/tel22_IBI/diagnostics/scripts/38_test_conservative_in_loop_dihedral_ibi.sh --run
+```
+
+Gli override via environment restano possibili. Il sidecar di provenance del model config
+(`model_config_provenance*.json`) registra per ogni valore se proviene dal file di
+configurazione o da `environment_override`. I workflow non devono quindi
+dipendere da override invisibili.
+
+Un `ibi_settings.json` passato esplicitamente è **autorevole e completo**: non
+viene più fuso silenziosamente con valori model-dependent interni. Se manca un
+parametro richiesto dal percorso usato, il workflow deve fallire con errore di
+configurazione. I default Python rimasti in helper low-level servono soltanto a
+uso API/test/esplorativo; i wrapper di produzione/tutorial passano valori
+espliciti dalla configurazione del modello.
+
+Valori TEL22 quali `sigma_angle=0.0075 rad`, `alpha`, numero di repliche, seed,
+threshold strutturali e griglie NVE sono quindi esempi/configurazioni TEL22, non
+proprietà del metodo. `calibration_provenance` nel JSON collega i valori calibrati
+agli step/report che li hanno selezionati.
 
 ---
 
@@ -2860,6 +3385,87 @@ Per certificazione energetica usare CPU, dove il plugin può usare accumulo più
 
 ---
 
+## 28.11 Diagnostica dell'ordine reale della traiettoria NVE
+
+Quando il drift NVE e' molto piccolo ma `sigma_E(dt)` e' non monotona, non usare
+la sola ampiezza delle oscillazioni energetiche per concludere che Velocity-Verlet
+abbia perso il secondo ordine. Nel workflow conservative IBI usare lo step 25:
+
+```bash
+cd tutorials/tel22_IBI
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./diagnostics/scripts/25_diagnose_conservative_ibi_state_convergence.sh --overwrite
+```
+
+Il test usa lo stesso checkpoint NVT IBI-only provenance-bound dello step 23 e
+PaiNN resta disabilitato. Le traiettorie NVE di default usano la scala dyadica
+`0.001, 0.0005, 0.00025, 0.000125 ps` e una reference a `0.0000625 ps`, fino a
+`0.096 ps`, con campioni comuni ogni `0.012 ps`.
+
+`run_cg_md.py --state_sample_npz` salva per le sole particelle reali ID, posizione,
+velocita', quaternione e `omega_body`, insieme a hash degli input, Hamiltonian mode
+e SHA256 del checkpoint sorgente. Il postprocessing confronta sia ogni traiettoria
+con la reference sia le coppie Richardson `dt`/`dt/2`. L'ordine viene stimato da
+queste ultime: per un metodo del secondo ordine ci si aspetta
+`error(dt,dt/2) ~ dt^2`. Sono riportati fit separati per posizione, velocita',
+orientazione e velocita' angolare. Le posizioni sono confrontate con minimum image
+e l'errore quaternion e' invariante rispetto al cambio di segno `q -> -q`.
+
+Lo step 25 resta un test diagnostico e non riscrive il verdetto storico dello
+step 23. Il suo report viene pero' consumato dallo step 26, che costruisce il
+verdetto composito storico insieme a kernel/parity/provenance/drift. Serve a
+distinguere un vero difetto dell'integratore da un'anomalia della metrica
+energetica. Un PASS Richardson **non** autorizza pero' a ignorare uno scaling
+`sigma_E(dt)` non quadratico: quella discrepanza va localizzata con gli step
+27--29 prima di certificare il prior.
+
+---
+
+
+## 28.12 Localizzare un `sigma_E(dt)` non quadratico
+
+La convergenza Richardson dello stato e il test classico sulle fluttuazioni di
+energia rispondono a domande diverse. Un ordine di traiettoria vicino a 2 **non**
+annulla il requisito fisico/numerico di capire perche, per una Hamiltoniana
+regolare integrata con Velocity-Verlet, `sigma_E` non mostri il regime
+`O(dt^2)` atteso.
+
+Per il ramo conservative IBI usare:
+
+```bash
+cd tutorials/tel22_IBI
+IBI_MODEL=tel22_model_ibi_conservative.pt \
+  bash ./diagnostics/scripts/27_diagnose_conservative_ibi_energy_scaling.sh --overwrite
+```
+
+Il passo 27 non modifica il kernel. Esegue una localizzazione per componenti:
+
+- salto di `U''` a ogni knot Hermite;
+- micro-sistemi bond e angle dentro una cella vs attraversamento knot;
+- angle su point particles vs virtual sites di rigid bodies;
+- finite difference rotazionale confrontata con `torque_lab`;
+- full-system finite difference di forze e torque;
+- scan `no_ibi`, `bonds_only`, `angles_only`, `full` con identica topologia WCA;
+- correlazione tra crossing dei knot e `|Delta E|` per step;
+- decomposizione `K_trans`, `K_rot`, energia bonded/nonbonded;
+- confronto `link-cell` vs `nsquare`;
+- reversibilita temporale forward / inversione `v, omega_body` / forward.
+
+Il report principale e
+`diagnostics/nve/conservative_ibi_energy_localization/localization_report.json`. Se il caso
+inside-cell recupera `sigma_E ~ dt^2` ma il caso crossing no, la regolarita ai
+knot diventa il sospetto principale. Se il point-angle passa e il rigid-angle
+fallisce, bisogna invece investigare back-transfer di forza/torque e integrazione
+rotazionale. Se anche `no_ibi` fallisce, non attribuire il problema alle spline.
+
+Finche un fallimento riproducibile di `sigma_E ~ dt^2` non e localizzato, il
+PASS composito storico del passo 26 non deve essere interpretato come
+certificazione finale. Se la localizzazione identifica stiffness degli angoli
+IBI, usare la path opzionale di regolarizzazione descritta in 7.6.7 e, dopo la
+promozione, richiedere il gate energetico dello step 34.
+
+---
+
 # 29. Checklist per adattare il framework a un nuovo sistema
 
 1. **AA trajectory**
@@ -2959,7 +3565,7 @@ bash 04_equilibrate.sh
 NVE_DTS="0.001 0.002 0.005 0.01" \
 NVE_DURATION_PS=5.0 \
 PYRESSO=../../espresso/build/pypresso \
-bash 06_certify_nve.sh --overwrite
+bash diagnostics/scripts/06_certify_nve.sh --overwrite
 
 # 6. Production
 CG_DT=0.001 \

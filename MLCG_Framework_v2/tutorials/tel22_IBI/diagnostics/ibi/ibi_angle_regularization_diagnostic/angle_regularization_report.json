@@ -1,0 +1,3225 @@
+{
+  "aggregate": {
+    "candidates": {
+      "c2_raw_wall_current": {
+        "candidate_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/c2_raw_wall_current/cg_priors.json",
+        "curvature_runtime": {
+          "max_abs": 44630.04562824614,
+          "max_signed": 44630.04562824614,
+          "min_signed": -10381.800556183827,
+          "n": 50200,
+          "p50_abs": 834.2316511893528,
+          "p95_abs": 4414.836388557279,
+          "p99_abs": 7112.204285946804
+        },
+        "curvature_target": {
+          "max_abs": 39789.64921972134,
+          "max_signed": 39789.64921972134,
+          "min_signed": -10316.830912417776,
+          "n": 10200,
+          "p50_abs": 1129.806125058331,
+          "p95_abs": 4722.752237354951,
+          "p99_abs": 7485.478746715528
+        },
+        "max_group_potential_delta_target_rms_kT": 3.745991568617925e-05,
+        "p99_curvature_ratio_vs_old": 84.51285503364593,
+        "p99_curvature_reduction_vs_current": 1.230584005622065,
+        "potential_delta_runtime_rms_kT": 2.9463531399797564e-05,
+        "potential_delta_target_p99_abs_kT": 0.00012175408929663987,
+        "potential_delta_target_rms_kT": 2.9639504422216025e-05,
+        "sqrt_p99_ratio_frequency_proxy_vs_old": 9.193087350484925,
+        "validated": false
+      },
+      "smooth_0p01_wall_current": {
+        "candidate_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p01_wall_current/cg_priors.json",
+        "curvature_runtime": {
+          "max_abs": 14407.555486367217,
+          "max_signed": 14407.555486367217,
+          "min_signed": -2846.2507087461427,
+          "n": 50200,
+          "p50_abs": 427.46821965149104,
+          "p95_abs": 1854.3463327437967,
+          "p99_abs": 4258.222285441984
+        },
+        "curvature_target": {
+          "max_abs": 13968.30560486144,
+          "max_signed": 13968.30560486144,
+          "min_signed": -3181.587973146927,
+          "n": 10200,
+          "p50_abs": 528.8473123610481,
+          "p95_abs": 1750.399737093389,
+          "p99_abs": 2941.714682110455
+        },
+        "max_group_potential_delta_target_rms_kT": 0.029602417243137037,
+        "p99_curvature_ratio_vs_old": 33.21266613556745,
+        "p99_curvature_reduction_vs_current": 3.1313405328362696,
+        "potential_delta_runtime_rms_kT": 0.026184284676771738,
+        "potential_delta_target_p99_abs_kT": 0.07442608755112128,
+        "potential_delta_target_rms_kT": 0.025448050614436005,
+        "sqrt_p99_ratio_frequency_proxy_vs_old": 5.7630431315033075,
+        "validated": false
+      },
+      "smooth_0p02_wall_1p5x_same_barrier": {
+        "candidate_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_1p5x_same_barrier/cg_priors.json",
+        "curvature_runtime": {
+          "max_abs": 7040.914110464438,
+          "max_signed": 7040.914110464438,
+          "min_signed": -816.3229144082175,
+          "n": 50200,
+          "p50_abs": 180.1716227312195,
+          "p95_abs": 780.8486772828693,
+          "p99_abs": 2409.4408465521633
+        },
+        "curvature_target": {
+          "max_abs": 7040.429373990928,
+          "max_signed": 7040.429373990928,
+          "min_signed": -1121.7800540961707,
+          "n": 10200,
+          "p50_abs": 204.55266873778464,
+          "p95_abs": 655.2987914231217,
+          "p99_abs": 2222.2221699854917
+        },
+        "max_group_potential_delta_target_rms_kT": 0.2526566343747899,
+        "p99_curvature_ratio_vs_old": 25.089422662103402,
+        "p99_curvature_reduction_vs_current": 4.145179786498201,
+        "potential_delta_runtime_rms_kT": 0.15958015268086706,
+        "potential_delta_target_p99_abs_kT": 0.24297317658323322,
+        "potential_delta_target_rms_kT": 0.14073049384518177,
+        "sqrt_p99_ratio_frequency_proxy_vs_old": 5.008934284067161,
+        "validated": false
+      },
+      "smooth_0p02_wall_2x_same_barrier": {
+        "candidate_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_2x_same_barrier/cg_priors.json",
+        "curvature_runtime": {
+          "max_abs": 6068.691888243624,
+          "max_signed": 6068.691888243624,
+          "min_signed": -816.3229144082175,
+          "n": 50200,
+          "p50_abs": 189.44571961487046,
+          "p95_abs": 894.2164345066615,
+          "p99_abs": 1490.6151250682906
+        },
+        "curvature_target": {
+          "max_abs": 6068.20715176953,
+          "max_signed": 6068.20715176953,
+          "min_signed": -1121.7800540961707,
+          "n": 10200,
+          "p50_abs": 207.21757287458468,
+          "p95_abs": 697.2181388221053,
+          "p99_abs": 1468.9371858091931
+        },
+        "max_group_potential_delta_target_rms_kT": 0.4747118464433377,
+        "p99_curvature_ratio_vs_old": 16.58465405332905,
+        "p99_curvature_reduction_vs_current": 6.270867474198829,
+        "potential_delta_runtime_rms_kT": 0.31842371330854746,
+        "potential_delta_target_p99_abs_kT": 0.8099048401086216,
+        "potential_delta_target_rms_kT": 0.2529876789333014,
+        "sqrt_p99_ratio_frequency_proxy_vs_old": 4.072426064808181,
+        "validated": false
+      },
+      "smooth_0p02_wall_current": {
+        "candidate_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_current/cg_priors.json",
+        "curvature_runtime": {
+          "max_abs": 10573.8665384892,
+          "max_signed": 10573.8665384892,
+          "min_signed": -816.3229144082175,
+          "n": 50200,
+          "p50_abs": 175.64059592954226,
+          "p95_abs": 727.0570452359874,
+          "p99_abs": 1456.7627853248835
+        },
+        "curvature_target": {
+          "max_abs": 9764.146910235402,
+          "max_signed": 9764.146910235402,
+          "min_signed": -1121.7800540961707,
+          "n": 10200,
+          "p50_abs": 203.69483303412218,
+          "p95_abs": 648.7867595569884,
+          "p99_abs": 1399.0738349351166
+        },
+        "max_group_potential_delta_target_rms_kT": 0.06693511110313997,
+        "p99_curvature_ratio_vs_old": 15.795880022385969,
+        "p99_curvature_reduction_vs_current": 6.584005926005487,
+        "potential_delta_runtime_rms_kT": 0.061340893029402675,
+        "potential_delta_target_p99_abs_kT": 0.16487787993125627,
+        "potential_delta_target_rms_kT": 0.05615088725801142,
+        "sqrt_p99_ratio_frequency_proxy_vs_old": 3.9744031026540285,
+        "validated": false
+      }
+    },
+    "current": {
+      "curvature_runtime": {
+        "max_abs": 66022.51100270513,
+        "max_signed": 66022.51100270513,
+        "min_signed": -18062.538041365828,
+        "n": 50200,
+        "p50_abs": 760.01589697532,
+        "p95_abs": 4981.886709577781,
+        "p99_abs": 8826.43940154512
+      },
+      "curvature_target": {
+        "max_abs": 46389.4918269335,
+        "max_signed": 46389.4918269335,
+        "min_signed": -14859.05902761789,
+        "n": 10200,
+        "p50_abs": 1037.8305433534847,
+        "p95_abs": 5305.303729809605,
+        "p99_abs": 9211.51042013203
+      },
+      "old_harmonic_curvature_target": {
+        "max_abs": 88.57207277798672,
+        "max_signed": 88.57207277798672,
+        "min_signed": 9.621950521848941,
+        "n": 10200,
+        "p50_abs": 84.86993044473314,
+        "p95_abs": 88.57207277798672,
+        "p99_abs": 88.57207277798672
+      },
+      "p99_curvature_ratio_vs_old": 104.0001676738609,
+      "sqrt_p99_ratio_frequency_proxy": 10.198047248069647
+    }
+  },
+  "candidates": {
+    "c2_raw_wall_current": {
+      "body_sigma_rad": 0.0,
+      "note": "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/c2_raw_wall_current/cg_priors.json",
+      "priors_sha256": "01ca8d09f1a9349d28365583f465798871e6f8aa1dda358913321b1b26eef9e6",
+      "validated": false,
+      "wall_k": 5000.0,
+      "wall_width_rad": 0.1
+    },
+    "smooth_0p01_wall_current": {
+      "body_sigma_rad": 0.01,
+      "note": "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p01_wall_current/cg_priors.json",
+      "priors_sha256": "bd77eff959a2666f6ab773fcc095a4458f62746b1654fb5d2b74252a2bf20e09",
+      "validated": false,
+      "wall_k": 5000.0,
+      "wall_width_rad": 0.1
+    },
+    "smooth_0p02_wall_1p5x_same_barrier": {
+      "body_sigma_rad": 0.02,
+      "note": "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_1p5x_same_barrier/cg_priors.json",
+      "priors_sha256": "272ac15ff7145befdeaf7cbb769d210ae735987d69a77351625a5847532c89f1",
+      "validated": false,
+      "wall_k": 2222.222222222222,
+      "wall_width_rad": 0.15000000000000002
+    },
+    "smooth_0p02_wall_2x_same_barrier": {
+      "body_sigma_rad": 0.02,
+      "note": "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_2x_same_barrier/cg_priors.json",
+      "priors_sha256": "c31a9c37c1f483e55b805a662d61db038935349efe330ed1c928e5ec22f48250",
+      "validated": false,
+      "wall_k": 1250.0,
+      "wall_width_rad": 0.2
+    },
+    "smooth_0p02_wall_current": {
+      "body_sigma_rad": 0.02,
+      "note": "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_current/cg_priors.json",
+      "priors_sha256": "b1b198dc765f9a898bbca3171d415db7dd3f83758f993b1fade00f1fe2de0822",
+      "validated": false,
+      "wall_k": 5000.0,
+      "wall_width_rad": 0.1
+    }
+  },
+  "current_angle_wall": {
+    "endpoint_barrier_kJmol": 25.000000000000004,
+    "endpoint_barrier_kT": 10.040160642570282,
+    "k": 5000.0,
+    "width_rad": 0.1
+  },
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset_ibi_residual.bin",
+  "diagnostic_only": true,
+  "groups": {
+    "ang_A_G_G": {
+      "candidates": {
+        "c2_raw_wall_current": {
+          "body_sigma_rad": 0.0,
+          "curvature_reduction_p99_target": 1.3053950082348202,
+          "curvature_runtime": {
+            "max_abs": 5734.127407048498,
+            "max_signed": 5734.127407048498,
+            "min_signed": -5651.8406450417315,
+            "n": 10040,
+            "p50_abs": 800.2366138109661,
+            "p95_abs": 3732.6763209114183,
+            "p99_abs": 4539.3877890538815
+          },
+          "curvature_target": {
+            "max_abs": 5850.264068971344,
+            "max_signed": 5850.264068971344,
+            "min_signed": -5772.752873598651,
+            "n": 2040,
+            "p50_abs": 1059.591738225934,
+            "p95_abs": 3589.044578121845,
+            "p99_abs": 4623.669658477156
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 7.381021593711967,
+          "note": "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
+          "potential_perturbation": {
+            "offset_kJmol": -4.878512038660984e-07,
+            "sample": {
+              "max_abs_kT": 0.0001499448800287343,
+              "n": 10040,
+              "p95_abs_kT": 4.786547329813563e-05,
+              "p99_abs_kT": 7.543570282307793e-05,
+              "rms_kT": 2.0450483075792017e-05
+            },
+            "target": {
+              "max_abs_kT": 0.00015221158904518112,
+              "n": 2040,
+              "p95_abs_kT": 5.5728224095578315e-05,
+              "p99_abs_kT": 9.568242658434648e-05,
+              "rms_kT": 2.4901218472585865e-05
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512205749255,
+            "p99_abs": 0.00040861132547206577
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p01_wall_current": {
+          "body_sigma_rad": 0.01,
+          "curvature_reduction_p99_target": 3.3114918829011257,
+          "curvature_runtime": {
+            "max_abs": 2248.186232576391,
+            "max_signed": 2248.186232576391,
+            "min_signed": -1822.4743616164014,
+            "n": 10040,
+            "p50_abs": 294.9549806747465,
+            "p95_abs": 1208.4648726629052,
+            "p99_abs": 1423.8936232729504
+          },
+          "curvature_target": {
+            "max_abs": 2247.936628345889,
+            "max_signed": 2247.936628345889,
+            "min_signed": -1820.6702077725777,
+            "n": 2040,
+            "p50_abs": 464.183751271262,
+            "p95_abs": 1281.905302282735,
+            "p99_abs": 1822.6574321586793
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 4.634208850350875,
+          "note": "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.06825976598519283,
+            "sample": {
+              "max_abs_kT": 0.06000417889885298,
+              "n": 10040,
+              "p95_abs_kT": 0.03415222588226175,
+              "p99_abs_kT": 0.046827703281695936,
+              "rms_kT": 0.017653344265718303
+            },
+            "target": {
+              "max_abs_kT": 0.05998766516298472,
+              "n": 2040,
+              "p95_abs_kT": 0.03751796533612792,
+              "p99_abs_kT": 0.05268323636933924,
+              "rms_kT": 0.019536537691741535
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512202622867,
+            "p99_abs": 5.4500846099472254e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p02_wall_1p5x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 8.383946455091406,
+          "curvature_runtime": {
+            "max_abs": 2222.2273254600773,
+            "max_signed": 2222.2273254600773,
+            "min_signed": -515.7589655345034,
+            "n": 10040,
+            "p50_abs": 147.79175739963472,
+            "p95_abs": 459.72785309565165,
+            "p99_abs": 2222.222222222485
+          },
+          "curvature_target": {
+            "max_abs": 780.4646274099837,
+            "max_signed": 780.4646274099837,
+            "min_signed": -647.1498347879341,
+            "n": 2040,
+            "p50_abs": 174.1403896446188,
+            "p95_abs": 458.98253890068094,
+            "p99_abs": 719.9133873567984
+          },
+          "endpoint_barrier_kJmol": 25.000000000000007,
+          "endpoint_barrier_kT": 10.040160642570283,
+          "frequency_proxy_p99_vs_old_target": 2.9124816763872605,
+          "note": "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.08930948212791125,
+            "sample": {
+              "max_abs_kT": 0.4454131985484494,
+              "n": 10040,
+              "p95_abs_kT": 0.08642757469736281,
+              "p99_abs_kT": 0.36488023559857835,
+              "rms_kT": 0.0633711154814367
+            },
+            "target": {
+              "max_abs_kT": 0.13125226722740366,
+              "n": 2040,
+              "p95_abs_kT": 0.08123280167190632,
+              "p99_abs_kT": 0.11645248459714083,
+              "rms_kT": 0.04076201458452984
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.025,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.00023835605361455237,
+            "p99_abs": 1.2916038993466826e-05
+          },
+          "wall_k": 2222.222222222222,
+          "wall_width_rad": 0.15000000000000002
+        },
+        "smooth_0p02_wall_2x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 8.383946455091406,
+          "curvature_runtime": {
+            "max_abs": 1250.000000001872,
+            "max_signed": 1250.000000001872,
+            "min_signed": -515.7589655345034,
+            "n": 10040,
+            "p50_abs": 147.79175739963472,
+            "p95_abs": 459.72785309565165,
+            "p99_abs": 1250.0000000003063
+          },
+          "curvature_target": {
+            "max_abs": 780.4646274099837,
+            "max_signed": 780.4646274099837,
+            "min_signed": -647.1498347879341,
+            "n": 2040,
+            "p50_abs": 174.1403896446188,
+            "p95_abs": 458.98253890068094,
+            "p99_abs": 719.9133873567984
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 2.9124816763872605,
+          "note": "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.08930948212791125,
+            "sample": {
+              "max_abs_kT": 1.6752684013766546,
+              "n": 10040,
+              "p95_abs_kT": 0.087760373395054,
+              "p99_abs_kT": 1.5555650239300858,
+              "rms_kT": 0.2334796973572527
+            },
+            "target": {
+              "max_abs_kT": 0.13125226722740366,
+              "n": 2040,
+              "p95_abs_kT": 0.08123280167190632,
+              "p99_abs_kT": 0.11645248459714083,
+              "rms_kT": 0.04076201458452984
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.025,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.00014794857497690828,
+            "p99_abs": 1.2781892415176797e-05
+          },
+          "wall_k": 1250.0,
+          "wall_width_rad": 0.2
+        },
+        "smooth_0p02_wall_current": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 8.383946455091406,
+          "curvature_runtime": {
+            "max_abs": 780.4767839709791,
+            "max_signed": 780.4767839709791,
+            "min_signed": -515.7589655345034,
+            "n": 10040,
+            "p50_abs": 133.8320308661375,
+            "p95_abs": 426.6136848498865,
+            "p99_abs": 468.51154617539413
+          },
+          "curvature_target": {
+            "max_abs": 780.4646274099837,
+            "max_signed": 780.4646274099837,
+            "min_signed": -647.1498347879341,
+            "n": 2040,
+            "p50_abs": 174.1403896446188,
+            "p95_abs": 458.98253890068094,
+            "p99_abs": 719.9133873567984
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 2.9124816763872605,
+          "note": "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.08930948212791125,
+            "sample": {
+              "max_abs_kT": 0.13121760164570548,
+              "n": 10040,
+              "p95_abs_kT": 0.07492175695399948,
+              "p99_abs_kT": 0.10039752099873565,
+              "rms_kT": 0.037160462056827596
+            },
+            "target": {
+              "max_abs_kT": 0.13125226722740366,
+              "n": 2040,
+              "p95_abs_kT": 0.08123280167190632,
+              "p99_abs_kT": 0.11645248459714083,
+              "rms_kT": 0.04076201458452984
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512201201782,
+            "p99_abs": 1.3083930227342222e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        }
+      },
+      "current": {
+        "curvature_grid": {
+          "max_abs": 11952.064903092145,
+          "max_signed": 11952.064903092145,
+          "min_signed": -11341.415188073233,
+          "n": 8001,
+          "p50_abs": 7.192294319682049e-10,
+          "p95_abs": 4936.042077154604,
+          "p99_abs": 5494.481941964214
+        },
+        "curvature_grid_body_after_subtracting_explicit_wall": {
+          "max_abs": 11952.064903092145,
+          "max_signed": 11952.064903092145,
+          "min_signed": -11341.415188073233,
+          "n": 8001,
+          "p50_abs": 7.192294319682049e-10,
+          "p95_abs": 2410.680508857875,
+          "p99_abs": 4685.429220993374
+        },
+        "curvature_runtime": {
+          "max_abs": 10917.618437665184,
+          "max_signed": 10917.618437665184,
+          "min_signed": -9395.513335993312,
+          "n": 10040,
+          "p50_abs": 662.7418625023568,
+          "p95_abs": 4024.927295605065,
+          "p99_abs": 6033.235500300093
+        },
+        "curvature_runtime_body_after_subtracting_explicit_wall": {
+          "max_abs": 10917.618437665184,
+          "max_signed": 10917.618437665184,
+          "min_signed": -9395.513335993312,
+          "n": 10040,
+          "p50_abs": 662.7418625023568,
+          "p95_abs": 4024.927295605065,
+          "p99_abs": 6033.235500300093
+        },
+        "curvature_runtime_by_zone": {
+          "interior": {
+            "max_abs": 10917.618437665184,
+            "max_signed": 10917.618437665184,
+            "min_signed": -9395.513335993312,
+            "n": 10040,
+            "p50_abs": 662.7418625023568,
+            "p95_abs": 4024.927295605065,
+            "p99_abs": 6033.235500300093
+          },
+          "wall": {
+            "max_abs": NaN,
+            "n": 0,
+            "p50_abs": NaN,
+            "p95_abs": NaN,
+            "p99_abs": NaN
+          }
+        },
+        "curvature_target": {
+          "max_abs": 10636.979170471193,
+          "max_signed": 9529.391010930376,
+          "min_signed": -10636.979170471193,
+          "n": 2040,
+          "p50_abs": 1011.2049423053362,
+          "p95_abs": 4144.218897860143,
+          "p99_abs": 6035.715291902876
+        },
+        "curvature_target_body_after_subtracting_explicit_wall": {
+          "max_abs": 10636.979170471193,
+          "max_signed": 9529.391010930376,
+          "min_signed": -10636.979170471193,
+          "n": 2040,
+          "p50_abs": 1011.2049423053362,
+          "p95_abs": 4144.218897860143,
+          "p99_abs": 6035.715291902876
+        },
+        "curvature_target_by_zone": {
+          "interior": {
+            "max_abs": 10636.979170471193,
+            "max_signed": 9529.391010930376,
+            "min_signed": -10636.979170471193,
+            "n": 2040,
+            "p50_abs": 1011.2049423053362,
+            "p95_abs": 4144.218897860143,
+            "p99_abs": 6035.715291902876
+          },
+          "wall": {
+            "max_abs": NaN,
+            "n": 0,
+            "p50_abs": NaN,
+            "p95_abs": NaN,
+            "p99_abs": NaN
+          }
+        },
+        "distribution_l1_runtime_vs_target": 0.9217795484727752,
+        "frequency_proxy_p99_vs_old_target": 8.433103873359196,
+        "hotspots": [
+          {
+            "abs_u2": 11952.064903092145,
+            "distance_to_endpoint_rad": 0.7304202919596268,
+            "sample_density": 0.23682279310202922,
+            "target_density": 0.8864306193186812,
+            "theta_deg": 138.15,
+            "theta_rad": 2.4111723616301663,
+            "u2": 11952.064903092145,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11341.415188073233,
+            "distance_to_endpoint_rad": 1.3398892667560467,
+            "sample_density": 0.0,
+            "target_density": 0.37542669440302173,
+            "theta_deg": 103.23,
+            "theta_rad": 1.8017033868337464,
+            "u2": -11341.415188073233,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10850.005925774629,
+            "distance_to_endpoint_rad": 0.0989601685880781,
+            "sample_density": 0.0,
+            "target_density": 0.0,
+            "theta_deg": 174.33,
+            "theta_rad": 3.042632485001715,
+            "u2": 10850.005925774629,
+            "wall_zone": true
+          },
+          {
+            "abs_u2": 9952.496789491717,
+            "distance_to_endpoint_rad": 1.0335839830310416,
+            "sample_density": 0.4571416941680156,
+            "target_density": 1.8465749427701925,
+            "theta_deg": 120.78000000000002,
+            "theta_rad": 2.1080086705587515,
+            "u2": -9952.496789491717,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 9793.46148034963,
+            "distance_to_endpoint_rad": 1.204997132192535,
+            "sample_density": 0.293865969625259,
+            "target_density": 0.9296295325595095,
+            "theta_deg": 110.95875,
+            "theta_rad": 1.936595521397258,
+            "u2": -9793.46148034963,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 8238.851937595065,
+            "distance_to_endpoint_rad": 0.868846718258427,
+            "sample_density": 0.5984556772549802,
+            "target_density": 1.2272981831290564,
+            "theta_deg": 130.21875,
+            "theta_rad": 2.272745935331366,
+            "u2": -8238.851937595065,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 8178.615294719029,
+            "distance_to_endpoint_rad": 1.011592834455913,
+            "sample_density": 1.123819304226243,
+            "target_density": 2.3379374313314782,
+            "theta_deg": 122.04000000000002,
+            "theta_rad": 2.12999981913388,
+            "u2": 8178.615294719029,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 8067.460545286381,
+            "distance_to_endpoint_rad": 1.2269882807676635,
+            "sample_density": 0.24903541252115236,
+            "target_density": 1.2284470438659345,
+            "theta_deg": 109.69875,
+            "theta_rad": 1.9146043728221296,
+            "u2": 8067.460545286381,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7846.885040327774,
+            "distance_to_endpoint_rad": 1.1388273369262998,
+            "sample_density": 1.056258569854681,
+            "target_density": 1.6328985092712855,
+            "theta_deg": 114.75000000000001,
+            "theta_rad": 2.0027653166634933,
+            "u2": -7846.885040327774,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7605.534000169913,
+            "distance_to_endpoint_rad": 1.3180944677217674,
+            "sample_density": 0.016377103089481756,
+            "target_density": 0.8326645200107285,
+            "theta_deg": 104.47875,
+            "theta_rad": 1.8234981858680257,
+            "u2": 7605.534000169913,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7542.119339931021,
+            "distance_to_endpoint_rad": 0.9850856464412492,
+            "sample_density": 4.536706986376865,
+            "target_density": 2.6306403208987663,
+            "theta_deg": 123.55875000000002,
+            "theta_rad": 2.156507007148544,
+            "u2": 7542.119339931021,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7418.474586365619,
+            "distance_to_endpoint_rad": 0.6880087911361645,
+            "sample_density": 2.145487005591821,
+            "target_density": 0.4647695699817375,
+            "theta_deg": 140.58,
+            "theta_rad": 2.4535838624536286,
+            "u2": 7418.474586365619,
+            "wall_zone": false
+          }
+        ],
+        "old_frequency_proxy_denominator_sqrt_k": 9.2124877446178,
+        "old_harmonic_k": 84.86993044473314,
+        "runtime_samples": 10040,
+        "source_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_A_G_G.dat",
+        "source_table_sha256": "3110611769306d94adf2929ea77dcb977c15930b224e8d26da00b7da06c3fc00",
+        "target_samples": 2040,
+        "u2_knot_jump": {
+          "max_abs": 11710.383161160686,
+          "p99_abs": 6814.055493233249
+        },
+        "wall": {
+          "endpoint_barrier_kJmol": 25.0,
+          "endpoint_barrier_kT": 10.04016064257028,
+          "k": 5000.0,
+          "runtime_fraction": 0.0,
+          "target_fraction": 0.0,
+          "width_rad": 0.1
+        }
+      }
+    },
+    "ang_G_G_G": {
+      "candidates": {
+        "c2_raw_wall_current": {
+          "body_sigma_rad": 0.0,
+          "curvature_reduction_p99_target": 1.1857627552595262,
+          "curvature_runtime": {
+            "max_abs": 44630.04562824614,
+            "max_signed": 44630.04562824614,
+            "min_signed": -7611.843686185302,
+            "n": 10040,
+            "p50_abs": 899.5738655620949,
+            "p95_abs": 4166.488045104178,
+            "p99_abs": 6139.099303230287
+          },
+          "curvature_target": {
+            "max_abs": 39789.64921972134,
+            "max_signed": 39789.64921972134,
+            "min_signed": -7556.063107537778,
+            "n": 2040,
+            "p50_abs": 1160.025954882768,
+            "p95_abs": 4568.702430303911,
+            "p99_abs": 6415.6253297996
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 8.614670569913276,
+          "note": "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
+          "potential_perturbation": {
+            "offset_kJmol": 7.437613481266193e-08,
+            "sample": {
+              "max_abs_kT": 0.0005027329084403541,
+              "n": 10040,
+              "p95_abs_kT": 5.509896904788445e-05,
+              "p99_abs_kT": 0.0001548506677596611,
+              "rms_kT": 3.512933510486592e-05
+            },
+            "target": {
+              "max_abs_kT": 0.0002249043753385446,
+              "n": 2040,
+              "p95_abs_kT": 6.178199093743891e-05,
+              "p99_abs_kT": 0.00010344363060725904,
+              "rms_kT": 2.801169897699725e-05
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.015637450199203186,
+          "target_fraction_in_candidate_wall": 0.012254901960784314,
+          "u2_knot_jump": {
+            "max_abs": 0.003701328914758051,
+            "p99_abs": 0.00044253872822082454
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p01_wall_current": {
+          "body_sigma_rad": 0.01,
+          "curvature_reduction_p99_target": 1.4753942400812659,
+          "curvature_runtime": {
+            "max_abs": 14407.555486367217,
+            "max_signed": 14407.555486367217,
+            "min_signed": -1549.4131847194767,
+            "n": 10040,
+            "p50_abs": 369.91121770165955,
+            "p95_abs": 1537.9671547129144,
+            "p99_abs": 12205.385503785745
+          },
+          "curvature_target": {
+            "max_abs": 13968.30560486144,
+            "max_signed": 13968.30560486144,
+            "min_signed": -1549.3168064648708,
+            "n": 2040,
+            "p50_abs": 484.76333768593906,
+            "p95_abs": 1526.279529812401,
+            "p99_abs": 5156.187655549582
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 7.72295554815974,
+          "note": "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.04670952988187019,
+            "sample": {
+              "max_abs_kT": 0.29326501735187593,
+              "n": 10040,
+              "p95_abs_kT": 0.042473642004694376,
+              "p99_abs_kT": 0.1586066197283215,
+              "rms_kT": 0.033541241430350026
+            },
+            "target": {
+              "max_abs_kT": 0.2849680934538323,
+              "n": 2040,
+              "p95_abs_kT": 0.04439775354026938,
+              "p99_abs_kT": 0.05766511780617166,
+              "rms_kT": 0.026740661257957984
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.015637450199203186,
+          "target_fraction_in_candidate_wall": 0.012254901960784314,
+          "u2_knot_jump": {
+            "max_abs": 0.000703756277289358,
+            "p99_abs": 0.00013773307029623527
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p02_wall_1p5x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 1.2546538427844276,
+          "curvature_runtime": {
+            "max_abs": 7040.914110464438,
+            "max_signed": 7040.914110464438,
+            "min_signed": -812.9836836925905,
+            "n": 10040,
+            "p50_abs": 113.341234465752,
+            "p95_abs": 928.4918619457324,
+            "p99_abs": 6820.926782425992
+          },
+          "curvature_target": {
+            "max_abs": 7040.429373990928,
+            "max_signed": 7040.429373990928,
+            "min_signed": -811.9681835223912,
+            "n": 2040,
+            "p50_abs": 169.23395651727353,
+            "p95_abs": 685.0976824373167,
+            "p99_abs": 6063.353339669379
+          },
+          "endpoint_barrier_kJmol": 25.000000000000007,
+          "endpoint_barrier_kT": 10.040160642570283,
+          "frequency_proxy_p99_vs_old_target": 8.374822600978003,
+          "note": "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.07446845636277469,
+            "sample": {
+              "max_abs_kT": 1.9917019768686295,
+              "n": 10040,
+              "p95_abs_kT": 0.13342123988515023,
+              "p99_abs_kT": 1.974764370541578,
+              "rms_kT": 0.2759999052859737
+            },
+            "target": {
+              "max_abs_kT": 1.9965461285622417,
+              "n": 2040,
+              "p95_abs_kT": 0.13410163903880265,
+              "p99_abs_kT": 1.9271492253078593,
+              "rms_kT": 0.2526566343747899
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.05,
+          "target_fraction_in_candidate_wall": 0.045098039215686274,
+          "u2_knot_jump": {
+            "max_abs": 0.0002469300670782104,
+            "p99_abs": 4.269983090125606e-05
+          },
+          "wall_k": 2222.222222222222,
+          "wall_width_rad": 0.15000000000000002
+        },
+        "smooth_0p02_wall_2x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 1.494247426020034,
+          "curvature_runtime": {
+            "max_abs": 6068.691888243624,
+            "max_signed": 6068.691888243624,
+            "min_signed": -812.9836836925905,
+            "n": 10040,
+            "p50_abs": 133.73562910504694,
+            "p95_abs": 1496.544029220601,
+            "p99_abs": 5848.704560203662
+          },
+          "curvature_target": {
+            "max_abs": 6068.20715176953,
+            "max_signed": 6068.20715176953,
+            "min_signed": -811.9681835223912,
+            "n": 2040,
+            "p50_abs": 194.23177454450803,
+            "p95_abs": 1353.170420630881,
+            "p99_abs": 5091.131117447201
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 7.674079937799455,
+          "note": "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": 0.0743797968382971,
+            "sample": {
+              "max_abs_kT": 3.358179605603701,
+              "n": 10040,
+              "p95_abs_kT": 0.47762455773686935,
+              "p99_abs_kT": 3.348946996773686,
+              "rms_kT": 0.5191373725592738
+            },
+            "target": {
+              "max_abs_kT": 3.357324050274957,
+              "n": 2040,
+              "p95_abs_kT": 0.3968508074755294,
+              "p99_abs_kT": 3.093833188991319,
+              "rms_kT": 0.4747118464433377
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.10308764940239044,
+          "target_fraction_in_candidate_wall": 0.08480392156862746,
+          "u2_knot_jump": {
+            "max_abs": 0.00014794852154409455,
+            "p99_abs": 4.269995303729956e-05
+          },
+          "wall_k": 1250.0,
+          "wall_width_rad": 0.2
+        },
+        "smooth_0p02_wall_current": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 1.4308243225483916,
+          "curvature_runtime": {
+            "max_abs": 10573.8665384892,
+            "max_signed": 10573.8665384892,
+            "min_signed": -812.9836836925905,
+            "n": 10040,
+            "p50_abs": 113.29871427656352,
+            "p95_abs": 817.3805694331232,
+            "p99_abs": 9454.592870885077
+          },
+          "curvature_target": {
+            "max_abs": 9764.146910235402,
+            "max_signed": 9764.146910235402,
+            "min_signed": -811.9681835223912,
+            "n": 2040,
+            "p50_abs": 168.84722568853766,
+            "p95_abs": 637.0937007799184,
+            "p99_abs": 5316.801963658743
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 7.842317481247398,
+          "note": "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.15733719368552568,
+            "sample": {
+              "max_abs_kT": 0.658467614112934,
+              "n": 10040,
+              "p95_abs_kT": 0.09465925994803899,
+              "p99_abs_kT": 0.49228373578712004,
+              "rms_kT": 0.08757882869593323
+            },
+            "target": {
+              "max_abs_kT": 0.6500653130229981,
+              "n": 2040,
+              "p95_abs_kT": 0.0944756274015309,
+              "p99_abs_kT": 0.2611151427880478,
+              "rms_kT": 0.06693511110313997
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.015637450199203186,
+          "target_fraction_in_candidate_wall": 0.012254901960784314,
+          "u2_knot_jump": {
+            "max_abs": 0.0006016665038259816,
+            "p99_abs": 4.307500935738062e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        }
+      },
+      "current": {
+        "curvature_grid": {
+          "max_abs": 69754.95832619673,
+          "max_signed": 69754.95832619673,
+          "min_signed": -12860.147728033033,
+          "n": 8001,
+          "p50_abs": 6.372418001794345e-10,
+          "p95_abs": 4993.385751054134,
+          "p99_abs": 5819.978765552602
+        },
+        "curvature_grid_body_after_subtracting_explicit_wall": {
+          "max_abs": 64754.958326196735,
+          "max_signed": 64754.958326196735,
+          "min_signed": -12860.147728033033,
+          "n": 8001,
+          "p50_abs": 6.372418001794345e-10,
+          "p95_abs": 2366.6887394727055,
+          "p99_abs": 5762.962233935338
+        },
+        "curvature_runtime": {
+          "max_abs": 66022.51100270513,
+          "max_signed": 66022.51100270513,
+          "min_signed": -13301.54329323815,
+          "n": 10040,
+          "p50_abs": 870.6882477133986,
+          "p95_abs": 4872.345589764295,
+          "p99_abs": 8745.670899538782
+        },
+        "curvature_runtime_body_after_subtracting_explicit_wall": {
+          "max_abs": 61022.51100270513,
+          "max_signed": 61022.51100270513,
+          "min_signed": -13301.54329323815,
+          "n": 10040,
+          "p50_abs": 856.3553667118516,
+          "p95_abs": 4518.407674053206,
+          "p99_abs": 8386.458857373651
+        },
+        "curvature_runtime_by_zone": {
+          "interior": {
+            "max_abs": 13301.54329323815,
+            "max_signed": 11132.710348681763,
+            "min_signed": -13301.54329323815,
+            "n": 9883,
+            "p50_abs": 855.0448905597025,
+            "p95_abs": 4196.250681258929,
+            "p99_abs": 7167.784975620809
+          },
+          "wall": {
+            "max_abs": 66022.51100270513,
+            "max_signed": 66022.51100270513,
+            "min_signed": -5186.931097801993,
+            "n": 157,
+            "p50_abs": 5501.85102762104,
+            "p95_abs": 50584.275897201405,
+            "p99_abs": 59111.96791140766
+          }
+        },
+        "curvature_target": {
+          "max_abs": 46389.4918269335,
+          "max_signed": 46389.4918269335,
+          "min_signed": -12335.18891848289,
+          "n": 2040,
+          "p50_abs": 1038.7792943662687,
+          "p95_abs": 5086.466951989661,
+          "p99_abs": 7607.40956777598
+        },
+        "curvature_target_body_after_subtracting_explicit_wall": {
+          "max_abs": 41389.4918269335,
+          "max_signed": 41389.4918269335,
+          "min_signed": -12335.18891848289,
+          "n": 2040,
+          "p50_abs": 1003.8472667301942,
+          "p95_abs": 5054.049439317038,
+          "p99_abs": 7607.40956777598
+        },
+        "curvature_target_by_zone": {
+          "interior": {
+            "max_abs": 12335.18891848289,
+            "max_signed": 10121.30996340067,
+            "min_signed": -12335.18891848289,
+            "n": 2015,
+            "p50_abs": 1026.074693574968,
+            "p95_abs": 5035.9994300169865,
+            "p99_abs": 7482.553473022269
+          },
+          "wall": {
+            "max_abs": 46389.4918269335,
+            "max_signed": 46389.4918269335,
+            "min_signed": -201.61684264622818,
+            "n": 25,
+            "p50_abs": 4937.441243847019,
+            "p95_abs": 29273.91520885103,
+            "p99_abs": 43730.83965730086
+          }
+        },
+        "distribution_l1_runtime_vs_target": 0.789309428950863,
+        "frequency_proxy_p99_vs_old_target": 9.380750322358443,
+        "hotspots": [
+          {
+            "abs_u2": 69754.95832619673,
+            "distance_to_endpoint_rad": 0.0942477796076937,
+            "sample_density": 0.9264361681121276,
+            "target_density": 0.3074514621742151,
+            "theta_deg": 174.6,
+            "theta_rad": 3.0473448739820994,
+            "u2": 69754.95832619673,
+            "wall_zone": true
+          },
+          {
+            "abs_u2": 12860.147728033033,
+            "distance_to_endpoint_rad": 0.4429645641561608,
+            "sample_density": 1.4021672547457982,
+            "target_density": 1.4834649685513694,
+            "theta_deg": 154.62,
+            "theta_rad": 2.6986280894336323,
+            "u2": -12860.147728033033,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 12439.090955516547,
+            "distance_to_endpoint_rad": 0.3756166716448295,
+            "sample_density": 0.44084516723150685,
+            "target_density": 1.5155805831605293,
+            "theta_deg": 158.47875000000002,
+            "theta_rad": 2.7659759819449636,
+            "u2": -12439.090955516547,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10809.374548550322,
+            "distance_to_endpoint_rad": 0.6126105674500093,
+            "sample_density": 0.422882609838147,
+            "target_density": 1.6772200402372028,
+            "theta_deg": 144.9,
+            "theta_rad": 2.528982086139784,
+            "u2": -10809.374548550322,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10541.319714077132,
+            "distance_to_endpoint_rad": 0.7086254929253477,
+            "sample_density": 0.06484602898282088,
+            "target_density": 1.4091739181599356,
+            "theta_deg": 139.39875,
+            "theta_rad": 2.4329671606644454,
+            "u2": 10541.319714077132,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10374.40396103088,
+            "distance_to_endpoint_rad": 0.6379396582195773,
+            "sample_density": 2.252784225279477,
+            "target_density": 2.2018965742778036,
+            "theta_deg": 143.44875,
+            "theta_rad": 2.503652995370216,
+            "u2": 10374.40396103088,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 8712.079771703613,
+            "distance_to_endpoint_rad": 0.11938052083641182,
+            "sample_density": 0.11019025906207217,
+            "target_density": 0.8815785780339819,
+            "theta_deg": 173.16000000000003,
+            "theta_rad": 3.0222121327533813,
+            "u2": 8712.079771703613,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 8239.216922906304,
+            "distance_to_endpoint_rad": 0.14470961160597984,
+            "sample_density": 0.12924770418094703,
+            "target_density": 0.6404169635557971,
+            "theta_deg": 171.70875,
+            "theta_rad": 2.9968830419838133,
+            "u2": -8239.216922906304,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7874.0005597370855,
+            "distance_to_endpoint_rad": 0.34871678454846666,
+            "sample_density": 3.5688979260771614,
+            "target_density": 1.8226413160485684,
+            "theta_deg": 160.02,
+            "theta_rad": 2.7928758690413265,
+            "u2": 7874.0005597370855,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7716.512286255303,
+            "distance_to_endpoint_rad": 0.4698644512525232,
+            "sample_density": 1.4225826450307584,
+            "target_density": 1.9812045089694068,
+            "theta_deg": 153.07875,
+            "theta_rad": 2.67172820233727,
+            "u2": 7716.512286255303,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7711.774693499745,
+            "distance_to_endpoint_rad": 0.33320517082136725,
+            "sample_density": 2.1320497471419446,
+            "target_density": 1.2486979012710806,
+            "theta_deg": 160.90875,
+            "theta_rad": 2.808387482768426,
+            "u2": -7711.774693499745,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7701.893311475828,
+            "distance_to_endpoint_rad": 0.2748893571891067,
+            "sample_density": 1.8358328497596845,
+            "target_density": 1.6917994912128167,
+            "theta_deg": 164.25,
+            "theta_rad": 2.8667032964006864,
+            "u2": 7701.893311475828,
+            "wall_zone": false
+          }
+        ],
+        "old_frequency_proxy_denominator_sqrt_k": 9.297813320509388,
+        "old_harmonic_k": 86.44933254304182,
+        "runtime_samples": 10040,
+        "source_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_G_G_G.dat",
+        "source_table_sha256": "1c7c1ce6b460f811b6e427effa6648a9afac540a884668b07ac7cd5131157f4f",
+        "target_samples": 2040,
+        "u2_knot_jump": {
+          "max_abs": 48301.32330572908,
+          "p99_abs": 8438.668364024938
+        },
+        "wall": {
+          "endpoint_barrier_kJmol": 25.0,
+          "endpoint_barrier_kT": 10.04016064257028,
+          "k": 5000.0,
+          "runtime_fraction": 0.015637450199203186,
+          "target_fraction": 0.012254901960784314,
+          "width_rad": 0.1
+        }
+      }
+    },
+    "ang_G_G_T": {
+      "candidates": {
+        "c2_raw_wall_current": {
+          "body_sigma_rad": 0.0,
+          "curvature_reduction_p99_target": 1.1546257911520423,
+          "curvature_runtime": {
+            "max_abs": 13811.01622172175,
+            "max_signed": 13811.01622172175,
+            "min_signed": -8663.032107727904,
+            "n": 7530,
+            "p50_abs": 1314.717486194479,
+            "p95_abs": 6005.631812104416,
+            "p99_abs": 10977.229016245263
+          },
+          "curvature_target": {
+            "max_abs": 13588.545292837889,
+            "max_signed": 13588.545292837889,
+            "min_signed": -10166.203523421264,
+            "n": 1530,
+            "p50_abs": 1091.1801581189316,
+            "p95_abs": 4968.6545330181325,
+            "p99_abs": 9285.823197439562
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 11.01330704742327,
+          "note": "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
+          "potential_perturbation": {
+            "offset_kJmol": -3.959236462086341e-06,
+            "sample": {
+              "max_abs_kT": 0.00023430232661327392,
+              "n": 7530,
+              "p95_abs_kT": 6.096469516010006e-05,
+              "p99_abs_kT": 0.00010785962721026083,
+              "rms_kT": 2.8233753538466558e-05
+            },
+            "target": {
+              "max_abs_kT": 0.00023387132531864667,
+              "n": 1530,
+              "p95_abs_kT": 6.20061887005984e-05,
+              "p99_abs_kT": 0.00011893232244462266,
+              "rms_kT": 2.8600471588442322e-05
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.00065359477124183,
+          "u2_knot_jump": {
+            "max_abs": 0.0009974069416784914,
+            "p99_abs": 0.00058805101446751
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p01_wall_current": {
+          "body_sigma_rad": 0.01,
+          "curvature_reduction_p99_target": 2.458502123874962,
+          "curvature_runtime": {
+            "max_abs": 4577.590280157221,
+            "max_signed": 4577.590280157221,
+            "min_signed": -2846.2507087461427,
+            "n": 7530,
+            "p50_abs": 742.7839779692976,
+            "p95_abs": 2795.0025442702718,
+            "p99_abs": 4446.823905718757
+          },
+          "curvature_target": {
+            "max_abs": 4999.946301359718,
+            "max_signed": 4999.946301359718,
+            "min_signed": -2833.577517105555,
+            "n": 1530,
+            "p50_abs": 620.1467806873279,
+            "p95_abs": 1910.735284337945,
+            "p99_abs": 4361.050109219649
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 7.547499285510349,
+          "note": "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.034761476673377895,
+            "sample": {
+              "max_abs_kT": 0.11373891542808334,
+              "n": 7530,
+              "p95_abs_kT": 0.08073323766367406,
+              "p99_abs_kT": 0.1059471412476068,
+              "rms_kT": 0.034578109957487314
+            },
+            "target": {
+              "max_abs_kT": 0.11354210740578634,
+              "n": 1530,
+              "p95_abs_kT": 0.06456998705014474,
+              "p99_abs_kT": 0.10166087000217237,
+              "rms_kT": 0.029203402088009707
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.00065359477124183,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512112526048,
+            "p99_abs": 9.24723739717591e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p02_wall_1p5x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 7.493498087494382,
+          "curvature_runtime": {
+            "max_abs": 1483.9453647291791,
+            "max_signed": 1483.9453647291791,
+            "min_signed": -816.3229144082175,
+            "n": 7530,
+            "p50_abs": 341.7195329695526,
+            "p95_abs": 937.3727224721549,
+            "p99_abs": 1457.8825997601382
+          },
+          "curvature_target": {
+            "max_abs": 2222.2221697316622,
+            "max_signed": 2222.2221697316622,
+            "min_signed": -814.186571637747,
+            "n": 1530,
+            "p50_abs": 274.8497932765156,
+            "p95_abs": 654.9000691389994,
+            "p99_abs": 1430.793846966426
+          },
+          "endpoint_barrier_kJmol": 25.000000000000007,
+          "endpoint_barrier_kT": 10.040160642570283,
+          "frequency_proxy_p99_vs_old_target": 4.323107889104937,
+          "note": "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.1217236502112309,
+            "sample": {
+              "max_abs_kT": 0.25193399173207337,
+              "n": 7530,
+              "p95_abs_kT": 0.16264242291298178,
+              "p99_abs_kT": 0.2455178489351564,
+              "rms_kT": 0.07771536890532882
+            },
+            "target": {
+              "max_abs_kT": 1.554193467122095,
+              "n": 1530,
+              "p95_abs_kT": 0.12998580379915867,
+              "p99_abs_kT": 0.2430756722738999,
+              "rms_kT": 0.07542260627607626
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.00130718954248366,
+          "u2_knot_jump": {
+            "max_abs": 0.00023835605816202587,
+            "p99_abs": 2.3317004413172526e-05
+          },
+          "wall_k": 2222.222222222222,
+          "wall_width_rad": 0.15000000000000002
+        },
+        "smooth_0p02_wall_2x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 7.577318655955512,
+          "curvature_runtime": {
+            "max_abs": 1483.9453647291791,
+            "max_signed": 1483.9453647291791,
+            "min_signed": -816.3229144082175,
+            "n": 7530,
+            "p50_abs": 341.7195329695526,
+            "p95_abs": 937.3727224721549,
+            "p99_abs": 1457.8825997601382
+          },
+          "curvature_target": {
+            "max_abs": 1482.8295409888324,
+            "max_signed": 1482.8295409888324,
+            "min_signed": -814.186571637747,
+            "n": 1530,
+            "p50_abs": 277.58424021268195,
+            "p95_abs": 655.4235865491373,
+            "p99_abs": 1414.9663545447956
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 4.299130207599163,
+          "note": "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.11505236199277619,
+            "sample": {
+              "max_abs_kT": 0.24925475951582649,
+              "n": 7530,
+              "p95_abs_kT": 0.16508596572115708,
+              "p99_abs_kT": 0.24283861671890952,
+              "rms_kT": 0.07800617927837067
+            },
+            "target": {
+              "max_abs_kT": 2.984731062472831,
+              "n": 1530,
+              "p95_abs_kT": 0.13453480117437108,
+              "p99_abs_kT": 0.24421522344416197,
+              "rms_kT": 0.10502600718444494
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0058823529411764705,
+          "u2_knot_jump": {
+            "max_abs": 0.00014799268092247075,
+            "p99_abs": 2.3317004413172526e-05
+          },
+          "wall_k": 1250.0,
+          "wall_width_rad": 0.2
+        },
+        "smooth_0p02_wall_current": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 7.5259991980505605,
+          "curvature_runtime": {
+            "max_abs": 1483.9453647291791,
+            "max_signed": 1483.9453647291791,
+            "min_signed": -816.3229144082175,
+            "n": 7530,
+            "p50_abs": 341.7195329695526,
+            "p95_abs": 937.3727224721549,
+            "p99_abs": 1457.8825997601382
+          },
+          "curvature_target": {
+            "max_abs": 4999.946248869782,
+            "max_signed": 4999.946248869782,
+            "min_signed": -814.186571637747,
+            "n": 1530,
+            "p50_abs": 274.44835541516466,
+            "p95_abs": 654.7986486108725,
+            "p99_abs": 1424.6149479551955
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 4.313763094736026,
+          "note": "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.12443170790147588,
+            "sample": {
+              "max_abs_kT": 0.25302156510164964,
+              "n": 7530,
+              "p95_abs_kT": 0.16171073521365692,
+              "p99_abs_kT": 0.2466054223047327,
+              "rms_kT": 0.07762340270001128
+            },
+            "target": {
+              "max_abs_kT": 0.2530137054123943,
+              "n": 1530,
+              "p95_abs_kT": 0.1282814708323585,
+              "p99_abs_kT": 0.24399040193582733,
+              "rms_kT": 0.06406647959017443
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.00065359477124183,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512077567346,
+            "p99_abs": 2.3613467854382005e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        }
+      },
+      "current": {
+        "curvature_grid": {
+          "max_abs": 19872.006734163537,
+          "max_signed": 19872.006734163537,
+          "min_signed": -14274.64274298522,
+          "n": 8001,
+          "p50_abs": 5.54688736447221e-10,
+          "p95_abs": 5001.537324427216,
+          "p99_abs": 7062.390528124051
+        },
+        "curvature_grid_body_after_subtracting_explicit_wall": {
+          "max_abs": 19872.006734163537,
+          "max_signed": 19872.006734163537,
+          "min_signed": -14274.64274298522,
+          "n": 8001,
+          "p50_abs": 5.54688736447221e-10,
+          "p95_abs": 2829.3895163231236,
+          "p99_abs": 6936.755977617424
+        },
+        "curvature_runtime": {
+          "max_abs": 21508.278311208163,
+          "max_signed": 21508.278311208163,
+          "min_signed": -14200.153134235668,
+          "n": 7530,
+          "p50_abs": 1232.5063433631744,
+          "p95_abs": 6411.557038582584,
+          "p99_abs": 11886.036906037909
+        },
+        "curvature_runtime_body_after_subtracting_explicit_wall": {
+          "max_abs": 21508.278311208163,
+          "max_signed": 21508.278311208163,
+          "min_signed": -14200.153134235668,
+          "n": 7530,
+          "p50_abs": 1232.5063433631744,
+          "p95_abs": 6411.557038582584,
+          "p99_abs": 11886.036906037909
+        },
+        "curvature_runtime_by_zone": {
+          "interior": {
+            "max_abs": 21508.278311208163,
+            "max_signed": 21508.278311208163,
+            "min_signed": -14200.153134235668,
+            "n": 7530,
+            "p50_abs": 1232.5063433631744,
+            "p95_abs": 6411.557038582584,
+            "p99_abs": 11886.036906037909
+          },
+          "wall": {
+            "max_abs": NaN,
+            "n": 0,
+            "p50_abs": NaN,
+            "p95_abs": NaN,
+            "p99_abs": NaN
+          }
+        },
+        "curvature_target": {
+          "max_abs": 17864.700852940598,
+          "max_signed": 17864.700852940598,
+          "min_signed": -12028.19202772568,
+          "n": 1530,
+          "p50_abs": 1046.56721525608,
+          "p95_abs": 6130.431609375676,
+          "p99_abs": 10721.650955841642
+        },
+        "curvature_target_body_after_subtracting_explicit_wall": {
+          "max_abs": 17864.700852940598,
+          "max_signed": 17864.700852940598,
+          "min_signed": -12028.19202772568,
+          "n": 1530,
+          "p50_abs": 1046.194219748205,
+          "p95_abs": 6130.431609375676,
+          "p99_abs": 10721.650955841642
+        },
+        "curvature_target_by_zone": {
+          "interior": {
+            "max_abs": 17864.700852940598,
+            "max_signed": 17864.700852940598,
+            "min_signed": -12028.19202772568,
+            "n": 1529,
+            "p50_abs": 1046.4833991037126,
+            "p95_abs": 6132.814685969742,
+            "p99_abs": 10722.619234040249
+          },
+          "wall": {
+            "max_abs": 4041.1744577044587,
+            "max_signed": 4041.1744577044587,
+            "min_signed": 4041.1744577044587,
+            "n": 1,
+            "p50_abs": 4041.1744577044587,
+            "p95_abs": 4041.1744577044587,
+            "p99_abs": 4041.1744577044587
+          }
+        },
+        "distribution_l1_runtime_vs_target": 0.867989479988543,
+        "frequency_proxy_p99_vs_old_target": 11.834185553351626,
+        "hotspots": [
+          {
+            "abs_u2": 19872.006734163537,
+            "distance_to_endpoint_rad": 0.8749335540247571,
+            "sample_density": 2.0038878461202834,
+            "target_density": 1.201471171707415,
+            "theta_deg": 129.87,
+            "theta_rad": 2.266659099565036,
+            "u2": 19872.006734163537,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 19164.96451565495,
+            "distance_to_endpoint_rad": 0.8908378668335555,
+            "sample_density": 2.141348393186197,
+            "target_density": 1.3155330204336113,
+            "theta_deg": 128.95875,
+            "theta_rad": 2.2507547867562376,
+            "u2": 19164.96451565495,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 18285.645187170532,
+            "distance_to_endpoint_rad": 0.9411033492909922,
+            "sample_density": 0.6481071766873848,
+            "target_density": 0.7871542778085899,
+            "theta_deg": 126.07875000000001,
+            "theta_rad": 2.200489304298801,
+            "u2": 18285.645187170532,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 15899.694634143416,
+            "distance_to_endpoint_rad": 0.8578511439708629,
+            "sample_density": 0.5266560052678211,
+            "target_density": 0.6854946820456783,
+            "theta_deg": 130.84875,
+            "theta_rad": 2.28374150961893,
+            "u2": -15899.694634143416,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 14274.64274298522,
+            "distance_to_endpoint_rad": 0.8121017009529612,
+            "sample_density": 1.194934868875536,
+            "target_density": 0.8605530658003352,
+            "theta_deg": 133.47000000000003,
+            "theta_rad": 2.329490952636832,
+            "u2": -14274.64274298522,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 14125.542828363832,
+            "distance_to_endpoint_rad": 0.8374307917225292,
+            "sample_density": 0.16134189687167294,
+            "target_density": 1.1686499116710736,
+            "theta_deg": 132.01875,
+            "theta_rad": 2.304161861867264,
+            "u2": 14125.542828363832,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11968.362379781112,
+            "distance_to_endpoint_rad": 0.9597565556716816,
+            "sample_density": 0.6417969579632838,
+            "target_density": 0.34004722670214965,
+            "theta_deg": 125.01,
+            "theta_rad": 2.1818360979181115,
+            "u2": -11968.362379781112,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11143.331605172792,
+            "distance_to_endpoint_rad": 0.0973893722612833,
+            "sample_density": 0.0,
+            "target_density": 0.014369506881587732,
+            "theta_deg": 174.42000000000002,
+            "theta_rad": 3.04420328132851,
+            "u2": 11143.331605172792,
+            "wall_zone": true
+          },
+          {
+            "abs_u2": 10225.996038890862,
+            "distance_to_endpoint_rad": 0.9063494805606553,
+            "sample_density": 2.621006382333321,
+            "target_density": 0.5866615558452225,
+            "theta_deg": 128.07,
+            "theta_rad": 2.2352431730291378,
+            "u2": -10225.996038890862,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10031.834931357447,
+            "distance_to_endpoint_rad": 0.5717698629533423,
+            "sample_density": 0.10986163475192842,
+            "target_density": 1.6530531422999697,
+            "theta_deg": 147.24,
+            "theta_rad": 2.569822790636451,
+            "u2": -10031.834931357447,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 9525.934905906826,
+            "distance_to_endpoint_rad": 0.6754424205218053,
+            "sample_density": 3.6565774198961765,
+            "target_density": 1.862126357144213,
+            "theta_deg": 141.3,
+            "theta_rad": 2.466150233067988,
+            "u2": -9525.934905906826,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 8825.27768554973,
+            "distance_to_endpoint_rad": 0.6974335690969338,
+            "sample_density": 0.7488084087947796,
+            "target_density": 2.5458287386832508,
+            "theta_deg": 140.04000000000002,
+            "theta_rad": 2.4441590844928593,
+            "u2": 8825.27768554973,
+            "wall_zone": false
+          }
+        ],
+        "old_frequency_proxy_denominator_sqrt_k": 8.749685799600515,
+        "old_harmonic_k": 76.55700159173091,
+        "runtime_samples": 7530,
+        "source_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_G_G_T.dat",
+        "source_table_sha256": "7748683d82506328a852ac69318e84683443f732b41762655d158dfa83d1b9f3",
+        "target_samples": 1530,
+        "u2_knot_jump": {
+          "max_abs": 20553.359013381112,
+          "p99_abs": 10848.76732410471
+        },
+        "wall": {
+          "endpoint_barrier_kJmol": 25.0,
+          "endpoint_barrier_kT": 10.04016064257028,
+          "k": 5000.0,
+          "runtime_fraction": 0.0,
+          "target_fraction": 0.00065359477124183,
+          "width_rad": 0.1
+        }
+      }
+    },
+    "ang_G_T_T": {
+      "candidates": {
+        "c2_raw_wall_current": {
+          "body_sigma_rad": 0.0,
+          "curvature_reduction_p99_target": 1.2103501008686448,
+          "curvature_runtime": {
+            "max_abs": 10381.800556183827,
+            "max_signed": 9227.684742700885,
+            "min_signed": -10381.800556183827,
+            "n": 7530,
+            "p50_abs": 791.3336454469363,
+            "p95_abs": 3939.3045927517733,
+            "p99_abs": 7530.693503534039
+          },
+          "curvature_target": {
+            "max_abs": 10288.806369038399,
+            "max_signed": 9128.421190132512,
+            "min_signed": -10288.806369038399,
+            "n": 1530,
+            "p50_abs": 941.4829623125547,
+            "p95_abs": 3797.8212228547445,
+            "p99_abs": 7016.676679094869
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 8.900559923987776,
+          "note": "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
+          "potential_perturbation": {
+            "offset_kJmol": -2.5782963714505076e-06,
+            "sample": {
+              "max_abs_kT": 0.0002904590920985164,
+              "n": 7530,
+              "p95_abs_kT": 6.873585653981714e-05,
+              "p99_abs_kT": 0.0001465423620689133,
+              "rms_kT": 3.17517013134664e-05
+            },
+            "target": {
+              "max_abs_kT": 0.00023031475468061479,
+              "n": 1530,
+              "p95_abs_kT": 5.0500390871189196e-05,
+              "p99_abs_kT": 0.0001258558745245926,
+              "rms_kT": 2.6566290384328236e-05
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.0009130040443778853,
+            "p99_abs": 0.0005245129565787456
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p01_wall_current": {
+          "body_sigma_rad": 0.01,
+          "curvature_reduction_p99_target": 3.535435596276725,
+          "curvature_runtime": {
+            "max_abs": 2665.5064486726815,
+            "max_signed": 2665.5064486726815,
+            "min_signed": -2279.756501708322,
+            "n": 7530,
+            "p50_abs": 435.11131572667796,
+            "p95_abs": 1655.7424560644465,
+            "p99_abs": 2516.179991897208
+          },
+          "curvature_target": {
+            "max_abs": 2662.453646095401,
+            "max_signed": 2662.453646095401,
+            "min_signed": -2277.6310857819262,
+            "n": 1530,
+            "p50_abs": 412.2950839965501,
+            "p95_abs": 1417.9596258741851,
+            "p99_abs": 2402.1468062518225
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 5.207764882445195,
+          "note": "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.024287933208575762,
+            "sample": {
+              "max_abs_kT": 0.07785947813308836,
+              "n": 7530,
+              "p95_abs_kT": 0.04525302969407658,
+              "p99_abs_kT": 0.06849499074129974,
+              "rms_kT": 0.021229946210138597
+            },
+            "target": {
+              "max_abs_kT": 0.0776190729400903,
+              "n": 1530,
+              "p95_abs_kT": 0.04442012573494831,
+              "p99_abs_kT": 0.06403266169116156,
+              "rms_kT": 0.020053306741347785
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512008786809,
+            "p99_abs": 7.127472685596104e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p02_wall_1p5x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 9.573758441680862,
+          "curvature_runtime": {
+            "max_abs": 927.0449592161729,
+            "max_signed": 927.0449592161729,
+            "min_signed": -566.8212724206138,
+            "n": 7530,
+            "p50_abs": 134.47346105061106,
+            "p95_abs": 676.7678549138893,
+            "p99_abs": 900.600322546402
+          },
+          "curvature_target": {
+            "max_abs": 926.3213612074699,
+            "max_signed": 926.3213612074699,
+            "min_signed": -724.4251187262735,
+            "n": 1530,
+            "p50_abs": 132.6950139500242,
+            "p95_abs": 624.4567632606493,
+            "p99_abs": 887.0743269781196
+          },
+          "endpoint_barrier_kJmol": 25.000000000000007,
+          "endpoint_barrier_kT": 10.040160642570283,
+          "frequency_proxy_p99_vs_old_target": 3.164693106833466,
+          "note": "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.12022077241448377,
+            "sample": {
+              "max_abs_kT": 0.15567025576738167,
+              "n": 7530,
+              "p95_abs_kT": 0.10193327009850182,
+              "p99_abs_kT": 0.144310181430584,
+              "rms_kT": 0.043274279194982244
+            },
+            "target": {
+              "max_abs_kT": 0.15568087004837494,
+              "n": 1530,
+              "p95_abs_kT": 0.09310149043263433,
+              "p99_abs_kT": 0.1401632494402254,
+              "rms_kT": 0.04222860570441232
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.00023835600450183847,
+            "p99_abs": 1.6186794096597615e-05
+          },
+          "wall_k": 2222.222222222222,
+          "wall_width_rad": 0.15000000000000002
+        },
+        "smooth_0p02_wall_2x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 9.573758441680862,
+          "curvature_runtime": {
+            "max_abs": 927.0449592161729,
+            "max_signed": 927.0449592161729,
+            "min_signed": -566.8212724206138,
+            "n": 7530,
+            "p50_abs": 134.47346105061106,
+            "p95_abs": 676.7678549138893,
+            "p99_abs": 900.600322546402
+          },
+          "curvature_target": {
+            "max_abs": 926.3213612074699,
+            "max_signed": 926.3213612074699,
+            "min_signed": -724.4251187262735,
+            "n": 1530,
+            "p50_abs": 132.6950139500242,
+            "p95_abs": 624.4567632606493,
+            "p99_abs": 887.0743269781196
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 3.164693106833466,
+          "note": "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.12022077241448377,
+            "sample": {
+              "max_abs_kT": 0.15567025576738167,
+              "n": 7530,
+              "p95_abs_kT": 0.10193327009850182,
+              "p99_abs_kT": 0.144310181430584,
+              "rms_kT": 0.043274279194982244
+            },
+            "target": {
+              "max_abs_kT": 0.15568087004837494,
+              "n": 1530,
+              "p95_abs_kT": 0.09310149043263433,
+              "p99_abs_kT": 0.1401632494402254,
+              "rms_kT": 0.04222860570441232
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.000147948568155698,
+            "p99_abs": 1.581436612298148e-05
+          },
+          "wall_k": 1250.0,
+          "wall_width_rad": 0.2
+        },
+        "smooth_0p02_wall_current": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 9.573758441680862,
+          "curvature_runtime": {
+            "max_abs": 927.0449592161729,
+            "max_signed": 927.0449592161729,
+            "min_signed": -566.8212724206138,
+            "n": 7530,
+            "p50_abs": 134.47346105061106,
+            "p95_abs": 676.7678549138893,
+            "p99_abs": 900.600322546402
+          },
+          "curvature_target": {
+            "max_abs": 926.3213612074699,
+            "max_signed": 926.3213612074699,
+            "min_signed": -724.4251187262735,
+            "n": 1530,
+            "p50_abs": 132.6950139500242,
+            "p95_abs": 624.4567632606493,
+            "p99_abs": 887.0743269781196
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 3.164693106833466,
+          "note": "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.12022077241448377,
+            "sample": {
+              "max_abs_kT": 0.15567025576738167,
+              "n": 7530,
+              "p95_abs_kT": 0.10193327009850182,
+              "p99_abs_kT": 0.144310181430584,
+              "rms_kT": 0.043274279194982244
+            },
+            "target": {
+              "max_abs_kT": 0.15568087004837494,
+              "n": 1530,
+              "p95_abs_kT": 0.09310149043263433,
+              "p99_abs_kT": 0.1401632494402254,
+              "rms_kT": 0.04222860570441232
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.0,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880511647831099,
+            "p99_abs": 1.663555687304807e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        }
+      },
+      "current": {
+        "curvature_grid": {
+          "max_abs": 19045.05426595216,
+          "max_signed": 18045.354269996362,
+          "min_signed": -19045.05426595216,
+          "n": 8001,
+          "p50_abs": 7.192294319682771e-10,
+          "p95_abs": 5000.420769538045,
+          "p99_abs": 6194.1903110879
+        },
+        "curvature_grid_body_after_subtracting_explicit_wall": {
+          "max_abs": 19045.05426595216,
+          "max_signed": 18045.354269996362,
+          "min_signed": -19045.05426595216,
+          "n": 8001,
+          "p50_abs": 7.192294319682771e-10,
+          "p95_abs": 2258.5290816110314,
+          "p99_abs": 6002.871835961476
+        },
+        "curvature_runtime": {
+          "max_abs": 18062.538041365828,
+          "max_signed": 17827.61633839442,
+          "min_signed": -18062.538041365828,
+          "n": 7530,
+          "p50_abs": 725.2361519778614,
+          "p95_abs": 4553.148560528279,
+          "p99_abs": 8902.94010865595
+        },
+        "curvature_runtime_body_after_subtracting_explicit_wall": {
+          "max_abs": 18062.538041365828,
+          "max_signed": 17827.61633839442,
+          "min_signed": -18062.538041365828,
+          "n": 7530,
+          "p50_abs": 725.2361519778614,
+          "p95_abs": 4553.148560528279,
+          "p99_abs": 8902.94010865595
+        },
+        "curvature_runtime_by_zone": {
+          "interior": {
+            "max_abs": 18062.538041365828,
+            "max_signed": 17827.61633839442,
+            "min_signed": -18062.538041365828,
+            "n": 7530,
+            "p50_abs": 725.2361519778614,
+            "p95_abs": 4553.148560528279,
+            "p99_abs": 8902.94010865595
+          },
+          "wall": {
+            "max_abs": NaN,
+            "n": 0,
+            "p50_abs": NaN,
+            "p95_abs": NaN,
+            "p99_abs": NaN
+          }
+        },
+        "curvature_target": {
+          "max_abs": 14323.37824340453,
+          "max_signed": 12916.838587813008,
+          "min_signed": -14323.37824340453,
+          "n": 1530,
+          "p50_abs": 885.5648495553154,
+          "p95_abs": 4050.147016748206,
+          "p99_abs": 8492.635326305142
+        },
+        "curvature_target_body_after_subtracting_explicit_wall": {
+          "max_abs": 14323.37824340453,
+          "max_signed": 12916.838587813008,
+          "min_signed": -14323.37824340453,
+          "n": 1530,
+          "p50_abs": 885.5648495553154,
+          "p95_abs": 4050.147016748206,
+          "p99_abs": 8492.635326305142
+        },
+        "curvature_target_by_zone": {
+          "interior": {
+            "max_abs": 14323.37824340453,
+            "max_signed": 12916.838587813008,
+            "min_signed": -14323.37824340453,
+            "n": 1530,
+            "p50_abs": 885.5648495553154,
+            "p95_abs": 4050.147016748206,
+            "p99_abs": 8492.635326305142
+          },
+          "wall": {
+            "max_abs": NaN,
+            "n": 0,
+            "p50_abs": NaN,
+            "p95_abs": NaN,
+            "p99_abs": NaN
+          }
+        },
+        "distribution_l1_runtime_vs_target": 1.0115615967502534,
+        "frequency_proxy_p99_vs_old_target": 9.792032220200698,
+        "hotspots": [
+          {
+            "abs_u2": 19045.05426595216,
+            "distance_to_endpoint_rad": 1.4121458977886119,
+            "sample_density": 0.7027757265850892,
+            "target_density": 0.4849553058391944,
+            "theta_deg": 99.09,
+            "theta_rad": 1.7294467558011812,
+            "u2": -19045.05426595216,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 18045.354269996362,
+            "distance_to_endpoint_rad": 1.4341370463637404,
+            "sample_density": 2.3668407572496615,
+            "target_density": 0.9302545050246379,
+            "theta_deg": 97.83000000000001,
+            "theta_rad": 1.7074556072260527,
+            "u2": 18045.354269996362,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 14649.3512019836,
+            "distance_to_endpoint_rad": 1.3414600630828417,
+            "sample_density": 0.7647087696458947,
+            "target_density": 0.8863684136611879,
+            "theta_deg": 76.86,
+            "theta_rad": 1.3414600630828417,
+            "u2": -14649.3512019836,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 14213.1147080987,
+            "distance_to_endpoint_rad": 1.3257520998148926,
+            "sample_density": 1.8067511782387788,
+            "target_density": 0.9573450688641741,
+            "theta_deg": 104.04,
+            "theta_rad": 1.8158405537749005,
+            "u2": 14213.1147080987,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 13906.776939716463,
+            "distance_to_endpoint_rad": 1.4563245444797184,
+            "sample_density": 0.0,
+            "target_density": 0.5565345783491725,
+            "theta_deg": 96.55875,
+            "theta_rad": 1.6852681091100747,
+            "u2": -13906.776939716463,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 12422.566471861614,
+            "distance_to_endpoint_rad": 1.2362167091875838,
+            "sample_density": 0.0,
+            "target_density": 0.3597042144709029,
+            "theta_deg": 70.83000000000001,
+            "theta_rad": 1.2362167091875838,
+            "u2": -12422.566471861614,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11494.85965651976,
+            "distance_to_endpoint_rad": 1.349314044716816,
+            "sample_density": 1.3936198628336527,
+            "target_density": 0.5895230160900541,
+            "theta_deg": 102.69000000000001,
+            "theta_rad": 1.7922786088729772,
+            "u2": -11494.85965651976,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10662.33331678136,
+            "distance_to_endpoint_rad": 1.2218831927055802,
+            "sample_density": 0.0,
+            "target_density": 0.3861532824675029,
+            "theta_deg": 70.00875,
+            "theta_rad": 1.2218831927055802,
+            "u2": -10662.33331678136,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10306.781056972775,
+            "distance_to_endpoint_rad": 1.2048007826516858,
+            "sample_density": 0.33711798459547193,
+            "target_density": 0.5391364335182459,
+            "theta_deg": 69.03,
+            "theta_rad": 1.2048007826516858,
+            "u2": 10306.781056972775,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 9308.110789313127,
+            "distance_to_endpoint_rad": 0.09876381904722913,
+            "sample_density": 0.0,
+            "target_density": 0.0,
+            "theta_deg": 5.65875,
+            "theta_rad": 0.09876381904722913,
+            "u2": 9308.110789313127,
+            "wall_zone": true
+          },
+          {
+            "abs_u2": 8331.097979873743,
+            "distance_to_endpoint_rad": 1.3304644887952775,
+            "sample_density": 3.6589725855410404,
+            "target_density": 1.452844233648938,
+            "theta_deg": 76.23,
+            "theta_rad": 1.3304644887952775,
+            "u2": 8331.097979873743,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 7274.802195649127,
+            "distance_to_endpoint_rad": 1.3934926914079224,
+            "sample_density": 0.624077313972249,
+            "target_density": 0.8242482889441929,
+            "theta_deg": 100.15875000000001,
+            "theta_rad": 1.7480999621818707,
+            "u2": 7274.802195649127,
+            "wall_zone": false
+          }
+        ],
+        "old_frequency_proxy_denominator_sqrt_k": 9.411273706464323,
+        "old_harmonic_k": 88.57207277798672,
+        "runtime_samples": 7530,
+        "source_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_G_T_T.dat",
+        "source_table_sha256": "e8d1d9bc0fb1c89612f828dcb922b424e14bad8f789aced07ca76fc13774c1f2",
+        "target_samples": 1530,
+        "u2_knot_jump": {
+          "max_abs": 17331.056191167318,
+          "p99_abs": 9548.46022393234
+        },
+        "wall": {
+          "endpoint_barrier_kJmol": 25.0,
+          "endpoint_barrier_kT": 10.04016064257028,
+          "k": 5000.0,
+          "runtime_fraction": 0.0,
+          "target_fraction": 0.0,
+          "width_rad": 0.1
+        }
+      }
+    },
+    "ang_T_A_G": {
+      "candidates": {
+        "c2_raw_wall_current": {
+          "body_sigma_rad": 0.0,
+          "curvature_reduction_p99_target": 1.0564765281965254,
+          "curvature_runtime": {
+            "max_abs": 8114.069646172002,
+            "max_signed": 8114.069646172002,
+            "min_signed": -5835.214515996078,
+            "n": 7530,
+            "p50_abs": 501.3937585535616,
+            "p95_abs": 4217.565384465077,
+            "p99_abs": 5472.471226538418
+          },
+          "curvature_target": {
+            "max_abs": 10338.854865957192,
+            "max_signed": 10338.854865957192,
+            "min_signed": -9230.250570554543,
+            "n": 1530,
+            "p50_abs": 1235.9513386824008,
+            "p95_abs": 5374.274729344026,
+            "p99_abs": 9104.967506866205
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 20.149139193189633,
+          "note": "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
+          "potential_perturbation": {
+            "offset_kJmol": 3.452525552317541e-07,
+            "sample": {
+              "max_abs_kT": 0.0001979910023840401,
+              "n": 7530,
+              "p95_abs_kT": 5.529058051871017e-05,
+              "p99_abs_kT": 9.98774125955134e-05,
+              "rms_kT": 2.4034529410551538e-05
+            },
+            "target": {
+              "max_abs_kT": 0.00019245417777005798,
+              "n": 1530,
+              "p95_abs_kT": 7.377298811097386e-05,
+              "p99_abs_kT": 0.0001370900426381056,
+              "rms_kT": 3.250692477333409e-05
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.00065359477124183,
+          "u2_knot_jump": {
+            "max_abs": 0.0014919518616807181,
+            "p99_abs": 0.0006905223334251786
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p01_wall_current": {
+          "body_sigma_rad": 0.01,
+          "curvature_reduction_p99_target": 3.407433306838622,
+          "curvature_runtime": {
+            "max_abs": 3069.360232529141,
+            "max_signed": 3069.360232529141,
+            "min_signed": -1619.3584865243745,
+            "n": 7530,
+            "p50_abs": 257.15125997505777,
+            "p95_abs": 1851.655215455868,
+            "p99_abs": 2802.2797280590735
+          },
+          "curvature_target": {
+            "max_abs": 4999.999999954164,
+            "max_signed": 4999.999999954164,
+            "min_signed": -3181.587973146927,
+            "n": 1530,
+            "p50_abs": 577.3518490404967,
+            "p95_abs": 1976.6984350687815,
+            "p99_abs": 2823.0000691989344
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 11.219480325271425,
+          "note": "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.015500612008066681,
+            "sample": {
+              "max_abs_kT": 0.07438118569659563,
+              "n": 7530,
+              "p95_abs_kT": 0.04650449048945716,
+              "p99_abs_kT": 0.06829383319479394,
+              "rms_kT": 0.02067758447079657
+            },
+            "target": {
+              "max_abs_kT": 0.09712050318361383,
+              "n": 1530,
+              "p95_abs_kT": 0.05677819245663165,
+              "p99_abs_kT": 0.07402954730468872,
+              "rms_kT": 0.026902774263900565
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.00065359477124183,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512156579698,
+            "p99_abs": 9.202646145922697e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p02_wall_1p5x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 9.746599247865191,
+          "curvature_runtime": {
+            "max_abs": 2402.2316909725296,
+            "max_signed": 2402.2316909725296,
+            "min_signed": -678.4839048211951,
+            "n": 7530,
+            "p50_abs": 169.64975357762506,
+            "p95_abs": 694.4913767175112,
+            "p99_abs": 875.780781324363
+          },
+          "curvature_target": {
+            "max_abs": 2223.063897967034,
+            "max_signed": 2223.063897967034,
+            "min_signed": -1121.7800540961707,
+            "n": 1530,
+            "p50_abs": 256.8197392720932,
+            "p95_abs": 673.3662480251816,
+            "p99_abs": 986.9272570228106
+          },
+          "endpoint_barrier_kJmol": 25.000000000000007,
+          "endpoint_barrier_kT": 10.040160642570283,
+          "frequency_proxy_p99_vs_old_target": 6.63376173160619,
+          "note": "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.06379305932835619,
+            "sample": {
+              "max_abs_kT": 0.16462194023334717,
+              "n": 7530,
+              "p95_abs_kT": 0.10942518255850464,
+              "p99_abs_kT": 0.15462500047028116,
+              "rms_kT": 0.04743099438718079
+            },
+            "target": {
+              "max_abs_kT": 1.983264227840074,
+              "n": 1530,
+              "p95_abs_kT": 0.11761708365120883,
+              "p99_abs_kT": 0.1679596473472953,
+              "rms_kT": 0.07915771040472501
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.005444887118193891,
+          "target_fraction_in_candidate_wall": 0.004575163398692811,
+          "u2_knot_jump": {
+            "max_abs": 0.00023837111211832962,
+            "p99_abs": 2.1826802943110124e-05
+          },
+          "wall_k": 2222.222222222222,
+          "wall_width_rad": 0.15000000000000002
+        },
+        "smooth_0p02_wall_2x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 8.015319331653824,
+          "curvature_runtime": {
+            "max_abs": 1249.9060391484588,
+            "max_signed": 1249.9060391484588,
+            "min_signed": -678.4839048211951,
+            "n": 7530,
+            "p50_abs": 184.9233661459544,
+            "p95_abs": 726.0651568633753,
+            "p99_abs": 1249.0752856909753
+          },
+          "curvature_target": {
+            "max_abs": 1250.0001490340896,
+            "max_signed": 1250.0001490340896,
+            "min_signed": -1121.7800540961707,
+            "n": 1530,
+            "p50_abs": 259.85130363208384,
+            "p95_abs": 681.9010453230359,
+            "p99_abs": 1200.0999664490507
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 7.315196704357896,
+          "note": "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.04963479251557023,
+            "sample": {
+              "max_abs_kT": 0.7704459175969414,
+              "n": 7530,
+              "p95_abs_kT": 0.12138291695835242,
+              "p99_abs_kT": 0.4525782064787926,
+              "rms_kT": 0.08517540117804953
+            },
+            "target": {
+              "max_abs_kT": 3.2337225171702455,
+              "n": 1530,
+              "p95_abs_kT": 0.12372554240599853,
+              "p99_abs_kT": 0.18238682019021465,
+              "rms_kT": 0.1326568258314524
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.03173970783532536,
+          "target_fraction_in_candidate_wall": 0.011764705882352941,
+          "u2_knot_jump": {
+            "max_abs": 0.00014937483547328156,
+            "p99_abs": 2.1826802943110124e-05
+          },
+          "wall_k": 1250.0,
+          "wall_width_rad": 0.2
+        },
+        "smooth_0p02_wall_current": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 10.964514091456794,
+          "curvature_runtime": {
+            "max_abs": 887.8019099881286,
+            "max_signed": 887.8019099881286,
+            "min_signed": -678.4839048211951,
+            "n": 7530,
+            "p50_abs": 164.75554619103713,
+            "p95_abs": 684.5169795760129,
+            "p99_abs": 827.7798001424021
+          },
+          "curvature_target": {
+            "max_abs": 4999.150424302398,
+            "max_signed": 4999.150424302398,
+            "min_signed": -1121.7800540961707,
+            "n": 1530,
+            "p50_abs": 255.7301294776376,
+            "p95_abs": 669.4296287103188,
+            "p99_abs": 877.3014819225916
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 6.254487492918737,
+          "note": "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.06969464255702486,
+            "sample": {
+              "max_abs_kT": 0.16699205397980044,
+              "n": 7530,
+              "p95_abs_kT": 0.1096627142772376,
+              "p99_abs_kT": 0.15699511421673443,
+              "rms_kT": 0.047186293463571095
+            },
+            "target": {
+              "max_abs_kT": 0.20256859990695483,
+              "n": 1530,
+              "p95_abs_kT": 0.11607261457798049,
+              "p99_abs_kT": 0.1654919203088385,
+              "rms_kT": 0.056720114133330675
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.0,
+          "target_fraction_in_candidate_wall": 0.00065359477124183,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512138958238,
+            "p99_abs": 2.207021797858032e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        }
+      },
+      "current": {
+        "curvature_grid": {
+          "max_abs": 20914.044882910217,
+          "max_signed": 19192.03147184398,
+          "min_signed": -20914.044882910217,
+          "n": 8001,
+          "p50_abs": 96.76494877503046,
+          "p95_abs": 5094.188818501307,
+          "p99_abs": 8470.018588797895
+        },
+        "curvature_grid_body_after_subtracting_explicit_wall": {
+          "max_abs": 20914.044882910217,
+          "max_signed": 19192.03147184398,
+          "min_signed": -20914.044882910217,
+          "n": 8001,
+          "p50_abs": 58.840421181531156,
+          "p95_abs": 3891.197748138076,
+          "p99_abs": 8327.004330111693
+        },
+        "curvature_runtime": {
+          "max_abs": 13067.97419674891,
+          "max_signed": 13067.97419674891,
+          "min_signed": -10464.49854107469,
+          "n": 7530,
+          "p50_abs": 457.62955081345496,
+          "p95_abs": 4678.846545715187,
+          "p99_abs": 7694.2206092421575
+        },
+        "curvature_runtime_body_after_subtracting_explicit_wall": {
+          "max_abs": 13067.97419674891,
+          "max_signed": 13067.97419674891,
+          "min_signed": -10464.49854107469,
+          "n": 7530,
+          "p50_abs": 457.62955081345496,
+          "p95_abs": 4678.846545715187,
+          "p99_abs": 7694.2206092421575
+        },
+        "curvature_runtime_by_zone": {
+          "interior": {
+            "max_abs": 13067.97419674891,
+            "max_signed": 13067.97419674891,
+            "min_signed": -10464.49854107469,
+            "n": 7530,
+            "p50_abs": 457.62955081345496,
+            "p95_abs": 4678.846545715187,
+            "p99_abs": 7694.2206092421575
+          },
+          "wall": {
+            "max_abs": NaN,
+            "n": 0,
+            "p50_abs": NaN,
+            "p95_abs": NaN,
+            "p99_abs": NaN
+          }
+        },
+        "curvature_target": {
+          "max_abs": 16634.199980850917,
+          "max_signed": 16634.199980850917,
+          "min_signed": -14859.05902761789,
+          "n": 1530,
+          "p50_abs": 1109.739995284779,
+          "p95_abs": 5797.966708643218,
+          "p99_abs": 9619.184460996183
+        },
+        "curvature_target_body_after_subtracting_explicit_wall": {
+          "max_abs": 16634.199980850917,
+          "max_signed": 16634.199980850917,
+          "min_signed": -14859.05902761789,
+          "n": 1530,
+          "p50_abs": 1106.7642126720266,
+          "p95_abs": 5797.966708643218,
+          "p99_abs": 9619.184460996183
+        },
+        "curvature_target_by_zone": {
+          "interior": {
+            "max_abs": 16634.199980850917,
+            "max_signed": 16634.199980850917,
+            "min_signed": -14859.05902761789,
+            "n": 1529,
+            "p50_abs": 1107.1859701344831,
+            "p95_abs": 5800.082494291993,
+            "p99_abs": 9621.864138507266
+          },
+          "wall": {
+            "max_abs": 4914.691719016876,
+            "max_signed": 4914.691719016876,
+            "min_signed": 4914.691719016876,
+            "n": 1,
+            "p50_abs": 4914.691719016876,
+            "p95_abs": 4914.691719016876,
+            "p99_abs": 4914.691719016876
+          }
+        },
+        "distribution_l1_runtime_vs_target": 1.2483451813660396,
+        "frequency_proxy_p99_vs_old_target": 20.710301596988753,
+        "hotspots": [
+          {
+            "abs_u2": 20914.044882910217,
+            "distance_to_endpoint_rad": 0.8639379797371931,
+            "sample_density": 0.0,
+            "target_density": 0.6002845948368533,
+            "theta_deg": 130.5,
+            "theta_rad": 2.2776546738526,
+            "u2": -20914.044882910217,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 19192.03147184398,
+            "distance_to_endpoint_rad": 1.2534954687823274,
+            "sample_density": 0.0,
+            "target_density": 0.6598154090605781,
+            "theta_deg": 108.18,
+            "theta_rad": 1.8880971848074657,
+            "u2": 19192.03147184398,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 18567.940839090727,
+            "distance_to_endpoint_rad": 0.8859291283123216,
+            "sample_density": 0.0,
+            "target_density": 1.0744161162717405,
+            "theta_deg": 129.24,
+            "theta_rad": 2.2556635252774715,
+            "u2": 18567.940839090727,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 17854.394674385207,
+            "distance_to_endpoint_rad": 1.2315043202071987,
+            "sample_density": 0.0,
+            "target_density": 0.3913979969651335,
+            "theta_deg": 109.44000000000001,
+            "theta_rad": 1.9100883333825944,
+            "u2": -17854.394674385207,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 16721.88792882001,
+            "distance_to_endpoint_rad": 1.278824559551895,
+            "sample_density": 0.0,
+            "target_density": 0.5693839344757063,
+            "theta_deg": 106.72875,
+            "theta_rad": 1.8627680940378981,
+            "u2": 16721.88792882001,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 16011.198414153652,
+            "distance_to_endpoint_rad": 0.8468555696832984,
+            "sample_density": 0.0,
+            "target_density": 1.4872711772194651,
+            "theta_deg": 131.47875000000002,
+            "theta_rad": 2.2947370839064947,
+            "u2": 16011.198414153652,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 15407.40984412408,
+            "distance_to_endpoint_rad": 0.4131194339470574,
+            "sample_density": 0.48947327052505823,
+            "target_density": 0.7296412595998835,
+            "theta_deg": 156.33,
+            "theta_rad": 2.7284732196427357,
+            "u2": 15407.40984412408,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 12942.684098700163,
+            "distance_to_endpoint_rad": 1.0320131867042468,
+            "sample_density": 1.133223015254236,
+            "target_density": 0.7984407167905222,
+            "theta_deg": 120.87000000000002,
+            "theta_rad": 2.1095794668855463,
+            "u2": 12942.684098700163,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 12303.453164944829,
+            "distance_to_endpoint_rad": 1.0809042223757381,
+            "sample_density": 0.0,
+            "target_density": 0.4198493095623874,
+            "theta_deg": 118.06875000000001,
+            "theta_rad": 2.060688431214055,
+            "u2": -12303.453164944829,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11163.367149668313,
+            "distance_to_endpoint_rad": 1.0149307766503526,
+            "sample_density": 0.09796401279356902,
+            "target_density": 0.37055132599678653,
+            "theta_deg": 121.84875,
+            "theta_rad": 2.1266618769394405,
+            "u2": -11163.367149668313,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11148.82585185801,
+            "distance_to_endpoint_rad": 0.6126105674500093,
+            "sample_density": 1.0551368234114729,
+            "target_density": 1.2773931766813653,
+            "theta_deg": 144.9,
+            "theta_rad": 2.528982086139784,
+            "u2": -11148.82585185801,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10903.974393608944,
+            "distance_to_endpoint_rad": 0.5906194188748808,
+            "sample_density": 1.634324530598876,
+            "target_density": 1.847259205002625,
+            "theta_deg": 146.16000000000003,
+            "theta_rad": 2.5509732347149123,
+            "u2": 10903.974393608944,
+            "wall_zone": false
+          }
+        ],
+        "old_frequency_proxy_denominator_sqrt_k": 4.7356838664499294,
+        "old_harmonic_k": 22.426701682954153,
+        "runtime_samples": 7530,
+        "source_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_T_A_G.dat",
+        "source_table_sha256": "a209dc82f1c7d0a8e1a5197ead726d7e4df01ae44b2a8e825fa59b28403fe43d",
+        "target_samples": 1530,
+        "u2_knot_jump": {
+          "max_abs": 19734.944995769947,
+          "p99_abs": 12205.611982792989
+        },
+        "wall": {
+          "endpoint_barrier_kJmol": 25.0,
+          "endpoint_barrier_kT": 10.04016064257028,
+          "k": 5000.0,
+          "runtime_fraction": 0.0,
+          "target_fraction": 0.00065359477124183,
+          "width_rad": 0.1
+        }
+      }
+    },
+    "ang_T_T_A": {
+      "candidates": {
+        "c2_raw_wall_current": {
+          "body_sigma_rad": 0.0,
+          "curvature_reduction_p99_target": 1.440760751656892,
+          "curvature_runtime": {
+            "max_abs": 8381.289937745316,
+            "max_signed": 8381.289937745316,
+            "min_signed": -7373.240497097522,
+            "n": 7530,
+            "p50_abs": 809.7703084481004,
+            "p95_abs": 5197.225824054892,
+            "p99_abs": 6963.333280406942
+          },
+          "curvature_target": {
+            "max_abs": 10316.830912417776,
+            "max_signed": 10201.574689810997,
+            "min_signed": -10316.830912417776,
+            "n": 1530,
+            "p50_abs": 1394.1213575513925,
+            "p95_abs": 5884.401036797029,
+            "p99_abs": 7598.755323451147
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 28.102157964449418,
+          "note": "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
+          "potential_perturbation": {
+            "offset_kJmol": -1.6129576549716889e-06,
+            "sample": {
+              "max_abs_kT": 0.0002304274155835874,
+              "n": 7530,
+              "p95_abs_kT": 8.395428892602895e-05,
+              "p99_abs_kT": 0.00014684618679145563,
+              "rms_kT": 3.46597842929087e-05
+            },
+            "target": {
+              "max_abs_kT": 0.00020857687987400566,
+              "n": 1530,
+              "p95_abs_kT": 8.707473266260932e-05,
+              "p99_abs_kT": 0.00013839265925408246,
+              "rms_kT": 3.745991568617925e-05
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.02257636122177955,
+          "target_fraction_in_candidate_wall": 0.009150326797385621,
+          "u2_knot_jump": {
+            "max_abs": 0.0010136285566346714,
+            "p99_abs": 0.000637381045494294
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p01_wall_current": {
+          "body_sigma_rad": 0.01,
+          "curvature_reduction_p99_target": 4.2182258102036245,
+          "curvature_runtime": {
+            "max_abs": 5821.879980226091,
+            "max_signed": 5821.879980226091,
+            "min_signed": -2107.841401951337,
+            "n": 7530,
+            "p50_abs": 543.609054574791,
+            "p95_abs": 2132.977102571153,
+            "p99_abs": 4999.678870722378
+          },
+          "curvature_target": {
+            "max_abs": 5000.021911906812,
+            "max_signed": 5000.021911906812,
+            "min_signed": -2596.3770781042626,
+            "n": 1530,
+            "p50_abs": 653.9857280711723,
+            "p95_abs": 2129.929831544258,
+            "p99_abs": 2595.40122413309
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 16.423688254502032,
+          "note": "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.07976225160487813,
+            "sample": {
+              "max_abs_kT": 0.06001225981689008,
+              "n": 7530,
+              "p95_abs_kT": 0.053548092231000904,
+              "p99_abs_kT": 0.05878545723994717,
+              "rms_kT": 0.024110558594934467
+            },
+            "target": {
+              "max_abs_kT": 0.08044099123761386,
+              "n": 1530,
+              "p95_abs_kT": 0.058305664608279434,
+              "p99_abs_kT": 0.07451052640767616,
+              "rms_kT": 0.029602417243137037
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.02257636122177955,
+          "target_fraction_in_candidate_wall": 0.009150326797385621,
+          "u2_knot_jump": {
+            "max_abs": 0.00058805122131389,
+            "p99_abs": 7.6757099459428e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        },
+        "smooth_0p02_wall_1p5x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 4.972743992800392,
+          "curvature_runtime": {
+            "max_abs": 2222.222230111036,
+            "max_signed": 2222.222230111036,
+            "min_signed": -729.7238655665375,
+            "n": 7530,
+            "p50_abs": 351.8857713659452,
+            "p95_abs": 900.8209997487676,
+            "p99_abs": 2222.2222222252126
+          },
+          "curvature_target": {
+            "max_abs": 2222.227345932675,
+            "max_signed": 2222.227345932675,
+            "min_signed": -864.0514421295345,
+            "n": 1530,
+            "p50_abs": 257.4099637762743,
+            "p95_abs": 734.6053015871977,
+            "p99_abs": 2201.5990461851516
+          },
+          "endpoint_barrier_kJmol": 25.000000000000007,
+          "endpoint_barrier_kT": 10.040160642570283,
+          "frequency_proxy_p99_vs_old_target": 15.126468751112187,
+          "note": "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.10318801223825287,
+            "sample": {
+              "max_abs_kT": 1.46646023872413,
+              "n": 7530,
+              "p95_abs_kT": 0.12141656358879635,
+              "p99_abs_kT": 1.392003998603034,
+              "rms_kT": 0.22953793841438977
+            },
+            "target": {
+              "max_abs_kT": 1.969294743491814,
+              "n": 1530,
+              "p95_abs_kT": 0.13869355651432663,
+              "p99_abs_kT": 0.8179361961402053,
+              "rms_kT": 0.17597392578696894
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.03333333333333333,
+          "target_fraction_in_candidate_wall": 0.013725490196078431,
+          "u2_knot_jump": {
+            "max_abs": 0.00023835605679778382,
+            "p99_abs": 1.5830026737262414e-05
+          },
+          "wall_k": 2222.222222222222,
+          "wall_width_rad": 0.15000000000000002
+        },
+        "smooth_0p02_wall_2x_same_barrier": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 8.758391588319038,
+          "curvature_runtime": {
+            "max_abs": 1250.000007887269,
+            "max_signed": 1250.000007887269,
+            "min_signed": -729.7238655665375,
+            "n": 7530,
+            "p50_abs": 351.8857713659452,
+            "p95_abs": 900.8209997487676,
+            "p99_abs": 1250.0000000039058
+          },
+          "curvature_target": {
+            "max_abs": 1250.000287175484,
+            "max_signed": 1250.000287175484,
+            "min_signed": -864.0514421295345,
+            "n": 1530,
+            "p50_abs": 259.3392056087504,
+            "p95_abs": 750.9499963720071,
+            "p99_abs": 1249.99987966666
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 11.397862826635722,
+          "note": "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
+          "potential_perturbation": {
+            "offset_kJmol": -0.0579846966471783,
+            "sample": {
+              "max_abs_kT": 2.8786856573429307,
+              "n": 7530,
+              "p95_abs_kT": 0.13957050559324397,
+              "p99_abs_kT": 2.7995989926153086,
+              "rms_kT": 0.4782503781657574
+            },
+            "target": {
+              "max_abs_kT": 3.2869366672099587,
+              "n": 1530,
+              "p95_abs_kT": 0.15734100522277375,
+              "p99_abs_kT": 1.9099978383336251,
+              "rms_kT": 0.3059243618941821
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.03333333333333333,
+          "target_fraction_in_candidate_wall": 0.0196078431372549,
+          "u2_knot_jump": {
+            "max_abs": 0.00014794856792832434,
+            "p99_abs": 1.5687086756486222e-05
+          },
+          "wall_k": 1250.0,
+          "wall_width_rad": 0.2
+        },
+        "smooth_0p02_wall_current": {
+          "body_sigma_rad": 0.02,
+          "curvature_reduction_p99_target": 12.09765040287032,
+          "curvature_runtime": {
+            "max_abs": 5821.879980214673,
+            "max_signed": 5821.879980214673,
+            "min_signed": -729.7238655665375,
+            "n": 7530,
+            "p50_abs": 332.593065626496,
+            "p95_abs": 896.4191093201375,
+            "p99_abs": 4999.678857280727
+          },
+          "curvature_target": {
+            "max_abs": 5000.021497007373,
+            "max_signed": 5000.021497007373,
+            "min_signed": -864.0514421295345,
+            "n": 1530,
+            "p50_abs": 253.56290364874013,
+            "p95_abs": 723.9446734915648,
+            "p99_abs": 904.9681605012107
+          },
+          "endpoint_barrier_kJmol": 25.000000000000004,
+          "endpoint_barrier_kT": 10.040160642570282,
+          "frequency_proxy_p99_vs_old_target": 9.698064990753485,
+          "note": "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
+          "potential_perturbation": {
+            "offset_kJmol": -0.14789406416234455,
+            "sample": {
+              "max_abs_kT": 0.14017360215668484,
+              "n": 7530,
+              "p95_abs_kT": 0.10787768181420691,
+              "p99_abs_kT": 0.11689669750064781,
+              "rms_kT": 0.05377884316521799
+            },
+            "target": {
+              "max_abs_kT": 0.168087150719549,
+              "n": 1530,
+              "p95_abs_kT": 0.11829542929843655,
+              "p99_abs_kT": 0.15870354941552972,
+              "rms_kT": 0.061036104586757164
+            }
+          },
+          "runtime_fraction_in_candidate_wall": 0.02257636122177955,
+          "target_fraction_in_candidate_wall": 0.009150326797385621,
+          "u2_knot_jump": {
+            "max_abs": 0.0005880512124747383,
+            "p99_abs": 1.6035934789329075e-05
+          },
+          "wall_k": 5000.0,
+          "wall_width_rad": 0.1
+        }
+      },
+      "current": {
+        "curvature_grid": {
+          "max_abs": 19649.289468658608,
+          "max_signed": 19649.289468658608,
+          "min_signed": -14970.72265566024,
+          "n": 8001,
+          "p50_abs": 7.813486185551042,
+          "p95_abs": 5071.365167082283,
+          "p99_abs": 7598.375040274484
+        },
+        "curvature_grid_body_after_subtracting_explicit_wall": {
+          "max_abs": 19649.289468658608,
+          "max_signed": 19649.289468658608,
+          "min_signed": -14970.72265566024,
+          "n": 8001,
+          "p50_abs": 6.665076551887053,
+          "p95_abs": 3818.870172234988,
+          "p99_abs": 7596.5585759115165
+        },
+        "curvature_runtime": {
+          "max_abs": 15002.170467836442,
+          "max_signed": 15002.170467836442,
+          "min_signed": -14931.108463777911,
+          "n": 7530,
+          "p50_abs": 688.7309659723128,
+          "p95_abs": 5749.38129547008,
+          "p99_abs": 10065.83263433793
+        },
+        "curvature_runtime_body_after_subtracting_explicit_wall": {
+          "max_abs": 15002.170467836442,
+          "max_signed": 15002.170467836442,
+          "min_signed": -14931.108463777911,
+          "n": 7530,
+          "p50_abs": 654.3210795331906,
+          "p95_abs": 5431.901822977577,
+          "p99_abs": 10065.83263433793
+        },
+        "curvature_runtime_by_zone": {
+          "interior": {
+            "max_abs": 15002.170467836442,
+            "max_signed": 15002.170467836442,
+            "min_signed": -14931.108463777911,
+            "n": 7360,
+            "p50_abs": 656.7619163809084,
+            "p95_abs": 5474.668283312785,
+            "p99_abs": 10148.170481680756
+          },
+          "wall": {
+            "max_abs": 7573.370978265911,
+            "max_signed": 7573.370978265911,
+            "min_signed": 1288.8952977601036,
+            "n": 170,
+            "p50_abs": 4997.35332206684,
+            "p95_abs": 6497.946431266001,
+            "p99_abs": 7275.809346999213
+          }
+        },
+        "curvature_target": {
+          "max_abs": 15299.680350093686,
+          "max_signed": 15299.680350093686,
+          "min_signed": -13087.283345828717,
+          "n": 1530,
+          "p50_abs": 1264.5430679822841,
+          "p95_abs": 6959.873845601071,
+          "p99_abs": 10947.988431472284
+        },
+        "curvature_target_body_after_subtracting_explicit_wall": {
+          "max_abs": 15299.680350093686,
+          "max_signed": 15299.680350093686,
+          "min_signed": -13087.283345828717,
+          "n": 1530,
+          "p50_abs": 1225.2009675945544,
+          "p95_abs": 6959.873845601071,
+          "p99_abs": 10947.988431472284
+        },
+        "curvature_target_by_zone": {
+          "interior": {
+            "max_abs": 15299.680350093686,
+            "max_signed": 15299.680350093686,
+            "min_signed": -13087.283345828717,
+            "n": 1516,
+            "p50_abs": 1248.548506985723,
+            "p95_abs": 6970.687071236963,
+            "p99_abs": 10965.934452093192
+          },
+          "wall": {
+            "max_abs": 6091.080943881483,
+            "max_signed": 6091.080943881483,
+            "min_signed": 4214.837114877281,
+            "n": 14,
+            "p50_abs": 4946.489494306285,
+            "p95_abs": 5467.738710380616,
+            "p99_abs": 5966.412497181309
+          }
+        },
+        "distribution_l1_runtime_vs_target": 1.0886701559773977,
+        "frequency_proxy_p99_vs_old_target": 33.731496199164475,
+        "hotspots": [
+          {
+            "abs_u2": 19649.289468658608,
+            "distance_to_endpoint_rad": 0.46495571273128933,
+            "sample_density": 0.0,
+            "target_density": 0.9495071560196726,
+            "theta_deg": 153.36,
+            "theta_rad": 2.676636940858504,
+            "u2": 19649.289468658608,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 16075.929602099015,
+            "distance_to_endpoint_rad": 1.5645131414877171,
+            "sample_density": 1.0659561468522911,
+            "target_density": 0.8708792049446695,
+            "theta_deg": 89.64000000000001,
+            "theta_rad": 1.5645131414877171,
+            "u2": 16075.929602099015,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 15853.723037031123,
+            "distance_to_endpoint_rad": 1.417054636309846,
+            "sample_density": 0.0,
+            "target_density": 0.3503617022857095,
+            "theta_deg": 98.80875,
+            "theta_rad": 1.7245380172799472,
+            "u2": -15853.723037031123,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 15128.96792063922,
+            "distance_to_endpoint_rad": 0.5183627878423156,
+            "sample_density": 3.381986529999002,
+            "target_density": 1.5044438265418907,
+            "theta_deg": 150.3,
+            "theta_rad": 2.6232298657474775,
+            "u2": 15128.96792063922,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 14970.72265566024,
+            "distance_to_endpoint_rad": 1.3288936924684827,
+            "sample_density": 1.3089611847884344,
+            "target_density": 0.3718032148538789,
+            "theta_deg": 76.14000000000001,
+            "theta_rad": 1.3288936924684827,
+            "u2": -14970.72265566024,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 14043.82407764296,
+            "distance_to_endpoint_rad": 1.4482742133048947,
+            "sample_density": 0.29993287996590207,
+            "target_density": 0.8508489832309418,
+            "theta_deg": 82.98,
+            "theta_rad": 1.4482742133048947,
+            "u2": -14043.82407764296,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 13258.538812314626,
+            "distance_to_endpoint_rad": 0.8374307917225292,
+            "sample_density": 1.5383449030626006,
+            "target_density": 0.7226742259603417,
+            "theta_deg": 132.01875,
+            "theta_rad": 2.304161861867264,
+            "u2": -13258.538812314626,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 12302.710557361304,
+            "distance_to_endpoint_rad": 0.6440264939859075,
+            "sample_density": 0.030144960755106205,
+            "target_density": 1.9094026568411717,
+            "theta_deg": 143.1,
+            "theta_rad": 2.4975661596038856,
+            "u2": 12302.710557361304,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11781.637403528151,
+            "distance_to_endpoint_rad": 0.6550220682734715,
+            "sample_density": 2.930924385568077,
+            "target_density": 1.9154677084470648,
+            "theta_deg": 142.47000000000003,
+            "theta_rad": 2.4865705853163216,
+            "u2": 11781.637403528151,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11545.600959632053,
+            "distance_to_endpoint_rad": 0.4918555998276517,
+            "sample_density": 0.35118168313640086,
+            "target_density": 0.676369889661703,
+            "theta_deg": 151.81875000000002,
+            "theta_rad": 2.6497370537621414,
+            "u2": -11545.600959632053,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 11350.799847665501,
+            "distance_to_endpoint_rad": 0.7007715112913733,
+            "sample_density": 3.2204439827073434,
+            "target_density": 2.329978995025539,
+            "theta_deg": 139.84875,
+            "theta_rad": 2.44082114229842,
+            "u2": 11350.799847665501,
+            "wall_zone": false
+          },
+          {
+            "abs_u2": 10886.919042075573,
+            "distance_to_endpoint_rad": 1.4686945655532284,
+            "sample_density": 1.7826288899364449,
+            "target_density": 1.2901453364680517,
+            "theta_deg": 84.15,
+            "theta_rad": 1.4686945655532284,
+            "u2": 10886.919042075573,
+            "wall_zone": false
+          }
+        ],
+        "old_frequency_proxy_denominator_sqrt_k": 3.101926904659254,
+        "old_harmonic_k": 9.621950521848941,
+        "runtime_samples": 7530,
+        "source_table": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/angle_conservative_ang_T_T_A.dat",
+        "source_table_sha256": "31959f8c763e178b241dfc62da448f5b09c1f76f152158e8a8842503b2d28e85",
+        "target_samples": 1530,
+        "u2_knot_jump": {
+          "max_abs": 18650.937626067825,
+          "p99_abs": 11366.654544684292
+        },
+        "wall": {
+          "endpoint_barrier_kJmol": 25.0,
+          "endpoint_barrier_kT": 10.04016064257028,
+          "k": 5000.0,
+          "runtime_fraction": 0.02257636122177955,
+          "target_fraction": 0.009150326797385621,
+          "width_rad": 0.1
+        }
+      }
+    }
+  },
+  "ibi_config": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_settings.json",
+  "interpretation": {
+    "body_smoothing_improves": "if 10-20 mrad smoothing lowers occupied curvature with small delta-U, short-wavelength IBI structure is implicated",
+    "c2_raw_improves": "if c2_raw materially lowers curvature with tiny delta-U, derivative representation/C1 knot jumps contribute",
+    "candidate_warning": "candidate priors are unvalidated and must not replace production priors before matched NVT structure and NVE scaling tests",
+    "interior_hotspots": "large occupied interior curvature implicates the IBI body/update smoothing rather than only the wall",
+    "wall_hotspots": "large curvature localized in the wall zone implicates the artificial endpoint barrier",
+    "wider_same_barrier_improves": "if a wider same-barrier wall lowers curvature but affects little target probability, wall redesign is plausible"
+  },
+  "kT": 2.49,
+  "kind": "ibi_angle_regularization_diagnostic",
+  "old_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/cg_priors.json",
+  "runtime_sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_timestep_range_diagnostic/full_ibi/nvt_structured_sample.npz",
+  "schema_version": 1,
+  "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative/cg_priors.json",
+  "source_priors_sha256": "dba2e7d8ce23fdfe8e77cdf80aae47062bd1ca8ad3ffb55c3ea1b92eac501cb3"
+}

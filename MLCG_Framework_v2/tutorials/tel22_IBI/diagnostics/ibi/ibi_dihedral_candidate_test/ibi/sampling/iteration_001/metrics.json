@@ -1,0 +1,56 @@
+{
+  "iteration": 1,
+  "continuation_step": 1,
+  "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/iteration_000/cg_priors.json",
+  "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/sampling/iteration_001/trajectory.npz",
+  "groups": {
+    "dihedrals:dih_A_G_G_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "samples": 8040,
+      "distribution_l1": 0.45250694948143577,
+      "sample_min": 0.00010758017556312557,
+      "sample_max": 6.282528461001283
+    },
+    "dihedrals:dih_G_G_G_T": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "samples": 6030,
+      "distribution_l1": 0.5794959094096342,
+      "sample_min": 5.9587425867944476e-05,
+      "sample_max": 6.282922093718328
+    },
+    "dihedrals:dih_G_G_T_T": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "samples": 6030,
+      "distribution_l1": 0.6763636589057447,
+      "sample_min": 0.0005219636759380425,
+      "sample_max": 6.277912300158614
+    },
+    "dihedrals:dih_G_T_T_A": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "samples": 6030,
+      "distribution_l1": 0.6910857314850427,
+      "sample_min": 0.00023671214049646253,
+      "sample_max": 6.283115042874775
+    },
+    "dihedrals:dih_T_T_A_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "samples": 6030,
+      "distribution_l1": 0.6431957857769971,
+      "sample_min": 2.1842354699155875,
+      "sample_max": 5.977487583410909
+    },
+    "dihedrals:dih_T_A_G_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "samples": 6030,
+      "distribution_l1": 0.5690752945093469,
+      "sample_min": 0.0008702578006763489,
+      "sample_max": 6.2828964118079895
+    }
+  }
+}

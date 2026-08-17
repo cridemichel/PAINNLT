@@ -1,0 +1,402 @@
+{
+  "definition": {
+    "quantity": "Population standard deviation sigma_E = std(E_total) over fixed physical duration",
+    "scaling_model": "sigma_E = C * dt^p",
+    "secondary_diagnostic": "rms_delta_E = RMS(E_total(t)-E_total(0))",
+    "energy_sampling": "every integration step, including the initial state",
+    "drift_metric": "abs(mean(last 20% E)-mean(first 20% E)) / characteristic_abs_energy",
+    "linear_fit": "reported as an additional diagnostic, not used as the pass/fail drift metric",
+    "same_initial_state": "all runs load the identical checkpoint file",
+    "integrator": "explicit ESPResSo Velocity Verlet",
+    "thermostat": "off (--nve)",
+    "force_cap": 0.0,
+    "reference_device": "cpu",
+    "neighbor_search": "link-cell",
+    "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled"
+  },
+  "inputs_sha256": {
+    "runner": "5709e34f1195ec0af518909b13db0900703f00d95e6efabcac5417641e345f9f",
+    "config": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+    "priors": "8b97bca796fd7980368220da45a9228f0c20dac619580c18cc973c478ff25f4f",
+    "rb_info": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+    "dataset": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c",
+    "checkpoint": "cb19a809b057a879ae96d42d937b649a2a433141b1498548b73f2ccb2a4c1ce7",
+    "model": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33",
+    "model_manifest": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f",
+    "provenance:dihedral_seed": "fa33915a8ddb19ceb79077a9bbcdf85a6e2731b06f4018b594bac89b75d63fba",
+    "provenance:dihedral_ibi": "6eaaebb53c91038f5733a805573ed250917e1f1b8875941d654fe768b0000283",
+    "provenance:dihedral_conversion": "7b29dd37cecfee0d86c914238fb3f5758c13f96eb52a0486387384967aa79c54",
+    "provenance:dihedral_runtime_parity": "db50330c5c29688db71f902e5aa2e2b1756ded28e0cb9216be494dece0088484"
+  },
+  "provenance_artifacts": {
+    "dihedral_seed": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/seed/seed_report.json",
+    "dihedral_ibi": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/ibi/ibi_report.json",
+    "dihedral_conversion": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/conversion_report.json",
+    "dihedral_runtime_parity": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/conservative/runtime_parity_report.json"
+  },
+  "checkpoint_motion": {
+    "real_particles": 220,
+    "velocity_rms": 0.18356832376360258,
+    "omega_rms": 0.464803471146182
+  },
+  "checkpoint_provenance": {
+    "schema_version": 3,
+    "input_hashes": {
+      "dataset_sha256": "8eae9014cd96e1d9495ed37a072638e446f7984557f03f42421fb168c1b4552c",
+      "config_sha256": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+      "priors_sha256": "8b97bca796fd7980368220da45a9228f0c20dac619580c18cc973c478ff25f4f",
+      "rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+      "model_sha256": "28f1e18008785910c485bedf03118c120c4ec232f4447c3941bbdbe58ab7eb33",
+      "model_manifest_sha256": "6c8dc6e05ede0ece6826e222d4ab9d0d40815ada4682133b87c5b858d86a117f"
+    },
+    "energy_gauge": "isolated_species_zero_v1",
+    "hamiltonian_mode": "conservative_classical_model_provenance_ml_disabled",
+    "sampling_ensemble": "NVT_Langevin",
+    "source_checkpoint_sha256": "c0b1a8979592497cd46ca0fb9a37af9403634ca86b97c9a1719469dc222277d4"
+  },
+  "device": "cpu",
+  "neighbor_search": "link-cell",
+  "runs": [
+    {
+      "samples": 101,
+      "duration_ps": 0.5,
+      "E0": -5602.572571031009,
+      "E_mean": -5602.372981923043,
+      "energy_scale": 5602.572571031009,
+      "rms_delta_E": 0.4247261455461909,
+      "centered_rms_E": 0.3749086377931091,
+      "sigma_E": 0.3749086377931091,
+      "peak_to_peak_E": 1.0515884632786765,
+      "max_abs_delta_E": 0.7510520760279178,
+      "relative_rms_delta_E": 7.580912878171448e-05,
+      "relative_peak_to_peak_E": 0.00018769742827002037,
+      "linear_drift_kjmol_per_ps": 2.161776591188014,
+      "linear_fit_intercept": -5602.91342607084,
+      "linear_drift_span_kjmol": 1.080888295594007,
+      "relative_linear_drift_span": 0.00019292713871890056,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": -5602.649669555925,
+      "last_block_mean_E": -5601.846395270523,
+      "block_mean_drift_kjmol": 0.8032742854020398,
+      "relative_block_mean_drift": 0.0001433759715234207,
+      "drift_span_over_rms_delta": 1.8912758110736088,
+      "dt_ps": 0.005,
+      "steps": 100,
+      "log_interval_steps": 1,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p005/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p005/run.log"
+    },
+    {
+      "samples": 126,
+      "duration_ps": 0.5,
+      "E0": -5602.572571031009,
+      "E_mean": -5602.916255506108,
+      "energy_scale": 5602.916255506108,
+      "rms_delta_E": 0.4180079743302062,
+      "centered_rms_E": 0.23793202428438792,
+      "sigma_E": 0.23793202428438792,
+      "peak_to_peak_E": 0.7788204118060094,
+      "max_abs_delta_E": 0.7788204118060094,
+      "relative_rms_delta_E": 7.460542961344829e-05,
+      "relative_peak_to_peak_E": 0.00013900268651001975,
+      "linear_drift_kjmol_per_ps": -1.334416933241586,
+      "linear_fit_intercept": -5602.582651272797,
+      "linear_drift_span_kjmol": -0.667208466620793,
+      "relative_linear_drift_span": 0.0001190823557223638,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": -5602.7505401826875,
+      "last_block_mean_E": -5603.3111550343865,
+      "block_mean_drift_kjmol": -0.5606148516990288,
+      "relative_block_mean_drift": 0.00010005768891300139,
+      "drift_span_over_rms_delta": 1.341158270000299,
+      "dt_ps": 0.004,
+      "steps": 125,
+      "log_interval_steps": 1,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p004/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p004/run.log"
+    },
+    {
+      "samples": 168,
+      "duration_ps": 0.501,
+      "E0": -5602.572571031009,
+      "E_mean": -5602.462363894079,
+      "energy_scale": 5602.572571031009,
+      "rms_delta_E": 0.2976962043638281,
+      "centered_rms_E": 0.2765455063139924,
+      "sigma_E": 0.2765455063139924,
+      "peak_to_peak_E": 0.7907491236001079,
+      "max_abs_delta_E": 0.6040290145729159,
+      "relative_rms_delta_E": 5.3135626641074424e-05,
+      "relative_peak_to_peak_E": 0.00014114036249861388,
+      "linear_drift_kjmol_per_ps": 1.3789827949051374,
+      "linear_fit_intercept": -5602.807799084205,
+      "linear_drift_span_kjmol": 0.6908703802474738,
+      "relative_linear_drift_span": 0.00012331306225638714,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": -5602.617719245976,
+      "last_block_mean_E": -5602.015157474179,
+      "block_mean_drift_kjmol": 0.6025617717968998,
+      "relative_block_mean_drift": 0.00010755090882937262,
+      "drift_span_over_rms_delta": 2.0240828165228524,
+      "dt_ps": 0.003,
+      "steps": 167,
+      "log_interval_steps": 1,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p003/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p003/run.log"
+    },
+    {
+      "samples": 251,
+      "duration_ps": 0.5,
+      "E0": -5602.572571031009,
+      "E_mean": -5602.569663402172,
+      "energy_scale": 5602.572571031009,
+      "rms_delta_E": 0.03042600528314435,
+      "centered_rms_E": 0.030286754399233073,
+      "sigma_E": 0.030286754399233073,
+      "peak_to_peak_E": 0.25787633971776813,
+      "max_abs_delta_E": 0.21015454422285984,
+      "relative_rms_delta_E": 5.430720423054731e-06,
+      "relative_peak_to_peak_E": 4.602820158924111e-05,
+      "linear_drift_kjmol_per_ps": 0.1470224176536237,
+      "linear_fit_intercept": -5602.606419006588,
+      "linear_drift_span_kjmol": 0.07351120882681185,
+      "relative_linear_drift_span": 1.3120973962374575e-05,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": -5602.5875199929205,
+      "last_block_mean_E": -5602.5272576320785,
+      "block_mean_drift_kjmol": 0.06026236084198899,
+      "relative_block_mean_drift": 1.075619460131317e-05,
+      "drift_span_over_rms_delta": 1.9806202056821975,
+      "dt_ps": 0.002,
+      "steps": 250,
+      "log_interval_steps": 1,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p002/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p002/run.log"
+    },
+    {
+      "samples": 334,
+      "duration_ps": 0.4995,
+      "E0": -5602.572571031009,
+      "E_mean": -5602.5861527902325,
+      "energy_scale": 5602.5861527902325,
+      "rms_delta_E": 0.0159205380861266,
+      "centered_rms_E": 0.008306584698654767,
+      "sigma_E": 0.008306584698654767,
+      "peak_to_peak_E": 0.0521542779124502,
+      "max_abs_delta_E": 0.0521542779124502,
+      "relative_rms_delta_E": 2.84164092295087e-06,
+      "relative_peak_to_peak_E": 9.308964911940894e-06,
+      "linear_drift_kjmol_per_ps": -0.02966280546275922,
+      "linear_fit_intercept": -5602.578744504566,
+      "linear_drift_span_kjmol": -0.01481657132864823,
+      "relative_linear_drift_span": 2.644595000340904e-06,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": -5602.583104235901,
+      "last_block_mean_E": -5602.593209499198,
+      "block_mean_drift_kjmol": -0.010105263296281919,
+      "relative_block_mean_drift": 1.8036783408050292e-06,
+      "drift_span_over_rms_delta": 0.6347312660925575,
+      "dt_ps": 0.0015,
+      "steps": 333,
+      "log_interval_steps": 1,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p0015/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p0015/run.log"
+    },
+    {
+      "samples": 501,
+      "duration_ps": 0.5,
+      "E0": -5602.572571031009,
+      "E_mean": -5602.579471627165,
+      "energy_scale": 5602.579471627165,
+      "rms_delta_E": 0.008944208155928566,
+      "centered_rms_E": 0.0056903982487420315,
+      "sigma_E": 0.0056903982487420315,
+      "peak_to_peak_E": 0.05525957520239899,
+      "max_abs_delta_E": 0.039679198326666665,
+      "relative_rms_delta_E": 1.5964446736051183e-06,
+      "relative_peak_to_peak_E": 9.863238082073984e-06,
+      "linear_drift_kjmol_per_ps": -0.028541396861862606,
+      "linear_fit_intercept": -5602.57233627795,
+      "linear_drift_span_kjmol": -0.014270698430931303,
+      "relative_linear_drift_span": 2.54716573021438e-06,
+      "drift_block_fraction": 0.2,
+      "first_block_mean_E": -5602.575959788856,
+      "last_block_mean_E": -5602.587448165533,
+      "block_mean_drift_kjmol": -0.011488376676425105,
+      "relative_block_mean_drift": 2.050551310267897e-06,
+      "drift_span_over_rms_delta": 1.2844487154304618,
+      "dt_ps": 0.001,
+      "steps": 500,
+      "log_interval_steps": 1,
+      "energy_csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p001/energy.csv",
+      "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test/nve/dt_0p001/run.log"
+    }
+  ],
+  "strict_reference": {
+    "pass": false,
+    "scaling_pass": false,
+    "drift_pass": false,
+    "thresholds": {
+      "slope_min": 1.8,
+      "slope_max": 2.2,
+      "min_loglog_r2": 0.95,
+      "max_relative_block_mean_drift": 2e-05
+    },
+    "scaling": {
+      "observable": "sigma_E",
+      "model": "sigma_E = C * dt^p",
+      "exponent_p": 2.943666188876896,
+      "prefactor_C": 3037601.541695056,
+      "loglog_r2": 0.925496787546517,
+      "adjacent_ratios": [
+        {
+          "dt_low_ps": 0.001,
+          "dt_high_ps": 0.0015,
+          "dt_ratio": 1.5,
+          "observed_sigma_ratio": 1.4597545436281356,
+          "quadratic_expected_ratio": 2.25
+        },
+        {
+          "dt_low_ps": 0.0015,
+          "dt_high_ps": 0.002,
+          "dt_ratio": 1.3333333333333333,
+          "observed_sigma_ratio": 3.646113956333696,
+          "quadratic_expected_ratio": 1.7777777777777777
+        },
+        {
+          "dt_low_ps": 0.002,
+          "dt_high_ps": 0.003,
+          "dt_ratio": 1.5,
+          "observed_sigma_ratio": 9.130905962013385,
+          "quadratic_expected_ratio": 2.25
+        },
+        {
+          "dt_low_ps": 0.003,
+          "dt_high_ps": 0.004,
+          "dt_ratio": 1.3333333333333333,
+          "observed_sigma_ratio": 0.860372050357013,
+          "quadratic_expected_ratio": 1.7777777777777777
+        },
+        {
+          "dt_low_ps": 0.004,
+          "dt_high_ps": 0.005,
+          "dt_ratio": 1.25,
+          "observed_sigma_ratio": 1.5756964154812556,
+          "quadratic_expected_ratio": 1.5625
+        }
+      ]
+    },
+    "drift_failures": [
+      {
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 0.0001433759715234207
+      },
+      {
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 0.00010005768891300139
+      },
+      {
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 0.00010755090882937262
+      }
+    ]
+  },
+  "diagnostics": {
+    "purpose": "diagnostic_only_not_a_certification_gate",
+    "fine_max_dt_ps": 0.002,
+    "coarse_min_dt_ps": 0.003,
+    "split_fits": {
+      "global": {
+        "dt_values_ps": [
+          0.001,
+          0.0015,
+          0.002,
+          0.003,
+          0.004,
+          0.005
+        ],
+        "sigma_E": {
+          "observable": "sigma_E",
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 6,
+          "dt_min_ps": 0.001,
+          "dt_max_ps": 0.005,
+          "exponent_p": 2.943666188876896,
+          "prefactor_C": 3037601.541695056,
+          "loglog_r2": 0.925496787546517
+        },
+        "rms_delta_E": {
+          "observable": "rms_delta_E",
+          "metric_key": "rms_delta_E",
+          "model": "rms_delta_E = C * dt^p",
+          "n_points": 6,
+          "dt_min_ps": 0.001,
+          "dt_max_ps": 0.005,
+          "exponent_p": 2.789615360135292,
+          "prefactor_C": 1635275.196969443,
+          "loglog_r2": 0.933390064598872
+        }
+      },
+      "fine": {
+        "dt_values_ps": [
+          0.001,
+          0.0015,
+          0.002
+        ],
+        "sigma_E": {
+          "observable": "sigma_E",
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 3,
+          "dt_min_ps": 0.001,
+          "dt_max_ps": 0.002,
+          "exponent_p": 2.3150010470538676,
+          "prefactor_C": 42536.69124932581,
+          "loglog_r2": 0.8455034894227692
+        },
+        "rms_delta_E": {
+          "observable": "rms_delta_E",
+          "metric_key": "rms_delta_E",
+          "model": "rms_delta_E = C * dt^p",
+          "n_points": 3,
+          "dt_min_ps": 0.001,
+          "dt_max_ps": 0.002,
+          "exponent_p": 1.74368781428385,
+          "prefactor_C": 1465.5302787985381,
+          "loglog_r2": 0.9828585189576973
+        }
+      },
+      "coarse": {
+        "dt_values_ps": [
+          0.003,
+          0.004,
+          0.005
+        ],
+        "sigma_E": {
+          "observable": "sigma_E",
+          "metric_key": "sigma_E",
+          "model": "sigma_E = C * dt^p",
+          "n_points": 3,
+          "dt_min_ps": 0.003,
+          "dt_max_ps": 0.005,
+          "exponent_p": 0.5429420225919207,
+          "prefactor_C": 5.902872095729031,
+          "loglog_r2": 0.3602742257507078
+        },
+        "rms_delta_E": {
+          "observable": "rms_delta_E",
+          "metric_key": "rms_delta_E",
+          "model": "rms_delta_E = C * dt^p",
+          "n_points": 3,
+          "dt_min_ps": 0.003,
+          "dt_max_ps": 0.005,
+          "exponent_p": 0.7185255574880917,
+          "prefactor_C": 20.139557301485016,
+          "loglog_r2": 0.8403358946690774
+        }
+      }
+    },
+    "local_energy_fits": {}
+  }
+}

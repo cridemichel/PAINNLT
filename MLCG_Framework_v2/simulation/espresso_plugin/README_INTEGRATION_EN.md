@@ -232,3 +232,23 @@ After rebuilding ESPResSo, run the smoke test with the rebuilt launcher:
 ```
 
 The test creates one Morse bond and verifies that the ESPResSo bonded energy and particle forces agree with the analytic expression.
+
+## Conservative spline bonded priors (IBI phase 2)
+
+Bond/angle IBI priors can be converted to the framework's single-source
+`conservative_spline` representation. Install and validate the ESPResSo
+extension from the TEL22 IBI workflow with:
+
+```bash
+cd tutorials/tel22_IBI
+bash ./20_install_conservative_spline.sh
+```
+
+The command is not only a build check: after verifying that
+`ConservativeSplineDistance` and `ConservativeSplineAngle` are exposed to
+Python, it runs `simulation/smoke_conservative_spline_runtime.py` under the
+rebuilt `pypresso`. The smoke test creates synthetic bond and angle splines and
+checks that runtime forces equal the negative Cartesian finite-difference
+gradient of ESPResSo's own bonded energy. The later
+`22_validate_conservative_spline.sh` performs the corresponding parity check on
+the actual converted IBI tables.

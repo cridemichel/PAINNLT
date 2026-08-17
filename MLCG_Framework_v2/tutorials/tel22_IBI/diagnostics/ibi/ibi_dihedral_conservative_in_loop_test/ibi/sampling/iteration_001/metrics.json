@@ -1,0 +1,62 @@
+{
+  "iteration": 1,
+  "continuation_step": 1,
+  "source_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/iteration_000/cg_priors.json",
+  "sample": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/sampling/iteration_001/trajectory.npz",
+  "groups": {
+    "dihedrals:dih_A_G_G_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 8040,
+      "distribution_l1": 0.40198609790986195,
+      "sample_min": 0.00011416269159768266,
+      "sample_max": 6.2823192289816205
+    },
+    "dihedrals:dih_G_G_G_T": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.5002979613436653,
+      "sample_min": 0.00019380089604804972,
+      "sample_max": 6.2829026867031885
+    },
+    "dihedrals:dih_G_G_T_T": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.5960617126201692,
+      "sample_min": 0.012541145267195623,
+      "sample_max": 6.28096175769673
+    },
+    "dihedrals:dih_G_T_T_A": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.6759905224880182,
+      "sample_min": 0.6305871269413514,
+      "sample_max": 6.273491277486747
+    },
+    "dihedrals:dih_T_T_A_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.34466881279875167,
+      "sample_min": 2.254742379457233,
+      "sample_max": 4.191463221026346
+    },
+    "dihedrals:dih_T_A_G_G": {
+      "kind": "dihedral",
+      "mode": "ibi",
+      "runtime_representation": "conservative_spline",
+      "samples": 6030,
+      "distribution_l1": 0.5550287776802263,
+      "sample_min": 0.08366339198867556,
+      "sample_max": 2.8826615648458116
+    }
+  }
+}
