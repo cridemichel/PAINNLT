@@ -13,18 +13,20 @@ fi
 
 PYPRESSO="${PYPRESSO:-${DEFAULT_PYPRESSO}}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-IBI_PARENT_DIR="${IBI_PARENT_DIR:-ibi_run_16ps}"
-IBI_OUTDIR="${IBI_OUTDIR:-ibi_run_16ps_continue}"
-IBI_ITERATIONS="${IBI_ITERATIONS:-5}"
-NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
-VELOCITY_SEED="${VELOCITY_SEED:-314159}"
-THERMOSTAT_SEED="${THERMOSTAT_SEED:-42}"
 OVERWRITE="${OVERWRITE:-0}"
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step14
+IBI_PARENT_DIR="${IBI_PARENT_DIR}"
+IBI_OUTDIR="${IBI_OUTDIR}"
+IBI_ITERATIONS="${IBI_ITERATIONS}"
+NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH}"
+VELOCITY_SEED="${VELOCITY_SEED}"
+THERMOSTAT_SEED="${THERMOSTAT_SEED}"
 
 PARENT_REPORT="${IBI_PARENT_DIR}/ibi_report.json"
 RESUME_PRIORS="${IBI_PARENT_DIR}/best/cg_priors.json"
-for path in tel22_dataset.bin ibi_settings.json tel22_training_config.json rigid_bodies_info.json "${PARENT_REPORT}" "${RESUME_PRIORS}"; do
+for path in "${IBI_TARGET_DATASET}" "${IBI_SETTINGS}" "${TRAINING_CONFIG}" rigid_bodies_info.json "${PARENT_REPORT}" "${RESUME_PRIORS}"; do
     if [ ! -f "${path}" ]; then
         echo "[ERROR] Missing required input: ${path}" >&2
         exit 1
@@ -49,15 +51,15 @@ fi
 
 args=(
     "${FRAMEWORK_ROOT}/ibi/run_ibi_loop.py"
-    --dataset tel22_dataset.bin
+    --dataset "${IBI_TARGET_DATASET}"
     --resume-priors "${RESUME_PRIORS}"
     --iteration-offset "${ITERATION_OFFSET}"
-    --config tel22_training_config.json
+    --config "${TRAINING_CONFIG}"
     --rb_info rigid_bodies_info.json
     --pypresso "${PYPRESSO}"
     --iterations "${IBI_ITERATIONS}"
     --outdir "${IBI_OUTDIR}"
-    --ibi-config ibi_settings.json
+    --ibi-config "${IBI_SETTINGS}"
     --neighbor_search "${NEIGHBOR_SEARCH}"
     --velocity_seed "${VELOCITY_SEED}"
     --thermostat_seed "${THERMOSTAT_SEED}"
@@ -83,3 +85,5 @@ fi
 echo "[DONE] Continued IBI output: ${IBI_OUTDIR}/cg_priors_final.json"
 echo "[DONE] Best evaluated priors across parent + continuation: ${IBI_OUTDIR}/best/cg_priors.json"
 echo "[NOTE] Resume source was the parent best evaluated set, not the unevaluated parent final update."
+
+write_model_dependent_provenance "${IBI_OUTDIR}/model_config_provenance.json"

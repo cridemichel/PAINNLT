@@ -127,6 +127,8 @@ class FinalConservativeNVECertificationTests(unittest.TestCase):
             equilibration_report_path=equil,
             strict_nve_report_path=strict,
             state_convergence_report_path=state,
+            state_order_min=1.7, state_order_max=2.3, state_min_r2=0.95,
+            max_relative_drift=1.0e-4,
         )
 
     def test_sigma_scaling_failure_is_non_gating_when_direct_state_order_passes(self):

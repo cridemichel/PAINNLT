@@ -1,0 +1,2929 @@
+{
+  "energy_atol": 1e-10,
+  "force_atol": 1e-09,
+  "framework": "MLCG_Framework_v2",
+  "kind": "ibi_conservative_spline_runtime_parity",
+  "pass": true,
+  "prior_artifact_sha256": {
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json": "1cd0333ff51849dee7022116bee88e865871beb279b4873159f843281b3b7456",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_A_G_G_G.dat": "2ff0a89b88fb97d4c002aa58869746ab572276a603b618748a39a16449788d89",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_G_G_G_T.dat": "28e88c77045cb5d4c706083172516184279724605d864120047a182124c7c003",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_G_G_T_T.dat": "aeb91faac936eef7b73d816d10a11889b77a1d4a620384ca572c3faef95b44e9",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_G_T_T_A.dat": "993922e8435777cc5f8f0cd874a67a1c22f061828b5b90dd716bc750c678f9cd",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_T_A_G_G.dat": "bafaddd73091871bd7868ac488b5cb61ba85357ce005ecd26472e411f10cbbee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/dihedral_conservative_dih_T_T_A_G.dat": "2e49c898a73ede4e72aecc8ff8d49d5891127c2186595549e9071be425c17aef",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_0.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_1.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_10.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_100.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_101.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_102.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_103.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_104.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_105.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_106.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_107.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_108.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_109.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_11.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_110.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_111.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_112.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_113.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_114.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_115.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_116.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_117.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_118.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_119.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_12.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_120.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_121.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_122.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_123.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_124.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_125.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_126.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_127.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_128.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_129.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_13.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_130.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_131.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_132.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_133.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_134.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_135.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_136.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_137.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_138.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_139.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_14.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_140.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_141.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_142.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_143.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_144.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_145.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_146.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_147.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_148.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_149.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_15.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_150.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_151.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_152.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_153.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_154.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_155.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_156.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_157.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_158.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_159.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_16.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_160.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_161.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_162.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_163.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_164.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_165.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_166.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_167.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_168.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_169.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_17.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_170.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_171.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_172.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_173.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_174.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_175.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_176.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_177.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_178.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_179.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_18.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_180.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_181.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_182.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_183.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_184.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_185.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_186.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_187.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_188.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_189.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_19.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_190.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_191.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_192.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_193.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_194.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_195.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_196.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_197.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_198.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_199.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_2.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_20.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_21.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_22.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_23.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_24.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_25.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_26.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_27.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_28.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_29.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_3.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_30.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_31.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_32.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_33.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_34.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_35.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_36.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_37.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_38.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_39.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_4.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_40.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_41.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_42.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_43.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_44.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_45.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_46.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_47.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_48.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_49.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_5.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_50.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_51.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_52.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_53.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_54.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_55.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_56.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_57.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_58.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_59.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_6.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_60.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_61.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_62.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_63.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_64.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_65.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_66.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_67.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_68.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_69.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_7.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_70.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_71.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_72.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_73.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_74.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_75.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_76.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_77.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_78.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_79.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_8.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_80.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_81.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_82.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_83.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_84.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_85.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_86.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_87.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_88.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_89.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_9.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_90.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_91.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_92.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_93.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_94.dat": "81a4d8b9b24cfa7d66193209484b7b2765d8c68d94009e2961d04b33a400b58d",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_95.dat": "9e733be32dd198cb910a2edeff904f43481b597ea22b0dde7d383daf04d88b9b",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_96.dat": "a866fa8333c3081f432755562f2b09184337cb11abb0dd5107722d8179c6f7ee",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_97.dat": "4442ed8674fe0f28e44d92f92d5a26c2571c052121833b674a2b3b4726e2f067",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_98.dat": "0340ce2a023751d9e7189bf04797c185efd559498873afffedf46d44114a6e4a",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_angles_99.dat": "28ed7f5c520b1ba09823c206904b5c79b8c3bd084b8f30c96384bf0a53c27f96",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_0.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_1.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_10.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_100.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_101.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_102.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_103.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_104.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_105.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_106.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_107.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_108.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_109.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_11.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_110.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_111.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_112.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_113.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_114.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_115.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_116.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_117.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_118.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_119.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_12.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_120.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_121.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_122.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_123.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_124.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_125.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_126.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_127.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_128.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_129.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_13.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_130.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_131.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_132.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_133.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_134.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_135.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_136.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_137.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_138.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_139.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_14.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_140.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_141.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_142.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_143.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_144.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_145.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_146.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_147.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_148.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_149.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_15.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_150.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_151.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_152.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_153.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_154.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_155.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_156.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_157.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_158.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_159.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_16.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_160.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_161.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_162.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_163.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_164.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_165.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_166.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_167.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_168.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_169.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_17.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_170.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_171.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_172.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_173.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_174.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_175.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_176.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_177.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_178.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_179.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_18.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_180.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_181.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_182.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_183.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_184.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_185.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_186.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_187.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_188.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_189.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_19.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_190.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_191.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_192.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_193.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_194.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_195.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_196.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_197.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_198.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_199.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_2.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_20.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_200.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_201.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_202.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_203.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_204.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_205.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_206.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_207.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_208.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_209.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_21.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_22.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_23.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_24.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_25.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_26.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_27.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_28.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_29.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_3.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_30.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_31.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_32.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_33.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_34.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_35.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_36.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_37.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_38.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_39.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_4.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_40.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_41.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_42.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_43.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_44.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_45.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_46.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_47.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_48.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_49.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_5.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_50.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_51.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_52.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_53.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_54.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_55.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_56.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_57.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_58.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_59.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_6.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_60.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_61.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_62.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_63.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_64.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_65.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_66.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_67.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_68.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_69.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_7.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_70.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_71.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_72.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_73.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_74.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_75.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_76.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_77.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_78.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_79.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_8.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_80.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_81.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_82.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_83.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_84.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_85.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_86.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_87.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_88.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_89.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_9.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_90.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_91.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_92.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_93.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_94.dat": "0aa708cc44487e2f63914ba8c8158586f8cd8e11cbeadc25ca69277f8bfb50e1",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_95.dat": "7514310002a244278009c36864cedece053589ce4b325f12aef247323cc74e39",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_96.dat": "23f30125186fb529a354857438a2ba301eaac0bdf5d66aa9ff68ccfb1e109cb2",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_97.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_98.dat": "d415e3744505e81e3b7de30f5ba0fc7cf6db54845ac7d2b758f9149914ef4023",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/final/fixed_bonds_99.dat": "d1edc49ff00f1798aa501a207ccc96e0ff91dc3457bacd2b90ab4077afa48ce8"
+  },
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+  "priors_sha256": "1cd0333ff51849dee7022116bee88e865871beb279b4873159f843281b3b7456",
+  "results": [
+    {
+      "file": "final/fixed_bonds_0.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_1.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_2.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_3.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_4.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_5.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_6.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_7.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_8.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_9.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_10.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_11.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_12.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_13.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_14.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_15.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_16.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_17.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_18.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_19.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_20.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_21.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_22.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_23.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_24.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_25.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_26.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_27.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_28.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_29.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_30.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_31.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_32.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_33.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_34.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_35.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_36.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_37.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_38.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_39.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_40.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_41.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_42.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_43.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_44.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_45.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_46.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_47.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_48.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_49.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_50.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_51.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_52.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_53.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_54.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_55.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_56.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_57.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_58.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_59.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_60.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_61.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_62.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_63.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_64.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_65.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_66.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_67.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_68.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_69.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_70.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_71.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_72.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_73.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_74.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_75.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_76.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_77.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_78.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_79.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_80.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_81.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_82.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_83.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_84.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_85.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_86.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_87.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_88.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_89.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_90.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_91.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_92.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_93.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_94.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_95.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_96.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_97.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_98.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_99.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_100.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_101.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_102.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_103.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_104.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_105.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_106.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_107.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_108.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_109.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_110.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_111.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_112.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_113.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_114.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_115.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_116.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_117.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_118.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_119.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_120.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_121.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_122.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_123.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_124.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_125.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_126.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_127.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_128.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_129.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_130.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_131.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_132.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_133.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_134.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_135.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_136.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_137.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_138.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_139.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_140.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_141.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_142.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_143.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_144.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_145.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_146.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_147.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_148.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_149.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_150.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_151.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_152.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_153.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_154.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_155.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_156.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_157.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_158.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_159.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_160.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_161.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_162.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_163.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_164.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_165.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_166.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_167.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_168.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_169.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_170.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_171.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_172.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_173.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_174.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_175.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_176.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_177.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_178.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_179.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_180.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_181.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_182.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_183.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_184.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_185.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_186.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_187.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_188.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_189.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_190.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_191.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_192.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_193.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_194.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_195.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_196.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_197.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_198.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_199.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_200.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_201.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_202.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_203.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_204.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 7.105427357601002e-15
+    },
+    {
+      "file": "final/fixed_bonds_205.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 2.8421709430404007e-13,
+      "max_force_abs_error": 8.881784197001252e-16
+    },
+    {
+      "file": "final/fixed_bonds_206.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.7053025658242404e-13,
+      "max_force_abs_error": 2.842170943040401e-14
+    },
+    {
+      "file": "final/fixed_bonds_207.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_bonds_208.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_bonds_209.dat",
+      "kind": "bond",
+      "max_energy_abs_error": 1.4210854715202004e-13,
+      "max_force_abs_error": 0.0
+    },
+    {
+      "file": "final/fixed_angles_0.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_1.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_2.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_3.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_4.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_5.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_6.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_7.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_8.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_9.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_10.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_11.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_12.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_13.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_14.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_15.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_16.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_17.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_18.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_19.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_20.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_21.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_22.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_23.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_24.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_25.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_26.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_27.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_28.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_29.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_30.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_31.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_32.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_33.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_34.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_35.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_36.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_37.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_38.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_39.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_40.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_41.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_42.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_43.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_44.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_45.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_46.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_47.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_48.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_49.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_50.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_51.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_52.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_53.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_54.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_55.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_56.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_57.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_58.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_59.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_60.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_61.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_62.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_63.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_64.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_65.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_66.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_67.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_68.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_69.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_70.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_71.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_72.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_73.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_74.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_75.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_76.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_77.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_78.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_79.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_80.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_81.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_82.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_83.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_84.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_85.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_86.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_87.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_88.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_89.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_90.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_91.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_92.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_93.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_94.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_95.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_96.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_97.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_98.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_99.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_100.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_101.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_102.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_103.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_104.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_105.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_106.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_107.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_108.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_109.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_110.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_111.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_112.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_113.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_114.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_115.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_116.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_117.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_118.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_119.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_120.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_121.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_122.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_123.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_124.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_125.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_126.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_127.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_128.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_129.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_130.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_131.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_132.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_133.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_134.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_135.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_136.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_137.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_138.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_139.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_140.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_141.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_142.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_143.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_144.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_145.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_146.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_147.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_148.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_149.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_150.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_151.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_152.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_153.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_154.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_155.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_156.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_157.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_158.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_159.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_160.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_161.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_162.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_163.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_164.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_165.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_166.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_167.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_168.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_169.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_170.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_171.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_172.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_173.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_174.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_175.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_176.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_177.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_178.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_179.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_180.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_181.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_182.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_183.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_184.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_185.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_186.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_187.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_188.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_189.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_190.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_191.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_192.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_193.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_194.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.4210854715202004e-14
+    },
+    {
+      "file": "final/fixed_angles_195.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_196.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 2.220446049250313e-15
+    },
+    {
+      "file": "final/fixed_angles_197.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 1.7763568394002505e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/fixed_angles_198.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 7.105427357601002e-15,
+      "max_force_abs_error": 3.552713678800501e-15
+    },
+    {
+      "file": "final/fixed_angles_199.dat",
+      "kind": "angle",
+      "max_energy_abs_error": 3.552713678800501e-15,
+      "max_force_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "file": "final/dihedral_conservative_dih_A_G_G_G.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 8.881784197001252e-16,
+      "max_force_abs_error": 8.443246102274315e-14
+    },
+    {
+      "file": "final/dihedral_conservative_dih_G_G_G_T.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 2.220446049250313e-16,
+      "max_force_abs_error": 6.515621375768887e-14
+    },
+    {
+      "file": "final/dihedral_conservative_dih_G_G_T_T.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 4.440892098500626e-16,
+      "max_force_abs_error": 6.927791673660977e-14
+    },
+    {
+      "file": "final/dihedral_conservative_dih_G_T_T_A.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 8.881784197001252e-16,
+      "max_force_abs_error": 9.453549054683208e-14
+    },
+    {
+      "file": "final/dihedral_conservative_dih_T_T_A_G.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 0.0,
+      "max_force_abs_error": 3.5605199344423966e-14
+    },
+    {
+      "file": "final/dihedral_conservative_dih_T_A_G_G.dat",
+      "kind": "dihedral",
+      "max_energy_abs_error": 4.440892098500626e-16,
+      "max_force_abs_error": 9.103828801926284e-14
+    }
+  ],
+  "schema_version": 1,
+  "worst_energy_abs_error": 2.8421709430404007e-13,
+  "worst_force_abs_error": 9.453549054683208e-14
+}

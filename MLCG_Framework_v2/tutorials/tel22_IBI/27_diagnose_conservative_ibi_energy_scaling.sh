@@ -13,26 +13,16 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step27
 
-MODEL="${IBI_MODEL:-tel22_model_ibi_conservative.pt}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-PRIORS="${IBI_PRIORS:-ibi_conservative/cg_priors.json}"
-NVE_EQ_DIR="${NVE_EQ_DIR:-nve_equilibration_conservative_ibi_only}"
-CHECKPOINT="${NVE_EQ_CHECKPOINT:-${NVE_EQ_DIR}/equilibrated_conservative_ibi_only.npz}"
+MODEL="${IBI_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+PRIORS="${IBI_PRIORS}"
+CHECKPOINT="${NVE_EQ_CHECKPOINT}"
 
-ENERGY_LOC_DTS="${ENERGY_LOC_DTS:-0.001 0.00075 0.0005 0.000375 0.00025 0.0001875 0.000125}"
-ENERGY_LOC_DURATION_PS="${ENERGY_LOC_DURATION_PS:-0.25}"
-ENERGY_LOC_MICRO_DURATION_PS="${ENERGY_LOC_MICRO_DURATION_PS:-0.096}"
-ENERGY_LOC_TRACE_DT="${ENERGY_LOC_TRACE_DT:-0.001}"
-ENERGY_LOC_REVERSIBILITY_DT="${ENERGY_LOC_REVERSIBILITY_DT:-0.0005}"
-ENERGY_LOC_REVERSIBILITY_DURATION_PS="${ENERGY_LOC_REVERSIBILITY_DURATION_PS:-0.024}"
-ENERGY_LOC_NEIGHBOR_DURATION_PS="${ENERGY_LOC_NEIGHBOR_DURATION_PS:-0.024}"
-ENERGY_LOC_FD_MAX_BODIES="${ENERGY_LOC_FD_MAX_BODIES:-8}"
-ENERGY_LOC_DEVICE="${ENERGY_LOC_DEVICE:-cpu}"
-ENERGY_LOC_ML_PRECISION="${ENERGY_LOC_ML_PRECISION:-float32}"
-ENERGY_LOC_OUTPUT_DIR="${ENERGY_LOC_OUTPUT_DIR:-conservative_ibi_energy_localization}"
 
 for path in "${MODEL}" "${MODEL}.manifest.json" "${CONFIG}" "${DATASET}" "${RB_INFO}" "${PRIORS}" "${CHECKPOINT}"; do
     if [[ ! -f "${path}" ]]; then
@@ -63,7 +53,7 @@ output       : ${ENERGY_LOC_OUTPUT_DIR}
 [NOTE] Diagnostic-only. Steps 23-26 and their reports are not modified.
 EOF
 
-exec "${PYTHON_BIN}" "${FRAMEWORK_ROOT}/simulation/diagnose_conservative_ibi_localization.py" \
+"${PYTHON_BIN}" "${FRAMEWORK_ROOT}/simulation/diagnose_conservative_ibi_localization.py" \
     --pypresso "${PYRESSO}" \
     --model "${MODEL}" \
     --config "${CONFIG}" \
@@ -79,7 +69,10 @@ exec "${PYTHON_BIN}" "${FRAMEWORK_ROOT}/simulation/diagnose_conservative_ibi_loc
     --reversibility-duration-ps "${ENERGY_LOC_REVERSIBILITY_DURATION_PS}" \
     --neighbor-duration-ps "${ENERGY_LOC_NEIGHBOR_DURATION_PS}" \
     --fd-max-bodies "${ENERGY_LOC_FD_MAX_BODIES}" \
+    --fine-max-dt "${ENERGY_LOC_FINE_MAX_DT}" \
     --device "${ENERGY_LOC_DEVICE}" \
     --ml-precision "${ENERGY_LOC_ML_PRECISION}" \
     --output-dir "${ENERGY_LOC_OUTPUT_DIR}" \
     "$@"
+
+write_model_dependent_provenance "${ENERGY_LOC_OUTPUT_DIR}/model_config_provenance.json"

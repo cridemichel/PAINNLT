@@ -46,7 +46,7 @@ def test_matched_variants_restore_old_harmonics(tmp_path):
     (tmp_path / "old.json").write_text(json.dumps(old))
     (tmp_path / "ibi.json").write_text(json.dumps(ibi))
     variants = build_matched_prior_variants(tmp_path / "old.json", tmp_path / "ibi.json")
-    assert variants["old_tel22"]["bonds"][0]["type"] == "harmonic"
+    assert variants["reference"]["bonds"][0]["type"] == "harmonic"
     assert variants["ibi_bonds_only"]["bonds"][0]["type"] == "conservative_spline"
     assert variants["ibi_bonds_only"]["angles"][0]["type"] == "harmonic"
     assert variants["ibi_angles_only"]["bonds"][0]["type"] == "harmonic"
@@ -73,10 +73,10 @@ def test_sigma_range_recovers_quadratic_and_c2_plateau():
 
 def test_stiffness_ratio_frequency_proxy():
     reports = {
-        "old_tel22": {"bond": {"p99_abs": 100.0}, "angle": {"p99_abs": 25.0}},
+        "reference": {"bond": {"p99_abs": 100.0}, "angle": {"p99_abs": 25.0}},
         "full_ibi": {"bond": {"p99_abs": 2500.0}, "angle": {"p99_abs": 100.0}},
     }
     out = stiffness_ratios(reports)["full_ibi"]
-    assert out["bond"]["p99_abs_curvature_ratio_vs_old"] == pytest.approx(25.0)
+    assert out["bond"]["p99_abs_curvature_ratio_vs_reference"] == pytest.approx(25.0)
     assert out["bond"]["sqrt_ratio_frequency_proxy"] == pytest.approx(5.0)
     assert out["angle"]["sqrt_ratio_frequency_proxy"] == pytest.approx(2.0)

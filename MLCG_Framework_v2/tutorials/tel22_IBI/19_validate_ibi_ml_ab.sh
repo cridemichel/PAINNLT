@@ -12,35 +12,31 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step19
 
-MODEL="${IBI_MODEL:-tel22_model_ibi.pt}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-if [[ -n "${IBI_PRIORS:-}" ]]; then
-    PRIORS="${IBI_PRIORS}"
-elif [[ -f "ibi_conservative/cg_priors.json" ]]; then
-    PRIORS="ibi_conservative/cg_priors.json"
-elif [[ -f "ibi_run_16ps_continue/best/cg_priors.json" ]]; then
-    PRIORS="ibi_run_16ps_continue/best/cg_priors.json"
-else
-    PRIORS="ibi_run_16ps/best/cg_priors.json"
+MODEL="${AB_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+if [[ -z "${IBI_PRIORS:-}" ]]; then
+  for candidate in ${AB_PRIOR_CANDIDATES}; do [[ -f "${candidate}" ]] && { IBI_PRIORS="${candidate}"; break; }; done
 fi
-RESIDUAL_MANIFEST="${IBI_RESIDUAL_PROVENANCE:-ibi_residual_build_manifest.json}"
-IBI_CONFIG="${IBI_CONFIG:-ibi_settings.json}"
-CHECKPOINT="${AB_CHECKPOINT:-postibi_runtime_validation/equilibrated_postibi.npz}"
-OUTDIR="${AB_OUTDIR:-ibi_ml_ab_validation}"
+[[ -n "${IBI_PRIORS:-}" ]] || { echo "[ERROR] No configured A/B prior candidate exists." >&2; exit 1; }
+PRIORS="${IBI_PRIORS}"
+RESIDUAL_MANIFEST="${IBI_RESIDUAL_PROVENANCE}"
+IBI_CONFIG="${IBI_SETTINGS}"
+CHECKPOINT="${AB_CHECKPOINT}"
+OUTDIR="${AB_OUTDIR}"
 OVERWRITE="${OVERWRITE:-0}"
 AB_RESUME="${AB_RESUME:-0}"
-DEVICE="${DEVICE:-auto}"
-NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
+DT="${AB_DT}"
+BURNIN_PS="${AB_BURNIN_PS}"
+PRODUCTION_PS="${AB_PRODUCTION_PS}"
+LOG_INTERVAL="${AB_LOG_INTERVAL}"
+THERMOSTAT_SEED="${AB_THERMOSTAT_SEED}"
+KT="${AB_KT}"
 
-DT="${AB_DT:-0.0005}"
-BURNIN_PS="${AB_BURNIN_PS:-1.0}"
-PRODUCTION_PS="${AB_PRODUCTION_PS:-8.0}"
-LOG_INTERVAL="${AB_LOG_INTERVAL:-100}"
-THERMOSTAT_SEED="${AB_THERMOSTAT_SEED:-272727}"
-KT="${AB_KT:-2.49}"
 
 steps_for_ps() {
     "${PYTHON_BIN}" - "$1" "${DT}" <<'PY'
@@ -238,3 +234,5 @@ comparison: ${COMPARISON}
 [PASS] Both branches completed from the same provenance-validated checkpoint with identical NVT seed and sampling schedule.
 [NOTE] Structural L1 is diagnostic. This A/B gate isolates the effect of PaiNN for the selected provenance-bound priors.
 EOF
+
+write_model_dependent_provenance "${OUTDIR}/model_config_provenance.json"

@@ -12,39 +12,35 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step18
 
-MODEL="${IBI_MODEL:-tel22_model_ibi.pt}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-if [[ -n "${IBI_PRIORS:-}" ]]; then
-    PRIORS="${IBI_PRIORS}"
-elif [[ -f "ibi_conservative/cg_priors.json" ]]; then
-    PRIORS="ibi_conservative/cg_priors.json"
-elif [[ -f "ibi_run_16ps_continue/best/cg_priors.json" ]]; then
-    PRIORS="ibi_run_16ps_continue/best/cg_priors.json"
-else
-    PRIORS="ibi_run_16ps/best/cg_priors.json"
+MODEL="${POSTIBI_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+if [[ -z "${IBI_PRIORS:-}" ]]; then
+  for candidate in ${POSTIBI_PRIOR_CANDIDATES}; do [[ -f "${candidate}" ]] && { IBI_PRIORS="${candidate}"; break; }; done
 fi
-RESIDUAL_MANIFEST="${IBI_RESIDUAL_PROVENANCE:-ibi_residual_build_manifest.json}"
-IBI_CONFIG="${IBI_CONFIG:-ibi_settings.json}"
-OUTDIR="${POSTIBI_RUNTIME_OUTDIR:-postibi_runtime_validation}"
+[[ -n "${IBI_PRIORS:-}" ]] || { echo "[ERROR] No configured post-IBI prior candidate exists." >&2; exit 1; }
+PRIORS="${IBI_PRIORS}"
+RESIDUAL_MANIFEST="${IBI_RESIDUAL_PROVENANCE}"
+IBI_CONFIG="${IBI_SETTINGS}"
+OUTDIR="${POSTIBI_RUNTIME_OUTDIR}"
 OVERWRITE="${OVERWRITE:-0}"
-DEVICE="${DEVICE:-auto}"
-NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
+DT="${POSTIBI_DT}"
+EQ_SD_STEPS="${POSTIBI_EQ_SD_STEPS}"
+EQ_CLASSICAL_STEPS="${POSTIBI_EQ_CLASSICAL_STEPS}"
+EQ_ML_CAPPED_STEPS="${POSTIBI_EQ_ML_CAPPED_STEPS}"
+EQ_ML_UNCAPPED_STEPS="${POSTIBI_EQ_ML_UNCAPPED_STEPS}"
+EQ_CHUNK="${POSTIBI_EQ_CHUNK}"
+NVT_STEPS="${POSTIBI_NVT_STEPS}"
+NVT_LOG_INTERVAL="${POSTIBI_NVT_LOG_INTERVAL}"
+NVT_SAMPLE_START="${POSTIBI_NVT_SAMPLE_START}"
+VELOCITY_SEED="${POSTIBI_VELOCITY_SEED}"
+THERMOSTAT_SEED="${POSTIBI_THERMOSTAT_SEED}"
+KT="${POSTIBI_KT}"
 
-DT="${POSTIBI_DT:-0.0005}"
-EQ_SD_STEPS="${POSTIBI_EQ_SD_STEPS:-1000}"
-EQ_CLASSICAL_STEPS="${POSTIBI_EQ_CLASSICAL_STEPS:-1000}"
-EQ_ML_CAPPED_STEPS="${POSTIBI_EQ_ML_CAPPED_STEPS:-1000}"
-EQ_ML_UNCAPPED_STEPS="${POSTIBI_EQ_ML_UNCAPPED_STEPS:-2000}"
-EQ_CHUNK="${POSTIBI_EQ_CHUNK:-100}"
-NVT_STEPS="${POSTIBI_NVT_STEPS:-4000}"
-NVT_LOG_INTERVAL="${POSTIBI_NVT_LOG_INTERVAL:-100}"
-NVT_SAMPLE_START="${POSTIBI_NVT_SAMPLE_START:-1000}"
-VELOCITY_SEED="${POSTIBI_VELOCITY_SEED:-424242}"
-THERMOSTAT_SEED="${POSTIBI_THERMOSTAT_SEED:-171717}"
-KT="${POSTIBI_KT:-2.49}"
 
 for path in "${MODEL}" "${MODEL}.manifest.json" "${CONFIG}" "${DATASET}" "${RB_INFO}" "${PRIORS}" "${RESIDUAL_MANIFEST}" "${IBI_CONFIG}"; do
     if [[ ! -f "${path}" ]]; then
@@ -153,3 +149,5 @@ logs      : ${EQ_LOG}, ${NVT_LOG}
 [PASS] Provenance-consistent IBI+PaiNN Hamiltonian completed the NVT smoke validation.
 [NOTE] This NVT smoke is not an NVE conservation certification; use the dedicated NVE gate afterwards.
 EOF
+
+write_model_dependent_provenance "${OUTDIR}/model_config_provenance.json"

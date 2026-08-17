@@ -18,8 +18,11 @@ JSON/files rather than being compiled into the code.
    - build site-addressable bonded distance/angle/dihedral DBI tables;
    - iterate selected bonded groups in priors-only NVT simulations;
    - write self-contained final tabulated priors;
-   - optionally convert bond/angle IBI priors to the single-source conservative
+   - optionally convert bond/angle/dihedral IBI priors to the single-source conservative
      Hermite representation;
+   - for periodic dihedral IBI, optionally run the IBI loop directly with
+     `ConservativeSplineDihedral`, so the sampled and promoted Hamiltonians use
+     the same energy/force representation;
    - optionally regularize **conservative angular IBI** by smoothing only the
      de-walled angle-potential body, then re-adding the unchanged endpoint wall
      and exporting C2 nodal derivatives.
@@ -41,6 +44,47 @@ JSON/files rather than being compiled into the code.
 See `HOWTO.md` or `HOWTO_EN.md` for usage. The TEL22 IBI tutorial documents
 the validated regularized-angle path (`smooth_0p0075`) as a system-specific
 example; the smoothing bandwidth is **not** a universal default.
+
+## Model-dependent configuration policy
+
+The framework distinguishes three classes of workflow information:
+
+- **CORE_INVARIANT** — a universal physical/methodological rule, implemented and
+  tested in generic code (for example `F = -grad(U)`, periodic dihedral splines,
+  runtime/preprocessing parity, or the IBI update formula);
+- **MODEL_PARAMETER** — a choice that can change with molecule, mapping, dataset,
+  temperature, Hamiltonian or sampling protocol and therefore must come from an
+  external model configuration;
+- **CALIBRATED_PARAMETER** — a model parameter selected by a diagnostic or
+  validation study; it is stored in model configuration together with provenance.
+
+For the TEL22 IBI workflow, the external configuration is
+`tutorials/tel22_IBI/model_dependent_workflow_config.json`. Steps 11–39 that
+contain model-dependent choices load this file through `model_config.sh`; step 20
+is only the model-independent ESPResSo kernel installer. The config includes,
+among other things, IBI grouping/mixing/sampling, regularization sweeps, replica
+counts, timestep grids and certification thresholds. Values such as the TEL22
+angle smoothing width `0.0075 rad`, a dihedral replica count, or an accepted NVE
+window are not framework defaults.
+
+Validate a workflow config before use:
+
+```bash
+python3 simulation/model_dependent_config.py validate \
+  --config tutorials/tel22_IBI/model_dependent_workflow_config.json
+```
+
+To use a different model configuration with a tutorial wrapper:
+
+```bash
+IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
+  bash tutorials/tel22_IBI/38_test_conservative_in_loop_dihedral_ibi.sh --run
+```
+
+Explicit environment overrides remain supported and are recorded as overrides in
+a model-config provenance sidecar (`model_config_provenance*.json`). Explicit `ibi_settings.json` files are
+authoritative: the production workflow does not silently fill missing
+model-dependent fields from internal defaults.
 
 ## ESPResSo extension
 

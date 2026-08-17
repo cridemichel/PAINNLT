@@ -9,8 +9,10 @@ else
     DEFAULT_PYPRESSO="pypresso"
 fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
-OUTDIR="${CONSERVATIVE_IBI_OUTDIR:-ibi_conservative}"
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step22
+OUTDIR="${CONSERVATIVE_IBI_OUTDIR}"
 
 for path in "${OUTDIR}/cg_priors.json" "${OUTDIR}/conversion_report.json"; do
     [[ -f "${path}" ]] || { echo "[ERROR] Missing ${path}; run ./21_convert_best_ibi_to_conservative.sh first." >&2; exit 1; }
@@ -31,3 +33,5 @@ runtime    : ${OUTDIR}/runtime_parity_report.json
 [PASS] Conservative spline U/derivative consistency and ESPResSo runtime/preprocessing parity passed.
 [NEXT] Rebuild the residual dataset against these exact conservative priors, then retrain PaiNN before strict NVE certification.
 EOF
+
+write_model_dependent_provenance "${OUTDIR}/model_config_provenance_step22.json"

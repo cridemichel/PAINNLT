@@ -196,7 +196,7 @@ def validate_priors(
             if state["kind"] == "dihedral":
                 sim_values = np.mod(sim_values, 2.0 * np.pi)
             if state["kind"] == "bond":
-                safety_fraction = float(settings["bond"].get("runtime_safety_fraction", 0.95))
+                safety_fraction = float(settings["bond"]["runtime_safety_fraction"])
                 max_sample = float(np.max(sim_values))
                 if max_sample >= safety_fraction * float(state["grid"][-1]):
                     raise RuntimeError(

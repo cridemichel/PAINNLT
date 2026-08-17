@@ -4,11 +4,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRAMEWORK_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-OUTDIR="${DBI_OUTDIR:-ibi_dbi_preview}"
 OVERWRITE="${OVERWRITE:-0}"
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step11
+OUTDIR="${DBI_OUTDIR}"
 
-for path in tel22_dataset.bin cg_priors_ibi_seed.json ibi_settings.json; do
+for path in "${IBI_TARGET_DATASET}" "${IBI_SEED_PRIORS}" "${IBI_SETTINGS}"; do
     if [ ! -f "${path}" ]; then
         echo "[ERROR] Missing required input: ${path}" >&2
         exit 1
@@ -24,9 +26,11 @@ if [ -e "${OUTDIR}" ]; then
 fi
 
 "${PYTHON_BIN}" "${FRAMEWORK_ROOT}/ibi/build_dbi_priors.py" \
-    --dataset tel22_dataset.bin \
-    --priors cg_priors_ibi_seed.json \
+    --dataset "${IBI_TARGET_DATASET}" \
+    --priors "${IBI_SEED_PRIORS}" \
     --outdir "${OUTDIR}" \
-    --ibi-config ibi_settings.json
+    --ibi-config "${IBI_SETTINGS}"
 
 echo "[DONE] Initial DBI preview: ${OUTDIR}/cg_priors_dbi.json"
+
+write_model_dependent_provenance "${OUTDIR}/model_config_provenance.json"

@@ -99,31 +99,27 @@ def same_barrier_k(old_width: float, old_k: float, new_width: float) -> float:
     return float(old_k * (old_width / new_width) ** 2)
 
 
-def default_candidate_specs(wall_width: float, wall_k: float) -> list[CandidateSpec]:
-    return [
-        CandidateSpec(
-            "c2_raw_wall_current", 0.0, wall_width, wall_k,
-            "same nodal U and current wall; only replace PCHIP nodal derivatives by a C2 cubic spline",
-        ),
-        CandidateSpec(
-            "smooth_0p01_wall_current", 0.01, wall_width, wall_k,
-            "10 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
-        ),
-        CandidateSpec(
-            "smooth_0p02_wall_current", 0.02, wall_width, wall_k,
-            "20 mrad Gaussian smoothing of de-walled IBI body; current wall retained",
-        ),
-        CandidateSpec(
-            "smooth_0p02_wall_1p5x_same_barrier", 0.02, 1.5 * wall_width,
-            same_barrier_k(wall_width, wall_k, 1.5 * wall_width),
-            "20 mrad body smoothing; wall widened 1.5x while preserving endpoint barrier energy",
-        ),
-        CandidateSpec(
-            "smooth_0p02_wall_2x_same_barrier", 0.02, 2.0 * wall_width,
-            same_barrier_k(wall_width, wall_k, 2.0 * wall_width),
-            "20 mrad body smoothing; wall widened 2x while preserving endpoint barrier energy",
-        ),
-    ]
+def candidate_specs_from_json(raw_json: str, wall_width: float, wall_k: float) -> list[CandidateSpec]:
+    payload = json.loads(raw_json)
+    if not isinstance(payload, list) or not payload:
+        raise ValueError("--candidate-specs-json must be a non-empty JSON list")
+    out = []
+    for row in payload:
+        if not isinstance(row, dict):
+            raise ValueError("Each candidate spec must be an object")
+        name = str(row["name"])
+        sigma = float(row["body_sigma_rad"])
+        scale = float(row["wall_width_scale"])
+        if sigma < 0.0 or scale <= 0.0:
+            raise ValueError(f"Invalid candidate spec {name!r}")
+        width = wall_width * scale
+        k = wall_k if np.isclose(scale, 1.0) else same_barrier_k(wall_width, wall_k, width)
+        note = str(row.get("note", f"configured body smoothing sigma={sigma:g} rad; wall width scale={scale:g}"))
+        out.append(CandidateSpec(name, sigma, width, k, note))
+    names=[x.name for x in out]
+    if len(names) != len(set(names)):
+        raise ValueError("Candidate names must be unique")
+    return out
 
 
 def _summary_abs(values: Iterable[float]) -> dict[str, float | int]:
@@ -224,21 +220,20 @@ def _old_harmonic_k(old_priors: Mapping[str, Any], name: str) -> float:
         if str(row.get("name", "")) != name:
             continue
         if str(row.get("type", "")).lower() != "harmonic":
-            raise ValueError(f"Original TEL22 angle group {name!r} is not harmonic")
+            raise ValueError(f"Reference angle group {name!r} is not harmonic")
         values.append(float(row["k"]))
     if not values:
-        raise ValueError(f"Original TEL22 priors contain no angle group {name!r}")
+        raise ValueError(f"Reference priors contain no angle group {name!r}")
     if not np.allclose(values, values[0], rtol=0.0, atol=1.0e-12):
-        raise ValueError(f"Original TEL22 angle group {name!r} has inconsistent k values: {values}")
+        raise ValueError(f"Reference angle group {name!r} has inconsistent k values: {values}")
     return float(values[0])
 
 
-def _top_hotspots(spline, target_hist_x, target_density, sample_density, wall_width: float, n: int = 12):
+def _top_hotspots(spline, target_hist_x, target_density, sample_density, wall_width: float, *, n: int, min_sep: float):
     grid = np.linspace(0.0, np.pi, 16001)
     u2 = np.asarray(spline(grid, 2), dtype=float)
     order = np.argsort(np.abs(u2))[::-1]
     selected: list[int] = []
-    min_sep = 0.01
     for idx in order:
         if all(abs(float(grid[idx] - grid[j])) >= min_sep for j in selected):
             selected.append(int(idx))
@@ -301,6 +296,9 @@ def diagnose_and_generate(
     sample_npz: str | Path,
     ibi_config: str | Path,
     output_dir: str | Path,
+    candidate_specs_json: str,
+    hotspot_count: int,
+    hotspot_min_separation_rad: float,
 ) -> dict[str, Any]:
     dataset = Path(dataset).expanduser().resolve()
     priors_path = Path(priors).expanduser().resolve()
@@ -318,7 +316,7 @@ def diagnose_and_generate(
     angle_cfg = config["angle"]
     wall_width = float(angle_cfg["wall_width"])
     wall_k = float(angle_cfg["wall_k"])
-    specs = default_candidate_specs(wall_width, wall_k)
+    specs = candidate_specs_from_json(candidate_specs_json, wall_width, wall_k)
 
     state = load_continuation_priors(dataset, priors_path, ibi_config=ibi_config, allow_conservative_spline=True)
     selected_priors = state["priors"]
@@ -422,7 +420,7 @@ def diagnose_and_generate(
             "curvature_grid_body_after_subtracting_explicit_wall": _summary_abs(dense_body_u2),
             "u2_knot_jump": _knot_u2_jump(current, x),
             "frequency_proxy_p99_vs_old_target": math.sqrt(float(np.percentile(np.abs(cur_target_u2), 99)) / old_k),
-            "hotspots": _top_hotspots(current, gs["hist_x"], gs["target_density"], sample_density, wall_width),
+            "hotspots": _top_hotspots(current, gs["hist_x"], gs["target_density"], sample_density, wall_width, n=hotspot_count, min_sep=hotspot_min_separation_rad),
         }
 
         candidate_reports: dict[str, Any] = {}
@@ -615,7 +613,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--old-priors", required=True)
     p.add_argument("--sample-npz", required=True)
     p.add_argument("--ibi-config", required=True)
-    p.add_argument("--output-dir", default="ibi_angle_regularization_diagnostic")
+    p.add_argument("--output-dir", required=True)
+    p.add_argument("--candidate-specs-json", required=True)
+    p.add_argument("--hotspot-count", type=int, required=True)
+    p.add_argument("--hotspot-min-separation-rad", type=float, required=True)
     p.add_argument("--overwrite", action="store_true")
     p.add_argument("--dry-run", action="store_true")
     return p.parse_args()
@@ -631,7 +632,7 @@ def main() -> None:
     cfg = json.loads(Path(args.ibi_config).read_text())
     w = float(cfg["angle"]["wall_width"])
     k = float(cfg["angle"]["wall_k"])
-    specs = default_candidate_specs(w, k)
+    specs = candidate_specs_from_json(args.candidate_specs_json, w, k)
     print("[IBI ANGLE STIFFNESS/REGULARIZATION PLAN]")
     print(f"priors        : {Path(args.priors).resolve()}")
     print(f"old priors    : {Path(args.old_priors).resolve()}")
@@ -654,6 +655,9 @@ def main() -> None:
         sample_npz=args.sample_npz,
         ibi_config=args.ibi_config,
         output_dir=out,
+        candidate_specs_json=args.candidate_specs_json,
+        hotspot_count=args.hotspot_count,
+        hotspot_min_separation_rad=args.hotspot_min_separation_rad,
     )
 
 

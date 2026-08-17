@@ -3,27 +3,33 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRAMEWORK_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step32
 cd "${SCRIPT_DIR}"
 
 PYPRESSO="${PYPRESSO:-${FRAMEWORK_ROOT}/espresso/build/pypresso}"
-MODEL="${IBI_MODEL:-tel22_model_ibi_conservative.pt}"
-CONFIG="${IBI_CONFIG_JSON:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-SOURCE_CHECKPOINT="${IBI_SOURCE_CHECKPOINT:-nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz}"
-IBI_SETTINGS="${IBI_SETTINGS:-ibi_settings.json}"
-SOURCE_PRIORS="${IBI_PRIORS:-ibi_conservative/cg_priors.json}"
-STEP31_REPORT="${IBI_ANGLE_STEP31_REPORT:-ibi_angle_regularization_validation/angle_candidate_validation_report.json}"
-OUTPUT_DIR="${IBI_ANGLE_SWEEP_OUTPUT_DIR:-ibi_angle_smoothing_sweep}"
-NEW_SIGMAS="${IBI_ANGLE_SWEEP_SIGMAS:-0.0075 0.0125 0.015}"
-REUSE_SIGMA="${IBI_ANGLE_SWEEP_REUSE_SIGMA:-0.01}"
-REUSE_VARIANT="${IBI_ANGLE_SWEEP_REUSE_VARIANT:-smooth_0p01}"
-DTS="${IBI_ANGLE_SWEEP_DTS:-0.001 0.002 0.003 0.004 0.005}"
-NVE_DURATION="${IBI_ANGLE_SWEEP_NVE_DURATION_PS:-1.0}"
-BRANCH_DT="${IBI_ANGLE_SWEEP_BRANCH_DT_PS:-0.0005}"
-BRANCH_DURATION="${IBI_ANGLE_SWEEP_BRANCH_DURATION_PS:-0.25}"
-KT="${IBI_ANGLE_SWEEP_KT:-2.49}"
-SEED="${IBI_ANGLE_SWEEP_SEED:-310000}"
+MODEL="${IBI_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+SOURCE_CHECKPOINT="${IBI_SOURCE_CHECKPOINT}"
+IBI_SETTINGS="${IBI_SETTINGS}"
+SOURCE_PRIORS="${IBI_PRIORS}"
+STEP31_REPORT="${IBI_ANGLE_STEP31_REPORT}"
+OUTPUT_DIR="${IBI_ANGLE_SWEEP_OUTPUT_DIR}"
+NEW_SIGMAS="${IBI_ANGLE_SWEEP_SIGMAS}"
+REUSE_SIGMA="${IBI_ANGLE_SWEEP_REUSE_SIGMA}"
+REUSE_VARIANT="${IBI_ANGLE_SWEEP_REUSE_VARIANT}"
+DTS="${IBI_ANGLE_SWEEP_DTS}"
+NVE_DURATION="${IBI_ANGLE_SWEEP_NVE_DURATION_PS}"
+BRANCH_DT="${IBI_ANGLE_SWEEP_BRANCH_DT_PS}"
+BRANCH_DURATION="${IBI_ANGLE_SWEEP_BRANCH_DURATION_PS}"
+KT="${IBI_ANGLE_SWEEP_KT}"
+SEED="${IBI_ANGLE_SWEEP_SEED}"
+DEVICE="${IBI_ANGLE_SWEEP_DEVICE}"
+ML_PRECISION="${IBI_ANGLE_SWEEP_ML_PRECISION}"
+NEIGHBOR_SEARCH="${IBI_ANGLE_SWEEP_NEIGHBOR_SEARCH}"
+CONFIG_PROVENANCE="${OUTPUT_DIR}/model_config_provenance.json"
 
 for path in "${PYPRESSO}" "${MODEL}" "${CONFIG}" "${DATASET}" "${RB_INFO}" "${SOURCE_CHECKPOINT}" "${IBI_SETTINGS}" "${SOURCE_PRIORS}" "${STEP31_REPORT}"; do
     if [[ ! -f "${path}" ]]; then
@@ -55,9 +61,9 @@ ARGS=(
   --branch-duration-ps "${BRANCH_DURATION}"
   --kT "${KT}"
   --thermostat-seed "${SEED}"
-  --device cpu
-  --ml-precision float32
-  --neighbor-search link-cell
+  --device "${DEVICE}"
+  --ml-precision "${ML_PRECISION}"
+  --neighbor-search "${NEIGHBOR_SEARCH}"
   --output-dir "${OUTPUT_DIR}"
 )
 for arg in "$@"; do
@@ -83,3 +89,6 @@ output         : ${OUTPUT_DIR}
 EOF
 
 "${PYTHON_BIN}" "${ARGS[@]}"
+if [[ " $* " != *" --dry-run "* ]]; then
+  write_model_dependent_provenance "${CONFIG_PROVENANCE}"
+fi

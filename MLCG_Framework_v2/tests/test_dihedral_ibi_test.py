@@ -37,7 +37,7 @@ class DihedralIbiTestWorkflowTests(unittest.TestCase):
                 })
             base.write_text(json.dumps({"bonds": [], "angles": angles, "dihedrals": []}) + "\n")
             output = root / "seed.json"
-            report = prepare(base, output)
+            report = prepare(base, output, grouping_strategy="consecutive_angle_types")
             seed = json.loads(output.read_text())
             self.assertEqual(report["dihedral_occurrences"], 2)
             self.assertEqual(report["unique_groups"], 2)
@@ -119,7 +119,10 @@ class DihedralIbiTestWorkflowTests(unittest.TestCase):
                 {"dt_ps": 0.005, "sigma_E": 8.0e-3, "relative_block_mean_drift": 1.0e-6},
             ],
         }
-        result = nve_metrics(report)
+        result = nve_metrics(
+            report, p_min=1.8, p_max=2.2, r2_min=0.95, c2_spread_max=2.0,
+            max_relative_drift=2.0e-5, required_max_dt=0.005,
+        )
         self.assertFalse(result["pass"])
         self.assertFalse(result["checks"]["quadratic_exponent"])
         self.assertTrue(result["checks"]["full_dt_reached"])

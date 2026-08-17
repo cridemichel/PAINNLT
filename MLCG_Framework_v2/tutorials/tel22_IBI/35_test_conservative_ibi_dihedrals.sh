@@ -4,6 +4,9 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${HERE}/../.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+source "${HERE}/model_config.sh"
+load_model_dependent_config step35
+cd "${HERE}"
 PYPRESSO="${PYPRESSO:-${ROOT}/espresso/build/pypresso}"
 
 MODE="${1:-}"
@@ -12,17 +15,17 @@ if [[ "${MODE}" != "--dry-run" && "${MODE}" != "--run" && "${MODE}" != "--resume
   exit 2
 fi
 
-BASE_PRIORS="${IBI_DIHEDRAL_BASE_PRIORS:-${HERE}/ibi_conservative/cg_priors.json}"
-TARGET_DATASET="${IBI_DIHEDRAL_TARGET_DATASET:-${HERE}/tel22_dataset.bin}"
-RUNTIME_DATASET="${IBI_DIHEDRAL_RUNTIME_DATASET:-${HERE}/tel22_dataset_ibi_residual.bin}"
-CONFIG="${IBI_DIHEDRAL_CONFIG:-${HERE}/tel22_training_config.json}"
-RB_INFO="${IBI_DIHEDRAL_RB_INFO:-${HERE}/rigid_bodies_info_ibi.json}"
-MODEL="${IBI_DIHEDRAL_MODEL:-${HERE}/tel22_model_ibi_conservative.pt}"
-SETTINGS="${IBI_DIHEDRAL_SETTINGS:-${HERE}/ibi_dihedral_test_settings.json}"
-SOURCE_CHECKPOINT="${IBI_DIHEDRAL_SOURCE_CHECKPOINT:-${HERE}/ibi_promoted_final_certification/nvt/equilibrated_promoted_ibi_only.npz}"
-BASELINE_CERT="${IBI_DIHEDRAL_BASELINE_CERT:-${HERE}/ibi_promoted_final_certification/promoted_ibi_final_certification_report.json}"
-OUT="${IBI_DIHEDRAL_TEST_OUT:-${HERE}/ibi_dihedral_candidate_test}"
-IBI_ITERATIONS="${IBI_DIHEDRAL_ITERATIONS:-1}"
+BASE_PRIORS="${IBI_DIHEDRAL_BASE_PRIORS}"
+TARGET_DATASET="${IBI_DIHEDRAL_TARGET_DATASET}"
+RUNTIME_DATASET="${IBI_DIHEDRAL_RUNTIME_DATASET}"
+CONFIG="${IBI_DIHEDRAL_CONFIG}"
+RB_INFO="${IBI_DIHEDRAL_RB_INFO}"
+MODEL="${IBI_DIHEDRAL_MODEL}"
+SETTINGS="${IBI_DIHEDRAL_SETTINGS}"
+SOURCE_CHECKPOINT="${IBI_DIHEDRAL_SOURCE_CHECKPOINT}"
+BASELINE_CERT="${IBI_DIHEDRAL_BASELINE_CERT}"
+OUT="${IBI_DIHEDRAL_TEST_OUT}"
+IBI_ITERATIONS="${IBI_DIHEDRAL_ITERATIONS}"
 OVERWRITE="${OVERWRITE:-0}"
 if ! [[ "${IBI_ITERATIONS}" =~ ^[1-9][0-9]*$ ]]; then
   echo "[ERROR] IBI_DIHEDRAL_ITERATIONS must be a positive integer" >&2
@@ -48,6 +51,7 @@ STRUCTURE_REPORT="${OUT}/runtime_structure_report.json"
 NVE_DIR="${OUT}/nve"
 NVE_REPORT="${NVE_DIR}/nve_diagnostic_report.json"
 FINAL_REPORT="${OUT}/dihedral_ibi_test_report.json"
+CONFIG_PROVENANCE="${OUT}/model_config_provenance.json"
 
 for path in "${BASE_PRIORS}" "${TARGET_DATASET}" "${RUNTIME_DATASET}" "${CONFIG}" "${RB_INFO}" \
             "${MODEL}" "${MODEL}.manifest.json" "${SETTINGS}" "${SOURCE_CHECKPOINT}"; do
@@ -70,12 +74,14 @@ target geometry dataset: ${TARGET_DATASET}
 IBI iterations          : ${IBI_ITERATIONS}
 IBI test settings       : ${SETTINGS}
 conservative candidate  : ${CONSERVATIVE_PRIORS}
-short candidate NVT     : 1000 steps at dt=0.0005 ps
-NVE diagnostic          : dt=0.001 0.0015 0.002 0.003 0.004 0.005 ps, 0.5 ps each
+short candidate NVT     : ${IBI_DIHEDRAL_NVT_STEPS} steps at dt=${IBI_DIHEDRAL_NVT_DT} ps
+NVE diagnostic          : dt=${IBI_DIHEDRAL_NVE_DTS} ps, ${IBI_DIHEDRAL_NVE_DURATION_PS} ps each
 output                  : ${OUT}
 [NOTE] Test only: production priors are never modified or promoted.
 [NOTE] The final post-update IBI torsional prior is sampled again after conservative conversion.
 EOF
+
+read -r -a NVE_DTS <<< "${IBI_DIHEDRAL_NVE_DTS}"
 
 run_nve_diagnostic() {
   local reuse_flag="${1:-}"
@@ -86,14 +92,15 @@ run_nve_diagnostic() {
   "${PYTHON_BIN}" "${ROOT}/simulation/certify_nve.py" \
     --pypresso "${PYPRESSO}" --model "${MODEL}" --disable-ml \
     --config "${CONFIG}" --priors "${CONSERVATIVE_PRIORS}" --rb-info "${RB_INFO}" --dataset "${RUNTIME_DATASET}" \
-    --checkpoint "${NVT_CHECKPOINT}" --dts 0.001 0.0015 0.002 0.003 0.004 0.005 --duration-ps 0.5 \
-    --device cpu --ml-precision float32 --neighbor-search link-cell \
-    --output-dir "${NVE_DIR}" --slope-min 1.8 --slope-max 2.2 --min-r2 0.95 --max-relative-drift 2e-5 \
-    --diagnostic-only --diagnostic-fine-max-dt 0.002 --diagnostic-coarse-min-dt 0.003 \
+    --checkpoint "${NVT_CHECKPOINT}" --dts "${NVE_DTS[@]}" --duration-ps "${IBI_DIHEDRAL_NVE_DURATION_PS}" \
+    --device "${IBI_DIHEDRAL_DEVICE}" --ml-precision "${IBI_DIHEDRAL_ML_PRECISION}" --neighbor-search "${IBI_DIHEDRAL_NEIGHBOR_SEARCH}" \
+    --output-dir "${NVE_DIR}" --slope-min "${IBI_DIHEDRAL_NVE_P_MIN}" --slope-max "${IBI_DIHEDRAL_NVE_P_MAX}" --min-r2 "${IBI_DIHEDRAL_NVE_R2_MIN}" --max-relative-drift "${IBI_DIHEDRAL_NVE_MAX_RELATIVE_DRIFT}" \
+    --diagnostic-only --diagnostic-fine-max-dt "${IBI_DIHEDRAL_NVE_FINE_MAX_DT}" --diagnostic-coarse-min-dt "${IBI_DIHEDRAL_NVE_COARSE_MIN_DT}" \
     --provenance-artifact "dihedral_seed=${SEED_REPORT}" \
     --provenance-artifact "dihedral_ibi=${IBI_REPORT}" \
     --provenance-artifact "dihedral_conversion=${CONVERSION_REPORT}" \
     --provenance-artifact "dihedral_runtime_parity=${PARITY_REPORT}" \
+    --provenance-artifact "model_config=${CONFIG_PROVENANCE}" \
     "${extra[@]}"
 }
 
@@ -108,7 +115,10 @@ finalize_test() {
     --structure-report "${STRUCTURE_REPORT}"
     --nve-report "${NVE_REPORT}"
     --candidate-priors "${CONSERVATIVE_PRIORS}"
-    --output "${FINAL_REPORT}"
+    --nve-p-min "${IBI_DIHEDRAL_NVE_P_MIN}" --nve-p-max "${IBI_DIHEDRAL_NVE_P_MAX}"
+    --nve-r2-min "${IBI_DIHEDRAL_NVE_R2_MIN}" --nve-c2-spread-max "${IBI_DIHEDRAL_NVE_C2_SPREAD_MAX}"
+    --nve-max-relative-drift "${IBI_DIHEDRAL_NVE_MAX_RELATIVE_DRIFT}" --nve-required-max-dt "${IBI_DIHEDRAL_NVE_REQUIRED_MAX_DT}"
+    --model-config-provenance "${CONFIG_PROVENANCE}" --output "${FINAL_REPORT}"
   )
   if [[ -f "${BASELINE_CERT}" ]]; then
     final_args+=(--baseline-certification "${BASELINE_CERT}")
@@ -120,13 +130,13 @@ if [[ "${MODE}" == "--dry-run" ]]; then
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "${tmpdir}"' EXIT
   "${PYTHON_BIN}" "${ROOT}/ibi/prepare_dihedral_ibi_test_seed.py" \
-    --base-priors "${BASE_PRIORS}" --output "${tmpdir}/seed.json" --report "${tmpdir}/seed_report.json"
+    --base-priors "${BASE_PRIORS}" --output "${tmpdir}/seed.json" --report "${tmpdir}/seed_report.json" --grouping-strategy "${IBI_DIHEDRAL_GROUPING_STRATEGY}"
   "${PYTHON_BIN}" - <<PY
 import json
 r=json.load(open("${tmpdir}/seed_report.json"))
 print(f"[PLAN] derived periodic dihedrals: {r['dihedral_occurrences']} occurrences in {r['unique_groups']} pooled groups")
 PY
-  echo "[PLAN] New MD work: $((IBI_ITERATIONS * 2500 + 1000 + 1475)) steps approximately."
+  echo "[PLAN] New MD work follows the configured IBI/NVT/NVE protocols; no model-dependent step count is embedded in this wrapper."
   echo "[PLAN] No production artifact will be modified."
   exit 0
 fi
@@ -136,8 +146,9 @@ if [[ "${MODE}" == "--resume-nve" ]]; then
               "${PARITY_REPORT}" "${STRUCTURE_REPORT}" "${CONSERVATIVE_PRIORS}" "${NVT_CHECKPOINT}"; do
     [[ -f "${path}" ]] || { echo "[ERROR] Cannot resume; missing artifact: ${path}" >&2; exit 1; }
   done
+  [[ -f "${CONFIG_PROVENANCE}" ]] || write_model_dependent_provenance "${CONFIG_PROVENANCE}"
   echo "[RESUME] Reusing completed NVE branches and running only missing dt values."
-  echo "[RESUME] Added fine-regime point: dt=0.0015 ps (about 333 integration steps)."
+  echo "[RESUME] Missing configured NVE dt values will be run; completed branches are reused."
   run_nve_diagnostic --reuse-existing
   finalize_test
   echo "[DONE] resumed test report: ${FINAL_REPORT}"
@@ -153,15 +164,16 @@ if [[ -e "${OUT}" ]]; then
   rm -rf "${OUT}"
 fi
 mkdir -p "${SEED_DIR}" "${NVT_DIR}"
+write_model_dependent_provenance "${CONFIG_PROVENANCE}"
 
 "${PYTHON_BIN}" "${ROOT}/ibi/prepare_dihedral_ibi_test_seed.py" \
-  --base-priors "${BASE_PRIORS}" --output "${SEED_PRIORS}" --report "${SEED_REPORT}"
+  --base-priors "${BASE_PRIORS}" --output "${SEED_PRIORS}" --report "${SEED_REPORT}" --grouping-strategy "${IBI_DIHEDRAL_GROUPING_STRATEGY}"
 
 "${PYTHON_BIN}" "${ROOT}/ibi/run_ibi_loop.py" \
   --dataset "${TARGET_DATASET}" --priors "${SEED_PRIORS}" \
   --config "${CONFIG}" --rb_info "${RB_INFO}" --iterations "${IBI_ITERATIONS}" \
   --outdir "${IBI_OUT}" --ibi-config "${SETTINGS}" --pypresso "${PYPRESSO}" \
-  --neighbor_search link-cell --velocity_seed 350001 --thermostat_seed 350101
+  --neighbor_search "${IBI_DIHEDRAL_NEIGHBOR_SEARCH}" --velocity_seed "${IBI_DIHEDRAL_IBI_VELOCITY_SEED}" --thermostat_seed "${IBI_DIHEDRAL_IBI_THERMOSTAT_SEED}"
 
 "${PYTHON_BIN}" "${ROOT}/ibi/convert_to_conservative_spline.py" \
   --priors "${IBI_FINAL}" --output-dir "${CONSERVATIVE_DIR}"
@@ -177,10 +189,10 @@ mkdir -p "${SEED_DIR}" "${NVT_DIR}"
   --model "${MODEL}" --disable_ml \
   --config "${CONFIG}" --priors "${CONSERVATIVE_PRIORS}" --rb_info "${RB_INFO}" --dataset "${RUNTIME_DATASET}" \
   --checkpoint "${SOURCE_CHECKPOINT}" --allow_checkpoint_mismatch \
-  --dt 0.0005 --steps 1000 --log_interval 10 --sample_start_step 200 \
+  --dt "${IBI_DIHEDRAL_NVT_DT}" --steps "${IBI_DIHEDRAL_NVT_STEPS}" --log_interval "${IBI_DIHEDRAL_NVT_LOG_INTERVAL}" --sample_start_step "${IBI_DIHEDRAL_NVT_SAMPLE_START}" \
   --sample_npz "${NVT_SAMPLE}" --energy_file "${NVT_ENERGY}" --no_vtf \
-  --kT 2.49 --thermostat_seed 350201 --neighbor_search link-cell \
-  --device cpu --ml_precision float32 --out_checkpoint "${NVT_CHECKPOINT}" > "${NVT_DIR}/run.log" 2>&1
+  --kT "${IBI_DIHEDRAL_NVT_KT}" --thermostat_seed "${IBI_DIHEDRAL_NVT_THERMOSTAT_SEED}" --neighbor_search "${IBI_DIHEDRAL_NEIGHBOR_SEARCH}" \
+  --device "${IBI_DIHEDRAL_DEVICE}" --ml_precision "${IBI_DIHEDRAL_ML_PRECISION}" --out_checkpoint "${NVT_CHECKPOINT}" > "${NVT_DIR}/run.log" 2>&1
 
 echo "[PASS] Conservative torsional candidate completed the short NVT branch."
 

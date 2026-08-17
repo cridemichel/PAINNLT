@@ -1,0 +1,59 @@
+{
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/tel22_dataset.bin",
+  "groups": {
+    "dihedrals:dih_A_G_G_G": {
+      "distribution_l1": 0.3835422743603756,
+      "kind": "dihedral",
+      "sample_max": 6.283010516968882,
+      "sample_min": 0.0,
+      "samples": 8040
+    },
+    "dihedrals:dih_G_G_G_T": {
+      "distribution_l1": 0.46857801894170903,
+      "kind": "dihedral",
+      "sample_max": 6.283022803569112,
+      "sample_min": 3.7765284329194725e-05,
+      "samples": 6030
+    },
+    "dihedrals:dih_G_G_T_T": {
+      "distribution_l1": 0.6504098155955236,
+      "kind": "dihedral",
+      "sample_max": 6.283067900350805,
+      "sample_min": 0.00018972251212121192,
+      "samples": 6030
+    },
+    "dihedrals:dih_G_T_T_A": {
+      "distribution_l1": 0.5485482131313418,
+      "kind": "dihedral",
+      "sample_max": 6.281812279831834,
+      "sample_min": 0.0012917075965031089,
+      "samples": 6030
+    },
+    "dihedrals:dih_T_A_G_G": {
+      "distribution_l1": 0.5635181204264652,
+      "kind": "dihedral",
+      "sample_max": 2.7982471250751866,
+      "sample_min": 0.018962682959140713,
+      "samples": 6030
+    },
+    "dihedrals:dih_T_T_A_G": {
+      "distribution_l1": 0.389659545410204,
+      "kind": "dihedral",
+      "sample_max": 4.0257945945266815,
+      "sample_min": 2.2773600496997033,
+      "samples": 6030
+    }
+  },
+  "max_l1": 0.6504098155955236,
+  "mean_l1": 0.5007093313109365,
+  "mean_l1_by_kind": {
+    "dihedral": 0.5007093313109365
+  },
+  "mode": "full_runtime_bonded_structure",
+  "note": "Structural L1 is reported diagnostically for the complete IBI+ML Hamiltonian. No universal pass threshold is imposed by the generic core.",
+  "pass": true,
+  "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test/ibi/cg_priors_final.json",
+  "sample_npz": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix/runs/U2/seedpair_01_v380001_t380101/trajectory.npz",
+  "schema_version": 1,
+  "threshold_applied": false
+}

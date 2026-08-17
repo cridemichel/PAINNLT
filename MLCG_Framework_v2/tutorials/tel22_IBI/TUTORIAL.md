@@ -918,7 +918,7 @@ zero-strength analytic interactions, step 29 restores the **actual original
 TEL22 harmonic priors**. It constructs four topology-matched Hamiltonians:
 
 ```text
-old_tel22        = original TEL22 bonds + original TEL22 angles
+reference        = configured baseline bonds + configured baseline angles
 ibi_bonds_only   = conservative IBI bonds + original TEL22 angles
 ibi_angles_only  = original TEL22 bonds + conservative IBI angles
 full_ibi         = conservative IBI bonds + conservative IBI angles
@@ -956,12 +956,12 @@ five-fold reduction in the clean Verlet timestep range.
 Decision patterns:
 
 ```text
-old_tel22 passes, ibi_bonds_only degrades   -> bond IBI introduces the restrictive scale
-old_tel22 passes, ibi_angles_only degrades  -> angle IBI introduces the restrictive scale
+reference passes, ibi_bonds_only degrades   -> bond IBI introduces the restrictive scale
+reference passes, ibi_angles_only degrades  -> angle IBI introduces the restrictive scale
 both isolated variants pass, full_ibi fails -> bond/angle mode coupling is implicated
 same branch that degrades has large U'' ratio -> stiffness explanation is quantitatively supported
 scaling degrades without a curvature increase -> investigate spline regularity/runtime representation further
-old_tel22 itself no longer passes            -> runtime/regression issue, not an IBI-specific stiffness effect
+the configured reference itself no longer passes            -> runtime/regression issue, not an IBI-specific stiffness effect
 ```
 
 Main artifact:
@@ -1317,3 +1317,119 @@ validation, not an IBI constant. A candidate with lower `|U''|` is not
 necessarily better; the step-31/32 diagnostics showed that excessive smoothing
 can produce a less regular `sigma_E/dt^2` sequence even when the curvature is
 smaller.
+
+## 35–39. Periodic conservative dihedral IBI: infrastructure and matched structural evidence
+
+The dihedral work is intentionally **test-only** at this stage. Nothing in steps
+35–39 promotes torsional priors into `ibi_conservative/`. The model-specific
+torsional grouping strategy is declared by configuration; for TEL22 the current
+strategy is `consecutive_angle_types`, producing six pooled backbone groups. The
+generic seed builder does not assume this strategy and fails if an unsupported
+strategy is requested.
+
+Step 35 established the periodic conservative dihedral path and isolated the six
+torsional IBI groups while keeping the inherited bond/angle conservative tables
+byte-identical. Step 37 then showed why legacy `TabulatedDihedral` must not be
+used as the sampling representation for a prior that will later be promoted as
+a single-source conservative potential: energy and force-factor are interpolated
+independently, whereas `ConservativeSplineDihedral` derives Cartesian forces from
+the same periodic `U(phi)`.
+
+Step 38 therefore runs torsional IBI **conservative-in-the-loop** from
+`iteration_000` onward. After correcting the final sampling protocol so that all
+three priors are sampled apples-to-apples, the single-seed sequence was:
+
+```text
+U0  0.512339
+U1  0.547941
+U2  0.525388
+```
+
+The large earlier short-NVT value near `1.38` was a protocol-mismatch artifact
+and must not be used as evidence of IBI divergence.
+
+Step 39 completed a matched `prior x seed-pair` replica matrix. For the current
+TEL22 configuration (`3` paired replicas), the measured mean dihedral L1 values
+were:
+
+```text
+U0  mean=0.550617  SD=0.036116
+U1  mean=0.527872  SD=0.023729
+U2  mean=0.528039  SD=0.028747
+```
+
+Paired differences were:
+
+```text
+U1-U0  mean=-0.022745  SD=0.012796  lower L1 in 3/3 seed pairs
+U2-U0  mean=-0.022578  SD=0.009686  lower L1 in 3/3 seed pairs
+U2-U1  mean=+0.000167  SD=0.009393  mixed sign
+```
+
+Thus the current evidence supports a small, consistent improvement from the
+first conservative-in-loop IBI update, while the second update adds no measurable
+improvement at this sampling resolution. `U1` is therefore the simpler candidate
+for any *next diagnostic*, but **neither U1 nor U2 is promotion-ready**. The
+three-replica study is a diagnostic uncertainty estimate, not a universal
+statistical or certification threshold.
+
+Run the matched replica diagnostic with:
+
+```bash
+bash ./39_test_conservative_dihedral_ibi_replicas.sh --dry-run
+bash ./39_test_conservative_dihedral_ibi_replicas.sh --run
+```
+
+The number of replicas is model-dependent and comes from external configuration;
+the generic matrix code also infers `U0..UN` from the IBI report rather than
+assuming exactly three priors.
+
+## Model-dependent workflow configuration and provenance
+
+From this point onward, and retroactively for the IBI/conservative workflows
+already introduced, every model-dependent choice is external configuration. The
+TEL22 file is:
+
+```text
+model_dependent_workflow_config.json
+```
+
+It is loaded by `model_config.sh`. The architectural classification is:
+
+```text
+CORE_INVARIANT       universal physical/methodological rule -> generic code/tests
+MODEL_PARAMETER      system/dataset/model-dependent choice  -> external config
+CALIBRATED_PARAMETER parameter selected by diagnostics       -> config + provenance
+```
+
+Examples of `MODEL_PARAMETER`/`CALIBRATED_PARAMETER` are IBI mixing, histogram
+support, torsional grouping, sampling lengths, seed policy, regularization
+sweeps, `sigma_angle=0.0075 rad`, replica count, structure gates, NVE timestep
+grids and NVE acceptance windows. None of these values is a universal property
+of conservative IBI.
+
+Validate the TEL22 config with:
+
+```bash
+python3 ../../simulation/model_dependent_config.py validate \
+  --config model_dependent_workflow_config.json
+```
+
+A different system can use the same workflow code with another config:
+
+```bash
+IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
+  bash ./38_test_conservative_in_loop_dihedral_ibi.sh --run
+```
+
+Explicit environment overrides are permitted but are provenance-visible. Each
+retrofitted workflow writes a model-config provenance sidecar (`model_config_provenance*.json`), recording the config
+path/SHA256, selected sections, configured values, resolved values and whether a
+value came from the config or an environment override. The TEL22 config also
+records calibration provenance for the validated angle smoothing candidate and
+its promoted prior SHA256.
+
+An explicitly supplied `ibi_settings.json` is authoritative: missing required
+model-dependent fields are configuration errors rather than invitations to merge
+unknown internal defaults. This prevents a workflow from changing scientific
+policy silently when moved to a new molecular model.

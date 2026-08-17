@@ -240,6 +240,9 @@ def summarize_duration(
     *,
     bootstrap_samples: int,
     bootstrap_seed: int,
+    second_order_p_min: float,
+    second_order_p_max: float,
+    second_order_r2_min: float,
 ) -> dict[str, Any]:
     aggregate = aggregate_sigma(rows)
     replica_fits = _replica_fits(rows)
@@ -268,7 +271,7 @@ def summarize_duration(
             "min_p": float(np.min(slopes)),
             "max_p": float(np.max(slopes)),
             "median_r2": float(np.median(r2)),
-            "fraction_second_order_like": float(np.mean((slopes >= 1.7) & (slopes <= 2.3) & (r2 >= 0.95))),
+            "fraction_second_order_like": float(np.mean((slopes >= second_order_p_min) & (slopes <= second_order_p_max) & (r2 >= second_order_r2_min))),
         },
     }
 
@@ -431,18 +434,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-checkpoint", type=Path, required=True)
     parser.add_argument("--dts", type=float, nargs="+", required=True)
     parser.add_argument("--durations", type=float, nargs="+", required=True)
-    parser.add_argument("--replicas", type=int, default=4)
-    parser.add_argument("--replica-equilibration-dt", type=float, default=0.0005)
-    parser.add_argument("--replica-equilibration-duration-ps", type=float, default=1.0)
-    parser.add_argument("--kT", type=float, default=2.49)
-    parser.add_argument("--seed-base", type=int, default=280000)
-    parser.add_argument("--bootstrap-samples", type=int, default=1000)
-    parser.add_argument("--bootstrap-seed", type=int, default=20260816)
-    parser.add_argument("--device", default="cpu")
-    parser.add_argument("--ml-precision", choices=("float32", "float64"), default="float32")
-    parser.add_argument("--neighbor-search", choices=("link-cell", "nsquare"), default="link-cell")
+    parser.add_argument("--replicas", type=int, required=True)
+    parser.add_argument("--replica-equilibration-dt", type=float, required=True)
+    parser.add_argument("--replica-equilibration-duration-ps", type=float, required=True)
+    parser.add_argument("--kT", type=float, required=True)
+    parser.add_argument("--seed-base", type=int, required=True)
+    parser.add_argument("--bootstrap-samples", type=int, required=True)
+    parser.add_argument("--bootstrap-seed", type=int, required=True)
+    parser.add_argument("--device", required=True)
+    parser.add_argument("--ml-precision", choices=("float32", "float64"), required=True)
+    parser.add_argument("--neighbor-search", choices=("link-cell", "nsquare"), required=True)
     parser.add_argument("--localization-report", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--second-order-p-min", type=float, required=True)
+    parser.add_argument("--second-order-p-max", type=float, required=True)
+    parser.add_argument("--second-order-r2-min", type=float, required=True)
     parser.add_argument(
         "--analyze-existing",
         action="store_true",
@@ -620,6 +626,9 @@ def main() -> None:
             rows,
             bootstrap_samples=args.bootstrap_samples,
             bootstrap_seed=args.bootstrap_seed + duration_index,
+            second_order_p_min=args.second_order_p_min,
+            second_order_p_max=args.second_order_p_max,
+            second_order_r2_min=args.second_order_r2_min,
         )
         by_duration[f"{duration:.12g}"]["duration_ps"] = float(duration)
 
@@ -649,6 +658,7 @@ def main() -> None:
         "analysis_mode": "existing_complete_replicas" if args.analyze_existing else "generated_replicas",
         "replicas_requested": int(args.replicas),
         "replicas_used": int(len(replicas)),
+        "second_order_like_policy": {"p_min": args.second_order_p_min, "p_max": args.second_order_p_max, "r2_min": args.second_order_r2_min},
         "replicas": replicas,
         "skipped_replicas": skipped_replicas,
         "analysis_notes": [

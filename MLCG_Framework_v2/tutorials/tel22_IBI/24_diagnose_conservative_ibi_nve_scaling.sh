@@ -13,33 +13,19 @@ fi
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 
 cd "${SCRIPT_DIR}"
+source "${SCRIPT_DIR}/model_config.sh"
+load_model_dependent_config step24
 
-MODEL="${IBI_MODEL:-tel22_model_ibi_conservative.pt}"
-CONFIG="${TRAINING_CONFIG:-tel22_training_config.json}"
-DATASET="${IBI_DATASET:-tel22_dataset_ibi_residual.bin}"
-RB_INFO="${IBI_RB_INFO:-rigid_bodies_info_ibi.json}"
-PRIORS="${IBI_PRIORS:-ibi_conservative/cg_priors.json}"
-VALIDATION_REPORT="${IBI_VALIDATION_REPORT:-ibi_conservative/validation_report.json}"
-RUNTIME_PARITY_REPORT="${IBI_RUNTIME_PARITY_REPORT:-ibi_conservative/runtime_parity_report.json}"
-SOURCE_CHECKPOINT="${NVE_SOURCE_CHECKPOINT:-postibi_runtime_validation/equilibrated_postibi.npz}"
-NVE_EQ_DIR="${NVE_EQ_DIR:-nve_equilibration_conservative_ibi_only}"
-NVE_EQ_CHECKPOINT="${NVE_EQ_CHECKPOINT:-${NVE_EQ_DIR}/equilibrated_conservative_ibi_only.npz}"
-NVE_EQ_REPORT="${NVE_EQ_REPORT:-${NVE_EQ_DIR}/equilibration_report.json}"
-REQUIRED_HAMILTONIAN_MODE="conservative_classical_model_provenance_ml_disabled"
+MODEL="${IBI_MODEL}"
+CONFIG="${TRAINING_CONFIG}"
+DATASET="${IBI_DATASET}"
+RB_INFO="${IBI_RB_INFO}"
+PRIORS="${IBI_PRIORS}"
+VALIDATION_REPORT="${IBI_VALIDATION_REPORT}"
+RUNTIME_PARITY_REPORT="${IBI_RUNTIME_PARITY_REPORT}"
+SOURCE_CHECKPOINT="${NVE_SOURCE_CHECKPOINT}"
+REQUIRED_HAMILTONIAN_MODE="${NVE_REQUIRED_HAMILTONIAN_MODE}"
 
-NVE_DEVICE="${NVE_DEVICE:-cpu}"
-NVE_ML_PRECISION="${NVE_ML_PRECISION:-float32}"
-NVE_NEIGHBOR_SEARCH="${NVE_NEIGHBOR_SEARCH:-link-cell}"
-NVE_DIAG_DURATION_PS="${NVE_DIAG_DURATION_PS:-2.0}"
-NVE_DIAG_DTS="${NVE_DIAG_DTS:-0.00025 0.0005 0.00075 0.001 0.0015 0.002 0.003 0.004 0.005}"
-NVE_DIAG_FINE_MAX_DT="${NVE_DIAG_FINE_MAX_DT:-0.001}"
-NVE_DIAG_COARSE_MIN_DT="${NVE_DIAG_COARSE_MIN_DT:-0.0015}"
-# These times are exact multiples of every default fine-regime dt
-# (0.00025, 0.0005, 0.00075, 0.001 ps), so no energy interpolation is needed.
-NVE_DIAG_LOCAL_TIMES_PS="${NVE_DIAG_LOCAL_TIMES_PS:-0.012 0.024 0.048 0.096}"
-NVE_DIAG_OUTPUT_DIR="${NVE_DIAG_OUTPUT_DIR:-nve_diagnostic_conservative_ibi_only}"
-NVE_DIAG_PREFLIGHT_REPORT="${NVE_DIAG_PREFLIGHT_REPORT:-${NVE_DIAG_OUTPUT_DIR}_preflight.json}"
-NVE_MAX_RELATIVE_DRIFT="${NVE_MAX_RELATIVE_DRIFT:-1e-4}"
 
 for path in \
     "${MODEL}" "${MODEL}.manifest.json" "${CONFIG}" "${DATASET}" "${RB_INFO}" \
@@ -105,6 +91,7 @@ read -r -a LOCAL_TIME_ARGS <<< "${NVE_DIAG_LOCAL_TIMES_PS}"
     --provenance-artifact "conservative_runtime_parity=${RUNTIME_PARITY_REPORT}" \
     --provenance-artifact "ibi_only_nvt_equilibration=${NVE_EQ_REPORT}" \
     --provenance-artifact "diagnostic_preflight=${NVE_DIAG_PREFLIGHT_REPORT}" \
+    --provenance-artifact "model_config=${NVE_DIAG_MODEL_CONFIG_PROVENANCE}" \
     "$@"
 
 cat <<EOF_DONE
@@ -113,3 +100,5 @@ report : ${NVE_DIAG_OUTPUT_DIR}/nve_diagnostic_report.json
 table  : ${NVE_DIAG_OUTPUT_DIR}/nve_diagnostic_runs.csv
 [NOTE] Interpret the fine-regime and local-energy fits before changing the conservative kernel.
 EOF_DONE
+
+write_model_dependent_provenance "${NVE_DIAG_OUTPUT_DIR}/model_config_provenance.json"

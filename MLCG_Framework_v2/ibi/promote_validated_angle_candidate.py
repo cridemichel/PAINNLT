@@ -413,7 +413,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--final-validation-report", type=Path, required=True)
     p.add_argument("--backup-dir", type=Path, required=True)
     p.add_argument("--expected-candidate-sha256", required=True)
-    p.add_argument("--expected-sigma-rad", type=float, default=0.0075)
+    p.add_argument("--expected-sigma-rad", type=float, required=True)
     p.add_argument("--dataset", type=Path)
     p.add_argument("--model", type=Path)
     p.add_argument("--dry-run", action="store_true")

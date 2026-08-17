@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a non-production TEL22 IBI seed containing periodic backbone dihedrals.
+"""Create a non-production IBI seed containing periodic backbone dihedrals.
 
 The seed is derived from the already selected bonded-angle chain in a base
 ``cg_priors.json``.  Consecutive angle entries i-j-k and j-k-l define one
@@ -21,7 +21,7 @@ from pathlib import Path
 
 
 SCHEMA_VERSION = 1
-KIND = "tel22_periodic_dihedral_ibi_test_seed"
+KIND = "periodic_dihedral_ibi_test_seed"
 
 
 def sha256_file(path: Path) -> str:
@@ -126,12 +126,14 @@ def _absolutize_file_references(priors: dict, base_priors: Path) -> None:
             entry["file"] = str(path)
 
 
-def prepare(base_priors: Path, output: Path, report_path: Path | None = None) -> dict:
+def prepare(base_priors: Path, output: Path, report_path: Path | None = None, *, grouping_strategy: str) -> dict:
     base_priors = base_priors.expanduser().resolve()
     output = output.expanduser().resolve()
     if not base_priors.is_file():
         raise FileNotFoundError(base_priors)
     source = json.loads(base_priors.read_text())
+    if grouping_strategy != "consecutive_angle_types":
+        raise ValueError(f"Unsupported configured dihedral grouping strategy: {grouping_strategy!r}")
     if source.get("dihedrals"):
         raise ValueError(
             "Base production priors already contain dihedrals; this test seed refuses to replace them"
@@ -173,6 +175,7 @@ def prepare(base_priors: Path, output: Path, report_path: Path | None = None) ->
         "base_priors": str(base_priors),
         "base_priors_sha256": sha256_file(base_priors),
         "dihedral_occurrences": len(generated),
+        "grouping_strategy": grouping_strategy,
         "dihedral_groups": dict(sorted(groups.items())),
         "frozen_inherited_bond_angle_entries": frozen_inherited,
         "base_production_metadata": base_promotion_metadata,
@@ -190,6 +193,7 @@ def prepare(base_priors: Path, output: Path, report_path: Path | None = None) ->
         "output_seed": str(output),
         "output_seed_sha256": sha256_file(output),
         "dihedral_occurrences": len(generated),
+        "grouping_strategy": grouping_strategy,
         "unique_groups": len(groups),
         "frozen_inherited_bond_angle_entries": frozen_inherited,
         "groups": dict(sorted(groups.items())),
@@ -208,7 +212,7 @@ def prepare(base_priors: Path, output: Path, report_path: Path | None = None) ->
     for name, count in sorted(groups.items()):
         print(f"  {name}: {count}")
     print(
-        "[PASS] Test-only periodic backbone dihedrals derived from consecutive TEL22 angle priors; "
+        f"[PASS] Test-only periodic backbone dihedrals derived with grouping={grouping_strategy}; "
         f"frozen inherited bond/angle entries={frozen_inherited}."
     )
     return report
@@ -219,8 +223,9 @@ def main() -> None:
     parser.add_argument("--base-priors", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--report", type=Path, default=None)
+    parser.add_argument("--grouping-strategy", required=True)
     args = parser.parse_args()
-    prepare(args.base_priors, args.output, args.report)
+    prepare(args.base_priors, args.output, args.report, grouping_strategy=args.grouping_strategy)
 
 
 if __name__ == "__main__":

@@ -56,7 +56,7 @@ def _absolutize_table(entry: Mapping[str, Any], source: Path) -> dict[str, Any]:
 
 
 def build_matched_prior_variants(old_priors: str | Path, ibi_priors: str | Path) -> dict[str, dict[str, Any]]:
-    """Return old / bond-IBI / angle-IBI / full-IBI variants with identical topology."""
+    """Return reference / bond-IBI / angle-IBI / full-IBI variants with identical topology."""
     old_path = Path(old_priors).expanduser().resolve()
     ibi_path = Path(ibi_priors).expanduser().resolve()
     old = json.loads(old_path.read_text())
@@ -95,14 +95,14 @@ def build_matched_prior_variants(old_priors: str | Path, ibi_priors: str | Path)
 
     def base_payload() -> dict[str, Any]:
         out = json.loads(json.dumps(old))
-        out["diagnostic_kind"] = "matched_old_vs_conservative_ibi_timestep_range"
-        out["diagnostic_old_priors"] = str(old_path)
+        out["diagnostic_kind"] = "matched_reference_vs_conservative_ibi_timestep_range"
+        out["diagnostic_reference_priors"] = str(old_path)
         out["diagnostic_ibi_priors"] = str(ibi_path)
         return out
 
     variants: dict[str, dict[str, Any]] = {}
     for name, use_ibi_bonds, use_ibi_angles in (
-        ("old_tel22", False, False),
+        ("reference", False, False),
         ("ibi_bonds_only", True, False),
         ("ibi_angles_only", False, True),
         ("full_ibi", True, True),
@@ -236,19 +236,19 @@ def sigma_range_diagnostics(runs: list[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def stiffness_ratios(reports: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
-    if "old_tel22" not in reports:
-        raise ValueError("old_tel22 curvature report is required")
+    if "reference" not in reports:
+        raise ValueError("reference curvature report is required")
     out: dict[str, Any] = {}
     for variant, report in reports.items():
-        if variant == "old_tel22":
+        if variant == "reference":
             continue
         per_kind = {}
         for kind in ("bond", "angle"):
-            base = float(reports["old_tel22"][kind]["p99_abs"])
+            base = float(reports["reference"][kind]["p99_abs"])
             value = float(report[kind]["p99_abs"])
             ratio = value / base if base > 0.0 else math.nan
             per_kind[kind] = {
-                "p99_abs_curvature_ratio_vs_old": ratio,
+                "p99_abs_curvature_ratio_vs_reference": ratio,
                 "sqrt_ratio_frequency_proxy": math.sqrt(ratio) if ratio >= 0.0 and math.isfinite(ratio) else math.nan,
             }
         out[variant] = per_kind

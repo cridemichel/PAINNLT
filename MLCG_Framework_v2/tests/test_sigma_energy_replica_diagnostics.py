@@ -47,7 +47,10 @@ class SigmaEnergyReplicaDiagnosticTests(unittest.TestCase):
         rows = self.synthetic_rows()
         aggregate = aggregate_sigma(rows)
         self.assertEqual(len(aggregate), 4)
-        summary = summarize_duration(rows, bootstrap_samples=100, bootstrap_seed=1234)
+        summary = summarize_duration(
+            rows, bootstrap_samples=100, bootstrap_seed=1234,
+            second_order_p_min=1.7, second_order_p_max=2.3, second_order_r2_min=0.95,
+        )
         self.assertAlmostEqual(summary["fit_mean_sigma"]["exponent_p"], 2.0, places=12)
         self.assertAlmostEqual(summary["fit_geometric_mean_sigma"]["exponent_p"], 2.0, places=12)
         self.assertAlmostEqual(summary["fixed_effects_fit"]["exponent_p"], 2.0, places=12)
@@ -63,7 +66,10 @@ class SigmaEnergyReplicaDiagnosticTests(unittest.TestCase):
 
     def test_two_replicas_keep_fixed_effects_but_disable_bootstrap(self):
         rows = [row for row in self.synthetic_rows() if row["replica_index"] < 2]
-        summary = summarize_duration(rows, bootstrap_samples=1000, bootstrap_seed=1234)
+        summary = summarize_duration(
+            rows, bootstrap_samples=1000, bootstrap_seed=1234,
+            second_order_p_min=1.7, second_order_p_max=2.3, second_order_r2_min=0.95,
+        )
         self.assertAlmostEqual(summary["fixed_effects_fit"]["exponent_p"], 2.0, places=12)
         boot = summary["fixed_effects_fit"]["bootstrap"]
         self.assertEqual(boot["status"], "disabled_too_few_replicas")
@@ -137,8 +143,12 @@ class SigmaEnergyReplicaDiagnosticTests(unittest.TestCase):
 
     def test_step28_keeps_sigma_raw_and_reuses_prefixes(self):
         source = ROOT.joinpath("tutorials", "tel22_IBI", "28_diagnose_sigma_energy_replicas.sh").read_text(encoding="utf-8")
-        self.assertIn("0.125 0.25 0.5 1 2", source)
-        self.assertIn("0.001 0.0005 0.00025 0.000125", source)
+        self.assertIn("SIGMA_REPLICA_DURATIONS_PS", source)
+        self.assertIn("SIGMA_REPLICA_DTS", source)
+        self.assertIn("load_model_dependent_config step28", source)
+        cfg = __import__("json").loads(ROOT.joinpath("tutorials", "tel22_IBI", "model_dependent_workflow_config.json").read_text())
+        self.assertEqual(cfg["sections"]["step28"]["SIGMA_REPLICA_DURATIONS_PS"], [0.125, 0.25, 0.5, 1, 2])
+        self.assertEqual(cfg["sections"]["step28"]["SIGMA_REPLICA_DTS"], [0.001, 0.0005, 0.00025, 0.000125])
         self.assertIn("shorter sigma(E) windows are prefixes", source)
         self.assertIn("raw std(E_tot), ddof=0, with no detrending", source)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import copy
 import json
 import struct
 import sys
@@ -23,9 +24,15 @@ from geometry_io import (  # noqa: E402
 )
 from framework_utils import resolve_referenced_path  # noqa: E402
 from run_ibi_loop import run_ibi  # noqa: E402
-from ibi_core import histogram_density  # noqa: E402
+from ibi_core import DEFAULT_IBI_SETTINGS, histogram_density, recursive_update  # noqa: E402
 from convergence import summarize_convergence  # noqa: E402
 from validate_ibi_priors import validate_priors  # noqa: E402
+
+
+
+def complete_ibi_config(overrides):
+    """Unit-test fixture: make an explicit complete config from low-level defaults."""
+    return recursive_update(copy.deepcopy(DEFAULT_IBI_SETTINGS), overrides)
 
 
 def write_dataset(path: Path, distances):
@@ -140,7 +147,7 @@ class IBIPipelineTests(unittest.TestCase):
             outdir = tmp / "generated"
             write_dataset(dataset, distances)
             priors_path.write_text(json.dumps(seed))
-            config_path.write_text(json.dumps(config))
+            config_path.write_text(json.dumps(complete_ibi_config(config)))
 
             result = build_initial_dbi_priors(
                 dataset,
@@ -199,7 +206,7 @@ class IBIPipelineTests(unittest.TestCase):
             fixed_x = np.linspace(0.5, 1.8, 11)
             np.savetxt(fixed_input, np.column_stack((fixed_x, fixed_x * 0.0, fixed_x * 0.0)))
             priors_path.write_text(json.dumps(seed))
-            config_path.write_text(json.dumps(config))
+            config_path.write_text(json.dumps(complete_ibi_config(config)))
 
             result = build_initial_dbi_priors(
                 dataset, priors_path, outdir, ibi_config=config_path
@@ -345,7 +352,7 @@ class IBIPipelineTests(unittest.TestCase):
             generated = tmp / "generated"
             write_dataset(dataset, distances)
             seed_path.write_text(json.dumps(seed))
-            cfg_path.write_text(json.dumps(config))
+            cfg_path.write_text(json.dumps(complete_ibi_config(config)))
             initial = build_initial_dbi_priors(dataset, seed_path, generated, ibi_config=cfg_path)
             priors_path = Path(initial["output_priors"])
             entry = initial["priors"]["bonds"][0]
@@ -389,7 +396,7 @@ class IBIPipelineTests(unittest.TestCase):
             generated = tmp / "generated"
             write_dataset(dataset, distances)
             seed_path.write_text(json.dumps(seed))
-            cfg_path.write_text(json.dumps(config))
+            cfg_path.write_text(json.dumps(complete_ibi_config(config)))
             initial = build_initial_dbi_priors(dataset, seed_path, generated, ibi_config=cfg_path)
             tabulated_priors = Path(initial["output_priors"])
             converted = json.loads(tabulated_priors.read_text())
@@ -452,7 +459,7 @@ class IBIPipelineTests(unittest.TestCase):
             fake_pypresso = tmp / "fake_pypresso.py"
             write_dataset(dataset, distances)
             seed_path.write_text(json.dumps(seed))
-            cfg_path.write_text(json.dumps(config_override))
+            cfg_path.write_text(json.dumps(complete_ibi_config(config_override)))
             config_path.write_text("{}")
             rb_path.write_text("{}")
             initial = build_initial_dbi_priors(dataset, seed_path, dbi_dir, ibi_config=cfg_path)
@@ -536,7 +543,7 @@ np.savez_compressed(path, schema_version=np.asarray(1, dtype=np.int32), complete
             reference_summary = tmp / "summary.json"
             write_dataset(dataset, distances)
             seed_path.write_text(json.dumps(seed))
-            cfg_path.write_text(json.dumps(config_override))
+            cfg_path.write_text(json.dumps(complete_ibi_config(config_override)))
             config_path.write_text("{}")
             rb_path.write_text("{}")
             initial = build_initial_dbi_priors(dataset, seed_path, dbi_dir, ibi_config=cfg_path)
@@ -670,7 +677,7 @@ np.savez_compressed(path, schema_version=np.asarray(1, dtype=np.int32), complete
             seed_path.write_text(json.dumps(seed))
             config_path.write_text("{}")
             rb_path.write_text("{}")
-            ibi_cfg.write_text(json.dumps(config_override))
+            ibi_cfg.write_text(json.dumps(complete_ibi_config(config_override)))
             fake_code = """#!/usr/bin/env python3
 import sys
 from pathlib import Path
