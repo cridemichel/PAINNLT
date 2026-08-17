@@ -1437,3 +1437,10 @@ An explicitly supplied `ibi_settings.json` is authoritative: missing required
 model-dependent fields are configuration errors rather than invitations to merge
 unknown internal defaults. This prevents a workflow from changing scientific
 policy silently when moved to a new molecular model.
+
+
+## Artifact cleanup and deduplication audit
+
+See `../TEL22_CLEANUP.md`. Before sharing files between `tel22` and `tel22_IBI`,
+run `python3 tutorials/audit_tel22_dedup.py` from the repository root. The
+phase-2 audit computes SHA256/reference evidence and is non-destructive.

@@ -1,0 +1,112 @@
+{
+  "executed": true,
+  "generated_utc": "2026-08-17T16:34:11.659851+00:00",
+  "items": [
+    {
+      "category": "historical_ibi",
+      "description": {
+        "bytes": 2090821,
+        "file_count": 12,
+        "kind": "directory",
+        "tree_sha256": "dd8f738bc1f4e39c4f7b8d113cfac582a72d057cfffadac592aee586fc29b87b"
+      },
+      "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/archive/historical_ibi/ibi_dbi_preview",
+      "name": "ibi_dbi_preview",
+      "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dbi_preview",
+      "status": "archived_this_run"
+    },
+    {
+      "category": "historical_ibi",
+      "description": {
+        "bytes": 113551402,
+        "file_count": 114,
+        "kind": "directory",
+        "tree_sha256": "99522aa045397a55e01ae978343b9c1d24978ade7734b246e2c5859fb6bd4de2"
+      },
+      "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/archive/historical_ibi/ibi_run",
+      "name": "ibi_run",
+      "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_run",
+      "status": "archived_this_run"
+    },
+    {
+      "category": "ml_residual_experiments",
+      "description": {
+        "bytes": 2964693,
+        "file_count": 27,
+        "kind": "directory",
+        "tree_sha256": "cc50867f58a88c2b0903b6d1f27b1b203e1c63dc3834559f89a1115fdbf8a03f"
+      },
+      "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/archive/ml_residual_experiments/training_multiseed_benchmark",
+      "name": "training_multiseed_benchmark",
+      "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/training_multiseed_benchmark",
+      "status": "archived_this_run"
+    },
+    {
+      "category": "ml_residual_experiments",
+      "description": {
+        "bytes": 7918388,
+        "file_count": 12,
+        "kind": "directory",
+        "tree_sha256": "f23d86c8a5a0e722f459f71697da0e0efd9438b9550af735a4c795f42eb24482"
+      },
+      "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/archive/ml_residual_experiments/ibi_ml_ab_validation",
+      "name": "ibi_ml_ab_validation",
+      "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_ml_ab_validation",
+      "status": "archived_this_run"
+    }
+  ],
+  "kind": "tel22_ibi_historical_archive_manifest",
+  "policy": {
+    "gromacs_generated_preserved": true,
+    "live_historical_dependencies_preserved": [
+      "ibi_run_16ps",
+      "ibi_run_16ps_continue",
+      "ibi_validation_best",
+      "postibi_runtime_validation",
+      "tel22_dataset_ibi_residual.bin",
+      "tel22_model_ibi.pt",
+      "tel22_model_ibi.pt.manifest.json",
+      "tel22_model_ibi_conservative.pt",
+      "tel22_model_ibi_conservative.pt.manifest.json",
+      "ibi_residual_build_manifest.json"
+    ],
+    "note": "Only reviewed terminal historical outputs are archived; GROMACS products are never moved.",
+    "protected_gromacs_toplevel": [
+      "143D.pdb",
+      "pdb143d.ent.gz",
+      "tel22_clean.pdb",
+      "tel22_processed.gro",
+      "topol.top",
+      "posre.itp",
+      "box_10.gro",
+      "box_ions.gro",
+      "box_solvated.gro",
+      "ions.tpr",
+      "em.edr",
+      "em.gro",
+      "em.log",
+      "em.tpr",
+      "em.trr",
+      "nvt.cpt",
+      "nvt.edr",
+      "nvt.gro",
+      "nvt.log",
+      "nvt.tpr",
+      "npt.cpt",
+      "npt.edr",
+      "npt.gro",
+      "npt.log",
+      "npt.tpr",
+      "md.cpt",
+      "md.edr",
+      "md.gro",
+      "md.log",
+      "md.tpr",
+      "md.trr",
+      "md_whole.trr",
+      "mdout.mdp",
+      "md_sanity_100.log"
+    ]
+  },
+  "schema_version": 1
+}
