@@ -47,6 +47,7 @@ def test_model_dependent_workflow_wrappers_load_external_config():
         if step == 20:
             continue
         matches = list(TUTORIAL.glob(f"{step:02d}_*.sh"))
+        matches += list((TUTORIAL / "diagnostics" / "scripts").glob(f"{step:02d}_*.sh"))
         assert matches, f"missing wrapper for step {step}"
         source = matches[0].read_text()
         assert "model_config.sh" in source, matches[0].name

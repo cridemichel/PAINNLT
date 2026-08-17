@@ -78,7 +78,7 @@ To use a different model configuration with a tutorial wrapper:
 
 ```bash
 IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
-  bash tutorials/tel22_IBI/38_test_conservative_in_loop_dihedral_ibi.sh --run
+  bash tutorials/tel22_IBI/diagnostics/scripts/38_test_conservative_in_loop_dihedral_ibi.sh --run
 ```
 
 Explicit environment overrides remain supported and are recorded as overrides in
@@ -106,3 +106,7 @@ equivalent to `python3 -m pytest -q tests` and does not recursively collect
 ## ESPResSo extension
 
 Bonded Morse priors are evaluated by the conservative analytic `MorseBond` extension in `simulation/espresso_plugin/`; run `copy_plugin_files.sh` and rebuild ESPResSo before simulations that use `type: "morse"`.
+
+### Tutorial layout
+
+TEL22 production artifacts are separated from validation/test evidence. See `tutorials/TEL22_LAYOUT.md`; diagnostic entry points and outputs live below each tutorial's `diagnostics/` directory, while GROMACS-generated files remain at the tutorial root.

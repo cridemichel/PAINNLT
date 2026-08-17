@@ -740,10 +740,10 @@ for example:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+  OVERWRITE=1 bash ./diagnostics/scripts/18_validate_postibi_runtime.sh
 
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+  OVERWRITE=1 bash ./diagnostics/scripts/19_validate_ibi_ml_ab.sh
 ```
 
 Strict NVE certification belongs only at the end of this chain: first produce a
@@ -759,14 +759,14 @@ branch. Run the dedicated gate with:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./23_certify_conservative_ibi_nve.sh --overwrite
+  bash ./diagnostics/scripts/23_certify_conservative_ibi_nve.sh --overwrite
 ```
 
 The model selected by `IBI_MODEL` is **not activated** either while preparing
 the dedicated NVT checkpoint or in the NVE trajectories. The older
-`postibi_runtime_validation/equilibrated_postibi.npz` is only the **source
+`diagnostics/ml/postibi_runtime_validation/equilibrated_postibi.npz` is only the **source
 state**: step `23` first runs Langevin NVT with `--disable_ml` and writes
-`nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz`.
+`diagnostics/nve/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz`.
 Only this new checkpoint, thermalized under the Hamiltonian actually being
 certified, is reused identically for every NVE timestep.
 
@@ -786,7 +786,7 @@ Defaults are 5 ps per timestep with
 `0.001 0.0015 0.002 0.003 0.004 0.005 ps`. The generic certification criteria
 remain `sigma_E ~ dt^p`, `1.7 <= p <= 2.3`, `R2 >= 0.97`, and relative block
 mean drift `<= 1e-4`. Outputs live under
-`nve_certification_conservative_ibi_only/`, and the report records
+`diagnostics/nve/nve_certification_conservative_ibi_only/`, and the report records
 `hamiltonian_mode=conservative_classical_model_provenance_ml_disabled`.
 
 This gate certifies only `WCA + Morse + conservative bonded IBI` over the sampled
@@ -804,7 +804,7 @@ not immediately modify the spline kernel or priors. Run the dedicated
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
 NVE_DIAG_DURATION_PS=2 \
-  bash ./24_diagnose_conservative_ibi_nve_scaling.sh --overwrite
+  bash ./diagnostics/scripts/24_diagnose_conservative_ibi_nve_scaling.sh --overwrite
 ```
 
 Step `24` reuses the provenance-bound IBI-only NVT checkpoint prepared by step
@@ -826,8 +826,8 @@ default fine timestep, so the diagnostic reads actual samples and performs
 Outputs:
 
 ```text
-nve_diagnostic_conservative_ibi_only/nve_diagnostic_report.json
-nve_diagnostic_conservative_ibi_only/nve_diagnostic_runs.csv
+diagnostics/nve/nve_diagnostic_conservative_ibi_only/nve_diagnostic_report.json
+diagnostics/nve/nve_diagnostic_conservative_ibi_only/nve_diagnostic_runs.csv
 ```
 
 This step is deliberately **diagnostic-only**: it returns success after the
@@ -846,7 +846,7 @@ dynamics:
 
 ```bash
 cd tutorials/tel22_IBI
-bash ./26_finalize_conservative_ibi_nve_certification.sh
+bash ./diagnostics/scripts/26_finalize_conservative_ibi_nve_certification.sh
 ```
 
 The final gate requires all of the following simultaneously:
@@ -869,7 +869,7 @@ addition to Richardson state convergence.
 Output:
 
 ```text
-nve_final_certification_conservative_ibi_only/
+diagnostics/nve/nve_final_certification_conservative_ibi_only/
     conservative_ibi_nve_certification_report.json
 ```
 
@@ -2171,7 +2171,7 @@ For the TEL22 tutorial, the high-level workflow is
       ↓
 04_equilibrate.sh
       ↓
-06_certify_nve.sh
+diagnostics/scripts/06_certify_nve.sh
       ↓
 05_run_espresso.sh
 ```
@@ -2586,7 +2586,7 @@ The runtime fails fast when any ESPResSo energy component or PaiNN energy is non
 important because a step-zero `NaN` is a potential-definition/initial-state problem, not timestep
 drift.
 
-## 21.10 `06_certify_nve.sh`
+## 21.10 `diagnostics/scripts/06_certify_nve.sh`
 
 Wrapper for the dedicated NVE timestep-scaling test.
 
@@ -2604,7 +2604,7 @@ Recommended invocation:
 NVE_DTS="0.001 0.002 0.005 0.01" \
 NVE_DURATION_PS=5.0 \
 PYRESSO=../../espresso/build/pypresso \
-bash 06_certify_nve.sh --overwrite
+bash diagnostics/scripts/06_certify_nve.sh --overwrite
 ```
 
 The certifier requires at least three positive timestep values. All timestep cases cover the same
@@ -3092,7 +3092,7 @@ production. The exact command depends on the local ESPResSo build tree, but the 
 
 ## 26.4 Morse smoke test
 
-After rebuilding ESPResSo, run `tutorials/tel22/08_diagnose_morse_reversibility.sh --assert-expected`. The diagnostic verifies `U(r_cut)=F(r_cut)=0`, cutoff crossing without exceptions, and re-entry/rebinding. Unit tests additionally cover `morse_type_pairs` parsing and runtime configuration.
+After rebuilding ESPResSo, run `tutorials/tel22/diagnostics/scripts/08_diagnose_morse_reversibility.sh --assert-expected`. The diagnostic verifies `U(r_cut)=F(r_cut)=0`, cutoff crossing without exceptions, and re-entry/rebinding. Unit tests additionally cover `morse_type_pairs` parsing and runtime configuration.
 
 ## 26.5 Runtime site-site Morse force/torque diagnostic
 
@@ -3100,7 +3100,7 @@ After changing pair-specific Morse endpoint or virtual-marker logic, also run:
 
 ```bash
 cd tutorials/tel22
-bash ./09_diagnose_morse_site_torque.sh --assert-expected
+bash ./diagnostics/scripts/09_diagnose_morse_site_torque.sh --assert-expected
 ```
 
 The test is independent of TEL22: it constructs two synthetic rigid bodies, each with an off-COM physical CG virtual site, creates the technical markers through the same production helpers, and activates one `site<->site` pair-specific Morse interaction. It compares the ESPResSo energy, COM forces, and lab-frame torques against the analytic prediction `tau=(r_site-r_COM) x F`. It also checks marker/site coincidence and verifies that the physical CG-site types are unchanged. This is the runtime certification of the generic `COM/site` endpoint path beyond TEL22's current COM-COM contacts.
@@ -3229,7 +3229,7 @@ A different model can supply a different file without editing the generic core:
 
 ```bash
 IBI_MODEL_DEPENDENT_CONFIG=/path/to/my_model_workflow_config.json \
-  bash tutorials/tel22_IBI/38_test_conservative_in_loop_dihedral_ibi.sh --run
+  bash tutorials/tel22_IBI/diagnostics/scripts/38_test_conservative_in_loop_dihedral_ibi.sh --run
 ```
 
 Environment overrides remain available, but the model-config provenance sidecar (`model_config_provenance*.json`)
@@ -3372,7 +3372,7 @@ conservative-IBI workflow run step 25:
 ```bash
 cd tutorials/tel22_IBI
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./25_diagnose_conservative_ibi_state_convergence.sh --overwrite
+  bash ./diagnostics/scripts/25_diagnose_conservative_ibi_state_convergence.sh --overwrite
 ```
 
 The test reuses the provenance-bound IBI-only NVT checkpoint from step 23 and
@@ -3523,7 +3523,7 @@ bash 04_equilibrate.sh
 NVE_DTS="0.001 0.002 0.005 0.01" \
 NVE_DURATION_PS=5.0 \
 PYRESSO=../../espresso/build/pypresso \
-bash 06_certify_nve.sh --overwrite
+bash diagnostics/scripts/06_certify_nve.sh --overwrite
 
 # 6. Production example
 CG_DT=0.001 \

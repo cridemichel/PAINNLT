@@ -186,6 +186,10 @@ def is_shared_input_candidate(rel: str) -> bool:
 
 
 def classify_ibi_only(rel: str) -> str:
+    if rel.startswith("archive/"):
+        return "HISTORICAL"
+    if rel.startswith("diagnostics/"):
+        return "DIAGNOSTIC"
     if rel in HISTORICAL_IBI_NAMES or rel.startswith(HISTORICAL_IBI_PREFIXES):
         return "HISTORICAL"
     if is_generated(rel):
@@ -198,6 +202,8 @@ def classify_ibi_only(rel: str) -> str:
 
 
 def classify_tel22_only(rel: str) -> str:
+    if rel.startswith("diagnostics/"):
+        return "DIAGNOSTIC"
     if is_generated(rel):
         return "GENERATED"
     if rel.startswith("nve_certification") or rel.startswith("wca12_selective_ab/"):
@@ -387,8 +393,8 @@ def render_markdown(report: dict[str, object]) -> str:
             "space saving is small compared with the coupling/reference-migration cost.",
             "`GENERATED_DUPLICATE` entries should remain local/regenerable rather than",
             "symlinked; preserving GROMACS working products is a valid local policy.",
-            "Phase 3 is a separate conservative archive pass for reviewed terminal",
-            "`HISTORICAL` outputs only; live historical dependencies remain in place.",
+            "The final layout migrator separates reviewed diagnostic/historical evidence",
+            "below `diagnostics/` while keeping active pipeline dependencies at tutorial root.",
             "",
         ]
     )

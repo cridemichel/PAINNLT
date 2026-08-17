@@ -2,7 +2,7 @@
 """Archive terminal TEL22_IBI historical outputs without touching live or GROMACS artifacts.
 
 Dry-run is the default.  ``--run`` moves only a small reviewed allowlist of
-historical output directories into ``tutorials/tel22_IBI/archive``.  Historical
+historical output directories into ``tutorials/tel22_IBI/diagnostics/historical/phase3_archive``.  Historical
 artifacts that are still referenced by the current configured workflows remain
 in place.  GROMACS-generated files are protected explicitly and are never part
 of the move plan.
@@ -40,8 +40,8 @@ ARCHIVE_PLAN = {
 LIVE_HISTORICAL_DEPENDENCIES = (
     "ibi_run_16ps",
     "ibi_run_16ps_continue",
-    "ibi_validation_best",
-    "postibi_runtime_validation",
+    "diagnostics/ibi/ibi_validation_best",
+    "diagnostics/ml/postibi_runtime_validation",
     "tel22_dataset_ibi_residual.bin",
     "tel22_model_ibi.pt",
     "tel22_model_ibi.pt.manifest.json",
@@ -164,7 +164,7 @@ def describe_path(path: Path) -> dict:
 
 
 def build_move_plan(tutorial_dir: Path) -> list[MoveItem]:
-    archive_root = tutorial_dir / "archive"
+    archive_root = tutorial_dir / "diagnostics" / "historical" / "phase3_archive"
     plan: list[MoveItem] = []
     protected = set(PROTECTED_GROMACS_TOPLEVEL)
     live = set(LIVE_HISTORICAL_DEPENDENCIES)
@@ -194,7 +194,7 @@ def preflight(plan: list[MoveItem]) -> None:
 
 
 def _manifest_paths(tutorial_dir: Path) -> tuple[Path, Path]:
-    root = tutorial_dir / "archive"
+    root = tutorial_dir / "diagnostics" / "historical" / "phase3_archive"
     return root / "archive_manifest.json", root / "archive_manifest.md"
 
 

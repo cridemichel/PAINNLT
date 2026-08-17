@@ -35,7 +35,7 @@ After equilibration, certify the complete conservative Hamiltonian from the same
 `equilibrated.npz` checkpoint at several Velocity-Verlet time steps:
 
 ```bash
-PYRESSO=../../espresso/build/pypresso bash 06_certify_nve.sh
+PYRESSO=../../espresso/build/pypresso bash diagnostics/scripts/06_certify_nve.sh
 ```
 
 The wrapper defaults to CPU, uses the same physical duration for every
@@ -63,7 +63,7 @@ NVE_DURATION_PS=10 \
 NVE_DTS="0.001 0.002 0.005 0.01" \
 NVE_MAX_RELATIVE_DRIFT=1e-5 \
 PYRESSO=../../espresso/build/pypresso \
-bash 06_certify_nve.sh --overwrite
+bash diagnostics/scripts/06_certify_nve.sh --overwrite
 ```
 
 The certification path refuses explicitly tabulated bonded priors. Analytic
@@ -75,7 +75,7 @@ If an NVE/production run approaches the short-range safety guardrail, diagnose t
 actual minimum-distance PID pair before changing WCA parameters or exclusions:
 
 ```bash
-bash 06b_diagnose_short_range.sh
+bash diagnostics/scripts/06b_diagnose_short_range.sh
 ```
 
 By default this reads `nve_certification/dt_0p005/energy.csv`, uses a 0.20 nm
@@ -84,7 +84,7 @@ short-range threshold, and writes
 or threshold with, for example:
 
 ```bash
-NVE_DT_TAG=0p002 SHORT_RANGE_THRESHOLD_NM=0.25 bash 06b_diagnose_short_range.sh
+NVE_DT_TAG=0p002 SHORT_RANGE_THRESHOLD_NM=0.25 bash diagnostics/scripts/06b_diagnose_short_range.sh
 ```
 
 The diagnostic reconstructs the same runtime particle-ID order as
@@ -128,7 +128,7 @@ TEL22 uses harmonic site-0 bonds and harmonic backbone angles for covalent-chain
 
 The TEL22 Morse records remain in `bonds` with `type="morse"`, but at runtime they are **not ESPResSo bonded interactions**. TEL22 currently selects explicit COM-COM endpoints (`site_i=site_j=-1`). The generic framework also accepts COM-site and site-site endpoints. Runtime pair specificity is implemented with coincident technical virtual markers attached to the selected rigid bodies, so physical CG-site types seen by PaiNN/WCA are never changed. The hybrid cell system is selected before these long-cutoff marker interactions are registered; otherwise ESPResSo would validate the 15 nm marker cutoff against the default regular decomposition and reject the TEL22 box before the N-square routing becomes active. For a site endpoint, the marker occupies exactly that site position and its force is transferred to the parent body with the corresponding torque. The validated switched form has `U(r0)=-D`, smoothly reaches `U=F=0` at `r_cut`, can cross the cutoff without an exception, and can re-enter/rebind without topology changes. The old `MorseBond` broken-bond behavior is retained only as a diagnostic regression path.
 
-Before regenerating a production checkpoint after changing the pair-specific marker machinery, the framework also provides `09_diagnose_morse_site_torque.sh --assert-expected`. Unlike the TEL22 model itself, this diagnostic creates a synthetic `site<->site` contact with both endpoints displaced from their rigid-body COMs. It verifies the switched-Morse energy, equal-and-opposite translational forces, the two analytic rigid-body torques, marker/site coincidence, and preservation of the physical CG site types. It therefore exercises the generic site-addressable path that TEL22's current COM-COM contacts do not cover.
+Before regenerating a production checkpoint after changing the pair-specific marker machinery, the framework also provides `diagnostics/scripts/09_diagnose_morse_site_torque.sh --assert-expected`. Unlike the TEL22 model itself, this diagnostic creates a synthetic `site<->site` contact with both endpoints displaced from their rigid-body COMs. It verifies the switched-Morse energy, equal-and-opposite translational forces, the two analytic rigid-body torques, marker/site coincidence, and preservation of the physical CG site types. It therefore exercises the generic site-addressable path that TEL22's current COM-COM contacts do not cover.
 
 TEL22 does **not** enable `morse_type_pairs` by default. That optional generic mechanism is intended for transferable bead-type attractions and would act on every non-excluded virtual-site pair carrying the selected CG types. Enabling it in TEL22 would add those energies/forces on top of the existing pair-specific quartet contacts, so it should only be done deliberately and requires regenerating dataset/priors, retraining the residual model, re-equilibrating, and repeating NVE certification.
 
@@ -186,13 +186,13 @@ Before the first iterative run, generate the Direct Boltzmann Inversion tables
 only:
 
 ```bash
-bash 11_build_dbi_preview.sh
+bash diagnostics/scripts/11_build_dbi_preview.sh
 ```
 
 This reads **coordinates only** from `tel22_dataset.bin`; the residual-force
 columns of that dataset are not used for DBI.  Therefore the target dataset may
 be the already generated analytic-prior dataset.  The preview is written to
-`ibi_dbi_preview/` and should be inspected for support ranges and pathological
+`diagnostics/ibi/ibi_dbi_preview/` and should be inspected for support ranges and pathological
 tails before launching NVT sampling.  Replacing an existing preview requires
 `OVERWRITE=1`.
 
@@ -345,14 +345,14 @@ small change in best normalized validation loss is systematic.  After the
 post-IBI model has trained successfully, run a paired multi-seed benchmark:
 
 ```bash
-OVERWRITE=1 bash ./17_benchmark_training_multiseed.sh
+OVERWRITE=1 bash ./diagnostics/scripts/17_benchmark_training_multiseed.sh
 ```
 
 The default seeds are `11 42 73`.  For a stronger five-seed check use:
 
 ```bash
 MULTISEED_SEEDS="11 23 42 73 101" OVERWRITE=1 \
-  bash ./17_benchmark_training_multiseed.sh
+  bash ./diagnostics/scripts/17_benchmark_training_multiseed.sh
 ```
 
 For every seed, the generic `training/multiseed_benchmark.py` trains both the
@@ -378,14 +378,14 @@ the matching residual PaiNN model has been trained, run the runtime gate with th
 same model name used during training. For the default model:
 
 ```bash
-OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+OVERWRITE=1 bash ./diagnostics/scripts/18_validate_postibi_runtime.sh
 ```
 
 For a distinct conservative-residual artifact:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+  OVERWRITE=1 bash ./diagnostics/scripts/18_validate_postibi_runtime.sh
 ```
 
 The script fails closed unless the model manifest proves that the model was
@@ -395,7 +395,7 @@ residual-build manifest proves that the same dataset, validated IBI priors
 It then creates a provenance-bearing checkpoint with the complete `IBI + PaiNN`
 Hamiltonian and runs a short NVT smoke trajectory.
 
-Outputs are written under `postibi_runtime_validation/`:
+Outputs are written under `diagnostics/ml/postibi_runtime_validation/`:
 
 - `runtime_preflight.json`: cryptographic model/dataset/config/prior/RB provenance;
 - `equilibrated_postibi.npz`: checkpoint whose own metadata carries the runtime hashes;
@@ -414,10 +414,10 @@ still pass its dedicated NVE timestep-scaling and drift gates.
 
 ### Matched IBI-only vs IBI+PaiNN structural A/B gate
 
-After `18_validate_postibi_runtime.sh` has produced a provenance-validated equilibrated checkpoint, run:
+After `diagnostics/scripts/18_validate_postibi_runtime.sh` has produced a provenance-validated equilibrated checkpoint, run:
 
 ```bash
-OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+OVERWRITE=1 bash ./diagnostics/scripts/19_validate_ibi_ml_ab.sh
 ```
 
 The default matched test uses the same checkpoint, Langevin seed, timestep, and sampling schedule in both branches. Each branch receives 1 ps of branch-specific NVT burn-in followed by 8 ps of structural production. Branch A retains the model in checkpoint/model provenance but disables PaiNN forces; branch B activates the same PaiNN model. The comparison report is written to `ibi_ml_ab_validation/ab_structure_comparison.json`.
@@ -425,7 +425,7 @@ The default matched test uses the same checkpoint, Langevin seed, timestep, and 
 Longer production can be requested without changing source code, for example:
 
 ```bash
-AB_PRODUCTION_PS=16 OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+AB_PRODUCTION_PS=16 OVERWRITE=1 bash ./diagnostics/scripts/19_validate_ibi_ml_ab.sh
 ```
 
 This A/B test is a structural diagnostic for the exact priors selected by the
@@ -523,10 +523,10 @@ post-training runtime gates:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  OVERWRITE=1 bash ./18_validate_postibi_runtime.sh
+  OVERWRITE=1 bash ./diagnostics/scripts/18_validate_postibi_runtime.sh
 
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  OVERWRITE=1 bash ./19_validate_ibi_ml_ab.sh
+  OVERWRITE=1 bash ./diagnostics/scripts/19_validate_ibi_ml_ab.sh
 ```
 
 Only after these gates validate the same model/prior/dataset provenance should
@@ -542,7 +542,7 @@ PaiNN-residual branch, certify that exact conservative classical Hamiltonian:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./23_certify_conservative_ibi_nve.sh --overwrite
+  bash ./diagnostics/scripts/23_certify_conservative_ibi_nve.sh --overwrite
 ```
 
 Step 23 intentionally keeps the model path only as a checkpoint-provenance
@@ -551,10 +551,10 @@ and in every NVE trajectory; the tested Hamiltonian is therefore the selected
 conservative IBI priors plus the other explicit conservative runtime priors
 (WCA/Morse), not IBI+PaiNN.
 
-`postibi_runtime_validation/equilibrated_postibi.npz` is now only the **source
+`diagnostics/ml/postibi_runtime_validation/equilibrated_postibi.npz` is now only the **source
 checkpoint**. Before the timestep scan, step 23 runs a matched IBI-only Langevin
 NVT and writes
-`nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz`.
+`diagnostics/nve/nve_equilibration_conservative_ibi_only/equilibrated_conservative_ibi_only.npz`.
 The NVE scan starts from this new state for every timestep. Its metadata records
 `hamiltonian_mode=conservative_classical_model_provenance_ml_disabled`,
 `sampling_ensemble=NVT_Langevin`, and the SHA256 of the source checkpoint; all
@@ -583,7 +583,7 @@ NVE_MIN_R2=0.97
 NVE_MAX_RELATIVE_DRIFT=1e-4
 ```
 
-The output directory is `nve_certification_conservative_ibi_only/`. Step 23
+The output directory is `diagnostics/nve/nve_certification_conservative_ibi_only/`. Step 23
 preserves the original strict reference rule: both the `sigma_E ~ dt^p` scaling
 gate and the block-drift gate must pass. This historical result is never
 rewritten. For conservative IBI, the final composite decision is made only
@@ -606,7 +606,7 @@ changing priors or ESPResSo code, probe the fine-timestep and short-time regimes
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
 NVE_DIAG_DURATION_PS=2 \
-  bash ./24_diagnose_conservative_ibi_nve_scaling.sh --overwrite
+  bash ./diagnostics/scripts/24_diagnose_conservative_ibi_nve_scaling.sh --overwrite
 ```
 
 The diagnostic uses the exact IBI-only NVT checkpoint already prepared by step
@@ -626,7 +626,7 @@ errors at the listed physical times and fits `|Delta E(t)|`, prefix RMS error,
 and prefix `sigma_E` versus `dt`. The local times are chosen to be commensurate
 with every default fine timestep; no interpolation is allowed.
 
-Outputs are written below `nve_diagnostic_conservative_ibi_only/`. This is a
+Outputs are written below `diagnostics/nve/nve_diagnostic_conservative_ibi_only/`. This is a
 **diagnostic**, not a replacement certification: its process exit status does
 not promote the model when the strict step-23 fit fails. Use the fine and local
 fits to decide whether an asymptotic `dt^2` regime exists before moving to
@@ -641,7 +641,7 @@ energy-fluctuation amplitude alone. Run the short-time state-convergence test:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./25_diagnose_conservative_ibi_state_convergence.sh --overwrite
+  bash ./diagnostics/scripts/25_diagnose_conservative_ibi_state_convergence.sh --overwrite
 ```
 
 The default dyadic timestep ladder is:
@@ -674,7 +674,7 @@ common physical time. Periodic position differences use the minimum-image
 convention, and quaternion sign degeneracy is removed before computing angles.
 
 Outputs are written below
-`nve_state_convergence_conservative_ibi_only/`, principally
+`diagnostics/nve/nve_state_convergence_conservative_ibi_only/`, principally
 `state_convergence_report.json` and `run_plan.json`. This remains a diagnostic:
 it does not overwrite or relax the strict step-23 certification result. A clean
 `p ~= 2` state convergence together with tiny NVE drift is evidence that the
@@ -688,7 +688,7 @@ After steps 22, 23 and 25 have produced their provenance-bound reports, assemble
 the final conservative-IBI NVE verdict without rerunning dynamics:
 
 ```bash
-bash ./26_finalize_conservative_ibi_nve_certification.sh
+bash ./diagnostics/scripts/26_finalize_conservative_ibi_nve_certification.sh
 ```
 
 The final gate is deliberately composite. It requires all of the following:
@@ -711,7 +711,7 @@ the integrator-order claim.
 The final report is written to:
 
 ```text
-nve_final_certification_conservative_ibi_only/
+diagnostics/nve/nve_final_certification_conservative_ibi_only/
     conservative_ibi_nve_certification_report.json
 ```
 
@@ -743,10 +743,10 @@ that discrepancy to a non-gating metric:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./27_diagnose_conservative_ibi_energy_scaling.sh --dry-run
+  bash ./diagnostics/scripts/27_diagnose_conservative_ibi_energy_scaling.sh --dry-run
 
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./27_diagnose_conservative_ibi_energy_scaling.sh --overwrite
+  bash ./diagnostics/scripts/27_diagnose_conservative_ibi_energy_scaling.sh --overwrite
 ```
 
 The default full-system scan is deliberately finer than the production scan:
@@ -794,7 +794,7 @@ The suite performs several independent probes:
 The main artifact is:
 
 ```text
-conservative_ibi_energy_localization/
+diagnostics/nve/conservative_ibi_energy_localization/
     localization_report.json
 ```
 
@@ -824,10 +824,10 @@ initial states and observation windows:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./28_diagnose_sigma_energy_replicas.sh --dry-run
+  bash ./diagnostics/scripts/28_diagnose_sigma_energy_replicas.sh --dry-run
 
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./28_diagnose_sigma_energy_replicas.sh --overwrite
+  bash ./diagnostics/scripts/28_diagnose_sigma_energy_replicas.sh --overwrite
 ```
 
 The default diagnostic uses four independently Langevin-branched IBI-only
@@ -868,7 +868,7 @@ real long-time effect that still requires investigation.
 Outputs are written below:
 
 ```text
-sigma_energy_replica_window_diagnostic/
+diagnostics/nve/sigma_energy_replica_window_diagnostic/
     run_plan.json
     sigma_energy_replica_report.json
     sigma_energy_replica_observations.csv
@@ -886,7 +886,7 @@ all requested timestep trajectories, reuse those files directly:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./28_diagnose_sigma_energy_replicas.sh --analyze-existing
+  bash ./diagnostics/scripts/28_diagnose_sigma_energy_replicas.sh --analyze-existing
 ```
 
 `--analyze-existing` performs zero integration steps. It validates each existing
@@ -911,10 +911,10 @@ Run:
 
 ```bash
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./29_diagnose_ibi_timestep_range.sh --dry-run
+  bash ./diagnostics/scripts/29_diagnose_ibi_timestep_range.sh --dry-run
 
 IBI_MODEL=tel22_model_ibi_conservative.pt \
-  bash ./29_diagnose_ibi_timestep_range.sh --overwrite
+  bash ./diagnostics/scripts/29_diagnose_ibi_timestep_range.sh --overwrite
 ```
 
 Unlike step 27's `no_ibi` control, which replaces conservative bonded terms by
@@ -971,7 +971,7 @@ the configured reference itself no longer passes            -> runtime/regressio
 Main artifact:
 
 ```text
-ibi_timestep_range_diagnostic/timestep_range_localization_report.json
+diagnostics/ibi/ibi_timestep_range_diagnostic/timestep_range_localization_report.json
 ```
 
 Step 29 is diagnostic-only and does not alter any certification artifact or the
@@ -993,14 +993,14 @@ rerunning a long NVE scan, separate three possible sources of angle stiffness:
 Run the offline audit:
 
 ```bash
-bash ./30_diagnose_regularize_ibi_angles.sh --dry-run
-bash ./30_diagnose_regularize_ibi_angles.sh --overwrite
+bash ./diagnostics/scripts/30_diagnose_regularize_ibi_angles.sh --dry-run
+bash ./diagnostics/scripts/30_diagnose_regularize_ibi_angles.sh --overwrite
 ```
 
 The default runtime sample is the already-generated step-29 full-IBI NVT sample:
 
 ```text
-ibi_timestep_range_diagnostic/full_ibi/nvt_structured_sample.npz
+diagnostics/ibi/ibi_timestep_range_diagnostic/full_ibi/nvt_structured_sample.npz
 ```
 
 No new MD is run.  The mapped target geometry is reconstructed from
@@ -1052,7 +1052,7 @@ candidate(s).
 Outputs:
 
 ```text
-ibi_angle_regularization_diagnostic/
+diagnostics/ibi/ibi_angle_regularization_diagnostic/
     angle_regularization_report.json
     profiles/<angle_group>.csv
     candidates/<candidate>/cg_priors.json
@@ -1072,16 +1072,16 @@ least invasive candidates against the current conservative IBI Hamiltonian under
 one matched MD protocol:
 
 ```bash
-bash ./31_validate_ibi_angle_regularization.sh --dry-run
-bash ./31_validate_ibi_angle_regularization.sh --overwrite
+bash ./diagnostics/scripts/31_validate_ibi_angle_regularization.sh --dry-run
+bash ./diagnostics/scripts/31_validate_ibi_angle_regularization.sh --overwrite
 ```
 
 The three variants are:
 
 ```text
 current       ibi_conservative/cg_priors.json
-smooth_0p01  ibi_angle_regularization_diagnostic/candidates/smooth_0p01_wall_current/cg_priors.json
-smooth_0p02  ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_current/cg_priors.json
+smooth_0p01  diagnostics/ibi/ibi_angle_regularization_diagnostic/candidates/smooth_0p01_wall_current/cg_priors.json
+smooth_0p02  diagnostics/ibi/ibi_angle_regularization_diagnostic/candidates/smooth_0p02_wall_current/cg_priors.json
 ```
 
 Each starts from the same source checkpoint and receives the same short NVT
@@ -1119,13 +1119,13 @@ Default cost is only about `10350` integration steps total (three variants), and
 `--resume` reuses complete NVT/NVE artifacts after an interruption:
 
 ```bash
-bash ./31_validate_ibi_angle_regularization.sh --resume
+bash ./diagnostics/scripts/31_validate_ibi_angle_regularization.sh --resume
 ```
 
 Main artifact:
 
 ```text
-ibi_angle_regularization_validation/angle_candidate_validation_report.json
+diagnostics/ibi/ibi_angle_regularization_validation/angle_candidate_validation_report.json
 ```
 
 Step 31 remains diagnostic-only.  A candidate should be considered for promotion
@@ -1145,8 +1145,8 @@ not assume that lower `P99 |U''|` is monotonically better.
 Run a narrow local sweep around `0.01 rad`:
 
 ```bash
-bash ./32_optimize_ibi_angle_smoothing.sh --dry-run
-bash ./32_optimize_ibi_angle_smoothing.sh --overwrite
+bash ./diagnostics/scripts/32_optimize_ibi_angle_smoothing.sh --dry-run
+bash ./diagnostics/scripts/32_optimize_ibi_angle_smoothing.sh --overwrite
 ```
 
 The default new candidates are:
@@ -1158,7 +1158,7 @@ The default new candidates are:
 ```
 
 The already-computed `0.0100 rad` candidate is reused directly from
-`ibi_angle_regularization_validation/angle_candidate_validation_report.json`.
+`diagnostics/ibi/ibi_angle_regularization_validation/angle_candidate_validation_report.json`.
 Its NVE points are re-fitted on the same common timestep subset as the new
 candidates, so no MD is repeated merely to make the comparison fair.
 
@@ -1176,7 +1176,7 @@ about `8349` integration steps total.  The reused `0.01` point adds zero MD cost
 Use `--resume` after an interruption:
 
 ```bash
-bash ./32_optimize_ibi_angle_smoothing.sh --resume
+bash ./diagnostics/scripts/32_optimize_ibi_angle_smoothing.sh --resume
 ```
 
 The NVE-only ranking is intentionally lexicographic.  It first maximizes the
@@ -1200,7 +1200,7 @@ modified.
 Main artifact:
 
 ```text
-ibi_angle_smoothing_sweep/angle_smoothing_sweep_report.json
+diagnostics/ibi/ibi_angle_smoothing_sweep/angle_smoothing_sweep_report.json
 ```
 
 After this local sweep choose at most one smoothing scale for the longer final
@@ -1213,8 +1213,8 @@ After the local sweep, validate only `smooth_0p0075` on independent thermal
 branches before changing production priors:
 
 ```bash
-IBI_MODEL=tel22_model_ibi_conservative.pt bash ./33_validate_final_ibi_angle_candidate.sh --dry-run
-IBI_MODEL=tel22_model_ibi_conservative.pt bash ./33_validate_final_ibi_angle_candidate.sh --overwrite
+IBI_MODEL=tel22_model_ibi_conservative.pt bash ./diagnostics/scripts/33_validate_final_ibi_angle_candidate.sh --dry-run
+IBI_MODEL=tel22_model_ibi_conservative.pt bash ./diagnostics/scripts/33_validate_final_ibi_angle_candidate.sh --overwrite
 ```
 
 Step 33 combines the reused step-32 branch with two independent NVT/NVE branches,
@@ -1250,7 +1250,7 @@ IBI_MODEL=tel22_model_ibi_conservative.pt bash ./34_promote_and_certify_ibi_angl
 The promotion is fail-closed on the reviewed candidate SHA256
 `c31f6d0d53f053071ab694f91d8271c83fc90a90ada291ba60c206adf82a3799`
 and on the passing step-33 report.  Before changing production it copies the
-current `ibi_conservative/` tree to `ibi_conservative_pre_smooth_0p0075/`.
+current `ibi_conservative/` tree to `diagnostics/ibi/ibi_conservative_pre_smooth_0p0075/`.
 The promoted JSON metadata are rewritten to record validation/promotion, while
 every runtime bonded table must remain byte-identical to the validated candidate.
 
@@ -1284,7 +1284,7 @@ IBI_MODEL=tel22_model_ibi_conservative.pt bash ./34_promote_and_certify_ibi_angl
 Main artifact:
 
 ```text
-ibi_promoted_final_certification/promoted_ibi_final_certification_report.json
+diagnostics/ibi/ibi_promoted_final_certification/promoted_ibi_final_certification_report.json
 ```
 
 The validated production result is:
