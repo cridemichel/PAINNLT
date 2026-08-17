@@ -1128,3 +1128,147 @@ Step 31 remains diagnostic-only.  A candidate should be considered for promotion
 only after it improves the timestep behavior **without materially worsening the
 matched structural distributions**; final production/certification decisions are
 separate from this screen.
+
+## 32. Local sweep around the useful angle-body smoothing scale
+
+Step 31 establishes two points that must be kept separate.  Moderate `0.01 rad`
+body smoothing materially improves the **contiguous** `sigma_E/dt^2` plateau
+with negligible structural cost, while the stronger `0.02 rad` candidate lowers
+occupied curvature much further but its local timestep behavior remains
+irregular.  Therefore do not optimize the global log-log exponent alone and do
+not assume that lower `P99 |U''|` is monotonically better.
+
+Run a narrow local sweep around `0.01 rad`:
+
+```bash
+bash ./32_optimize_ibi_angle_smoothing.sh --dry-run
+bash ./32_optimize_ibi_angle_smoothing.sh --overwrite
+```
+
+The default new candidates are:
+
+```text
+0.0075 rad
+0.0125 rad
+0.0150 rad
+```
+
+The already-computed `0.0100 rad` candidate is reused directly from
+`ibi_angle_regularization_validation/angle_candidate_validation_report.json`.
+Its NVE points are re-fitted on the same common timestep subset as the new
+candidates, so no MD is repeated merely to make the comparison fair.
+
+Each **new** candidate uses the same wall as the selected conservative IBI prior,
+changes only the de-walled angle-potential body, and receives the same matched
+short NVT protocol used in step 31.  The default NVE grid is deliberately small:
+
+```text
+dt = 0.001 0.002 0.003 0.004 0.005 ps
+T  = 1 ps per dt
+```
+
+With a `0.25 ps` NVT branch at `dt=0.0005 ps`, the three new candidates require
+about `8349` integration steps total.  The reused `0.01` point adds zero MD cost.
+Use `--resume` after an interruption:
+
+```bash
+bash ./32_optimize_ibi_angle_smoothing.sh --resume
+```
+
+The NVE-only ranking is intentionally lexicographic.  It first maximizes the
+largest **contiguous** timestep range for which `sigma_E/dt^2` stays within a
+factor `1.5` of its smallest-dt value.  Ties are then broken by the C2 spread
+inside that clean prefix, the prefix distance from `p=2`, and only later by the
+global C2 spread / exponent / `R2`.  This prevents an oscillatory sequence from
+winning merely because compensating points happen to give a global `p` close to
+2.
+
+Structural diagnostics remain separate from this NVE ranking.  For every
+candidate the report gives weighted angle/bond L1 relative to the same target,
+actual occupied `P99 |U''|`, and deltas versus the current unsmoothed prior.  The
+highest NVE rank is therefore **not** an automatic promotion decision: reject a
+candidate if the matched structural response is materially worse.
+
+New candidate priors are generated under the step-32 output directory and are
+explicitly tagged `validated=false`; `ibi_conservative/cg_priors.json` is never
+modified.
+
+Main artifact:
+
+```text
+ibi_angle_smoothing_sweep/angle_smoothing_sweep_report.json
+```
+
+After this local sweep choose at most one smoothing scale for the longer final
+structural/NVE validation.  Do not continue tuning the smoothing bandwidth once
+a clean plateau and acceptable structure have been identified.
+
+## 33. Replica/structure validation of the selected 0.0075-rad candidate
+
+After the local sweep, validate only `smooth_0p0075` on independent thermal
+branches before changing production priors:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt bash ./33_validate_final_ibi_angle_candidate.sh --dry-run
+IBI_MODEL=tel22_model_ibi_conservative.pt bash ./33_validate_final_ibi_angle_candidate.sh --overwrite
+```
+
+Step 33 combines the reused step-32 branch with two independent NVT/NVE branches,
+fits a common fixed-effects `sigma_E ~ dt^p` exponent across all three replicas,
+and performs a longer matched current-vs-candidate NVT structural comparison.
+Passing this step validates the candidate **for promotion consideration only**;
+it does not modify `ibi_conservative/` and does not certify the production path.
+
+## 34. Explicit promotion and post-promotion Hamiltonian certification
+
+Only after step 33 passes, promote the reviewed `smooth_0p0075` candidate and
+certify the exact production path:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt bash ./34_promote_and_certify_ibi_angle_prior.sh --dry-run
+IBI_MODEL=tel22_model_ibi_conservative.pt bash ./34_promote_and_certify_ibi_angle_prior.sh --promote
+```
+
+The promotion is fail-closed on the reviewed candidate SHA256
+`c31f6d0d53f053071ab694f91d8271c83fc90a90ada291ba60c206adf82a3799`
+and on the passing step-33 report.  Before changing production it copies the
+current `ibi_conservative/` tree to `ibi_conservative_pre_smooth_0p0075/`.
+The promoted JSON metadata are rewritten to record validation/promotion, while
+every runtime bonded table must remain byte-identical to the validated candidate.
+
+The pre-promotion residual dataset and PaiNN model are explicitly marked stale
+for ML-active use.  Step 34 certifies only the classical Hamiltonian with PaiNN
+disabled; residual labels must be rebuilt and PaiNN retrained before any later
+ML-active calculation using the promoted priors.
+
+Post-promotion certification does **not** reuse the historical step-26 decision.
+It regenerates conservative finite-difference validation and ESPResSo runtime
+parity from `ibi_conservative/cg_priors.json`, then creates a fresh promoted-prior
+NVT checkpoint and runs:
+
+```text
+fresh sigma_E scan : dt = 0.001 0.002 0.003 0.004 0.005 ps, 1 ps each
+fresh Richardson   : dt_ref = 0.0000625 ps, duration = 0.096 ps
+```
+
+Here `sigma_E ~ dt^2` is gating again (`1.8 <= p <= 2.2`, `R2 >= 0.95`,
+`C2 spread <= 2`, full scan through `0.005 ps`, relative block drift `<=2e-5`).
+Richardson position/velocity/orientation/body-omega convergence must also remain
+second order.  The final report additionally binds the three-replica step-33
+evidence to production through table SHA256 identity.
+
+If execution is interrupted after promotion, use:
+
+```bash
+IBI_MODEL=tel22_model_ibi_conservative.pt bash ./34_promote_and_certify_ibi_angle_prior.sh --resume
+```
+
+Main artifact:
+
+```text
+ibi_promoted_final_certification/promoted_ibi_final_certification_report.json
+```
+
+A final `pass=true` certifies `WCA + Morse + bonded conservative smooth_0p0075
+IBI` with PaiNN disabled.  Promotion/certification does not silently rebuild or
+promote an ML residual model.
