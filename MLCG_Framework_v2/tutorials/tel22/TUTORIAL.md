@@ -145,3 +145,10 @@ a = 0.3 nm^-1
 At 300 K, one contact depth `D` is about 20 `kBT`. Six pair contacts in one idealized quartet plane therefore correspond to an energetic scale of roughly `6D = 300 kJ/mol` before entropy, the ML residual, backbone priors, and other interactions are considered. Unfolding is allowed by the topology, but it may still be rare on short trajectories; `D`, `a`, and the switching range must be calibrated to the intended thermodynamics and kinetics.
 
 Do not define unfolding as "ESPResSo bond deletion". For TEL22, use geometric/contact-state observables (and, when needed, free-energy or kinetic analysis). Crossing `r_cut` simply means that the switched Morse contribution is zero until the pair re-enters the interaction range.
+
+
+## Artifact cleanup and deduplication audit
+
+See `../TEL22_CLEANUP.md`. Before sharing files between `tel22` and `tel22_IBI`,
+run `python3 tutorials/audit_tel22_dedup.py` from the repository root. The
+phase-2 audit computes SHA256/reference evidence and is non-destructive.
