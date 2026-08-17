@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-08-17T17:21:26.570961+00:00",
+  "generated_utc": "2026-08-17T17:23:37.383317+00:00",
   "gromacs_generated_preserved": true,
   "junk": [
     {
@@ -8,15 +8,15 @@
     },
     {
       "path": "HOWTO.md.orig",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "HOWTO_EN.md.orig",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "README.md.orig",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "repair_certify_nve_inline_sampling_v3_20260813.py",
@@ -28,39 +28,39 @@
     },
     {
       "path": "create_zip_per_chatgpt.sh",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "tests/test_nve_certification.py.orig",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "simulation/run_cg_md.py.orig",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "simulation/certify_nve.py.orig",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "simulation/certify_nve.py.rej",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "simulation/certify_nve.py.pre_sigma_v2",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "simulation/certify_nve.py.pre_inline_sampling_repair",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "training/best_cg_model_old.pt",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "training/build_test",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "training/__pycache__",
@@ -92,7 +92,7 @@
     },
     {
       "path": "tutorials/tel22_IBI/TUTORIAL.md.orig",
-      "status": "removed"
+      "status": "absent"
     },
     {
       "path": "tutorials/tel22_IBI/TUTORIAL.md.rej",
@@ -113,349 +113,349 @@
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/scripts/06_certify_nve.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/06_certify_nve.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/scripts/06b_diagnose_short_range.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/06b_diagnose_short_range.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/scripts/07_diagnose_morse_breakage.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/07_diagnose_morse_breakage.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/scripts/08_diagnose_morse_reversibility.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/08_diagnose_morse_reversibility.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/scripts/09_diagnose_morse_site_torque.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/09_diagnose_morse_site_torque.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification_fp32",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification_fp32",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification_fp32_new_morse",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification_fp32_new_morse",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification_fp64",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification_fp64",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification_fp64_1ps",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification_fp64_1ps",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification_fp64_2ps",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification_fp64_2ps",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification_fp64_new_morse",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification_fp64_new_morse",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_certification_wca_v3_dt10_stress",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/nve_certification_wca_v3_dt10_stress",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nonbonded/wca12_selective_ab",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/wca12_selective_ab",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/morse/morse_breakage_report.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/morse_breakage_report.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/morse/morse_reversibility_report.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/morse_reversibility_report.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/morse/morse_site_torque_report.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/morse_site_torque_report.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/smoke/smoke_equilibrated.npz",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/smoke_equilibrated.npz",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/smoke/md_sanity_100.log",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/md_sanity_100.log",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/06_certify_nve.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/06_certify_nve.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/06b_diagnose_short_range.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/06b_diagnose_short_range.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/07_diagnose_morse_breakage.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/07_diagnose_morse_breakage.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/08_diagnose_morse_reversibility.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/08_diagnose_morse_reversibility.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/09_diagnose_morse_site_torque.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/09_diagnose_morse_site_torque.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/11_build_dbi_preview.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/11_build_dbi_preview.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/17_benchmark_training_multiseed.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/17_benchmark_training_multiseed.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/18_validate_postibi_runtime.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/18_validate_postibi_runtime.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/19_validate_ibi_ml_ab.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/19_validate_ibi_ml_ab.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/23_certify_conservative_ibi_nve.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/23_certify_conservative_ibi_nve.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/24_diagnose_conservative_ibi_nve_scaling.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/24_diagnose_conservative_ibi_nve_scaling.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/25_diagnose_conservative_ibi_state_convergence.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/25_diagnose_conservative_ibi_state_convergence.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/26_finalize_conservative_ibi_nve_certification.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/26_finalize_conservative_ibi_nve_certification.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/27_diagnose_conservative_ibi_energy_scaling.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/27_diagnose_conservative_ibi_energy_scaling.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/28_diagnose_sigma_energy_replicas.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/28_diagnose_sigma_energy_replicas.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/29_diagnose_ibi_timestep_range.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/29_diagnose_ibi_timestep_range.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/30_diagnose_regularize_ibi_angles.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/30_diagnose_regularize_ibi_angles.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/31_validate_ibi_angle_regularization.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/31_validate_ibi_angle_regularization.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/32_optimize_ibi_angle_smoothing.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/32_optimize_ibi_angle_smoothing.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/33_validate_final_ibi_angle_candidate.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/33_validate_final_ibi_angle_candidate.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/35_test_conservative_ibi_dihedrals.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/35_test_conservative_ibi_dihedrals.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/36_localize_dihedral_ibi_update.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/36_localize_dihedral_ibi_update.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/37_diagnose_tabulated_dihedral_conservativity.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/37_diagnose_tabulated_dihedral_conservativity.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/38_test_conservative_in_loop_dihedral_ibi.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/38_test_conservative_in_loop_dihedral_ibi.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/scripts/39_test_conservative_dihedral_ibi_replicas.sh",
       "kind": "diagnostic-script",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/39_test_conservative_dihedral_ibi_replicas.sh",
-      "status": "removed-stale-placeholder"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_fp32",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_fp32",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_fp32_new_morse",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_fp32_new_morse",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_fp64",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_fp64",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_fp64_1ps",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_fp64_1ps",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_fp64_2ps",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_fp64_2ps",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_fp64_new_morse",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_fp64_new_morse",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_wca_v3_dt10_stress",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_wca_v3_dt10_stress",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nonbonded/wca12_selective_ab",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/wca12_selective_ab",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/morse/morse_breakage_report.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/morse_breakage_report.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/morse/morse_reversibility_report.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/morse_reversibility_report.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/morse/morse_site_torque_report.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/morse_site_torque_report.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/smoke/smoke_equilibrated.npz",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/smoke_equilibrated.npz",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/smoke/md_sanity_100.log",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/md_sanity_100.log",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_dbi_preview",
@@ -467,13 +467,13 @@
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_validation_best",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_validation_best",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ml/postibi_runtime_validation",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/postibi_runtime_validation",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ml/training_multiseed_benchmark",
@@ -491,139 +491,139 @@
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/conservative_ibi_energy_localization",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/conservative_ibi_energy_localization",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/sigma_energy_replica_window_diagnostic",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/sigma_energy_replica_window_diagnostic",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_conservative_ibi_only",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_conservative_ibi_only",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_certification_conservative_ibi_only_preflight.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_certification_conservative_ibi_only_preflight.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_diagnostic_conservative_ibi_only",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_diagnostic_conservative_ibi_only",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_diagnostic_conservative_ibi_only_preflight.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_diagnostic_conservative_ibi_only_preflight.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_equilibration_conservative_ibi_only",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_equilibration_conservative_ibi_only",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_final_certification_conservative_ibi_only",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_final_certification_conservative_ibi_only",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_state_convergence_conservative_ibi_only",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_state_convergence_conservative_ibi_only",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/nve/nve_state_convergence_conservative_ibi_only_preflight.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/nve_state_convergence_conservative_ibi_only_preflight.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_timestep_range_diagnostic",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_timestep_range_diagnostic",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_angle_regularization_diagnostic",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_diagnostic",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_angle_regularization_validation",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_regularization_validation",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_angle_smoothing_sweep",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_smoothing_sweep",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_angle_final_candidate_validation",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_angle_final_candidate_validation",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_conservative_pre_smooth_0p0075",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_conservative_pre_smooth_0p0075",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_promoted_final_certification",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_promoted_final_certification",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_dihedral_candidate_test",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_candidate_test",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_dihedral_update_localization",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_update_localization",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_dihedral_legacy_conservativity_diagnostic",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_legacy_conservativity_diagnostic",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_dihedral_conservative_in_loop_test",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_in_loop_test",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_dihedral_conservative_replica_matrix",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_conservative_replica_matrix",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/ibi/ibi_dihedral_test_settings.json",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/ibi_dihedral_test_settings.json",
-      "status": "moved"
+      "status": "already-organized"
     },
     {
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/historical/ibi_run",
@@ -635,7 +635,7 @@
       "destination": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/diagnostics/historical/phase3_archive",
       "kind": "diagnostic-artifact",
       "source": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22_IBI/archive",
-      "status": "moved"
+      "status": "already-organized"
     }
   ],
   "schema_version": 2
