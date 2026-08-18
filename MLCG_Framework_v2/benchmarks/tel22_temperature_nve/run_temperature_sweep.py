@@ -66,8 +66,8 @@ def main() -> int:
 
     if args.source_temperature_k <= 0.0:
         raise ValueError("--source-temperature-k must be positive")
-    if len(args.temperatures) < 2 or any(t <= 0.0 for t in args.temperatures):
-        raise ValueError("--temperatures needs at least two positive values")
+    if not args.temperatures or any(t <= 0.0 for t in args.temperatures):
+        raise ValueError("--temperatures needs at least one positive value")
     if len(set(args.temperatures)) != len(args.temperatures):
         raise ValueError("--temperatures must be unique")
     if len(args.dts) < 3 or any(dt <= 0.0 for dt in args.dts):

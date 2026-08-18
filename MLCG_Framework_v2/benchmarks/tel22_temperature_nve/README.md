@@ -127,3 +127,36 @@ Do not describe 100 K or 30 K here as fully equilibrated thermodynamic states.  
 kinetic amplitudes are rescaled.  If this test indicates a strong temperature/amplitude dependence,
 a second-stage diagnostic can independently equilibrate TEL22 at the selected temperatures and
 repeat the NVE scan.
+
+## Final 30 K FP64 closure check
+
+After the default FP32 sweep has completed, the shortest precision-control test is only the
+30 K FP64 branch.  Use the dedicated wrapper:
+
+```bash
+./run_30k_fp64.sh --overwrite
+```
+
+This intentionally reuses the same Hamiltonian, source configuration, velocity-rescaling rule,
+dt grid, 2 ps duration, CPU device, and link-cell search.  Only PaiNN inference precision changes
+from FP32 to FP64.  A single-temperature invocation is supported specifically for controls like
+this; the general temperature-sweep summary will still include any previously completed runs in
+`results/`.
+
+The wrapper requires the existing FP32 reference
+`results/T30K_float32/nve_certification_report.json`.  After the FP64 run it writes:
+
+```text
+results/T30K_float64/nve_certification_report.json
+results/T30K_fp32_vs_fp64_closure.json
+```
+
+and prints a compact side-by-side comparison of `p`, `R2`, C2 spread, the small-dt C2 proxy, and
+maximum block-mean drift.  Its interpretation label is diagnostic only and does not replace the
+original NVE certification gates.
+
+For a command preview without integrating:
+
+```bash
+./run_30k_fp64.sh --dry-run
+```

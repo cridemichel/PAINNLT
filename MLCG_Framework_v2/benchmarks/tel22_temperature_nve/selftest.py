@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from analyze_temperature_sweep import build_summary, summarize_report
+from compare_30k_precision import build_comparison
 from make_scaled_checkpoint import R_KJ_MOL_K, rescale_checkpoint, sha256_file
 
 
@@ -80,6 +81,18 @@ def main() -> int:
         trend = aggregate["trends"]["float32"]
         assert trend["improvement_in_abs_p_minus_2"] > 0.09
         assert row300["small_dt_C2_over_coarse_median"] > row30["small_dt_C2_over_coarse_median"]
+
+        report32_closure = tmpdir / "r30_fp32_closure.json"
+        report64 = tmpdir / "r30_fp64.json"
+        fake_report(report32_closure, 1.88, [1.2, 4.0, 16.0])
+        fake_report(report64, 2.01, [1.0, 4.0, 16.0])
+        comparison = build_comparison(
+            json.loads(report32_closure.read_text(encoding="utf-8")),
+            json.loads(report64.read_text(encoding="utf-8")),
+        )
+        assert comparison["diagnostic_flags"]["fp64_near_second_order"]
+        assert comparison["diagnostic_flags"]["fp64_visibly_closer_to_second_order_than_fp32"]
+        assert comparison["interpretation"] == "supports_precision_specific_tel22_effect"
 
     print("[PASS] TEL22 temperature NVE benchmark self-test")
     return 0
