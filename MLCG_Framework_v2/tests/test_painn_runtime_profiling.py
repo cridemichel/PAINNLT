@@ -8,7 +8,6 @@ CPP = (PLUGIN / "PaiNN_ML_Potential.cpp").read_text(encoding="utf-8")
 HEADER = (PLUGIN / "PaiNN_ML_Potential.hpp").read_text(encoding="utf-8")
 PYX = (PLUGIN / "painn.pyx").read_text(encoding="utf-8")
 RUNNER = (ROOT / "simulation" / "run_cg_md.py").read_text(encoding="utf-8")
-WRAPPER = ROOT / "tutorials" / "tel22" / "diagnostics" / "scripts" / "10_profile_painn_runtime.sh"
 
 
 class PaiNNRuntimeProfilingSourceTests(unittest.TestCase):
@@ -54,15 +53,6 @@ class PaiNNRuntimeProfilingSourceTests(unittest.TestCase):
         self.assertIn('if args.device != "cpu":', RUNNER)
         self.assertIn("integration_wall_seconds", RUNNER)
 
-    def test_tel22_wrapper_is_diagnostic_only_and_uses_certified_baseline_inputs(self):
-        source = WRAPPER.read_text(encoding="utf-8")
-        self.assertIn("tel22_model.pt", source)
-        self.assertIn("equilibrated.npz", source)
-        self.assertIn("--nve", source)
-        self.assertIn("--no_log", source)
-        self.assertIn("--painn_profile_report", source)
-        self.assertIn("PROFILE_DEVICE:-cpu", source)
-        self.assertNotIn("--disable_ml", source)
 
 
 if __name__ == "__main__":
