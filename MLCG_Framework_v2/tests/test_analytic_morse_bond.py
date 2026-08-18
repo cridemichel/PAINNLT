@@ -93,6 +93,168 @@ int main() {
             self.assertEqual(second, [])
             self.assertEqual(snapshot, {rel: (root / rel).read_text() for rel in files})
 
+    def test_installer_remains_idempotent_after_other_bond_types_extend_variant(self):
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            files = {
+                "src/core/bonded_interactions/bonded_interaction_data.hpp": '#include "harmonic.hpp"\nusing Bonded_IA_Parameters = std::variant<FeneBond, HarmonicBond, QuarticBond, OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;\n',
+                "src/core/forces_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n',
+                "src/core/energy_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n',
+                "src/script_interface/interactions/BondedInteraction.hpp": 'class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n',
+                "src/script_interface/interactions/initialize.cpp": '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n',
+                "src/python/espressomd/interactions.py": 'class BONDED_IA(enum.IntEnum):\n    VIRTUAL_BOND = enum.auto()\n\n@script_interface_register\nclass BondedInteractions(ScriptObjectMap):\n',
+            }
+            for rel, data in files.items():
+                path = root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(data)
+
+            installer.install(root, PLUGIN / "morse_bond.hpp")
+            bond_data = root / "src/core/bonded_interactions/bonded_interaction_data.hpp"
+            text = bond_data.read_text()
+            text = text.replace(
+                "VirtualBond, MorseBond>",
+                "VirtualBond, MorseBond, ConservativeSplineDistanceBond, "
+                "ConservativeSplineAngleBond, ConservativeSplineDihedralBond>",
+                1,
+            )
+            bond_data.write_text(text)
+
+            snapshot = {rel: (root / rel).read_text() for rel in files}
+            second = installer.install(root, PLUGIN / "morse_bond.hpp")
+            self.assertEqual(second, [])
+            installer.check(root, PLUGIN / "morse_bond.hpp")
+            self.assertEqual(snapshot, {rel: (root / rel).read_text() for rel in files})
+
+    def test_installer_remains_idempotent_after_other_registrations_follow_quartic(self):
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            files = {
+                "src/core/bonded_interactions/bonded_interaction_data.hpp": '#include "harmonic.hpp"\nusing Bonded_IA_Parameters = std::variant<FeneBond, HarmonicBond, QuarticBond, OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;\n',
+                "src/core/forces_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n',
+                "src/core/energy_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n',
+                "src/script_interface/interactions/BondedInteraction.hpp": 'class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n',
+                "src/script_interface/interactions/initialize.cpp": '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n',
+                "src/python/espressomd/interactions.py": 'class BONDED_IA(enum.IntEnum):\n    VIRTUAL_BOND = enum.auto()\n\n@script_interface_register\nclass BondedInteractions(ScriptObjectMap):\n',
+            }
+            for rel, data in files.items():
+                path = root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(data)
+
+            installer.install(root, PLUGIN / "morse_bond.hpp")
+            init = root / "src/script_interface/interactions/initialize.cpp"
+            quartic = '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n'
+            conservative = (
+                '  om->register_new<ConservativeSplineDistanceBond>("Interactions::ConservativeSplineDistanceBond");\n'
+                '  om->register_new<ConservativeSplineAngleBond>("Interactions::ConservativeSplineAngleBond");\n'
+            )
+            init.write_text(init.read_text().replace(quartic, quartic + conservative, 1))
+
+            snapshot = init.read_text()
+            changed = installer.install(root, PLUGIN / "morse_bond.hpp")
+            self.assertNotIn("initialize.cpp", changed)
+            self.assertEqual(init.read_text(), snapshot)
+            self.assertEqual(installer._script_registration_count(init), 1)
+            installer.check(root, PLUGIN / "morse_bond.hpp")
+
+    def test_installer_repairs_duplicate_morse_script_registration(self):
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            files = {
+                "src/core/bonded_interactions/bonded_interaction_data.hpp": '#include "harmonic.hpp"\nusing Bonded_IA_Parameters = std::variant<FeneBond, HarmonicBond, QuarticBond, OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;\n',
+                "src/core/forces_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n',
+                "src/core/energy_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n',
+                "src/script_interface/interactions/BondedInteraction.hpp": 'class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n',
+                "src/script_interface/interactions/initialize.cpp": '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n',
+                "src/python/espressomd/interactions.py": 'class BONDED_IA(enum.IntEnum):\n    VIRTUAL_BOND = enum.auto()\n\n@script_interface_register\nclass BondedInteractions(ScriptObjectMap):\n',
+            }
+            for rel, data in files.items():
+                path = root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(data)
+
+            installer.install(root, PLUGIN / "morse_bond.hpp")
+            init = root / "src/script_interface/interactions/initialize.cpp"
+            registration = (
+                '  om->register_new<MorseBond>("Interactions::MorseBond"); '
+                '// MLCG analytic MorseBond\n'
+            )
+            init.write_text(init.read_text() + registration)
+            self.assertEqual(installer._script_registration_count(init), 2)
+
+            changed = installer.install(root, PLUGIN / "morse_bond.hpp")
+            self.assertIn("initialize.cpp", changed)
+            self.assertEqual(installer._script_registration_count(init), 1)
+            installer.check(root, PLUGIN / "morse_bond.hpp")
+
+    def test_installer_remains_idempotent_after_other_python_enum_members_follow_virtual(self):
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            files = {
+                "src/core/bonded_interactions/bonded_interaction_data.hpp": '#include "harmonic.hpp"\nusing Bonded_IA_Parameters = std::variant<FeneBond, HarmonicBond, QuarticBond, OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;\n',
+                "src/core/forces_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n',
+                "src/core/energy_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n',
+                "src/script_interface/interactions/BondedInteraction.hpp": 'class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n',
+                "src/script_interface/interactions/initialize.cpp": '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n',
+                "src/python/espressomd/interactions.py": 'class BONDED_IA(enum.IntEnum):\n    VIRTUAL_BOND = enum.auto()\n\n@script_interface_register\nclass BondedInteractions(ScriptObjectMap):\n',
+            }
+            for rel, data in files.items():
+                path = root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(data)
+
+            installer.install(root, PLUGIN / "morse_bond.hpp")
+            python_file = root / "src/python/espressomd/interactions.py"
+            virtual = "    VIRTUAL_BOND = enum.auto()\n"
+            conservative = (
+                "    CONSERVATIVE_SPLINE_DISTANCE_BOND = enum.auto()\n"
+                "    CONSERVATIVE_SPLINE_ANGLE_BOND = enum.auto()\n"
+                "    CONSERVATIVE_SPLINE_DIHEDRAL_BOND = enum.auto()\n"
+            )
+            python_file.write_text(
+                python_file.read_text().replace(virtual, virtual + conservative, 1)
+            )
+
+            snapshot = python_file.read_text()
+            changed = installer.install(root, PLUGIN / "morse_bond.hpp")
+            self.assertNotIn("BONDED_IA", changed)
+            self.assertEqual(python_file.read_text(), snapshot)
+            self.assertEqual(installer._python_enum_count(python_file), 1)
+            installer.check(root, PLUGIN / "morse_bond.hpp")
+
+    def test_installer_repairs_duplicate_morse_python_enum_member(self):
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            files = {
+                "src/core/bonded_interactions/bonded_interaction_data.hpp": '#include "harmonic.hpp"\nusing Bonded_IA_Parameters = std::variant<FeneBond, HarmonicBond, QuarticBond, OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;\n',
+                "src/core/forces_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n',
+                "src/core/energy_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n',
+                "src/script_interface/interactions/BondedInteraction.hpp": 'class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n',
+                "src/script_interface/interactions/initialize.cpp": '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n',
+                "src/python/espressomd/interactions.py": 'class BONDED_IA(enum.IntEnum):\n    VIRTUAL_BOND = enum.auto()\n\n@script_interface_register\nclass BondedInteractions(ScriptObjectMap):\n',
+            }
+            for rel, data in files.items():
+                path = root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(data)
+
+            installer.install(root, PLUGIN / "morse_bond.hpp")
+            python_file = root / "src/python/espressomd/interactions.py"
+            entry = "    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n"
+            python_file.write_text(python_file.read_text().replace(entry, entry + entry, 1))
+            self.assertEqual(installer._python_enum_count(python_file), 2)
+
+            changed = installer.install(root, PLUGIN / "morse_bond.hpp")
+            self.assertIn("BONDED_IA", changed)
+            self.assertEqual(installer._python_enum_count(python_file), 1)
+            installer.check(root, PLUGIN / "morse_bond.hpp")
+
     def test_runtime_factory_requires_extension_and_maps_parameters(self):
         import sys
         sys.path.insert(0, str(ROOT / "simulation"))

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 from pathlib import Path
 
@@ -40,6 +41,140 @@ def _insert_before_once(path: Path, anchor: str, addition: str, sentinel: str) -
     return True
 
 
+def _patch_bonded_variant(path: Path) -> bool:
+    """Ensure MorseBond is present in Bonded_IA_Parameters.
+
+    Other MLCG installers may append additional bonded interaction types after
+    MorseBond.  Therefore idempotency must be decided from the variant contents
+    rather than from an exact tail such as ``VirtualBond, MorseBond>``.
+    """
+    text = _read(path)
+    match = re.search(
+        r"using Bonded_IA_Parameters\s*=\s*std::variant<.*?>;",
+        text,
+        flags=re.DOTALL,
+    )
+    if match is None:
+        raise RuntimeError(f"Could not locate Bonded_IA_Parameters variant in {path}")
+
+    block = match.group(0)
+    if re.search(r"\bMorseBond\b", block):
+        return False
+    if block.count("VirtualBond") != 1:
+        raise RuntimeError(
+            f"Could not uniquely locate VirtualBond in Bonded_IA_Parameters: {path}"
+        )
+
+    replacement = block.replace("VirtualBond", "VirtualBond, MorseBond", 1)
+    path.write_text(text[: match.start()] + replacement + text[match.end() :])
+    return True
+
+
+def _bonded_variant_contains(path: Path, type_name: str) -> bool:
+    text = _read(path)
+    match = re.search(
+        r"using Bonded_IA_Parameters\s*=\s*std::variant<.*?>;",
+        text,
+        flags=re.DOTALL,
+    )
+    if match is None:
+        return False
+    return re.search(rf"\b{re.escape(type_name)}\b", match.group(0)) is not None
+
+
+def _ensure_script_registration(path: Path) -> bool:
+    """Ensure exactly one ScriptInterface registration for MorseBond.
+
+    Other MLCG installers also insert registrations after QuarticBond.  A
+    previous implementation checked for the exact adjacent text
+    ``QuarticBond`` + ``MorseBond``; once another installer inserted lines
+    between them, rerunning this installer could register MorseBond twice.
+    """
+    text = _read(path)
+    pattern = re.compile(
+        r'^[ \t]*om->register_new<MorseBond>\("Interactions::MorseBond"\);[^\n]*(?:\n|$)',
+        flags=re.MULTILINE,
+    )
+    matches = list(pattern.finditer(text))
+    if len(matches) == 1:
+        return False
+
+    if len(matches) > 1:
+        # Preserve the first registration exactly as written and remove later
+        # duplicates.  Work backwards so match offsets remain valid.
+        repaired = text
+        for match in reversed(matches[1:]):
+            repaired = repaired[: match.start()] + repaired[match.end() :]
+        path.write_text(repaired)
+        return True
+
+    anchor = '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n'
+    if text.count(anchor) != 1:
+        raise RuntimeError(
+            f"Could not uniquely locate ScriptInterface registration anchor in {path}"
+        )
+    registration = (
+        '  om->register_new<MorseBond>("Interactions::MorseBond"); '
+        '// MLCG analytic MorseBond\n'
+    )
+    path.write_text(text.replace(anchor, anchor + registration, 1))
+    return True
+
+
+def _script_registration_count(path: Path) -> int:
+    return len(
+        re.findall(
+            r'om->register_new<MorseBond>\("Interactions::MorseBond"\);',
+            _read(path),
+        )
+    )
+
+
+def _ensure_python_enum_entry(path: Path) -> bool:
+    """Ensure exactly one MORSE_BOND member in the BONDED_IA enum.
+
+    Other MLCG installers also append enum members after ``VIRTUAL_BOND``.
+    Checking for the exact adjacent ``VIRTUAL_BOND`` + ``MORSE_BOND`` text is
+    therefore not idempotent: a later installer can move MorseBond away from
+    the anchor, causing a subsequent Morse install to add the enum member a
+    second time.
+    """
+    text = _read(path)
+    pattern = re.compile(
+        r'^[ \t]+MORSE_BOND\s*=\s*enum\.auto\(\)[^\n]*(?:\n|$)',
+        flags=re.MULTILINE,
+    )
+    matches = list(pattern.finditer(text))
+    if len(matches) == 1:
+        return False
+
+    if len(matches) > 1:
+        repaired = text
+        for match in reversed(matches[1:]):
+            repaired = repaired[: match.start()] + repaired[match.end() :]
+        path.write_text(repaired)
+        return True
+
+    anchor = "    VIRTUAL_BOND = enum.auto()\n"
+    if text.count(anchor) != 1:
+        raise RuntimeError(
+            f"Could not uniquely locate BONDED_IA VIRTUAL_BOND anchor in {path}"
+        )
+    entry = "    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n"
+    path.write_text(text.replace(anchor, anchor + entry, 1))
+    return True
+
+
+def _python_enum_count(path: Path) -> int:
+    return len(
+        re.findall(
+            r'^\s+MORSE_BOND\s*=\s*enum\.auto\(\)',
+            _read(path),
+            flags=re.MULTILINE,
+        )
+    )
+
+
 def required_paths(espresso_root: Path) -> dict[str, Path]:
     return {
         "bond_data": espresso_root / "src/core/bonded_interactions/bonded_interaction_data.hpp",
@@ -72,11 +207,7 @@ def install(espresso_root: Path, source_header: Path) -> list[str]:
     ):
         changed.append("bonded_interaction_data.hpp include")
 
-    if _replace_once(
-        paths["bond_data"],
-        "OifGlobalForcesBond, OifLocalForcesBond, VirtualBond>;",
-        "OifGlobalForcesBond, OifLocalForcesBond, VirtualBond, MorseBond>; // MLCG analytic MorseBond",
-    ):
+    if _patch_bonded_variant(paths["bond_data"]):
         changed.append("Bonded_IA_Parameters")
 
     force_anchor = (
@@ -143,21 +274,10 @@ class MorseBond : public BondedInteractionImpl<::MorseBond> {
     ):
         changed.append("BondedInteraction.hpp")
 
-    init_anchor = '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n'
-    if _replace_once(
-        paths["script_init"],
-        init_anchor,
-        init_anchor
-        + '  om->register_new<MorseBond>("Interactions::MorseBond"); // MLCG analytic MorseBond\n',
-    ):
+    if _ensure_script_registration(paths["script_init"]):
         changed.append("initialize.cpp")
 
-    if _replace_once(
-        paths["python"],
-        "    VIRTUAL_BOND = enum.auto()\n",
-        "    VIRTUAL_BOND = enum.auto()\n"
-        "    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n",
-    ):
+    if _ensure_python_enum_entry(paths["python"]):
         changed.append("BONDED_IA")
 
     python_class = '''# MLCG analytic MorseBond Python class
@@ -192,12 +312,12 @@ def check(espresso_root: Path, source_header: Path) -> None:
     checks = {
         "morse header": paths["morse_header"].is_file()
         and paths["morse_header"].read_text() == _read(source_header),
-        "variant": "VirtualBond, MorseBond>" in _read(paths["bond_data"]),
+        "variant": _bonded_variant_contains(paths["bond_data"], "MorseBond"),
         "force dispatch": "std::get_if<MorseBond>" in _read(paths["forces"]),
         "energy dispatch": "std::get_if<MorseBond>" in _read(paths["energy"]),
         "script interface": "BondedInteractionImpl<::MorseBond>" in _read(paths["script_header"]),
-        "script registration": 'register_new<MorseBond>("Interactions::MorseBond")' in _read(paths["script_init"]),
-        "python enum": "MORSE_BOND = enum.auto()" in _read(paths["python"]),
+        "script registration": _script_registration_count(paths["script_init"]) == 1,
+        "python enum": _python_enum_count(paths["python"]) == 1,
         "python class": "class MorseBond(BondedInteraction):" in _read(paths["python"]),
     }
     failed = [name for name, ok in checks.items() if not ok]

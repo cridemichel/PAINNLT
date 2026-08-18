@@ -5,9 +5,12 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -17,6 +20,12 @@
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
 namespace {
+
+using ProfileClock = std::chrono::steady_clock;
+
+double elapsed_ms(ProfileClock::time_point const &start, ProfileClock::time_point const &end) {
+    return std::chrono::duration<double, std::milli>(end - start).count();
+}
 
 torch::Tensor sum_atom_energies_for_hamiltonian(torch::Tensor const &atom_energies) {
     // CPU supports a float64 accumulator, which substantially reduces loss of
@@ -119,9 +128,100 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
     }
 }
 
+void PaiNN_ML_Potential::configure_profiling(bool enabled, std::int64_t warmup_calls) {
+    if (warmup_calls < 0) {
+        throw std::invalid_argument("PaiNN profiling warmup_calls must be non-negative");
+    }
+    reset_profiling();
+    m_profile.enabled = enabled;
+    m_profile.warmup_calls = warmup_calls;
+}
+
+void PaiNN_ML_Potential::reset_profiling() {
+    const bool enabled = m_profile.enabled;
+    const std::int64_t warmup_calls = m_profile.warmup_calls;
+    m_profile = ProfileAccumulator{};
+    m_profile.enabled = enabled;
+    m_profile.warmup_calls = warmup_calls;
+}
+
+std::string PaiNN_ML_Potential::get_profile_json() const {
+    const double calls = static_cast<double>(m_profile.measured_calls);
+    const auto mean = [calls](double total) { return calls > 0.0 ? total / calls : 0.0; };
+    std::ostringstream out;
+    out << std::setprecision(17);
+    out << "{";
+    out << "\"schema_version\":1,";
+    out << "\"enabled\":" << (m_profile.enabled ? "true" : "false") << ",";
+    out << "\"warmup_calls\":" << m_profile.warmup_calls << ",";
+    out << "\"total_calls\":" << m_profile.total_calls << ",";
+    out << "\"measured_calls\":" << m_profile.measured_calls << ",";
+    out << "\"timings_ms\":{";
+    out << "\"total_mean\":" << mean(m_profile.total_ms) << ",";
+    out << "\"node_index_mean\":" << mean(m_profile.node_index_ms) << ",";
+    out << "\"neighbor_traversal_mean\":" << mean(m_profile.neighbor_traversal_ms) << ",";
+    out << "\"edge_pack_mean\":" << mean(m_profile.edge_pack_ms) << ",";
+    out << "\"tensor_inputs_mean\":" << mean(m_profile.tensor_inputs_ms) << ",";
+    out << "\"forward_mean\":" << mean(m_profile.forward_ms) << ",";
+    out << "\"energy_scalar_mean\":" << mean(m_profile.energy_scalar_ms) << ",";
+    out << "\"autograd_mean\":" << mean(m_profile.autograd_ms) << ",";
+    out << "\"force_to_cpu_mean\":" << mean(m_profile.force_to_cpu_ms) << ",";
+    out << "\"force_scatter_mean\":" << mean(m_profile.force_scatter_ms) << ",";
+    const double accounted_ms =
+        m_profile.node_index_ms + m_profile.neighbor_traversal_ms +
+        m_profile.edge_pack_ms + m_profile.tensor_inputs_ms + m_profile.forward_ms +
+        m_profile.energy_scalar_ms + m_profile.autograd_ms +
+        m_profile.force_to_cpu_ms + m_profile.force_scatter_ms;
+    out << "\"unattributed_cleanup_mean\":"
+        << mean(std::max(0.0, m_profile.total_ms - accounted_ms));
+    out << "},";
+    out << "\"graph\":{";
+    out << "\"particles_mean\":" << mean(m_profile.particles_sum) << ",";
+    out << "\"particles_max\":" << m_profile.particles_max << ",";
+    out << "\"directed_edges_mean\":" << mean(m_profile.directed_edges_sum) << ",";
+    out << "\"directed_edges_max\":" << m_profile.directed_edges_max << ",";
+    out << "\"physical_pairs_mean\":" << mean(m_profile.physical_pairs_sum) << ",";
+    out << "\"physical_pairs_max\":" << m_profile.physical_pairs_max;
+    out << "},";
+    out << "\"allocation_churn_indicators\":{";
+    out << "\"host_payload_lower_bound_bytes_mean\":"
+        << mean(m_profile.host_payload_lower_bound_bytes_sum) << ",";
+    out << "\"temporary_cpp_containers_per_call\":9,";
+    out << "\"note\":\"payload excludes allocator/map-node overhead and libtorch internal allocations\"";
+    out << "}";
+    out << "}";
+    return out.str();
+}
+
 void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion) {
     // Never expose an energy value from a previous integration step.
     m_last_energy = 0.0;
+
+    const bool profile_enabled = m_profile.enabled;
+    const bool profile_this_call =
+        profile_enabled && m_profile.total_calls >= m_profile.warmup_calls;
+    if (profile_enabled) {
+        ++m_profile.total_calls;
+    }
+    ProfileClock::time_point total_start{};
+    ProfileClock::time_point stage_start{};
+    if (profile_this_call) {
+        total_start = ProfileClock::now();
+        stage_start = total_start;
+    }
+    struct ProfileTotalGuard {
+        bool active;
+        ProfileClock::time_point start;
+        double* total_ms;
+        std::int64_t* measured_calls;
+        ~ProfileTotalGuard() {
+            if (active) {
+                *total_ms += elapsed_ms(start, ProfileClock::now());
+                ++(*measured_calls);
+            }
+        }
+    } total_guard{
+        profile_this_call, total_start, &m_profile.total_ms, &m_profile.measured_calls};
 
     // The production path is deliberately single-rank.  Each physical ML site
     // is represented exactly once, by its local particle.  Periodic ghost
@@ -159,6 +259,11 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     }
 
     const int num_particles = static_cast<int>(idx_to_particle.size());
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.node_index_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
     if (num_particles == 0) {
         return;
     }
@@ -233,6 +338,11 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     };
 
     cell_structure.non_bonded_loop(painn_kernel, verlet_criterion);
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.neighbor_traversal_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
 
     std::vector<int64_t> edge_rows;
     std::vector<int64_t> edge_cols;
@@ -258,28 +368,55 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
     }
 
     const int num_edges = static_cast<int>(edge_rows.size());
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.edge_pack_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
+
     torch::Tensor t_atomic_numbers =
         torch::tensor(atomic_numbers, torch::TensorOptions().dtype(torch::kInt64))
             .to(m_device);
 
     torch::Tensor t_edge_index;
     torch::Tensor t_r_ij;
+    std::vector<int64_t> flat_edges;
     if (num_edges == 0) {
         t_edge_index = torch::empty(
             {2, 0}, torch::TensorOptions().dtype(torch::kInt64).device(m_device));
         t_r_ij = torch::empty(
             {0, 3}, torch::TensorOptions().dtype(m_dtype).device(m_device));
+        if (profile_this_call) {
+            const auto now = ProfileClock::now();
+            m_profile.tensor_inputs_ms += elapsed_ms(stage_start, now);
+            stage_start = now;
+        }
 
         // The isolated-species gauge makes this energy exactly zero while
         // retaining a complete forward path and exactly zero forces.
         const torch::Tensor atom_energies =
             model->forward_atom_energies(t_atomic_numbers, t_r_ij, t_edge_index)
                 .squeeze(-1);
+        if (profile_this_call) {
+            const auto now = ProfileClock::now();
+            m_profile.forward_ms += elapsed_ms(stage_start, now);
+            stage_start = now;
+        }
         m_last_energy = sum_atom_energies_for_hamiltonian(atom_energies).item<double>();
+        if (profile_this_call) {
+            const auto now = ProfileClock::now();
+            m_profile.energy_scalar_ms += elapsed_ms(stage_start, now);
+            m_profile.particles_sum += static_cast<double>(num_particles);
+            m_profile.particles_max = std::max<std::int64_t>(m_profile.particles_max, num_particles);
+            const double host_payload =
+                static_cast<double>(atomic_numbers.size() * sizeof(int64_t)) +
+                static_cast<double>((idx_to_particle.size() + local_ml_particles.size()) * sizeof(Particle*)) +
+                static_cast<double>(pid_to_idx.size() * sizeof(std::pair<const int, int>));
+            m_profile.host_payload_lower_bound_bytes_sum += host_payload;
+        }
         return;
     }
 
-    std::vector<int64_t> flat_edges;
     flat_edges.reserve(static_cast<std::size_t>(2 * num_edges));
     flat_edges.insert(flat_edges.end(), edge_rows.begin(), edge_rows.end());
     flat_edges.insert(flat_edges.end(), edge_cols.begin(), edge_cols.end());
@@ -293,22 +430,47 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
             .reshape({num_edges, 3})
             .to(m_device);
     t_r_ij.set_requires_grad(true);
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.tensor_inputs_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
 
     const torch::Tensor atom_energies =
         model->forward_atom_energies(t_atomic_numbers, t_r_ij, t_edge_index)
             .squeeze(-1);
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.forward_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
     const torch::Tensor total_energy = sum_atom_energies_for_hamiltonian(atom_energies);
 
     // Energy and forces are derived from exactly the same scalar Hamiltonian.
     // There are no ghost atom-energy terms in this single-rank graph.
     m_last_energy = total_energy.item<double>();
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.energy_scalar_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
     auto grads = torch::autograd::grad(
         {total_energy}, {t_r_ij}, {torch::ones_like(total_energy)}, false, false);
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.autograd_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
     // Convert only after autograd has finished.  In float64 mode the full
     // forward and force derivative therefore remain FP64; in float32 mode
     // this is merely an exact promotion of the already-computed FP32 force.
     const torch::Tensor f_r_ij = -grads[0].to(torch::kCPU).to(torch::kFloat64);
     auto f_r_ij_acc = f_r_ij.accessor<double, 2>();
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.force_to_cpu_ms += elapsed_ms(stage_start, now);
+        stage_start = now;
+    }
 
     for (int e = 0; e < num_edges; ++e) {
         const int row = static_cast<int>(edge_rows[e]);
@@ -324,5 +486,25 @@ void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const V
         idx_to_particle[col]->force()[0] -= fx;
         idx_to_particle[col]->force()[1] -= fy;
         idx_to_particle[col]->force()[2] -= fz;
+    }
+
+    if (profile_this_call) {
+        const auto now = ProfileClock::now();
+        m_profile.force_scatter_ms += elapsed_ms(stage_start, now);
+        m_profile.particles_sum += static_cast<double>(num_particles);
+        m_profile.directed_edges_sum += static_cast<double>(num_edges);
+        m_profile.physical_pairs_sum += static_cast<double>(physical_pairs.size());
+        m_profile.particles_max = std::max<std::int64_t>(m_profile.particles_max, num_particles);
+        m_profile.directed_edges_max = std::max<std::int64_t>(m_profile.directed_edges_max, num_edges);
+        m_profile.physical_pairs_max = std::max<std::int64_t>(
+            m_profile.physical_pairs_max, static_cast<std::int64_t>(physical_pairs.size()));
+        const double host_payload =
+            static_cast<double>(atomic_numbers.size() * sizeof(int64_t)) +
+            static_cast<double>((idx_to_particle.size() + local_ml_particles.size()) * sizeof(Particle*)) +
+            static_cast<double>(pid_to_idx.size() * sizeof(std::pair<const int, int>)) +
+            static_cast<double>(physical_pairs.size() * (sizeof(PairKey) + sizeof(Displacement))) +
+            static_cast<double>((edge_rows.size() + edge_cols.size() + flat_edges.size()) * sizeof(int64_t)) +
+            static_cast<double>(r_ij_data.size() * sizeof(double));
+        m_profile.host_payload_lower_bound_bytes_sum += host_payload;
     }
 }

@@ -9,6 +9,7 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import struct
 import os
+import time
 from contextlib import ExitStack
 
 from framework_utils import (
@@ -62,6 +63,8 @@ parser.add_argument("--sample_start_step", type=int, default=0, help="First logg
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
+parser.add_argument("--painn_profile_report", type=str, default=None, help="Write opt-in PaiNN C++ stage timing JSON; profiling is CPU-reference only")
+parser.add_argument("--painn_profile_warmup_calls", type=int, default=20, help="PaiNN force calls excluded before profiling accumulation")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
@@ -83,6 +86,16 @@ args = parser.parse_args()
 if args.disable_ml and not args.model:
     raise ValueError("--disable_ml requires --model so the disabled branch remains bound to the same model provenance")
 ml_active = bool(args.model and not args.disable_ml)
+if args.painn_profile_warmup_calls < 0:
+    raise ValueError("--painn_profile_warmup_calls must be non-negative")
+if args.painn_profile_report is not None:
+    if not ml_active:
+        raise ValueError("--painn_profile_report requires an active PaiNN model")
+    if args.device != "cpu":
+        raise ValueError(
+            "PaiNN stage profiling is currently a synchronous CPU reference; "
+            "use --device cpu so wall-clock stage timings are meaningful."
+        )
 
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
@@ -582,6 +595,14 @@ if ml_active:
         device=args.device,
         precision=args.ml_precision
     )
+    if args.painn_profile_report is not None:
+        espressomd.painn.configure_painn_profiling(
+            True, warmup_calls=args.painn_profile_warmup_calls
+        )
+        print(
+            "[PROFILE] PaiNN C++ stage profiling enabled "
+            f"(CPU, warmup_calls={args.painn_profile_warmup_calls})"
+        )
 elif args.disable_ml:
     print("[INFO] PaiNN disabled by --disable_ml; --model is retained only for provenance/checkpoint validation.")
 else:
@@ -978,9 +999,12 @@ with ExitStack() as stack:
         simulation_ok = False
 
     completed = 0
+    integration_wall_seconds = 0.0
     while simulation_ok and completed < args.steps:
         current = min(args.log_interval, args.steps - completed)
+        integration_start = time.perf_counter()
         system.integrator.run(current)
+        integration_wall_seconds += time.perf_counter() - integration_start
         completed += current
 
         if record_state(completed, energy_writer, energy_handle, vtf_handle):
@@ -1002,6 +1026,68 @@ with ExitStack() as stack:
             break
 
 if simulation_ok:
+    if args.painn_profile_report is not None:
+        profile = espressomd.painn.get_painn_profile()
+        timings = profile.get("timings_ms", {})
+        total_mean_ms = float(timings.get("total_mean", 0.0))
+        stage_keys = (
+            "node_index_mean",
+            "neighbor_traversal_mean",
+            "edge_pack_mean",
+            "tensor_inputs_mean",
+            "forward_mean",
+            "energy_scalar_mean",
+            "autograd_mean",
+            "force_to_cpu_mean",
+            "force_scatter_mean",
+            "unattributed_cleanup_mean",
+        )
+        profile["stage_fraction_of_painn_total"] = {
+            key.removesuffix("_mean"): (
+                float(timings.get(key, 0.0)) / total_mean_ms if total_mean_ms > 0.0 else 0.0
+            )
+            for key in stage_keys
+        }
+        profile["integration"] = {
+            "requested_steps": int(args.steps),
+            "completed_steps": int(completed),
+            "wall_seconds_integrator_only": float(integration_wall_seconds),
+            "wall_ms_per_step": (
+                1000.0 * float(integration_wall_seconds) / completed if completed else 0.0
+            ),
+            "painn_total_ms_per_force_call": total_mean_ms,
+            "painn_force_calls_per_requested_step": (
+                float(profile.get("total_calls", 0)) / completed if completed else 0.0
+            ),
+        }
+        profile["runtime_config"] = {
+            "device": args.device,
+            "ml_precision": args.ml_precision,
+            "neighbor_search": args.neighbor_search,
+            "dt_ps": float(args.dt),
+            "num_species": int(nn_config["num_species"]),
+            "hidden_channels": int(nn_config["hidden_channels"]),
+            "n_layers": int(nn_config["n_layers"]),
+            "num_rbf": int(nn_config["num_rbf"]),
+            "cutoff_nm": float(nn_config["cutoff"]),
+        }
+        report_path = os.path.abspath(args.painn_profile_report)
+        report_dir = os.path.dirname(report_path)
+        if report_dir:
+            os.makedirs(report_dir, exist_ok=True)
+        with open(report_path, "w", encoding="utf-8") as handle:
+            json.dump(profile, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        print(
+            "[PROFILE] "
+            f"wall={profile['integration']['wall_ms_per_step']:.6g} ms/step "
+            f"PaiNN={total_mean_ms:.6g} ms/force-call "
+            f"calls={profile.get('measured_calls', 0)} measured "
+            f"N={profile.get('graph', {}).get('particles_mean', 0):.1f} "
+            f"E={profile.get('graph', {}).get('directed_edges_mean', 0):.1f}"
+        )
+        print(f"[PROFILE] report: {report_path}")
+
     if args.sample_npz is not None:
         if not sample_steps:
             raise RuntimeError("Structured sampling produced no frames")

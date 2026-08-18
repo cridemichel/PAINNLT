@@ -1,0 +1,153 @@
+{
+  "allocation_churn_indicators": {
+    "host_payload_lower_bound_bytes_mean_median": 1931603.4475138122,
+    "note": "payload excludes allocator/map-node overhead and libtorch internal allocations",
+    "temporary_cpp_containers_per_call": 9
+  },
+  "baseline_commit": "37b2ec01ed018dafc4a0219c8cee863ed4b8f249",
+  "current_commit": "37b2ec01ed018dafc4a0219c8cee863ed4b8f249",
+  "graph": {
+    "directed_edges_mean_median": 26463.381215469613,
+    "particles_mean_median": 820.0,
+    "physical_pairs_mean_median": 13231.690607734807
+  },
+  "hotspot_ranking": [
+    "forward",
+    "autograd",
+    "neighbor_traversal",
+    "unattributed_cleanup",
+    "edge_pack",
+    "force_scatter",
+    "tensor_inputs",
+    "force_to_cpu",
+    "node_index",
+    "energy_scalar"
+  ],
+  "kind": "tel22_painn_runtime_profile_cpu_reference",
+  "painn_total_ms_per_force_call": {
+    "cv": 0.00808728214356973,
+    "max": 125.26752529834255,
+    "mean": 124.27113020626149,
+    "median": 124.65070394475133,
+    "min": 122.89516137569058,
+    "pstdev": 1.0050156922783275
+  },
+  "raw_reports": [
+    "repeat_1.json",
+    "repeat_2.json",
+    "repeat_3.json"
+  ],
+  "repeats": 3,
+  "runtime_config": {
+    "cutoff_nm": 1.2616,
+    "device": "cpu",
+    "dt_ps": 0.001,
+    "hidden_channels": 64,
+    "ml_precision": "float32",
+    "n_layers": 2,
+    "neighbor_search": "link-cell",
+    "num_rbf": 32,
+    "num_species": 8
+  },
+  "schema_version": 1,
+  "stages_ms_per_force_call": {
+    "autograd": {
+      "cv": 0.006905200078574945,
+      "fraction_of_median_painn": 0.38351150865582273,
+      "max": 48.094947077348074,
+      "mean": 47.732450053407014,
+      "median": 47.80497952486189,
+      "min": 47.29742355801107,
+      "pstdev": 0.3296021178593608
+    },
+    "edge_pack": {
+      "cv": 0.007093984633337922,
+      "fraction_of_median_painn": 0.0013785055773443155,
+      "max": 0.17424099447513816,
+      "mean": 0.17252137384898714,
+      "median": 0.1718316906077348,
+      "min": 0.1714914364640885,
+      "pstdev": 0.0012238639750070616
+    },
+    "energy_scalar": {
+      "cv": 0.06742989990242142,
+      "fraction_of_median_painn": 4.6544293950368475e-05,
+      "max": 0.006231348066298341,
+      "mean": 0.005770931860036831,
+      "median": 0.005801779005524861,
+      "min": 0.00527966850828729,
+      "pstdev": 0.00038913335766597816
+    },
+    "force_scatter": {
+      "cv": 0.005349124543630667,
+      "fraction_of_median_painn": 0.0008252656099889666,
+      "max": 0.10395164088397796,
+      "mean": 0.1031767108655617,
+      "median": 0.1028699392265193,
+      "min": 0.10270855248618786,
+      "pstdev": 0.000551905076422061
+    },
+    "force_to_cpu": {
+      "cv": 0.00792280312983695,
+      "fraction_of_median_painn": 0.0002903137407931172,
+      "max": 0.03669865193370162,
+      "mean": 0.036303171270718214,
+      "median": 0.03618781215469613,
+      "min": 0.03602304972375689,
+      "pstdev": 0.0002876228789666531
+    },
+    "forward": {
+      "cv": 0.009019185092788906,
+      "fraction_of_median_painn": 0.5892221854272394,
+      "max": 73.71860914364638,
+      "mean": 73.12308075690608,
+      "median": 73.44696019337019,
+      "min": 72.20367293370168,
+      "pstdev": 0.6595105999014866
+    },
+    "neighbor_traversal": {
+      "cv": 0.0077504755871646664,
+      "fraction_of_median_painn": 0.021881326898192943,
+      "max": 2.7710467513812147,
+      "mean": 2.741050576427256,
+      "median": 2.7275228011049726,
+      "min": 2.724582176795581,
+      "pstdev": 0.021244445575783085
+    },
+    "node_index": {
+      "cv": 0.0617595302167785,
+      "fraction_of_median_painn": 0.00024954607505818033,
+      "max": 0.034287983425414365,
+      "mean": 0.03166344014732965,
+      "median": 0.03110609392265193,
+      "min": 0.029596243093922656,
+      "pstdev": 0.001955519188546163
+    },
+    "tensor_inputs": {
+      "cv": 0.024504721056809398,
+      "fraction_of_median_painn": 0.0004057086829657349,
+      "max": 0.05315307182320443,
+      "mean": 0.051375390423572774,
+      "median": 0.0505718729281768,
+      "min": 0.05040122651933707,
+      "pstdev": 0.0012589396115143276
+    },
+    "unattributed_cleanup": {
+      "cv": 0.001611631760762074,
+      "fraction_of_median_painn": 0.0021939778986237632,
+      "max": 0.27435863535913224,
+      "mean": 0.273737801104919,
+      "median": 0.27348088950267835,
+      "min": 0.2733738784529465,
+      "pstdev": 0.0004411645343818591
+    }
+  },
+  "wall_ms_per_step": {
+    "cv": 0.00852666269333472,
+    "max": 128.31975374981994,
+    "mean": 127.26112805500937,
+    "median": 127.6939420850249,
+    "min": 125.76968833018327,
+    "pstdev": 1.0851127128983409
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "allocation_churn_indicators": {
+    "host_payload_lower_bound_bytes_mean": 1931603.4475138122,
+    "note": "payload excludes allocator/map-node overhead and libtorch internal allocations",
+    "temporary_cpp_containers_per_call": 9
+  },
+  "enabled": true,
+  "graph": {
+    "directed_edges_max": 26540,
+    "directed_edges_mean": 26463.381215469613,
+    "particles_max": 820,
+    "particles_mean": 820,
+    "physical_pairs_max": 13270,
+    "physical_pairs_mean": 13231.690607734807
+  },
+  "integration": {
+    "completed_steps": 200,
+    "painn_force_calls_per_requested_step": 1.005,
+    "painn_total_ms_per_force_call": 124.65070394475133,
+    "requested_steps": 200,
+    "wall_ms_per_step": 127.6939420850249,
+    "wall_seconds_integrator_only": 25.53878841700498
+  },
+  "measured_calls": 181,
+  "runtime_config": {
+    "cutoff_nm": 1.2616,
+    "device": "cpu",
+    "dt_ps": 0.001,
+    "hidden_channels": 64,
+    "ml_precision": "float32",
+    "n_layers": 2,
+    "neighbor_search": "link-cell",
+    "num_rbf": 32,
+    "num_species": 8
+  },
+  "schema_version": 1,
+  "stage_fraction_of_painn_total": {
+    "autograd": 0.38351150865582273,
+    "edge_pack": 0.0013757759165170722,
+    "energy_scalar": 4.6544293950368475e-05,
+    "force_scatter": 0.0008239708981644513,
+    "force_to_cpu": 0.0002903137407931172,
+    "forward": 0.5892221854272394,
+    "neighbor_traversal": 0.021881326898192943,
+    "node_index": 0.00024954607505818033,
+    "tensor_inputs": 0.0004057086829657349,
+    "unattributed_cleanup": 0.002193119411296012
+  },
+  "timings_ms": {
+    "autograd_mean": 47.80497952486189,
+    "edge_pack_mean": 0.1714914364640885,
+    "energy_scalar_mean": 0.005801779005524861,
+    "force_scatter_mean": 0.10270855248618786,
+    "force_to_cpu_mean": 0.03618781215469613,
+    "forward_mean": 73.44696019337019,
+    "neighbor_traversal_mean": 2.7275228011049726,
+    "node_index_mean": 0.03110609392265193,
+    "tensor_inputs_mean": 0.0505718729281768,
+    "total_mean": 124.65070394475133,
+    "unattributed_cleanup_mean": 0.2733738784529465
+  },
+  "total_calls": 201,
+  "warmup_calls": 20
+}
