@@ -50,3 +50,7 @@ output/
 wandb/
 
 **/__pycache__
+
+# Runtime-generated local metadata
+**/.md_whole.trr_offsets.lock
+/tutorials/tel22_IBI/diagnostics/smoke/
