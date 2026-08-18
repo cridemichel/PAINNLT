@@ -52,6 +52,7 @@ class PaiNNRuntimeProfilingSourceTests(unittest.TestCase):
         self.assertIn('if args.painn_profile_report is not None:', RUNNER)
         self.assertIn('if args.device != "cpu":', RUNNER)
         self.assertIn("integration_wall_seconds", RUNNER)
+        self.assertIn("if args.painn_profile_report is None:", RUNNER)
 
 
 
