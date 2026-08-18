@@ -324,6 +324,22 @@ class ConservativeSplineTests(unittest.TestCase):
             installer.check(root, header)
             self.assertEqual(snapshot, {rel: (root / rel).read_text() for rel in files})
 
+    def test_conservative_include_is_jointly_idempotent_with_other_generated_includes(self):
+        installer_path = ROOT / "simulation/espresso_plugin/install_conservative_spline_bond.py"
+        spec = importlib.util.spec_from_file_location("install_conservative_spline_include", installer_path)
+        installer = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(installer)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "bonded_interaction_data.hpp"
+            morse = '#include "morse_bond.hpp" // MLCG analytic MorseBond\n'
+            conservative = '#include "conservative_spline_bond.hpp" // MLCG conservative spline bonded interactions\n'
+            path.write_text('#include "harmonic.hpp"\n' + morse + conservative + conservative)
+            self.assertTrue(installer._ensure_include_once(path, conservative, '#include "harmonic.hpp"\n'))
+            self.assertEqual(path.read_text().count(conservative), 1)
+            self.assertFalse(installer._ensure_include_once(path, conservative, '#include "harmonic.hpp"\n'))
+            self.assertEqual(path.read_text().count(morse), 1)
+
     def test_installer_repairs_missing_python_default_params(self):
         installer_path = ROOT / "simulation/espresso_plugin/install_conservative_spline_bond.py"
         spec = importlib.util.spec_from_file_location("install_conservative_spline_defaults", installer_path)

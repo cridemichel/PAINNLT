@@ -44,6 +44,24 @@ def _replace_once(path: Path, old: str, new: str) -> bool:
     return True
 
 
+def _ensure_include_once(path: Path, include_line: str, anchor: str) -> bool:
+    """Ensure exactly one generated include independently of installer order."""
+    text = _read(path)
+    lines = text.splitlines(keepends=True)
+    matches = [i for i, line in enumerate(lines) if line == include_line]
+    if len(matches) == 1:
+        return False
+    if len(matches) > 1:
+        keep = matches[0]
+        lines = [line for i, line in enumerate(lines) if line != include_line or i == keep]
+        path.write_text("".join(lines))
+        return True
+    if text.count(anchor) != 1:
+        raise RuntimeError(f"Could not find unique ESPResSo include anchor in {path}: {anchor!r}")
+    path.write_text(text.replace(anchor, anchor + include_line, 1))
+    return True
+
+
 def _insert_before(path: Path, anchor: str, addition: str, sentinel: str) -> bool:
     text = _read(path)
     if sentinel in text:
@@ -280,10 +298,10 @@ def install(root: Path, source_header: Path) -> list[str]:
         shutil.copyfile(source_header, paths["header"])
         changed.append("conservative_spline_bond.hpp")
 
-    if _replace_once(
+    if _ensure_include_once(
         paths["bond_data"],
+        '#include "conservative_spline_bond.hpp" // MLCG conservative spline bonded interactions\n',
         '#include "harmonic.hpp"\n',
-        '#include "harmonic.hpp"\n#include "conservative_spline_bond.hpp" // MLCG conservative spline bonded interactions\n',
     ):
         changed.append("bonded_interaction_data.hpp include")
     if _patch_variant(paths["bond_data"]):

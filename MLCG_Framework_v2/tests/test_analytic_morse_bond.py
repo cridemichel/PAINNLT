@@ -210,6 +210,14 @@ int main() {
 
             installer.install(root, PLUGIN / "morse_bond.hpp")
             python_file = root / "src/python/espressomd/interactions.py"
+            bond_data = root / "src/core/bonded_interactions/bonded_interaction_data.hpp"
+            bond_data.write_text(
+                bond_data.read_text().replace(
+                    "VirtualBond, MorseBond>",
+                    "VirtualBond, ForeignDistanceBond, ForeignAngleBond, ForeignDihedralBond, MorseBond>",
+                    1,
+                )
+            )
             virtual = "    VIRTUAL_BOND = enum.auto()\n"
             conservative = (
                 "    CONSERVATIVE_SPLINE_DISTANCE_BOND = enum.auto()\n"
@@ -254,6 +262,53 @@ int main() {
             self.assertIn("BONDED_IA", changed)
             self.assertEqual(installer._python_enum_count(python_file), 1)
             installer.check(root, PLUGIN / "morse_bond.hpp")
+
+    def test_custom_python_enum_order_is_repaired_to_match_cpp_variant(self):
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bond_data = root / "bonded_interaction_data.hpp"
+            python_file = root / "interactions.py"
+            bond_data.write_text(
+                'using Bonded_IA_Parameters = std::variant<FeneBond, VirtualBond, '
+                'ConservativeSplineDistanceBond, ConservativeSplineAngleBond, '
+                'ConservativeSplineDihedralBond, MorseBond>;\n'
+            )
+            python_file.write_text(
+                'class BONDED_IA(enum.IntEnum):\n'
+                '    NONE = 0\n'
+                '    VIRTUAL_BOND = enum.auto()\n'
+                '    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n'
+                '    CONSERVATIVE_SPLINE_DISTANCE = enum.auto()  # MLCG conservative spline\n'
+                '    CONSERVATIVE_SPLINE_ANGLE = enum.auto()  # MLCG conservative spline\n'
+                '    CONSERVATIVE_SPLINE_DIHEDRAL = enum.auto()  # MLCG conservative spline\n\n'
+                'class NextClass:\n    pass\n'
+            )
+            self.assertFalse(installer._morse_python_enum_position_matches(bond_data, python_file))
+            self.assertTrue(installer._sync_morse_python_enum_position(bond_data, python_file))
+            self.assertTrue(installer._morse_python_enum_position_matches(bond_data, python_file))
+            body = python_file.read_text()
+            names = [
+                "CONSERVATIVE_SPLINE_DISTANCE",
+                "CONSERVATIVE_SPLINE_ANGLE",
+                "CONSERVATIVE_SPLINE_DIHEDRAL",
+                "MORSE_BOND",
+            ]
+            positions = [body.index(name) for name in names]
+            self.assertEqual(positions, sorted(positions))
+            self.assertFalse(installer._sync_morse_python_enum_position(bond_data, python_file))
+
+    def test_morse_include_is_jointly_idempotent_with_other_generated_includes(self):
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "bonded_interaction_data.hpp"
+            morse = '#include "morse_bond.hpp" // MLCG analytic MorseBond\n'
+            conservative = '#include "conservative_spline_bond.hpp" // MLCG conservative spline bonded interactions\n'
+            path.write_text('#include "harmonic.hpp"\n' + conservative + morse + morse)
+            self.assertTrue(installer._ensure_include_once(path, morse, '#include "harmonic.hpp"\n'))
+            self.assertEqual(path.read_text().count(morse), 1)
+            self.assertFalse(installer._ensure_include_once(path, morse, '#include "harmonic.hpp"\n'))
+            self.assertEqual(path.read_text().count(conservative), 1)
 
     def test_runtime_factory_requires_extension_and_maps_parameters(self):
         import sys

@@ -41,13 +41,28 @@ def _insert_before_once(path: Path, anchor: str, addition: str, sentinel: str) -
     return True
 
 
-def _patch_bonded_variant(path: Path) -> bool:
-    """Ensure MorseBond is present in Bonded_IA_Parameters.
+def _ensure_include_once(path: Path, include_line: str, anchor: str) -> bool:
+    """Ensure one generated include without relying on adjacency to ``anchor``."""
+    text = _read(path)
+    lines = text.splitlines(keepends=True)
+    matches = [i for i, line in enumerate(lines) if line == include_line]
+    if len(matches) == 1:
+        return False
+    if len(matches) > 1:
+        keep = matches[0]
+        lines = [line for i, line in enumerate(lines) if line != include_line or i == keep]
+        path.write_text("".join(lines))
+        return True
+    if text.count(anchor) != 1:
+        raise RuntimeError(
+            f"Expected exactly one include anchor in {path}, found {text.count(anchor)}: {anchor!r}"
+        )
+    path.write_text(text.replace(anchor, anchor + include_line, 1))
+    return True
 
-    Other MLCG installers may append additional bonded interaction types after
-    MorseBond.  Therefore idempotency must be decided from the variant contents
-    rather than from an exact tail such as ``VirtualBond, MorseBond>``.
-    """
+
+def _patch_bonded_variant(path: Path) -> bool:
+    """Ensure MorseBond is present in Bonded_IA_Parameters."""
     text = _read(path)
     match = re.search(
         r"using Bonded_IA_Parameters\s*=\s*std::variant<.*?>;",
@@ -56,7 +71,6 @@ def _patch_bonded_variant(path: Path) -> bool:
     )
     if match is None:
         raise RuntimeError(f"Could not locate Bonded_IA_Parameters variant in {path}")
-
     block = match.group(0)
     if re.search(r"\bMorseBond\b", block):
         return False
@@ -64,7 +78,6 @@ def _patch_bonded_variant(path: Path) -> bool:
         raise RuntimeError(
             f"Could not uniquely locate VirtualBond in Bonded_IA_Parameters: {path}"
         )
-
     replacement = block.replace("VirtualBond", "VirtualBond, MorseBond", 1)
     path.write_text(text[: match.start()] + replacement + text[match.end() :])
     return True
@@ -82,14 +95,88 @@ def _bonded_variant_contains(path: Path, type_name: str) -> bool:
     return re.search(rf"\b{re.escape(type_name)}\b", match.group(0)) is not None
 
 
-def _ensure_script_registration(path: Path) -> bool:
-    """Ensure exactly one ScriptInterface registration for MorseBond.
+def _bonded_variant_types(path: Path) -> list[str]:
+    text = _read(path)
+    match = re.search(
+        r"using Bonded_IA_Parameters\s*=\s*std::variant<(.*?)>;",
+        text,
+        flags=re.DOTALL,
+    )
+    if match is None:
+        raise RuntimeError(f"Could not locate Bonded_IA_Parameters variant in {path}")
+    types = [item.strip() for item in match.group(1).split(",") if item.strip()]
+    if not types:
+        raise RuntimeError(f"Bonded_IA_Parameters variant is empty in {path}")
+    return types
 
-    Other MLCG installers also insert registrations after QuarticBond.  A
-    previous implementation checked for the exact adjacent text
-    ``QuarticBond`` + ``MorseBond``; once another installer inserted lines
-    between them, rerunning this installer could register MorseBond twice.
+
+def _sync_morse_python_enum_position(bond_data: Path, python_path: Path) -> bool:
+    """Place MORSE_BOND at the enum ordinal required by the C++ variant.
+
+    ESPResSo requires BONDED_IA enum values to match Bonded_IA_Parameters in
+    exactly the same order. VIRTUAL_BOND is the last stock bonded type, so the
+    relative position of MorseBond after VirtualBond can be repaired without
+    knowing the names of other custom interactions.
     """
+    variant_types = _bonded_variant_types(bond_data)
+    try:
+        virtual_index = variant_types.index("VirtualBond")
+        morse_index = variant_types.index("MorseBond")
+    except ValueError as exc:
+        raise RuntimeError(
+            f"VirtualBond/MorseBond missing from Bonded_IA_Parameters in {bond_data}"
+        ) from exc
+    if morse_index <= virtual_index:
+        raise RuntimeError(
+            f"Unexpected MorseBond position before VirtualBond in Bonded_IA_Parameters: {bond_data}"
+        )
+    custom_before_morse = morse_index - virtual_index - 1
+
+    text = _read(python_path)
+    start, end = _bonded_enum_span(text, python_path)
+    body = text[start:end]
+    morse_pattern = re.compile(
+        r'^[ \t]+MORSE_BOND\s*=\s*enum\.auto\(\)[^\n]*(?:\n|$)',
+        flags=re.MULTILINE,
+    )
+    if not morse_pattern.search(body):
+        raise RuntimeError(f"MORSE_BOND is missing from BONDED_IA in {python_path}")
+    cleaned = morse_pattern.sub("", body)
+    morse_line = "    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n"
+
+    virtual_pattern = re.compile(
+        r'^[ \t]+VIRTUAL_BOND\s*=\s*enum\.auto\(\)[^\n]*(?:\n|$)',
+        flags=re.MULTILINE,
+    )
+    virtual_matches = list(virtual_pattern.finditer(cleaned))
+    if len(virtual_matches) != 1:
+        raise RuntimeError(f"Could not uniquely locate BONDED_IA.VIRTUAL_BOND in {python_path}")
+    virtual = virtual_matches[0]
+    tail_start = virtual.end()
+    auto_pattern = re.compile(
+        r'^[ \t]+[A-Z][A-Z0-9_]*\s*=\s*enum\.auto\(\)[^\n]*(?:\n|$)',
+        flags=re.MULTILINE,
+    )
+    tail_matches = list(auto_pattern.finditer(cleaned[tail_start:]))
+    if len(tail_matches) < custom_before_morse:
+        raise RuntimeError(
+            "BONDED_IA does not contain enough custom entries before MORSE_BOND "
+            f"to match Bonded_IA_Parameters in {python_path}"
+        )
+    if custom_before_morse == 0:
+        pos = tail_start
+    else:
+        pos = tail_start + tail_matches[custom_before_morse - 1].end()
+    repaired_body = cleaned[:pos] + morse_line + cleaned[pos:]
+    repaired = text[:start] + repaired_body + text[end:]
+    if repaired == text:
+        return False
+    python_path.write_text(repaired)
+    return True
+
+
+def _ensure_script_registration(path: Path) -> bool:
+    """Ensure exactly one ScriptInterface registration for MorseBond."""
     text = _read(path)
     pattern = re.compile(
         r'^[ \t]*om->register_new<MorseBond>\("Interactions::MorseBond"\);[^\n]*(?:\n|$)',
@@ -98,16 +185,12 @@ def _ensure_script_registration(path: Path) -> bool:
     matches = list(pattern.finditer(text))
     if len(matches) == 1:
         return False
-
     if len(matches) > 1:
-        # Preserve the first registration exactly as written and remove later
-        # duplicates.  Work backwards so match offsets remain valid.
         repaired = text
         for match in reversed(matches[1:]):
             repaired = repaired[: match.start()] + repaired[match.end() :]
         path.write_text(repaired)
         return True
-
     anchor = '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n'
     if text.count(anchor) != 1:
         raise RuntimeError(
@@ -130,46 +213,88 @@ def _script_registration_count(path: Path) -> int:
     )
 
 
-def _ensure_python_enum_entry(path: Path) -> bool:
-    """Ensure exactly one MORSE_BOND member in the BONDED_IA enum.
+def _morse_python_enum_position_matches(bond_data: Path, python_path: Path) -> bool:
+    try:
+        variant_types = _bonded_variant_types(bond_data)
+        virtual_index = variant_types.index("VirtualBond")
+        morse_index = variant_types.index("MorseBond")
+        if morse_index <= virtual_index:
+            return False
+        expected_before = morse_index - virtual_index - 1
+        text = _read(python_path)
+        start, end = _bonded_enum_span(text, python_path)
+        body = text[start:end]
+        virtual = re.search(
+            r'^[ \t]+VIRTUAL_BOND\s*=\s*enum\.auto\(\)[^\n]*(?:\n|$)',
+            body,
+            flags=re.MULTILINE,
+        )
+        morse = re.search(
+            r'^[ \t]+MORSE_BOND\s*=\s*enum\.auto\(\)[^\n]*(?:\n|$)',
+            body,
+            flags=re.MULTILINE,
+        )
+        if virtual is None or morse is None or morse.start() < virtual.end():
+            return False
+        between = body[virtual.end():morse.start()]
+        auto_between = re.findall(
+            r'^[ \t]+[A-Z][A-Z0-9_]*\s*=\s*enum\.auto\(\)',
+            between,
+            flags=re.MULTILINE,
+        )
+        return len(auto_between) == expected_before
+    except (RuntimeError, ValueError):
+        return False
 
-    Other MLCG installers also append enum members after ``VIRTUAL_BOND``.
-    Checking for the exact adjacent ``VIRTUAL_BOND`` + ``MORSE_BOND`` text is
-    therefore not idempotent: a later installer can move MorseBond away from
-    the anchor, causing a subsequent Morse install to add the enum member a
-    second time.
-    """
+
+def _bonded_enum_span(text: str, path: Path) -> tuple[int, int]:
+    match = re.search(r"^class BONDED_IA\(enum\.IntEnum\):\n", text, flags=re.MULTILINE)
+    if match is None:
+        raise RuntimeError(f"Could not locate BONDED_IA enum in {path}")
+    start = match.end()
+    end_match = re.search(r"^(?=\S)", text[start:], flags=re.MULTILINE)
+    end = len(text) if end_match is None else start + end_match.start()
+    return start, end
+
+
+def _ensure_python_enum_entry(path: Path) -> bool:
+    """Ensure exactly one MORSE_BOND member in the BONDED_IA enum."""
     text = _read(path)
+    start, end = _bonded_enum_span(text, path)
+    body = text[start:end]
     pattern = re.compile(
         r'^[ \t]+MORSE_BOND\s*=\s*enum\.auto\(\)[^\n]*(?:\n|$)',
         flags=re.MULTILINE,
     )
-    matches = list(pattern.finditer(text))
+    matches = list(pattern.finditer(body))
     if len(matches) == 1:
         return False
 
     if len(matches) > 1:
-        repaired = text
+        repaired_body = body
         for match in reversed(matches[1:]):
-            repaired = repaired[: match.start()] + repaired[match.end() :]
-        path.write_text(repaired)
+            repaired_body = repaired_body[: match.start()] + repaired_body[match.end() :]
+        path.write_text(text[:start] + repaired_body + text[end:])
         return True
 
     anchor = "    VIRTUAL_BOND = enum.auto()\n"
-    if text.count(anchor) != 1:
+    if body.count(anchor) != 1:
         raise RuntimeError(
             f"Could not uniquely locate BONDED_IA VIRTUAL_BOND anchor in {path}"
         )
     entry = "    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n"
-    path.write_text(text.replace(anchor, anchor + entry, 1))
+    repaired_body = body.replace(anchor, anchor + entry, 1)
+    path.write_text(text[:start] + repaired_body + text[end:])
     return True
 
 
 def _python_enum_count(path: Path) -> int:
+    text = _read(path)
+    start, end = _bonded_enum_span(text, path)
     return len(
         re.findall(
             r'^\s+MORSE_BOND\s*=\s*enum\.auto\(\)',
-            _read(path),
+            text[start:end],
             flags=re.MULTILINE,
         )
     )
@@ -200,10 +325,10 @@ def install(espresso_root: Path, source_header: Path) -> list[str]:
 
     changed: list[str] = []
 
-    if _replace_once(
+    if _ensure_include_once(
         paths["bond_data"],
+        '#include "morse_bond.hpp" // MLCG analytic MorseBond\n',
         '#include "harmonic.hpp"\n',
-        '#include "harmonic.hpp"\n#include "morse_bond.hpp" // MLCG analytic MorseBond\n',
     ):
         changed.append("bonded_interaction_data.hpp include")
 
@@ -279,6 +404,9 @@ class MorseBond : public BondedInteractionImpl<::MorseBond> {
 
     if _ensure_python_enum_entry(paths["python"]):
         changed.append("BONDED_IA")
+    if _sync_morse_python_enum_position(paths["bond_data"], paths["python"]):
+        if "BONDED_IA" not in changed:
+            changed.append("BONDED_IA")
 
     python_class = '''# MLCG analytic MorseBond Python class
 @script_interface_register
@@ -318,6 +446,9 @@ def check(espresso_root: Path, source_header: Path) -> None:
         "script interface": "BondedInteractionImpl<::MorseBond>" in _read(paths["script_header"]),
         "script registration": _script_registration_count(paths["script_init"]) == 1,
         "python enum": _python_enum_count(paths["python"]) == 1,
+        "python enum order": _morse_python_enum_position_matches(
+            paths["bond_data"], paths["python"]
+        ),
         "python class": "class MorseBond(BondedInteraction):" in _read(paths["python"]),
     }
     failed = [name for name, ok in checks.items() if not ok]

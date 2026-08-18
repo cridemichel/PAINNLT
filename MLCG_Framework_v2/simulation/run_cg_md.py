@@ -1002,9 +1002,12 @@ with ExitStack() as stack:
     integration_wall_seconds = 0.0
     while simulation_ok and completed < args.steps:
         current = min(args.log_interval, args.steps - completed)
-        integration_start = time.perf_counter()
-        system.integrator.run(current)
-        integration_wall_seconds += time.perf_counter() - integration_start
+        if args.painn_profile_report is None:
+            system.integrator.run(current)
+        else:
+            integration_start = time.perf_counter()
+            system.integrator.run(current)
+            integration_wall_seconds += time.perf_counter() - integration_start
         completed += current
 
         if record_state(completed, energy_writer, energy_handle, vtf_handle):
