@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -24,6 +25,12 @@ public:
     // Ritorna l'ultima energia potenziale calcolata dal modello
     double get_last_energy() const { return m_last_energy; }
 
+    // Profiling is opt-in and disabled by default. It must never alter the
+    // graph, Hamiltonian, precision, or force accumulation path.
+    void configure_profiling(bool enabled, std::int64_t warmup_calls = 0);
+    void reset_profiling();
+    std::string get_profile_json() const;
+
 private:
     PaiNNModel model{nullptr};
     double m_cutoff;
@@ -31,6 +38,32 @@ private:
     double m_last_energy = 0.0;
     torch::Device m_device{torch::kCPU};
     torch::Dtype m_dtype{torch::kFloat32};
+
+    struct ProfileAccumulator {
+        bool enabled = false;
+        std::int64_t warmup_calls = 0;
+        std::int64_t total_calls = 0;
+        std::int64_t measured_calls = 0;
+        double total_ms = 0.0;
+        double node_index_ms = 0.0;
+        double neighbor_traversal_ms = 0.0;
+        double edge_pack_ms = 0.0;
+        double tensor_inputs_ms = 0.0;
+        double forward_ms = 0.0;
+        double energy_scalar_ms = 0.0;
+        double autograd_ms = 0.0;
+        double force_to_cpu_ms = 0.0;
+        double force_scatter_ms = 0.0;
+        double particles_sum = 0.0;
+        double directed_edges_sum = 0.0;
+        double physical_pairs_sum = 0.0;
+        double host_payload_lower_bound_bytes_sum = 0.0;
+        std::int64_t particles_max = 0;
+        std::int64_t directed_edges_max = 0;
+        std::int64_t physical_pairs_max = 0;
+    };
+
+    ProfileAccumulator m_profile;
 };
 
 // Global instance to be used in integrate.cpp or forces.cpp

@@ -9,6 +9,9 @@ cdef extern from "core/nonbonded_interactions/PaiNN_ML_Potential.hpp":
         PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const string& device_str, const string& precision_str)
         double get_cutoff()
         double get_last_energy()
+        void configure_profiling(bint enabled, long long warmup_calls)
+        void reset_profiling()
+        string get_profile_json()
         
     cdef shared_ptr[PaiNN_ML_Potential] global_painn_potential
 
@@ -17,6 +20,28 @@ def get_painn_energy():
     if global_painn_potential.get() != NULL:
         return global_painn_potential.get().get_last_energy()
     return 0.0
+
+def configure_painn_profiling(enabled: bool = True, warmup_calls: int = 0):
+    """Enable/disable low-overhead C++ PaiNN stage profiling."""
+    if global_painn_potential.get() == NULL:
+        raise RuntimeError("PaiNN potential is not active")
+    if warmup_calls < 0:
+        raise ValueError("warmup_calls must be non-negative")
+    global_painn_potential.get().configure_profiling(enabled, warmup_calls)
+
+def reset_painn_profiling():
+    """Reset PaiNN profiling accumulators while preserving enable/warmup settings."""
+    if global_painn_potential.get() == NULL:
+        raise RuntimeError("PaiNN potential is not active")
+    global_painn_potential.get().reset_profiling()
+
+def get_painn_profile():
+    """Return the current PaiNN C++ profiling snapshot as a Python dict."""
+    if global_painn_potential.get() == NULL:
+        raise RuntimeError("PaiNN potential is not active")
+    import json
+    cdef string payload = global_painn_potential.get().get_profile_json()
+    return json.loads((<bytes>payload).decode("utf-8"))
 
 def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float, device: str = "auto", precision: str = "float32"):
     """
