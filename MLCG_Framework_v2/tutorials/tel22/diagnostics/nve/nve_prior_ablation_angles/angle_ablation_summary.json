@@ -1,0 +1,48 @@
+{
+  "baseline": {
+    "abs_p_minus_2": 0.11002260009663378,
+    "c2_coarse_median": 516.00360732376,
+    "c2_dt_min": 662.4959746087229,
+    "c2_spread_max_over_min": 1.3263162439544267,
+    "drift_pass": true,
+    "dt_min_ps": 0.001,
+    "exponent_p": 1.8899773999033662,
+    "loglog_r2": 0.992899841107816,
+    "max_drift_dt_ps": 0.005,
+    "max_relative_block_mean_drift": 9.163495783899761e-07,
+    "pass": true,
+    "scaling_pass": true,
+    "sigma_E_dt_min": 0.0006624959746087229,
+    "small_dt_c2_over_coarse_median": 1.283897951885922
+  },
+  "baseline_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_prior_ablation_morse_dihedral/baseline/nve_certification_report.json",
+  "comparison": {
+    "delta_p_no_angles_minus_baseline": -0.07393907373543374,
+    "improvement_in_abs_p_minus_2": -0.07393907373543374,
+    "sigma_E_dt_min_ratio_no_angles_over_baseline": 1.0675645128194764,
+    "small_dt_c2_ratio_no_angles_over_baseline": 1.0580514958769116
+  },
+  "interpretation": "removing_angles_worsens_scaling",
+  "kind": "tel22_nve_angle_prior_ablation_comparison",
+  "no_angles": {
+    "abs_p_minus_2": 0.18396167383206752,
+    "c2_coarse_median": 520.6430327940932,
+    "c2_dt_min": 707.2571923780255,
+    "c2_spread_max_over_min": 1.3724416333794338,
+    "drift_pass": true,
+    "dt_min_ps": 0.001,
+    "exponent_p": 1.8160383261679325,
+    "loglog_r2": 0.9984221965086877,
+    "max_drift_dt_ps": 0.005,
+    "max_relative_block_mean_drift": 2.404986432206583e-06,
+    "pass": true,
+    "scaling_pass": true,
+    "sigma_E_dt_min": 0.0007072571923780255,
+    "small_dt_c2_over_coarse_median": 1.3584301485462027
+  },
+  "no_angles_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_prior_ablation_angles/no_angles/nve_certification_report.json",
+  "removed_angle_entries": 200,
+  "schema_version": 1,
+  "scope": "diagnostic_only; trained PaiNN and all non-angle priors remain unchanged",
+  "warning": "The trained PaiNN residual is intentionally not retrained after removing angular priors; this is a numerical ablation, not a reparameterized production model."
+}

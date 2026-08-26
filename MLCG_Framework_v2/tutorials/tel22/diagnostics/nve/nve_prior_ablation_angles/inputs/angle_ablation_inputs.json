@@ -1,0 +1,21 @@
+{
+  "kind": "tel22_nve_angle_prior_ablation_inputs",
+  "no_angles": {
+    "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_prior_ablation_angles/inputs/equilibrated_no_angles.npz",
+    "checkpoint_sha256": "6f68d071a838f8111f2d5c085e28bb2f81439969cfa445d4bbfbd17de1ba1e05",
+    "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_prior_ablation_angles/inputs/cg_priors_no_angles.json",
+    "priors_sha256": "93444ff39a0f1985583fdf31007e49b65470e7c06b3f8b50450bbd869d171f25",
+    "remaining_angle_entries": 0,
+    "removed_angle_entries": 200
+  },
+  "schema_version": 1,
+  "scope": "diagnostic_only; trained PaiNN and all non-angle priors remain unchanged",
+  "source": {
+    "angle_entries": 200,
+    "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/equilibrated.npz",
+    "checkpoint_sha256": "d39595f23ce92e08d9c5dc6878de1102b2ffa4e0246e55a0bb49d36532879ed4",
+    "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/cg_priors.json",
+    "priors_sha256": "c18f8e3bfbc7ae8721d9c852b344b16a92e3b7bb451970237a7eaf8f7c1807f5"
+  },
+  "warning": "The trained PaiNN residual is intentionally not retrained after removing angular priors; this is a numerical ablation, not a reparameterized production model."
+}
