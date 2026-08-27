@@ -1,0 +1,42 @@
+{
+  "input_hashes": {
+    "checkpoint": {
+      "current": "d39595f23ce92e08d9c5dc6878de1102b2ffa4e0246e55a0bb49d36532879ed4",
+      "match": true,
+      "reference": "d39595f23ce92e08d9c5dc6878de1102b2ffa4e0246e55a0bb49d36532879ed4"
+    },
+    "config": {
+      "current": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7",
+      "match": true,
+      "reference": "7086aa061afbb48935252a5c12f225d4da6bfc474448c6eefc85fe23f0aba1d7"
+    },
+    "dataset": {
+      "current": "783e9f527eab9659bcb5f397b37a2178e25f47f010dbf226849ce0ebf517bc98",
+      "match": true,
+      "reference": "783e9f527eab9659bcb5f397b37a2178e25f47f010dbf226849ce0ebf517bc98"
+    },
+    "model": {
+      "current": "0c2be0ca748a89669d35808c868db2585001fc483e7e8305c9a9f3b46488dae8",
+      "match": true,
+      "reference": "0c2be0ca748a89669d35808c868db2585001fc483e7e8305c9a9f3b46488dae8"
+    },
+    "priors": {
+      "current": "c18f8e3bfbc7ae8721d9c852b344b16a92e3b7bb451970237a7eaf8f7c1807f5",
+      "match": true,
+      "reference": "c18f8e3bfbc7ae8721d9c852b344b16a92e3b7bb451970237a7eaf8f7c1807f5"
+    },
+    "rb_info": {
+      "current": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+      "match": true,
+      "reference": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+    }
+  },
+  "kind": "tel22_morse_switch_reference_validation",
+  "legacy_absent_morse_flag_means": "switched",
+  "pass": true,
+  "reasons": [],
+  "reference_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_priors_only_coarse_5ps/nve_certification_report.json",
+  "reference_run_plan": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_priors_only_coarse_5ps/run_plan.json",
+  "runner_hash_intentionally_not_compared": "The diagnostic patch adds an explicit Morse-mode CLI flag, so the current runner hash must differ from the already completed reference run. Physical input hashes are still exact.",
+  "schema_version": 1
+}

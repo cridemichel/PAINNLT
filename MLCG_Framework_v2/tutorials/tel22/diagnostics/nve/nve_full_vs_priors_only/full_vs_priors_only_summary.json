@@ -1,0 +1,47 @@
+{
+  "caution": "This A/B attributes any difference to activating the trained TEL22 PaiNN residual in the full Hamiltonian (including its coupling to the fixed priors). It does not imply a defect of the PaiNN architecture, C4 Toxvaerd smoothing, LibTorch, or ESPResSo in general.",
+  "comparison": {
+    "delta_p_priors_only_minus_full": 0.17958420801536534,
+    "improvement_in_abs_p_minus_2": 0.04046099217790222,
+    "sigma_E_dt_min_ratio_priors_only_over_full": 0.33549439676559784,
+    "small_dt_c2_ratio_priors_only_over_full": 0.7063876156653935
+  },
+  "full": {
+    "abs_p_minus_2": 0.11002260009663378,
+    "c2_coarse_median": 516.00360732376,
+    "c2_dt_min": 662.4959746087229,
+    "c2_spread_max_over_min": 1.3263162439544267,
+    "drift_pass": true,
+    "dt_min_ps": 0.001,
+    "exponent_p": 1.8899773999033662,
+    "loglog_r2": 0.992899841107816,
+    "max_drift_dt_ps": 0.005,
+    "max_relative_block_mean_drift": 9.163495783899761e-07,
+    "pass": true,
+    "scaling_pass": true,
+    "sigma_E_dt_min": 0.0006624959746087229,
+    "small_dt_c2_over_coarse_median": 1.283897951885922
+  },
+  "full_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_prior_ablation_morse_dihedral/baseline/nve_certification_report.json",
+  "interpretation": "evidence_trained_painn_contributes_to_fp32_nonideal_scaling",
+  "kind": "tel22_nve_full_vs_priors_only_comparison",
+  "priors_only": {
+    "abs_p_minus_2": 0.06956160791873156,
+    "c2_coarse_median": 245.07269823082535,
+    "c2_dt_min": 222.26368736099028,
+    "c2_spread_max_over_min": 1.38791533877761,
+    "drift_pass": true,
+    "dt_min_ps": 0.001,
+    "exponent_p": 2.0695616079187316,
+    "loglog_r2": 0.9917125751148222,
+    "max_drift_dt_ps": 0.004,
+    "max_relative_block_mean_drift": 1.0049164322142998e-06,
+    "pass": true,
+    "scaling_pass": true,
+    "sigma_E_dt_min": 0.00022226368736099028,
+    "small_dt_c2_over_coarse_median": 0.9069296129903786
+  },
+  "priors_only_report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_full_vs_priors_only/priors_only/nve_certification_report.json",
+  "schema_version": 1,
+  "scope": "Same production TEL22 priors, topology, model provenance, checkpoint mechanical state, dt grid and ESPResSo runtime; PaiNN active in full branch and disabled via --disable-ml in priors-only branch."
+}

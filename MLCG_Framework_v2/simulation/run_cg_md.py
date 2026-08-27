@@ -35,6 +35,7 @@ from conservative_spline_runtime import create_conservative_spline_interaction
 
 from espresso_interactions import (
     configure_pair_specific_morse,
+    configure_pair_specific_morse_bonds,
     create_pair_specific_morse_markers,
     configure_type_pair_morse,
     max_type_pair_morse_cutoff,
@@ -66,6 +67,17 @@ parser.add_argument("--ml_precision", choices=("float32", "float64"), default="f
 parser.add_argument("--painn_profile_report", type=str, default=None, help="Write opt-in PaiNN C++ stage timing JSON; profiling is CPU-reference only")
 parser.add_argument("--painn_profile_warmup_calls", type=int, default=20, help="PaiNN force calls excluded before profiling accumulation")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
+parser.add_argument("--morse_switch_mode", choices=("switched", "stock-shifted"), default="switched", help="Pair-specific/type-pair Morse runtime branch; stock-shifted is a diagnostic control that keeps markers/cutoff but disables the C2 tail switch")
+parser.add_argument(
+    "--pair_specific_morse_runtime",
+    choices=("marker-nonbonded", "bonded-analytic"),
+    default="marker-nonbonded",
+    help=(
+        "Runtime realization for explicit pair-specific Morse contacts. "
+        "marker-nonbonded is production behavior; bonded-analytic is a diagnostic "
+        "control that applies the same D/a/r0/r_cut to the physical endpoints via MorseBond."
+    ),
+)
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--init_kT", type=float, default=None, help="Initialize velocities from Maxwell-Boltzmann at this kT")
 parser.add_argument("--velocity_seed", type=int, default=314159, help="Seed used by --init_kT")
@@ -85,6 +97,11 @@ args = parser.parse_args()
 
 if args.disable_ml and not args.model:
     raise ValueError("--disable_ml requires --model so the disabled branch remains bound to the same model provenance")
+if args.pair_specific_morse_runtime == "bonded-analytic" and args.morse_switch_mode != "switched":
+    raise ValueError(
+        "--pair_specific_morse_runtime bonded-analytic requires --morse_switch_mode switched; "
+        "the bonded diagnostic has no switch branch"
+    )
 ml_active = bool(args.model and not args.disable_ml)
 if args.painn_profile_warmup_calls < 0:
     raise ValueError("--painn_profile_warmup_calls must be non-negative")
@@ -149,6 +166,11 @@ morse_marker_types, morse_contacts = prepare_pair_specific_morse(
     priors, nn_config["num_species"]
 )
 morse_type_pairs = prepare_type_pair_morse(priors, nn_config["num_species"])
+if args.pair_specific_morse_runtime == "bonded-analytic" and morse_type_pairs:
+    raise ValueError(
+        "bonded-analytic diagnostic supports explicit pair-specific Morse contacts only; "
+        "morse_type_pairs must be empty"
+    )
 if morse_contacts and morse_type_pairs:
     print(
         "[WARNING] Both pair-specific Morse contacts and site type-pair Morse "
@@ -548,11 +570,16 @@ if morse_type_pairs:
             f"{required_length:.6g} nm. Pair-specific Morse marker contacts do not have "
             "this regular-cell constraint because they use the N-square side of the hybrid decomposition."
         )
-morse_n_square_types = {DUMMY_COM_TYPE, *morse_marker_types.values()} if morse_contacts else None
+marker_nonbonded_morse = bool(
+    morse_contacts and args.pair_specific_morse_runtime == "marker-nonbonded"
+)
+morse_n_square_types = (
+    {DUMMY_COM_TYPE, *morse_marker_types.values()} if marker_nonbonded_morse else None
+)
 configure_neighbor_search(
     system, args.neighbor_search,
     n_square_types=morse_n_square_types,
-    cutoff_regular=regular_cutoff if morse_contacts else None,
+    cutoff_regular=regular_cutoff if marker_nonbonded_morse else None,
 )
 
 # Register the long-cutoff pair-specific Morse interactions only after the
@@ -564,23 +591,37 @@ configure_neighbor_search(
 # already configured hybrid decomposition. Configuring it here also makes the
 # explicit regular-cutoff validation below authoritative instead of letting the
 # default cell system reject the interaction first.
-configure_type_pair_morse(system, morse_type_pairs)
+configure_type_pair_morse(system, morse_type_pairs, switch_mode=args.morse_switch_mode)
 for item in morse_type_pairs:
     print(
         "[INFO] Added type-pair reversible Morse interaction "
         f"{item['index']}: site type {item['type_i']} <-> {item['type_j']} "
-        f"(r_switch={item['r_switch']:.6g}, r_cut={item['r_cut']:.6g})"
+        f"(mode={args.morse_switch_mode}, r_switch={item['r_switch']:.6g}, "
+        f"r_cut={item['r_cut']:.6g})"
     )
 
-configure_pair_specific_morse(system, morse_contacts, morse_marker_types)
-for contact in morse_contacts:
-    print(
-        "[INFO] Added pair-specific reversible Morse contact "
-        f"{contact['index']}: {contact['mol_i']}:{contact['site_i']} <-> "
-        f"{contact['mol_j']}:{contact['site_j']} "
-        f"(site=-1 means COM; r_switch={contact['r_switch']:.6g}, "
-        f"r_cut={contact['r_cut']:.6g})"
+if args.pair_specific_morse_runtime == "marker-nonbonded":
+    configure_pair_specific_morse(
+        system, morse_contacts, morse_marker_types, switch_mode=args.morse_switch_mode
     )
+    for contact in morse_contacts:
+        print(
+            "[INFO] Added pair-specific reversible Morse contact "
+            f"{contact['index']}: {contact['mol_i']}:{contact['site_i']} <-> "
+            f"{contact['mol_j']}:{contact['site_j']} "
+            f"(site=-1 means COM; runtime=marker-nonbonded, mode={args.morse_switch_mode}, "
+            f"r_switch={contact['r_switch']:.6g}, r_cut={contact['r_cut']:.6g})"
+        )
+else:
+    configure_pair_specific_morse_bonds(
+        system, morse_contacts, mol_com_parts, mol_vs_parts, espressomd.interactions
+    )
+    if morse_contacts:
+        print(
+            f"[INFO] Added {len(morse_contacts)} pair-specific analytic Morse bonds "
+            "directly on physical endpoints; technical Morse markers remain inert "
+            "for checkpoint/particle-set parity."
+        )
 
 if ml_active:
     print("[INFO] Activating ML Potential...")
@@ -1146,6 +1187,8 @@ if simulation_ok:
             ),
             "ml_active": bool(ml_active),
             "ml_disabled_by_flag": bool(args.disable_ml),
+            "morse_switch_mode": args.morse_switch_mode,
+            "pair_specific_morse_runtime": args.pair_specific_morse_runtime,
         }
         np.savez_compressed(
             state_path,
@@ -1226,6 +1269,8 @@ if simulation_ok:
                 "thermostat_seed": None if args.nve else int(args.thermostat_seed),
                 "ml_active": bool(ml_active),
                 "ml_disabled_by_flag": bool(args.disable_ml),
+                "morse_switch_mode": args.morse_switch_mode,
+            "pair_specific_morse_runtime": args.pair_specific_morse_runtime,
             },
         )
         print(

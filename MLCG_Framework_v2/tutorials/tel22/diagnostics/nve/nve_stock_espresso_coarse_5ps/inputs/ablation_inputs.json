@@ -1,0 +1,74 @@
+{
+  "kind": "tel22_nve_morse_dihedral_prior_ablation_inputs",
+  "notes": [
+    "Removing priors changes the diagnostic Hamiltonian; the trained PaiNN residual is intentionally not retrained.",
+    "If production dihedrals are empty, no_dihedrals aliases baseline and no_morse_no_dihedrals aliases no_morse.",
+    "Morse technical virtual markers are checkpoint-only interaction carriers and are stripped when Morse is absent."
+  ],
+  "schema_version": 1,
+  "scope": "diagnostic_only; trained PaiNN checkpoint is unchanged while selected analytic priors are removed",
+  "source": {
+    "base_runtime_particles_without_morse_markers": 1040,
+    "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/equilibrated.npz",
+    "checkpoint_sha256": "d39595f23ce92e08d9c5dc6878de1102b2ffa4e0246e55a0bb49d36532879ed4",
+    "dihedral_entries": 0,
+    "morse_entries": 180,
+    "pair_specific_morse_markers": 120,
+    "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/cg_priors.json",
+    "priors_sha256": "c18f8e3bfbc7ae8721d9c852b344b16a92e3b7bb451970237a7eaf8f7c1807f5"
+  },
+  "variants": {
+    "baseline": {
+      "alias_of": null,
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/equilibrated.npz",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/cg_priors.json",
+      "remaining_dihedral_entries": 0,
+      "remaining_morse_entries": 180,
+      "remaining_morse_markers": 120,
+      "remove_dihedrals": false,
+      "remove_morse": false,
+      "removed_dihedral_entries": 0,
+      "removed_morse_entries": 0,
+      "run_required": true
+    },
+    "no_dihedrals": {
+      "alias_of": "baseline",
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/equilibrated.npz",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/cg_priors.json",
+      "remaining_dihedral_entries": 0,
+      "remaining_morse_entries": 180,
+      "remaining_morse_markers": 120,
+      "remove_dihedrals": true,
+      "remove_morse": false,
+      "removed_dihedral_entries": 0,
+      "removed_morse_entries": 0,
+      "run_required": false
+    },
+    "no_morse": {
+      "alias_of": null,
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/inputs/no_morse/equilibrated.npz",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/inputs/no_morse/cg_priors.json",
+      "remaining_dihedral_entries": 0,
+      "remaining_morse_entries": 0,
+      "remaining_morse_markers": 0,
+      "remove_dihedrals": false,
+      "remove_morse": true,
+      "removed_dihedral_entries": 0,
+      "removed_morse_entries": 180,
+      "run_required": true
+    },
+    "no_morse_no_dihedrals": {
+      "alias_of": "no_morse",
+      "checkpoint": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/inputs/no_morse/equilibrated.npz",
+      "priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/inputs/no_morse/cg_priors.json",
+      "remaining_dihedral_entries": 0,
+      "remaining_morse_entries": 0,
+      "remaining_morse_markers": 0,
+      "remove_dihedrals": true,
+      "remove_morse": true,
+      "removed_dihedral_entries": 0,
+      "removed_morse_entries": 180,
+      "run_required": false
+    }
+  }
+}

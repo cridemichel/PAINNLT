@@ -1,0 +1,175 @@
+{
+  "bonded_analytic": {
+    "abs_p_minus_2": 0.04446398077956104,
+    "adjacent_local_exponents": [
+      {
+        "dt_high_ps": 0.003,
+        "dt_low_ps": 0.002,
+        "local_exponent_p": 2.059888565193384
+      },
+      {
+        "dt_high_ps": 0.004,
+        "dt_low_ps": 0.003,
+        "local_exponent_p": 3.1940036873472333
+      },
+      {
+        "dt_high_ps": 0.005,
+        "dt_low_ps": 0.004,
+        "local_exponent_p": -0.15220977606342226
+      }
+    ],
+    "c2_spread_max_over_min": 1.61648127201939,
+    "exponent_p": 2.044463980779561,
+    "local_exponent_range": 3.3462134634106557,
+    "loglog_r2": 0.9387534155233044,
+    "max_abs_block_mean_drift": 0.008374439870749484,
+    "max_relative_block_mean_drift": 3.66515557514411e-06,
+    "pair_specific_morse_runtime": "bonded-analytic",
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_runtime_ab_coarse_5ps/bonded_analytic/nve_certification_report.json",
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 182.101999868208,
+        "block_mean_drift_abs": 0.0008900971583898354,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 3.8956122101455206e-07,
+        "sigma_E": 0.000728407999472832
+      },
+      {
+        "C2_sigma_over_dt2": 186.57805789024417,
+        "block_mean_drift_abs": 0.0016531318497072789,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 7.235116569097728e-07,
+        "sigma_E": 0.0016792025210121977
+      },
+      {
+        "C2_sigma_over_dt2": 263.0497421061149,
+        "block_mean_drift_abs": 0.008374439870749484,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 3.66515557514411e-06,
+        "sigma_E": 0.004208795873697838
+      },
+      {
+        "C2_sigma_over_dt2": 162.72984207079608,
+        "block_mean_drift_abs": 0.0008099654637589992,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 3.5449070550135235e-07,
+        "sigma_E": 0.004068246051769902
+      }
+    ]
+  },
+  "caution": "This is a diagnostic runtime substitution, not a production parameter change. MorseBond returns a broken-bond signal at r>=r_cut; the existing switch A/B showed the sampled TEL22 trajectories remain far below the 15 nm cutoff, but production replacement requires a separate safety decision.",
+  "comparison": {
+    "c2_spread_ratio_bonded_over_marker": 1.0000000000853715,
+    "delta_abs_p_minus_2_bonded_minus_marker": -7.288214476375288e-11,
+    "delta_p_bonded_minus_marker": -7.288214476375288e-11,
+    "local_exponent_range_ratio_bonded_over_marker": 1.0000000003214553,
+    "max_relative_sigma_difference": 1.2794443282615475e-10,
+    "paired_runs": [
+      {
+        "C2_bonded_analytic": 182.101999868208,
+        "C2_marker_nonbonded": 182.10199984847907,
+        "dt_ps": 0.002,
+        "relative_sigma_difference": 1.0834000363502128e-10,
+        "sigma_bonded_analytic": 0.000728407999472832,
+        "sigma_marker_nonbonded": 0.0007284079993939163,
+        "sigma_ratio_bonded_over_marker": 1.00000000010834
+      },
+      {
+        "C2_bonded_analytic": 186.57805789024417,
+        "C2_marker_nonbonded": 186.57805791411582,
+        "dt_ps": 0.003,
+        "relative_sigma_difference": 1.2794443282615475e-10,
+        "sigma_bonded_analytic": 0.0016792025210121977,
+        "sigma_marker_nonbonded": 0.0016792025212270423,
+        "sigma_ratio_bonded_over_marker": 0.9999999998720556
+      },
+      {
+        "C2_bonded_analytic": 263.0497421061149,
+        "C2_marker_nonbonded": 263.04974208732256,
+        "dt_ps": 0.004,
+        "relative_sigma_difference": 7.144018709936972e-11,
+        "sigma_bonded_analytic": 0.004208795873697838,
+        "sigma_marker_nonbonded": 0.004208795873397161,
+        "sigma_ratio_bonded_over_marker": 1.0000000000714402
+      },
+      {
+        "C2_bonded_analytic": 162.72984207079608,
+        "C2_marker_nonbonded": 162.7298420730631,
+        "dt_ps": 0.005,
+        "relative_sigma_difference": 1.393130055760139e-11,
+        "sigma_bonded_analytic": 0.004068246051769902,
+        "sigma_marker_nonbonded": 0.004068246051826578,
+        "sigma_ratio_bonded_over_marker": 0.9999999999860687
+      }
+    ]
+  },
+  "energy_gauge_note": "Analytic MorseBond energy differs from the production unswitched Morse energy by +D per contact. This constant does not affect forces, sigma_E, C2, p, or absolute block-mean energy differences. Relative drift denominators are gauge-dependent and are reported but not used for A/B attribution.",
+  "interpretation": "morse_curvature_not_marker_nonbonded_runtime_explains_coarse_structure",
+  "kind": "tel22_priors_only_morse_runtime_ab_coarse_5ps",
+  "marker_nonbonded": {
+    "abs_p_minus_2": 0.044463980852443186,
+    "adjacent_local_exponents": [
+      {
+        "dt_high_ps": 0.003,
+        "dt_low_ps": 0.002,
+        "local_exponent_p": 2.059888565776133
+      },
+      {
+        "dt_high_ps": 0.004,
+        "dt_low_ps": 0.003,
+        "local_exponent_p": 3.1940036866541606
+      },
+      {
+        "dt_high_ps": 0.005,
+        "dt_low_ps": 0.004,
+        "local_exponent_p": -0.15220977568083685
+      }
+    ],
+    "c2_spread_max_over_min": 1.6164812718813886,
+    "exponent_p": 2.044463980852443,
+    "local_exponent_range": 3.3462134623349975,
+    "loglog_r2": 0.938753415548606,
+    "max_abs_block_mean_drift": 0.008374439871658979,
+    "max_relative_block_mean_drift": 1.2471002031371017e-06,
+    "pair_specific_morse_runtime": "marker-nonbonded",
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_priors_only_coarse_5ps/nve_certification_report.json",
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 182.10199984847907,
+        "block_mean_drift_abs": 0.000890097157935088,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 1.3255099606473216e-07,
+        "sigma_E": 0.0007284079993939163
+      },
+      {
+        "C2_sigma_over_dt2": 186.57805791411582,
+        "block_mean_drift_abs": 0.0016531318515262683,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 2.4618017436937126e-07,
+        "sigma_E": 0.0016792025212270423
+      },
+      {
+        "C2_sigma_over_dt2": 263.04974208732256,
+        "block_mean_drift_abs": 0.008374439871658979,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 1.2471002031371017e-06,
+        "sigma_E": 0.004208795873397161
+      },
+      {
+        "C2_sigma_over_dt2": 162.7298420730631,
+        "block_mean_drift_abs": 0.0008099654633042519,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 1.206179887014541e-07,
+        "sigma_E": 0.004068246051826578
+      }
+    ]
+  },
+  "no_morse_control": {
+    "c2_spread_max_over_min": 1.1508555806854877,
+    "exponent_p": 2.1526510010430426,
+    "summary": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/stock_espresso_coarse_5ps_summary.json"
+  },
+  "reference_validation": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_runtime_ab_coarse_5ps/marker_reference_validation.json",
+  "schema_version": 1,
+  "scope": "Same production TEL22 priors, same equilibrated checkpoint and particle set, PaiNN disabled, same 180 explicit Morse endpoint pairs and same D/a/r0/r_cut, same WCA/harmonic priors, same dt grid and 5 ps windows. Reference uses technical markers plus non-bonded Morse/hybrid decomposition. Candidate keeps the technical markers inert for checkpoint parity and applies analytic MorseBond directly to the physical COM/site endpoints using the regular decomposition."
+}

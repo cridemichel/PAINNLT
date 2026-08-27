@@ -1,0 +1,780 @@
+{
+  "best_by_c2_regularity": "top10_a0p850",
+  "caution": "Diagnostic parameter refinement only; numerical regularity does not establish a physically validated production reparameterization.",
+  "center_reference": {
+    "a_scale": 0.9,
+    "abs_p_minus_2": 0.08116538380459692,
+    "adjacent_local_exponents": [
+      {
+        "dt_high_ps": 0.003,
+        "dt_low_ps": 0.002,
+        "local_exponent_p": 2.0720702531228987
+      },
+      {
+        "dt_high_ps": 0.004,
+        "dt_low_ps": 0.003,
+        "local_exponent_p": 3.00111813147618
+      },
+      {
+        "dt_high_ps": 0.005,
+        "dt_low_ps": 0.004,
+        "local_exponent_p": 0.37077692362718995
+      }
+    ],
+    "c2_spread_max_over_min": 1.4384276727946617,
+    "exponent_p": 2.081165383804597,
+    "k_at_r0_ratio": 0.81,
+    "local_exponent_range": 2.63034120784899,
+    "loglog_r2": 0.9630492133957019,
+    "max_relative_block_mean_drift": 3.6451391574683157e-06,
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_top10_a_softening_coarse_5ps/top10_a0p90/nve_certification_report.json",
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 189.10983045226521,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 4.6121336187037194e-07,
+        "sigma_E": 0.0007564393218090609
+      },
+      {
+        "C2_sigma_over_dt2": 194.7175277565763,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 8.768049369466789e-07,
+        "sigma_E": 0.0017524577498091865
+      },
+      {
+        "C2_sigma_over_dt2": 259.70689588485084,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 3.6451391574683157e-06,
+        "sigma_E": 0.004155310334157614
+      },
+      {
+        "C2_sigma_over_dt2": 180.54915154703403,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 1.8654276692396462e-06,
+        "sigma_E": 0.004513728788675851
+      }
+    ],
+    "scaled_a": 0.27,
+    "source": "reused_test19"
+  },
+  "comparisons_to_a0p90": {
+    "top10_a0p850": {
+      "c2_spread_ratio": 0.9245446528032537,
+      "delta_abs_p_minus_2": -0.07548354823837067,
+      "delta_p": -0.08684721937082318,
+      "local_exponent_range_ratio": 0.6196346965734224,
+      "max_relative_sigma_difference": 0.218050560628533,
+      "paired_runs": [
+        {
+          "C2_reference": 189.10983045226521,
+          "C2_variant": 213.08388035755144,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 1.1267731553031968,
+          "sigma_reference": 0.0007564393218090609,
+          "sigma_variant": 0.0008523355214302057
+        },
+        {
+          "C2_reference": 194.7175277565763,
+          "C2_variant": 237.1757938480997,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.218050560628533,
+          "sigma_reference": 0.0017524577498091865,
+          "sigma_variant": 0.002134582144632897
+        },
+        {
+          "C2_reference": 259.70689588485084,
+          "C2_variant": 262.46739603593653,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 1.0106292909230628,
+          "sigma_reference": 0.004155310334157614,
+          "sigma_variant": 0.0041994783365749844
+        },
+        {
+          "C2_reference": 180.54915154703403,
+          "C2_variant": 197.3601388007481,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 1.0931103087977387,
+          "sigma_reference": 0.004513728788675851,
+          "sigma_variant": 0.004934003470018703
+        }
+      ]
+    },
+    "top10_a0p875": {
+      "c2_spread_ratio": 0.9584582895819614,
+      "delta_abs_p_minus_2": -0.07406053154230086,
+      "delta_p": -0.088270236066893,
+      "local_exponent_range_ratio": 0.6897717252232419,
+      "max_relative_sigma_difference": 0.11953927487461669,
+      "paired_runs": [
+        {
+          "C2_reference": 189.10983045226521,
+          "C2_variant": 187.2255999310487,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 0.9900363163738748,
+          "sigma_reference": 0.0007564393218090609,
+          "sigma_variant": 0.0007489023997241947
+        },
+        {
+          "C2_reference": 194.7175277565763,
+          "C2_variant": 217.99391982997545,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.1195392748746167,
+          "sigma_reference": 0.0017524577498091865,
+          "sigma_variant": 0.001961945278469779
+        },
+        {
+          "C2_reference": 259.70689588485084,
+          "C2_variant": 237.86086876810853,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.915881990571292,
+          "sigma_reference": 0.004155310334157614,
+          "sigma_variant": 0.003805773900289736
+        },
+        {
+          "C2_reference": 180.54915154703403,
+          "C2_variant": 172.52886026681364,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 0.9555783496543817,
+          "sigma_reference": 0.004513728788675851,
+          "sigma_variant": 0.004313221506670341
+        }
+      ]
+    },
+    "top10_a0p925": {
+      "c2_spread_ratio": 1.0415801869731007,
+      "delta_abs_p_minus_2": -0.07004976729082468,
+      "delta_p": -0.07004976729082468,
+      "local_exponent_range_ratio": 1.0041006229093592,
+      "max_relative_sigma_difference": 0.05810011454333941,
+      "paired_runs": [
+        {
+          "C2_reference": 189.10983045226521,
+          "C2_variant": 189.70922036730224,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 1.0031695333532031,
+          "sigma_reference": 0.0007564393218090609,
+          "sigma_variant": 0.000758836881469209
+        },
+        {
+          "C2_reference": 194.7175277565763,
+          "C2_variant": 200.70804361541911,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.0307651598079646,
+          "sigma_reference": 0.0017524577498091865,
+          "sigma_variant": 0.001806372392538772
+        },
+        {
+          "C2_reference": 259.70689588485084,
+          "C2_variant": 254.7891533175304,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.9810642588038906,
+          "sigma_reference": 0.004155310334157614,
+          "sigma_variant": 0.004076626453080486
+        },
+        {
+          "C2_reference": 180.54915154703403,
+          "C2_variant": 170.0592251614486,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 0.9418998854566606,
+          "sigma_reference": 0.004513728788675851,
+          "sigma_variant": 0.004251480629036216
+        }
+      ]
+    },
+    "top10_a0p950": {
+      "c2_spread_ratio": 1.108903241440626,
+      "delta_abs_p_minus_2": -0.03993713726708936,
+      "delta_p": -0.03993713726708936,
+      "local_exponent_range_ratio": 1.1490364059313773,
+      "max_relative_sigma_difference": 0.09997966533096403,
+      "paired_runs": [
+        {
+          "C2_reference": 189.10983045226521,
+          "C2_variant": 179.27526413495553,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 0.9479954781103137,
+          "sigma_reference": 0.0007564393218090609,
+          "sigma_variant": 0.0007171010565398221
+        },
+        {
+          "C2_reference": 194.7175277565763,
+          "C2_variant": 198.35856051279927,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.0186990498399036,
+          "sigma_reference": 0.0017524577498091865,
+          "sigma_variant": 0.0017852270446151936
+        },
+        {
+          "C2_reference": 259.70689588485084,
+          "C2_variant": 259.19669298172323,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.9980354664769708,
+          "sigma_reference": 0.004155310334157614,
+          "sigma_variant": 0.004147147087707572
+        },
+        {
+          "C2_reference": 180.54915154703403,
+          "C2_variant": 162.49790779957206,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 0.900020334669036,
+          "sigma_reference": 0.004513728788675851,
+          "sigma_variant": 0.004062447694989302
+        }
+      ]
+    }
+  },
+  "comparisons_to_full": {
+    "top10_a0p850": {
+      "c2_spread_ratio": 0.8227070961763548,
+      "delta_abs_p_minus_2": -0.038782145213334784,
+      "delta_p": -0.0501458163457873,
+      "local_exponent_range_ratio": 0.4870731332689217,
+      "max_relative_sigma_difference": 0.2711880299859266,
+      "paired_runs": [
+        {
+          "C2_reference": 182.101999868208,
+          "C2_variant": 213.08388035755144,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 1.1701347624505267,
+          "sigma_reference": 0.000728407999472832,
+          "sigma_variant": 0.0008523355214302057
+        },
+        {
+          "C2_reference": 186.57805789024417,
+          "C2_variant": 237.1757938480997,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.2711880299859266,
+          "sigma_reference": 0.0016792025210121977,
+          "sigma_variant": 0.002134582144632897
+        },
+        {
+          "C2_reference": 263.0497421061149,
+          "C2_variant": 262.46739603593653,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.9977861750955703,
+          "sigma_reference": 0.004208795873697838,
+          "sigma_variant": 0.0041994783365749844
+        },
+        {
+          "C2_reference": 162.72984207079608,
+          "C2_variant": 197.3601388007481,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 1.2128085192566342,
+          "sigma_reference": 0.004068246051769902,
+          "sigma_variant": 0.004934003470018703
+        }
+      ]
+    },
+    "top10_a0p875": {
+      "c2_spread_ratio": 0.8528851838981252,
+      "delta_abs_p_minus_2": -0.03735912851726497,
+      "delta_p": -0.05156883304185711,
+      "local_exponent_range_ratio": 0.5422053950540584,
+      "max_relative_sigma_difference": 0.1683791882870378,
+      "paired_runs": [
+        {
+          "C2_reference": 182.101999868208,
+          "C2_variant": 187.2255999310487,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 1.0281358802569371,
+          "sigma_reference": 0.000728407999472832,
+          "sigma_variant": 0.0007489023997241947
+        },
+        {
+          "C2_reference": 186.57805789024417,
+          "C2_variant": 217.99391982997545,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.1683791882870378,
+          "sigma_reference": 0.0016792025210121977,
+          "sigma_variant": 0.001961945278469779
+        },
+        {
+          "C2_reference": 263.0497421061149,
+          "C2_variant": 237.86086876810853,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.9042429270740547,
+          "sigma_reference": 0.004208795873697838,
+          "sigma_variant": 0.003805773900289736
+        },
+        {
+          "C2_reference": 162.72984207079608,
+          "C2_variant": 172.52886026681364,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 1.0602164794810929,
+          "sigma_reference": 0.004068246051769902,
+          "sigma_variant": 0.004313221506670341
+        }
+      ]
+    },
+    "top10_a0p900_reference": {
+      "c2_spread_ratio": 0.8898511215027597,
+      "delta_abs_p_minus_2": 0.036701403025035884,
+      "delta_p": 0.036701403025035884,
+      "local_exponent_range_ratio": 0.7860649766103066,
+      "max_relative_sigma_difference": 0.10950240748396745,
+      "paired_runs": [
+        {
+          "C2_reference": 182.101999868208,
+          "C2_variant": 189.10983045226521,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 1.0384829962830116,
+          "sigma_reference": 0.000728407999472832,
+          "sigma_variant": 0.0007564393218090609
+        },
+        {
+          "C2_reference": 186.57805789024417,
+          "C2_variant": 194.7175277565763,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.0436250112064098,
+          "sigma_reference": 0.0016792025210121977,
+          "sigma_variant": 0.0017524577498091865
+        },
+        {
+          "C2_reference": 263.0497421061149,
+          "C2_variant": 259.70689588485084,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.9872919616096203,
+          "sigma_reference": 0.004208795873697838,
+          "sigma_variant": 0.004155310334157614
+        },
+        {
+          "C2_reference": 162.72984207079608,
+          "C2_variant": 180.54915154703403,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 1.1095024074839674,
+          "sigma_reference": 0.004068246051769902,
+          "sigma_variant": 0.004513728788675851
+        }
+      ]
+    },
+    "top10_a0p925": {
+      "c2_spread_ratio": 0.9268512975130677,
+      "delta_abs_p_minus_2": -0.0333483642657888,
+      "delta_p": -0.0333483642657888,
+      "local_exponent_range_ratio": 0.7892883326616397,
+      "max_relative_sigma_difference": 0.07573230145576382,
+      "paired_runs": [
+        {
+          "C2_reference": 182.101999868208,
+          "C2_variant": 189.70922036730224,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 1.0417745027764647,
+          "sigma_reference": 0.000728407999472832,
+          "sigma_variant": 0.000758836881469209
+        },
+        {
+          "C2_reference": 186.57805789024417,
+          "C2_variant": 200.70804361541911,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.0757323014557638,
+          "sigma_reference": 0.0016792025210121977,
+          "sigma_variant": 0.001806372392538772
+        },
+        {
+          "C2_reference": 263.0497421061149,
+          "C2_variant": 254.7891533175304,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.9685968565395813,
+          "sigma_reference": 0.004208795873697838,
+          "sigma_variant": 0.004076626453080486
+        },
+        {
+          "C2_reference": 162.72984207079608,
+          "C2_variant": 170.0592251614486,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 1.045040190523038,
+          "sigma_reference": 0.004068246051769902,
+          "sigma_variant": 0.004251480629036216
+        }
+      ]
+    },
+    "top10_a0p950": {
+      "c2_spread_ratio": 0.9867587930339864,
+      "delta_abs_p_minus_2": -0.0032357342420534785,
+      "delta_p": -0.0032357342420534785,
+      "local_exponent_range_ratio": 0.9032172755528388,
+      "max_relative_sigma_difference": 0.06313980730512836,
+      "paired_runs": [
+        {
+          "C2_reference": 182.101999868208,
+          "C2_variant": 179.27526413495553,
+          "dt_ps": 0.002,
+          "sigma_ratio_variant_over_reference": 0.9844771845707447,
+          "sigma_reference": 0.000728407999472832,
+          "sigma_variant": 0.0007171010565398221
+        },
+        {
+          "C2_reference": 186.57805789024417,
+          "C2_variant": 198.35856051279927,
+          "dt_ps": 0.003,
+          "sigma_ratio_variant_over_reference": 1.0631398073051284,
+          "sigma_reference": 0.0016792025210121977,
+          "sigma_variant": 0.0017852270446151936
+        },
+        {
+          "C2_reference": 263.0497421061149,
+          "C2_variant": 259.19669298172323,
+          "dt_ps": 0.004,
+          "sigma_ratio_variant_over_reference": 0.9853523934540209,
+          "sigma_reference": 0.004208795873697838,
+          "sigma_variant": 0.004147147087707572
+        },
+        {
+          "C2_reference": 162.72984207079608,
+          "C2_variant": 162.49790779957206,
+          "dt_ps": 0.005,
+          "sigma_ratio_variant_over_reference": 0.9985747280998214,
+          "sigma_reference": 0.004068246051769902,
+          "sigma_variant": 0.004062447694989302
+        }
+      ]
+    }
+  },
+  "full_reference": {
+    "abs_p_minus_2": 0.04446398077956104,
+    "adjacent_local_exponents": [
+      {
+        "dt_high_ps": 0.003,
+        "dt_low_ps": 0.002,
+        "local_exponent_p": 2.059888565193384
+      },
+      {
+        "dt_high_ps": 0.004,
+        "dt_low_ps": 0.003,
+        "local_exponent_p": 3.1940036873472333
+      },
+      {
+        "dt_high_ps": 0.005,
+        "dt_low_ps": 0.004,
+        "local_exponent_p": -0.15220977606342226
+      }
+    ],
+    "c2_spread_max_over_min": 1.61648127201939,
+    "exponent_p": 2.044463980779561,
+    "local_exponent_range": 3.3462134634106557,
+    "loglog_r2": 0.9387534155233044,
+    "max_relative_block_mean_drift": 3.66515557514411e-06,
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_runtime_ab_coarse_5ps/bonded_analytic/nve_certification_report.json",
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 182.101999868208,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 3.8956122101455206e-07,
+        "sigma_E": 0.000728407999472832
+      },
+      {
+        "C2_sigma_over_dt2": 186.57805789024417,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 7.235116569097728e-07,
+        "sigma_E": 0.0016792025210121977
+      },
+      {
+        "C2_sigma_over_dt2": 263.0497421061149,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 3.66515557514411e-06,
+        "sigma_E": 0.004208795873697838
+      },
+      {
+        "C2_sigma_over_dt2": 162.72984207079608,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 3.5449070550135235e-07,
+        "sigma_E": 0.004068246051769902
+      }
+    ]
+  },
+  "input_manifest": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_top10_a_refinement_coarse_5ps/inputs/morse_top10_a_refinement_inputs.json",
+  "interpretation": "refined_a_scale_improves_c2_regularity_over_a0p90",
+  "kind": "tel22_morse_top10_local_curvature_a_refinement_coarse_5ps",
+  "ranking_by_c2_regularity": [
+    "top10_a0p850",
+    "top10_a0p875",
+    "top10_a0p900_reference",
+    "top10_a0p925",
+    "top10_a0p950"
+  ],
+  "schema_version": 1,
+  "scope": "PaiNN disabled; bonded-analytic Morse runtime; fixed top-10%-local-curvature 18-contact subset from test 18. Full a=1.00 and center a=0.90 reports are reused; only Morse a changes in test-20 candidates.",
+  "selection_policy": "Lexicographic: C2 spread, local-exponent range, -R2, |p-2|. Global p is deliberately secondary.",
+  "variants": {
+    "top10_a0p850": {
+      "a_scale": 0.85,
+      "abs_p_minus_2": 0.0056818355662262565,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 2.264179870340375
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 2.352212619662743
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": 0.7223619434526647
+        }
+      ],
+      "c2_spread_max_over_min": 1.3298906133265327,
+      "exponent_p": 1.9943181644337737,
+      "k_at_r0_ratio": 0.7224999999999999,
+      "local_exponent_range": 1.6298506762100784,
+      "loglog_r2": 0.9756954989349187,
+      "max_relative_block_mean_drift": 2.0987934862957225e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_top10_a_refinement_coarse_5ps/top10_a0p850/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 213.08388035755144,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 4.575907560397151e-07,
+          "sigma_E": 0.0008523355214302057
+        },
+        {
+          "C2_sigma_over_dt2": 237.1757938480997,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 1.6784108769910253e-06,
+          "sigma_E": 0.002134582144632897
+        },
+        {
+          "C2_sigma_over_dt2": 262.46739603593653,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 2.0987934862957225e-06,
+          "sigma_E": 0.0041994783365749844
+        },
+        {
+          "C2_sigma_over_dt2": 197.3601388007481,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 1.95298149815084e-06,
+          "sigma_E": 0.004934003470018703
+        }
+      ],
+      "scaled_a": 0.255,
+      "source": "test20_candidate"
+    },
+    "top10_a0p875": {
+      "a_scale": 0.875,
+      "abs_p_minus_2": 0.007104852262296069,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 2.3752551383758473
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 2.3031775503833627
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": 0.5609201455120636
+        }
+      ],
+      "c2_spread_max_over_min": 1.3786729269541327,
+      "exponent_p": 1.992895147737704,
+      "k_at_r0_ratio": 0.765625,
+      "local_exponent_range": 1.8143349928637837,
+      "loglog_r2": 0.967257777657101,
+      "max_relative_block_mean_drift": 2.7564139661316925e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_top10_a_refinement_coarse_5ps/top10_a0p875/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 187.2255999310487,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 4.4689850588615596e-07,
+          "sigma_E": 0.0007489023997241947
+        },
+        {
+          "C2_sigma_over_dt2": 217.99391982997545,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 1.2637641204606813e-06,
+          "sigma_E": 0.001961945278469779
+        },
+        {
+          "C2_sigma_over_dt2": 237.86086876810853,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 2.7564139661316925e-06,
+          "sigma_E": 0.003805773900289736
+        },
+        {
+          "C2_sigma_over_dt2": 172.52886026681364,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 9.691224118334218e-07,
+          "sigma_E": 0.004313221506670341
+        }
+      ],
+      "scaled_a": 0.2625,
+      "source": "test20_candidate"
+    },
+    "top10_a0p900_reference": {
+      "a_scale": 0.9,
+      "abs_p_minus_2": 0.08116538380459692,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 2.0720702531228987
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 3.00111813147618
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": 0.37077692362718995
+        }
+      ],
+      "c2_spread_max_over_min": 1.4384276727946617,
+      "exponent_p": 2.081165383804597,
+      "k_at_r0_ratio": 0.81,
+      "local_exponent_range": 2.63034120784899,
+      "loglog_r2": 0.9630492133957019,
+      "max_relative_block_mean_drift": 3.6451391574683157e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_top10_a_softening_coarse_5ps/top10_a0p90/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 189.10983045226521,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 4.6121336187037194e-07,
+          "sigma_E": 0.0007564393218090609
+        },
+        {
+          "C2_sigma_over_dt2": 194.7175277565763,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 8.768049369466789e-07,
+          "sigma_E": 0.0017524577498091865
+        },
+        {
+          "C2_sigma_over_dt2": 259.70689588485084,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 3.6451391574683157e-06,
+          "sigma_E": 0.004155310334157614
+        },
+        {
+          "C2_sigma_over_dt2": 180.54915154703403,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 1.8654276692396462e-06,
+          "sigma_E": 0.004513728788675851
+        }
+      ],
+      "scaled_a": 0.27,
+      "source": "reused_test19"
+    },
+    "top10_a0p925": {
+      "a_scale": 0.925,
+      "abs_p_minus_2": 0.011115616513772242,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 2.138998031947727
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 2.82933572661352
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": 0.18820848134819299
+        }
+      ],
+      "c2_spread_max_over_min": 1.4982377643767457,
+      "exponent_p": 2.0111156165137722,
+      "k_at_r0_ratio": 0.8556250000000001,
+      "local_exponent_range": 2.641127245265327,
+      "loglog_r2": 0.9559831252222898,
+      "max_relative_block_mean_drift": 3.337376984954952e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_top10_a_refinement_coarse_5ps/top10_a0p925/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 189.70922036730224,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 4.878306300942261e-07,
+          "sigma_E": 0.000758836881469209
+        },
+        {
+          "C2_sigma_over_dt2": 200.70804361541911,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 1.0170664735547685e-06,
+          "sigma_E": 0.001806372392538772
+        },
+        {
+          "C2_sigma_over_dt2": 254.7891533175304,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 3.337376984954952e-06,
+          "sigma_E": 0.004076626453080486
+        },
+        {
+          "C2_sigma_over_dt2": 170.0592251614486,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 1.51296451982312e-06,
+          "sigma_E": 0.004251480629036216
+        }
+      ],
+      "scaled_a": 0.2775,
+      "source": "test20_candidate"
+    },
+    "top10_a0p950": {
+      "a_scale": 0.95,
+      "abs_p_minus_2": 0.04122824653750756,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 2.2494761929215845
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 2.9298838085634773
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": -0.09247399927652437
+        }
+      ],
+      "c2_spread_max_over_min": 1.5950771089398963,
+      "exponent_p": 2.0412282465375076,
+      "k_at_r0_ratio": 0.9025,
+      "local_exponent_range": 3.0223578078400015,
+      "loglog_r2": 0.9419797190562287,
+      "max_relative_block_mean_drift": 3.590982260182032e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_top10_a_refinement_coarse_5ps/top10_a0p950/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 179.27526413495553,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 3.762709377476347e-07,
+          "sigma_E": 0.0007171010565398221
+        },
+        {
+          "C2_sigma_over_dt2": 198.35856051279927,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 9.916259201464475e-07,
+          "sigma_E": 0.0017852270446151936
+        },
+        {
+          "C2_sigma_over_dt2": 259.19669298172323,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 3.590982260182032e-06,
+          "sigma_E": 0.004147147087707572
+        },
+        {
+          "C2_sigma_over_dt2": 162.49790779957206,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 2.967171067317572e-07,
+          "sigma_E": 0.004062447694989302
+        }
+      ],
+      "scaled_a": 0.285,
+      "source": "test20_candidate"
+    }
+  }
+}

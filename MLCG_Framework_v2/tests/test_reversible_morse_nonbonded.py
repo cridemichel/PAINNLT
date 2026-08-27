@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "preprocessing"))
 from prior_kernels import switched_morse_radial_force_array  # noqa: E402
 from espresso_interactions import (  # noqa: E402
     configure_pair_specific_morse,
+    configure_pair_specific_morse_bonds,
     create_pair_specific_morse_markers,
     configure_type_pair_morse,
     max_type_pair_morse_cutoff,
@@ -69,9 +70,13 @@ class FakeParticle:
         self.related_to = None
         self.gamma = None
         self.gamma_rot = None
+        self.bonds = []
 
     def vs_auto_relate_to(self, parent_pid):
         self.related_to = parent_pid
+
+    def add_bond(self, bond):
+        self.bonds.append(bond)
 
 
 class FakeParticles:
@@ -87,10 +92,28 @@ class FakeParticles:
         return self.items[int(pid)]
 
 
+class FakeBondedInteractions:
+    def __init__(self):
+        self.items = []
+
+    def add(self, bond):
+        self.items.append(bond)
+
+
 class FakeSystem:
     def __init__(self):
         self.non_bonded_inter = FakeNonBonded()
+        self.bonded_inter = FakeBondedInteractions()
         self.part = FakeParticles()
+
+
+class FakeAnalyticMorse:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+
+class FakeInteractions:
+    MorseBond = FakeAnalyticMorse
 
 
 class ReversibleMorseTests(unittest.TestCase):
@@ -140,6 +163,54 @@ class ReversibleMorseTests(unittest.TestCase):
             "eps": 8.0, "alpha": 2.5, "rmin": 0.6,
             "cutoff": 2.5, "switch_start": 2.0,
         }])
+
+    def test_bonded_diagnostic_uses_physical_endpoints_and_same_morse_parameters(self):
+        priors = {"bonds": [
+            {"type": "morse", "mol_i": 0, "site_i": 0, "mol_j": 1, "site_j": -1,
+             "D": 8.0, "a": 2.5, "r0": 0.6, "r_cut": 15.0},
+        ]}
+        _types, contacts = prepare_pair_specific_morse(priors, 5)
+        system = FakeSystem()
+        com0 = system.part.add(pos=[0, 0, 0], type=6, mol_id=0)
+        site0 = system.part.add(pos=[0.2, 0, 0], type=1, mol_id=0)
+        com1 = system.part.add(pos=[1, 0, 0], type=6, mol_id=1)
+        configure_pair_specific_morse_bonds(
+            system, contacts, {0: com0.id, 1: com1.id}, {(0, 0): site0.id}, FakeInteractions
+        )
+        self.assertEqual(len(system.bonded_inter.items), 1)
+        bond = system.bonded_inter.items[0]
+        self.assertEqual(
+            bond.kwargs, {"D": 8.0, "a": 2.5, "r_0": 0.6, "r_cut": 15.0}
+        )
+        self.assertEqual(site0.bonds, [(bond, com1.id)])
+        self.assertEqual(com0.bonds, [])
+
+    def test_pair_specific_stock_shifted_mode_keeps_mapping_and_sets_negative_switch(self):
+        priors = {"bonds": [
+            {"type": "morse", "mol_i": 1, "site_i": 0, "mol_j": 3, "site_j": -1,
+             "D": 8, "a": 2.5, "r0": 0.6, "r_switch": 2.0, "r_cut": 2.5},
+        ]}
+        types, contacts = prepare_pair_specific_morse(priors, 5)
+        system = FakeSystem()
+        configure_pair_specific_morse(
+            system, contacts, types, switch_mode="stock-shifted"
+        )
+        handle = system.non_bonded_inter[types[(1, 0)], types[(3, -1)]].morse
+        self.assertEqual(handle.calls, [{
+            "eps": 8.0, "alpha": 2.5, "rmin": 0.6,
+            "cutoff": 2.5, "switch_start": -1.0,
+        }])
+
+    def test_unknown_runtime_switch_mode_fails_closed(self):
+        priors = {"bonds": [
+            {"type": "morse", "mol_i": 1, "mol_j": 3,
+             "D": 8, "a": 2.5, "r0": 0.6, "r_cut": 2.5},
+        ]}
+        types, contacts = prepare_pair_specific_morse(priors, 5)
+        with self.assertRaisesRegex(ValueError, "Unknown Morse switch mode"):
+            configure_pair_specific_morse(
+                FakeSystem(), contacts, types, switch_mode="bad-mode"
+            )
 
     def test_marker_creation_preserves_physical_site_types_and_attachment_point(self):
         system = FakeSystem()
@@ -196,6 +267,14 @@ class ReversibleMorseTests(unittest.TestCase):
             system.non_bonded_inter[1, 3].morse.calls,
             [{"eps": 4.0, "alpha": 2.0, "rmin": 0.55,
               "cutoff": 1.2, "switch_start": 0.9}],
+        )
+
+        stock_system = FakeSystem()
+        configure_type_pair_morse(stock_system, items, switch_mode="stock-shifted")
+        self.assertEqual(
+            stock_system.non_bonded_inter[1, 3].morse.calls,
+            [{"eps": 4.0, "alpha": 2.0, "rmin": 0.55,
+              "cutoff": 1.2, "switch_start": -1.0}],
         )
 
     def test_type_pair_morse_rejects_duplicate_unknown_and_implicit_cutoff(self):
@@ -421,11 +500,11 @@ class Other(NonBondedInteraction):
                 search_from,
             )
             type_pair_call = text.index(
-                "configure_type_pair_morse(system, morse_type_pairs)",
+                "configure_type_pair_morse(",
                 search_from,
             )
             morse_call = text.index(
-                "configure_pair_specific_morse(system, morse_contacts, morse_marker_types)",
+                "configure_pair_specific_morse(",
                 search_from,
             )
             self.assertLess(

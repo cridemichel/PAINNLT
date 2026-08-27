@@ -1,0 +1,56 @@
+{
+  "abs_p_minus_2": 0.044463980852443186,
+  "adjacent_local_exponents": [
+    {
+      "dt_high_ps": 0.003,
+      "dt_low_ps": 0.002,
+      "local_exponent_p": 2.059888565776133
+    },
+    {
+      "dt_high_ps": 0.004,
+      "dt_low_ps": 0.003,
+      "local_exponent_p": 3.1940036866541606
+    },
+    {
+      "dt_high_ps": 0.005,
+      "dt_low_ps": 0.004,
+      "local_exponent_p": -0.15220977568083685
+    }
+  ],
+  "c2_spread_max_over_min": 1.6164812718813886,
+  "exponent_p": 2.044463980852443,
+  "interpretation": "coarse_scaling_remains_nonideal_review_c2_and_local_exponents",
+  "kind": "tel22_priors_only_native_espresso_coarse_5ps",
+  "loglog_r2": 0.938753415548606,
+  "max_relative_block_mean_drift": 1.2471002031371017e-06,
+  "precision_note": "--ml-precision is irrelevant to force arithmetic because PaiNN is disabled. This is not an FP32-vs-FP64 ML comparison; the classical ESPResSo path uses its native numerical precision.",
+  "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_priors_only_coarse_5ps/nve_certification_report.json",
+  "runs": [
+    {
+      "C2_sigma_over_dt2": 182.10199984847907,
+      "dt_ps": 0.002,
+      "relative_block_mean_drift": 1.3255099606473216e-07,
+      "sigma_E": 0.0007284079993939163
+    },
+    {
+      "C2_sigma_over_dt2": 186.57805791411582,
+      "dt_ps": 0.003,
+      "relative_block_mean_drift": 2.4618017436937126e-07,
+      "sigma_E": 0.0016792025212270423
+    },
+    {
+      "C2_sigma_over_dt2": 263.04974208732256,
+      "dt_ps": 0.004,
+      "relative_block_mean_drift": 1.2471002031371017e-06,
+      "sigma_E": 0.004208795873397161
+    },
+    {
+      "C2_sigma_over_dt2": 162.7298420730631,
+      "dt_ps": 0.005,
+      "relative_block_mean_drift": 1.206179887014541e-07,
+      "sigma_E": 0.004068246051826578
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Production TEL22 priors and identical equilibrated checkpoint; trained model retained only for provenance and disabled with --disable-ml. ESPResSo integrates the classical conservative Hamiltonian at native precision. Four coarse timesteps, 5 ps each."
+}

@@ -1,0 +1,384 @@
+{
+  "caution": "Diagnostic force ablation only. D=0 variants are not reparameterized TEL22 models and are not candidates for production promotion.",
+  "comparisons": {
+    "top_05pct_zeroD": {
+      "c2_spread_ratio": 0.9548180274910222,
+      "delta_abs_p_minus_2": 0.07441472696720841,
+      "delta_p": -0.1633426885263305,
+      "fraction": 0.05,
+      "local_exponent_range_ratio": 0.871021105384473,
+      "max_relative_sigma_difference": 0.19018287872840145,
+      "paired_runs": [
+        {
+          "C2_full": 182.101999868208,
+          "C2_variant": 216.7346824253428,
+          "dt_ps": 0.002,
+          "sigma_full": 0.000728407999472832,
+          "sigma_ratio_variant_over_full": 1.1901828787284014,
+          "sigma_variant": 0.0008669387297013712
+        },
+        {
+          "C2_full": 186.57805789024417,
+          "C2_variant": 198.34275963339852,
+          "dt_ps": 0.003,
+          "sigma_full": 0.0016792025210121977,
+          "sigma_ratio_variant_over_full": 1.0630551195364837,
+          "sigma_variant": 0.0017850848367005866
+        },
+        {
+          "C2_full": 263.0497421061149,
+          "C2_variant": 262.1549582202709,
+          "dt_ps": 0.004,
+          "sigma_full": 0.004208795873697838,
+          "sigma_ratio_variant_over_full": 0.9965984232537928,
+          "sigma_variant": 0.004194479331524334
+        },
+        {
+          "C2_full": 162.72984207079608,
+          "C2_variant": 169.85048391916644,
+          "dt_ps": 0.005,
+          "sigma_full": 0.004068246051769902,
+          "sigma_ratio_variant_over_full": 1.0437574433659962,
+          "sigma_variant": 0.004246262097979161
+        }
+      ],
+      "zeroed_count": 9
+    },
+    "top_10pct_zeroD": {
+      "c2_spread_ratio": 0.8250592723384559,
+      "delta_abs_p_minus_2": 0.07068694965335975,
+      "delta_p": 0.07068694965335975,
+      "fraction": 0.1,
+      "local_exponent_range_ratio": 0.5733144857520027,
+      "max_relative_sigma_difference": 0.11570890112473664,
+      "paired_runs": [
+        {
+          "C2_full": 182.101999868208,
+          "C2_variant": 174.41237943636054,
+          "dt_ps": 0.002,
+          "sigma_full": 0.000728407999472832,
+          "sigma_ratio_variant_over_full": 0.9577730039350878,
+          "sigma_variant": 0.0006976495177454422
+        },
+        {
+          "C2_full": 186.57805789024417,
+          "C2_variant": 189.55125418151408,
+          "dt_ps": 0.003,
+          "sigma_full": 0.0016792025210121977,
+          "sigma_ratio_variant_over_full": 1.0159354016484559,
+          "sigma_variant": 0.0017059612876336267
+        },
+        {
+          "C2_full": 263.0497421061149,
+          "C2_variant": 232.61254550587094,
+          "dt_ps": 0.004,
+          "sigma_full": 0.004208795873697838,
+          "sigma_ratio_variant_over_full": 0.8842910988752634,
+          "sigma_variant": 0.003721800728093935
+        },
+        {
+          "C2_full": 162.72984207079608,
+          "C2_variant": 177.69655882663488,
+          "dt_ps": 0.005,
+          "sigma_full": 0.004068246051769902,
+          "sigma_ratio_variant_over_full": 1.0919727848646685,
+          "sigma_variant": 0.004442413970665872
+        }
+      ],
+      "zeroed_count": 18
+    },
+    "top_20pct_zeroD": {
+      "c2_spread_ratio": 0.8759259224658476,
+      "delta_abs_p_minus_2": -0.012961654907305942,
+      "delta_p": -0.012961654907305942,
+      "fraction": 0.2,
+      "local_exponent_range_ratio": 0.5783844232110574,
+      "max_relative_sigma_difference": 0.3175078682237906,
+      "paired_runs": [
+        {
+          "C2_full": 182.101999868208,
+          "C2_variant": 173.61039655124438,
+          "dt_ps": 0.002,
+          "sigma_full": 0.000728407999472832,
+          "sigma_ratio_variant_over_full": 0.9533689727564265,
+          "sigma_variant": 0.0006944415862049775
+        },
+        {
+          "C2_full": 186.57805789024417,
+          "C2_variant": 245.8180593083106,
+          "dt_ps": 0.003,
+          "sigma_full": 0.0016792025210121977,
+          "sigma_ratio_variant_over_full": 1.3175078682237906,
+          "sigma_variant": 0.0022123625337747955
+        },
+        {
+          "C2_full": 263.0497421061149,
+          "C2_variant": 222.06193721222067,
+          "dt_ps": 0.004,
+          "sigma_full": 0.004208795873697838,
+          "sigma_ratio_variant_over_full": 0.8441823034467769,
+          "sigma_variant": 0.0035529909953955306
+        },
+        {
+          "C2_full": 162.72984207079608,
+          "C2_variant": 174.59706720853896,
+          "dt_ps": 0.005,
+          "sigma_full": 0.004068246051769902,
+          "sigma_ratio_variant_over_full": 1.0729259304054386,
+          "sigma_variant": 0.004364926680213474
+        }
+      ],
+      "zeroed_count": 36
+    }
+  },
+  "input_manifest": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_curvature_quantiles_coarse_5ps/inputs/curvature_quantile_inputs.json",
+  "interpretation": "broader_high_local_curvature_morse_subset_contributes_to_coarse_structure",
+  "kind": "tel22_morse_local_curvature_quantile_ablation_coarse_5ps",
+  "no_morse_control": {
+    "c2_spread_max_over_min": 1.1508555806854877,
+    "exponent_p": 2.1526510010430426,
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 154.99203499544112,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 6.657644000867214e-08,
+        "sigma_E": 0.0006199681399817644
+      },
+      {
+        "C2_sigma_over_dt2": 169.38607470309242,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 3.701792044588133e-07,
+        "sigma_E": 0.001524474672327832
+      },
+      {
+        "C2_sigma_over_dt2": 174.47216388929792,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 1.469068887729479e-06,
+        "sigma_E": 0.0027915546222287667
+      },
+      {
+        "C2_sigma_over_dt2": 178.37344843630382,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 1.261832954944496e-06,
+        "sigma_E": 0.004459336210907596
+      }
+    ],
+    "summary": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/stock_espresso_coarse_5ps_summary.json"
+  },
+  "ranking_metric": "max(abs(U''(r_eq)), abs(U'(r_eq)/r_eq))",
+  "reference_full_morse": {
+    "abs_p_minus_2": 0.04446398077956104,
+    "adjacent_local_exponents": [
+      {
+        "dt_high_ps": 0.003,
+        "dt_low_ps": 0.002,
+        "local_exponent_p": 2.059888565193384
+      },
+      {
+        "dt_high_ps": 0.004,
+        "dt_low_ps": 0.003,
+        "local_exponent_p": 3.1940036873472333
+      },
+      {
+        "dt_high_ps": 0.005,
+        "dt_low_ps": 0.004,
+        "local_exponent_p": -0.15220977606342226
+      }
+    ],
+    "c2_spread_max_over_min": 1.61648127201939,
+    "exponent_p": 2.044463980779561,
+    "local_exponent_range": 3.3462134634106557,
+    "loglog_r2": 0.9387534155233044,
+    "max_relative_block_mean_drift": 3.66515557514411e-06,
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_runtime_ab_coarse_5ps/bonded_analytic/nve_certification_report.json",
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 182.101999868208,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 3.8956122101455206e-07,
+        "sigma_E": 0.000728407999472832
+      },
+      {
+        "C2_sigma_over_dt2": 186.57805789024417,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 7.235116569097728e-07,
+        "sigma_E": 0.0016792025210121977
+      },
+      {
+        "C2_sigma_over_dt2": 263.0497421061149,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 3.66515557514411e-06,
+        "sigma_E": 0.004208795873697838
+      },
+      {
+        "C2_sigma_over_dt2": 162.72984207079608,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 3.5449070550135235e-07,
+        "sigma_E": 0.004068246051769902
+      }
+    ]
+  },
+  "schema_version": 1,
+  "scope": "PaiNN disabled; bonded-analytic Morse runtime in every full/quantile branch; same checkpoint mechanical state and particle set. Selected contacts are retained but set D=0 in nested top local-curvature subsets.",
+  "source_uniform_k_at_r0": [
+    9.0
+  ],
+  "variants": {
+    "top_05pct_zeroD": {
+      "abs_p_minus_2": 0.11887870774676945,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 1.7812948666586244
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 2.969609009095863
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": 0.05498645934350745
+        }
+      ],
+      "c2_spread_max_over_min": 1.5434454596257323,
+      "exponent_p": 1.8811212922532305,
+      "local_exponent_range": 2.9146225497523552,
+      "loglog_r2": 0.9476408106189194,
+      "max_relative_block_mean_drift": 3.478275723645233e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_curvature_quantiles_coarse_5ps/top_05pct_zeroD/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 216.7346824253428,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 6.972004224055528e-07,
+          "sigma_E": 0.0008669387297013712
+        },
+        {
+          "C2_sigma_over_dt2": 198.34275963339852,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 8.927450898257833e-07,
+          "sigma_E": 0.0017850848367005866
+        },
+        {
+          "C2_sigma_over_dt2": 262.1549582202709,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 3.478275723645233e-06,
+          "sigma_E": 0.004194479331524334
+        },
+        {
+          "C2_sigma_over_dt2": 169.85048391916644,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 1.18242504394553e-06,
+          "sigma_E": 0.004246262097979161
+        }
+      ]
+    },
+    "top_10pct_zeroD": {
+      "abs_p_minus_2": 0.1151509304329208,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 2.205287618934116
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 2.711600532787484
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": 0.793167881795776
+        }
+      ],
+      "c2_spread_max_over_min": 1.3336928620410595,
+      "exponent_p": 2.115150930432921,
+      "local_exponent_range": 1.9184326509917082,
+      "loglog_r2": 0.9785812789512215,
+      "max_relative_block_mean_drift": 2.8901038762141267e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_curvature_quantiles_coarse_5ps/top_10pct_zeroD/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 174.41237943636054,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 3.277659206179134e-07,
+          "sigma_E": 0.0006976495177454422
+        },
+        {
+          "C2_sigma_over_dt2": 189.55125418151408,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 7.318846343264757e-07,
+          "sigma_E": 0.0017059612876336267
+        },
+        {
+          "C2_sigma_over_dt2": 232.61254550587094,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 2.8901038762141267e-06,
+          "sigma_E": 0.003721800728093935
+        },
+        {
+          "C2_sigma_over_dt2": 177.69655882663488,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 2.220352612665825e-06,
+          "sigma_E": 0.004442413970665872
+        }
+      ]
+    },
+    "top_20pct_zeroD": {
+      "abs_p_minus_2": 0.0315023258722551,
+      "adjacent_local_exponents": [
+        {
+          "dt_high_ps": 0.003,
+          "dt_low_ps": 0.002,
+          "local_exponent_p": 2.8577260302620036
+        },
+        {
+          "dt_high_ps": 0.004,
+          "dt_low_ps": 0.003,
+          "local_exponent_p": 1.6467095578436208
+        },
+        {
+          "dt_high_ps": 0.005,
+          "dt_low_ps": 0.004,
+          "local_exponent_p": 0.9223282862861566
+        }
+      ],
+      "c2_spread_max_over_min": 1.4159178493423508,
+      "exponent_p": 2.031502325872255,
+      "local_exponent_range": 1.935397743975847,
+      "loglog_r2": 0.9550345362531585,
+      "max_relative_block_mean_drift": 2.6467469680097177e-06,
+      "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_curvature_quantiles_coarse_5ps/top_20pct_zeroD/nve_certification_report.json",
+      "runs": [
+        {
+          "C2_sigma_over_dt2": 173.61039655124438,
+          "dt_ps": 0.002,
+          "relative_block_mean_drift": 2.555199248308939e-07,
+          "sigma_E": 0.0006944415862049775
+        },
+        {
+          "C2_sigma_over_dt2": 245.8180593083106,
+          "dt_ps": 0.003,
+          "relative_block_mean_drift": 1.7813528709558118e-06,
+          "sigma_E": 0.0022123625337747955
+        },
+        {
+          "C2_sigma_over_dt2": 222.06193721222067,
+          "dt_ps": 0.004,
+          "relative_block_mean_drift": 2.6467469680097177e-06,
+          "sigma_E": 0.0035529909953955306
+        },
+        {
+          "C2_sigma_over_dt2": 174.59706720853896,
+          "dt_ps": 0.005,
+          "relative_block_mean_drift": 2.263463898574853e-06,
+          "sigma_E": 0.004364926680213474
+        }
+      ]
+    }
+  }
+}

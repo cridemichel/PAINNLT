@@ -9,6 +9,7 @@ import math
 
 DEFAULT_MORSE_R_CUT_NM = 15.0
 DEFAULT_MORSE_SWITCH_FRACTION = 0.75
+MORSE_SWITCH_MODES = ("switched", "stock-shifted")
 
 
 def switched_morse_energy_radial_force(
@@ -192,18 +193,33 @@ def prepare_type_pair_morse(
     return normalized
 
 
+def _runtime_morse_switch_start(item: dict[str, Any], switch_mode: str) -> float:
+    """Map the runtime Morse mode to the ESPResSo ``switch_start`` parameter.
+
+    ``switched`` is the production MLCG C2-tail convention. ``stock-shifted``
+    selects the backward-compatible ESPResSo shifted-Morse branch while keeping
+    the same pair mapping, markers, cutoff and force kernel infrastructure.
+    """
+    if switch_mode not in MORSE_SWITCH_MODES:
+        raise ValueError(
+            f"Unknown Morse switch mode {switch_mode!r}; expected one of {MORSE_SWITCH_MODES}"
+        )
+    return float(item["r_switch"]) if switch_mode == "switched" else -1.0
+
+
 def configure_type_pair_morse(
-    system: Any, interactions: list[dict[str, Any]]
+    system: Any, interactions: list[dict[str, Any]], *, switch_mode: str = "switched"
 ) -> None:
-    """Configure ordinary ESPResSo type-pair non-bonded switched Morse terms."""
+    """Configure ordinary ESPResSo type-pair non-bonded Morse terms."""
     for item in interactions:
+        switch_start = _runtime_morse_switch_start(item, switch_mode)
         try:
             system.non_bonded_inter[item["type_i"], item["type_j"]].morse.set_params(
                 eps=item["D"],
                 alpha=item["a"],
                 rmin=item["r0"],
                 cutoff=item["r_cut"],
-                switch_start=item["r_switch"],
+                switch_start=switch_start,
             )
         except Exception as exc:
             raise RuntimeError(
@@ -318,12 +334,61 @@ def create_pair_specific_morse_markers(
     return marker_parts
 
 
+def configure_pair_specific_morse_bonds(
+    system: Any,
+    contacts: list[dict[str, Any]],
+    mol_com_parts: dict[int, int],
+    mol_vs_parts: dict[tuple[int, int], int],
+    interactions: Any,
+) -> None:
+    """Activate pair-specific Morse terms as analytic ESPResSo bonds.
+
+    This is a diagnostic alternative to the production marker/non-bonded path.
+    The explicit endpoint mapping and Morse ``D/a/r0/r_cut`` parameters are kept
+    unchanged. Site endpoints use the existing physical CG virtual sites, so
+    ESPResSo transfers their bonded forces to the parent rigid body at the same
+    attachment point used by the coincident technical Morse marker.
+
+    The analytic ``MorseBond`` uses ``D*(1-exp(-a*(r-r0)))**2`` whereas the
+    production unswitched Morse gauge is lower by the constant ``D``. Forces are
+    therefore identical below the switch region; energy fluctuations are
+    comparable but absolute total-energy offsets are not.
+    """
+    for contact in contacts:
+        endpoint_i = (int(contact["mol_i"]), int(contact["site_i"]))
+        endpoint_j = (int(contact["mol_j"]), int(contact["site_j"]))
+
+        def endpoint_pid(endpoint: tuple[int, int]) -> int:
+            mol_id, site_id = endpoint
+            if site_id == -1:
+                if mol_id not in mol_com_parts:
+                    raise ValueError(f"Missing Morse COM endpoint molecule {mol_id}")
+                return int(mol_com_parts[mol_id])
+            pid = mol_vs_parts.get((mol_id, site_id))
+            if pid is None:
+                raise ValueError(f"Missing Morse physical site endpoint {mol_id}:{site_id}")
+            return int(pid)
+
+        p_i = endpoint_pid(endpoint_i)
+        p_j = endpoint_pid(endpoint_j)
+        bond = make_analytic_morse_bond(interactions, contact)
+        system.bonded_inter.add(bond)
+        system.part.by_id(p_i).add_bond((bond, p_j))
+
+
 def configure_pair_specific_morse(
     system: Any,
     contacts: list[dict[str, Any]],
     marker_types: dict[tuple[int, int], int],
+    *,
+    switch_mode: str = "switched",
 ) -> None:
-    """Activate switched Morse terms between technical endpoint marker types."""
+    """Activate Morse terms between technical endpoint marker types.
+
+    The default ``switched`` mode is production behavior. ``stock-shifted`` is
+    a diagnostic control that leaves the marker/non-bonded machinery unchanged
+    and selects ESPResSo's original shifted-Morse branch via switch_start=-1.
+    """
     for contact in contacts:
         endpoint_i = (contact["mol_i"], contact["site_i"])
         endpoint_j = (contact["mol_j"], contact["site_j"])
@@ -336,13 +401,14 @@ def configure_pair_specific_morse(
                 "The ESPResSo build does not expose the non-bonded Morse interaction. "
                 "Enable the MORSE build feature, rerun CMake, and rebuild ESPResSo."
             ) from exc
+        switch_start = _runtime_morse_switch_start(contact, switch_mode)
         try:
             morse.set_params(
                 eps=contact["D"],
                 alpha=contact["a"],
                 rmin=contact["r0"],
                 cutoff=contact["r_cut"],
-                switch_start=contact["r_switch"],
+                switch_start=switch_start,
             )
         except Exception as exc:
             message = str(exc)

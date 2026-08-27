@@ -244,6 +244,16 @@ def main() -> int:
     parser.add_argument("--device", default="cpu", help="PaiNN device; CPU is the certification reference")
     parser.add_argument("--ml-precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is for the FP32 noise-floor A/B diagnostic")
     parser.add_argument("--neighbor-search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal used by the ESPResSo runner")
+    parser.add_argument("--morse-switch-mode", choices=("switched", "stock-shifted"), default="switched", help="Morse runtime branch forwarded to run_cg_md.py; stock-shifted keeps the same non-bonded marker path but disables the C2 tail switch")
+    parser.add_argument(
+        "--pair-specific-morse-runtime",
+        choices=("marker-nonbonded", "bonded-analytic"),
+        default="marker-nonbonded",
+        help=(
+            "Explicit pair-specific Morse realization forwarded to run_cg_md.py. "
+            "bonded-analytic is a diagnostic control; production default is marker-nonbonded."
+        ),
+    )
     parser.add_argument("--allow-nonreference-device", action="store_true")
     parser.add_argument("--output-dir", default="nve_certification")
     parser.add_argument("--overwrite", action="store_true")
@@ -310,6 +320,10 @@ def main() -> int:
 
     if args.disable_ml and not args.model:
         raise ValueError("--disable-ml requires --model so checkpoint/model provenance remains bound")
+    if args.pair_specific_morse_runtime == "bonded-analytic" and args.morse_switch_mode != "switched":
+        raise ValueError(
+            "--pair-specific-morse-runtime bonded-analytic requires --morse-switch-mode switched"
+        )
 
     if args.duration_ps <= 0.0:
         raise ValueError("--duration-ps must be positive")
@@ -455,6 +469,8 @@ def main() -> int:
             "--device", args.device,
             "--ml_precision", args.ml_precision,
             "--neighbor_search", args.neighbor_search,
+            "--morse_switch_mode", args.morse_switch_mode,
+            "--pair_specific_morse_runtime", args.pair_specific_morse_runtime,
             "--nve",
             "--no_vtf",
             "--energy_file", "energy.csv",
@@ -569,6 +585,8 @@ def main() -> int:
             "force_cap": 0.0,
             "reference_device": "cpu",
             "neighbor_search": args.neighbor_search,
+            "morse_switch_mode": args.morse_switch_mode,
+            "pair_specific_morse_runtime": args.pair_specific_morse_runtime,
             "hamiltonian_mode": (
                 "model_active" if model is not None and not args.disable_ml
                 else "conservative_classical_model_provenance_ml_disabled" if args.disable_ml
@@ -581,6 +599,8 @@ def main() -> int:
         "checkpoint_provenance": checkpoint_provenance,
         "device": args.device,
         "neighbor_search": args.neighbor_search,
+        "morse_switch_mode": args.morse_switch_mode,
+        "pair_specific_morse_runtime": args.pair_specific_morse_runtime,
         "runs": run_metrics,
     }
     if args.diagnostic_only:

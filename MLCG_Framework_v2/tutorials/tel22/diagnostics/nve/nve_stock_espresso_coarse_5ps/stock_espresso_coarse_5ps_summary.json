@@ -1,0 +1,74 @@
+{
+  "abs_p_minus_2": 0.15265100104304263,
+  "adjacent_local_exponents": [
+    {
+      "dt_high_ps": 0.003,
+      "dt_low_ps": 0.002,
+      "local_exponent_p": 2.2190246335596924
+    },
+    {
+      "dt_high_ps": 0.004,
+      "dt_low_ps": 0.003,
+      "local_exponent_p": 2.1028379495789555
+    },
+    {
+      "dt_high_ps": 0.005,
+      "dt_low_ps": 0.004,
+      "local_exponent_p": 2.099102876355503
+    }
+  ],
+  "c2_spread_max_over_min": 1.1508555806854877,
+  "caution": "This is an integration/control diagnostic. Removing Morse changes the physical Hamiltonian; the result should not be interpreted as a reparameterized TEL22 production model.",
+  "comparison_to_priors_only_with_morse": {
+    "c2_spread_ratio_stock_over_priors_only": 0.7119510758983499,
+    "delta_abs_p_minus_2_stock_minus_priors_only": 0.10818702019059945,
+    "delta_p_stock_minus_priors_only": 0.10818702019059945,
+    "max_drift_ratio_stock_over_priors_only": 1.1779878505624577,
+    "reference_kind": "tel22_priors_only_native_espresso_coarse_5ps",
+    "reference_summary": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_priors_only_coarse_5ps/priors_only_coarse_5ps_summary.json"
+  },
+  "exponent_p": 2.1526510010430426,
+  "input_manifest": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/inputs/ablation_inputs.json",
+  "interpretation": "stock_espresso_coarse_scaling_nonideal_review_local_structure",
+  "kind": "tel22_stock_espresso_no_ml_no_custom_morse_coarse_5ps",
+  "loglog_r2": 0.9997792191550355,
+  "max_relative_block_mean_drift": 1.469068887729479e-06,
+  "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/stock_only/nve_certification_report.json",
+  "runs": [
+    {
+      "C2_sigma_over_dt2": 154.99203499544112,
+      "dt_ps": 0.002,
+      "relative_block_mean_drift": 6.657644000867214e-08,
+      "sigma_E": 0.0006199681399817644
+    },
+    {
+      "C2_sigma_over_dt2": 169.38607470309242,
+      "dt_ps": 0.003,
+      "relative_block_mean_drift": 3.701792044588133e-07,
+      "sigma_E": 0.001524474672327832
+    },
+    {
+      "C2_sigma_over_dt2": 174.47216388929792,
+      "dt_ps": 0.004,
+      "relative_block_mean_drift": 1.469068887729479e-06,
+      "sigma_E": 0.0027915546222287667
+    },
+    {
+      "C2_sigma_over_dt2": 178.37344843630382,
+      "dt_ps": 0.005,
+      "relative_block_mean_drift": 1.261832954944496e-06,
+      "sigma_E": 0.004459336210907596
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Derived TEL22 Hamiltonian with trained PaiNN disabled and all custom pair-specific Morse priors removed. Production harmonic bonds, harmonic angles, WCA pair parameters and topology exclusions are retained. WCA is evaluated through stock ESPResSo LennardJones. Four coarse timesteps, 5 ps each.",
+  "stock_interaction_inventory": {
+    "conservative_splines_active": false,
+    "custom_morse_active": false,
+    "dihedrals_active": false,
+    "harmonic_angles": 200,
+    "harmonic_bonds": 210,
+    "painn_active": false,
+    "wca_runtime": "espressomd.interactions.LennardJones"
+  }
+}

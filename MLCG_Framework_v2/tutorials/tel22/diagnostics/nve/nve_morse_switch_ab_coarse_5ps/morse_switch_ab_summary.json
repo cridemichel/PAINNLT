@@ -1,0 +1,181 @@
+{
+  "caution": "Stock-shifted Morse has the ESPResSo cutoff energy shift and a nonzero force immediately below cutoff. This is a diagnostic A/B, not a proposed production replacement.",
+  "comparison": {
+    "c2_spread_ratio_stock_shifted_over_switched": 0.9999999999910543,
+    "delta_abs_p_minus_2_stock_shifted_minus_switched": 5.8624216592306766e-12,
+    "delta_p_stock_shifted_minus_switched": 5.8624216592306766e-12,
+    "max_relative_sigma_difference": 2.3501645074475164e-11,
+    "paired_runs": [
+      {
+        "C2_stock_shifted": 182.10199985071165,
+        "C2_switched": 182.10199984847907,
+        "dt_ps": 0.002,
+        "relative_sigma_difference": 1.2259970816330679e-11,
+        "sigma_ratio_stock_shifted_over_switched": 1.00000000001226,
+        "sigma_stock_shifted": 0.0007284079994028465,
+        "sigma_switched": 0.0007284079993939163
+      },
+      {
+        "C2_stock_shifted": 186.57805790973092,
+        "C2_switched": 186.57805791411582,
+        "dt_ps": 0.003,
+        "relative_sigma_difference": 2.3501645074475164e-11,
+        "sigma_ratio_stock_shifted_over_switched": 0.9999999999764984,
+        "sigma_stock_shifted": 0.0016792025211875782,
+        "sigma_switched": 0.0016792025212270423
+      },
+      {
+        "C2_stock_shifted": 263.04974208860216,
+        "C2_switched": 263.04974208732256,
+        "dt_ps": 0.004,
+        "relative_sigma_difference": 4.864553204697586e-12,
+        "sigma_ratio_stock_shifted_over_switched": 1.0000000000048646,
+        "sigma_stock_shifted": 0.004208795873417635,
+        "sigma_switched": 0.004208795873397161
+      },
+      {
+        "C2_stock_shifted": 162.72984207531044,
+        "C2_switched": 162.7298420730631,
+        "dt_ps": 0.005,
+        "relative_sigma_difference": 1.3810286247917247e-11,
+        "sigma_ratio_stock_shifted_over_switched": 1.0000000000138103,
+        "sigma_stock_shifted": 0.004068246051882761,
+        "sigma_switched": 0.004068246051826578
+      }
+    ]
+  },
+  "interpretation": "switching_not_responsible_marker_nonbonded_path_remains_candidate",
+  "kind": "tel22_priors_only_morse_switch_ab_coarse_5ps",
+  "morse_inventory": {
+    "entries": 180,
+    "explicit_r_cut_entries": 0,
+    "explicit_r_switch_entries": 0,
+    "r0_nm": {
+      "max": 2.0555468812384516,
+      "median": 1.3465364368930497,
+      "min": 0.9042439892464026
+    },
+    "r_cut_nm": {
+      "max": 15.0,
+      "median": 15.0,
+      "min": 15.0
+    },
+    "r_switch_nm": {
+      "max": 11.763886720309614,
+      "median": 11.586634109223262,
+      "min": 11.4760609973116
+    }
+  },
+  "no_morse_control": {
+    "c2_spread_max_over_min": 1.1508555806854877,
+    "exponent_p": 2.1526510010430426,
+    "summary": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_stock_espresso_coarse_5ps/stock_espresso_coarse_5ps_summary.json"
+  },
+  "reference_validation": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_switch_ab_coarse_5ps/switched_reference_validation.json",
+  "schema_version": 1,
+  "scope": "Same production TEL22 priors, same equilibrated mechanical checkpoint, PaiNN disabled, same pair-specific marker mapping, same Morse D/a/r0/r_cut, same hybrid/non-bonded path, same dt grid and 5 ps windows. The only intended runtime change is switched C2-tail Morse versus ESPResSo stock-shifted Morse selected by switch_start=-1.",
+  "stock_shifted": {
+    "abs_p_minus_2": 0.04446398085830561,
+    "adjacent_local_exponents": [
+      {
+        "dt_high_ps": 0.003,
+        "dt_low_ps": 0.002,
+        "local_exponent_p": 2.059888565687934
+      },
+      {
+        "dt_high_ps": 0.004,
+        "dt_low_ps": 0.003,
+        "local_exponent_p": 3.194003686752763
+      },
+      {
+        "dt_high_ps": 0.005,
+        "dt_low_ps": 0.004,
+        "local_exponent_p": -0.15220977564074792
+      }
+    ],
+    "c2_spread_max_over_min": 1.616481271866928,
+    "exponent_p": 2.0444639808583056,
+    "loglog_r2": 0.9387534155498128,
+    "max_relative_block_mean_drift": 1.305383211204456e-06,
+    "morse_switch_mode": "stock-shifted",
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_morse_switch_ab_coarse_5ps/stock_shifted/nve_certification_report.json",
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 182.10199985071165,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 1.3874574352057121e-07,
+        "sigma_E": 0.0007284079994028465
+      },
+      {
+        "C2_sigma_over_dt2": 186.57805790973092,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 2.5768536146059405e-07,
+        "sigma_E": 0.0016792025211875782
+      },
+      {
+        "C2_sigma_over_dt2": 263.04974208860216,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 1.305383211204456e-06,
+        "sigma_E": 0.004208795873417635
+      },
+      {
+        "C2_sigma_over_dt2": 162.72984207531044,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 1.2625504930161383e-07,
+        "sigma_E": 0.004068246051882761
+      }
+    ]
+  },
+  "switched": {
+    "abs_p_minus_2": 0.044463980852443186,
+    "adjacent_local_exponents": [
+      {
+        "dt_high_ps": 0.003,
+        "dt_low_ps": 0.002,
+        "local_exponent_p": 2.059888565776133
+      },
+      {
+        "dt_high_ps": 0.004,
+        "dt_low_ps": 0.003,
+        "local_exponent_p": 3.1940036866541606
+      },
+      {
+        "dt_high_ps": 0.005,
+        "dt_low_ps": 0.004,
+        "local_exponent_p": -0.15220977568083685
+      }
+    ],
+    "c2_spread_max_over_min": 1.6164812718813886,
+    "exponent_p": 2.044463980852443,
+    "loglog_r2": 0.938753415548606,
+    "max_relative_block_mean_drift": 1.2471002031371017e-06,
+    "morse_switch_mode": "switched",
+    "report": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/nve/nve_priors_only_coarse_5ps/nve_certification_report.json",
+    "runs": [
+      {
+        "C2_sigma_over_dt2": 182.10199984847907,
+        "dt_ps": 0.002,
+        "relative_block_mean_drift": 1.3255099606473216e-07,
+        "sigma_E": 0.0007284079993939163
+      },
+      {
+        "C2_sigma_over_dt2": 186.57805791411582,
+        "dt_ps": 0.003,
+        "relative_block_mean_drift": 2.4618017436937126e-07,
+        "sigma_E": 0.0016792025212270423
+      },
+      {
+        "C2_sigma_over_dt2": 263.04974208732256,
+        "dt_ps": 0.004,
+        "relative_block_mean_drift": 1.2471002031371017e-06,
+        "sigma_E": 0.004208795873397161
+      },
+      {
+        "C2_sigma_over_dt2": 162.7298420730631,
+        "dt_ps": 0.005,
+        "relative_block_mean_drift": 1.206179887014541e-07,
+        "sigma_E": 0.004068246051826578
+      }
+    ]
+  }
+}
