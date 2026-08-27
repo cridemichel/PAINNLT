@@ -25,8 +25,9 @@ Controlled TEL22/MPS allocator A/B from the same checkpoint:
   A: MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=0
   B: MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=100 (override supported)
 
-The bridge default remains 0/OFF. The candidate calls emptyCache only after a
-successful force evaluation has returned and all per-call tensors are dead.
+The bridge MPS default is 100. This diagnostic explicitly disables it in A and
+restores it in B. emptyCache runs only after a successful force evaluation has
+returned and all per-call tensors are dead.
 
 Useful overrides:
   MPS_EMPTYCACHE_AB_STEPS=5000

@@ -28,10 +28,11 @@ namespace {
 
 using ProfileClock = std::chrono::steady_clock;
 
-std::int64_t nonnegative_integer_environment(const char* name) {
+std::int64_t nonnegative_integer_environment(
+    const char* name, std::int64_t default_value) {
     const char* raw = std::getenv(name);
     if (raw == nullptr) {
-        return 0;
+        return default_value;
     }
     const std::string text(raw);
     std::size_t consumed = 0;
@@ -129,16 +130,18 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
         if (m_device.type() == torch::kMPS) {
             constexpr const char* cadence_env =
                 "MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS";
+            constexpr std::int64_t default_cadence = 100;
+            const bool cadence_overridden = std::getenv(cadence_env) != nullptr;
             m_mps_empty_cache_every_force_calls =
-                nonnegative_integer_environment(cadence_env);
-            if (std::getenv(cadence_env) != nullptr) {
-                // stderr + endl is intentional: pypresso may not flush C++
-                // stdout when it finalizes MPI, while the A/B diagnostic must
-                // attest which allocator policy the loaded binary applied.
-                std::cerr << "[PaiNN] MPS diagnostic emptyCache cadence: "
-                          << m_mps_empty_cache_every_force_calls
-                          << " successful force calls" << std::endl;
-            }
+                nonnegative_integer_environment(cadence_env, default_cadence);
+            // stderr + endl is intentional: pypresso may not flush C++ stdout
+            // when it finalizes MPI.  Every MPS run must attest the effective
+            // allocator policy, including the production default.
+            std::cerr << "[PaiNN] MPS diagnostic emptyCache cadence: "
+                      << m_mps_empty_cache_every_force_calls
+                      << " successful force calls ("
+                      << (cadence_overridden ? "environment override" : "MPS default")
+                      << ")" << std::endl;
         }
 
         // Report the raw, unconstrained isolated-species offsets.  They are

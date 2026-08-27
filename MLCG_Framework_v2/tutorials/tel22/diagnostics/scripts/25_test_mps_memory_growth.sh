@@ -63,8 +63,9 @@ External TEL22 MPS process-memory diagnostic. It runs an isolated NVT from the
 completed test-24 candidate and samples process-tree RSS, macOS physical
 footprint (when vmmap is available), swap, and the flushed integration step.
 
-No model, prior, bridge file, or production file is modified. Allocator-related
-environment variables are recorded in the report for controlled A/B runs.
+No model, prior, bridge file, or production file is modified. MPS defaults to
+emptyCache every 100 successful force calls; an environment override is
+recorded in the report and the effective policy is attested in run.log.
 This test diagnoses memory growth; it does not claim that growth is a leak.
 
 Useful overrides:
@@ -187,6 +188,7 @@ steps / dt        : ${STEPS} / ${DT} ps
 sampling interval : ${SAMPLE_SECONDS} s
 warmup step       : ${WARMUP_STEP}
 memory safety guard: ${ABORT_MEMORY_MIB} MiB (0=disabled)
+MPS emptyCache cadence: ${MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS:-100 (bridge default)}
 output            : ${OUT_REL}
 [NOTE] This run is isolated and never overwrites test-24 or production artifacts.
 [NOTE] Memory classification is diagnostic and cannot alone distinguish live tensors from allocator cache.

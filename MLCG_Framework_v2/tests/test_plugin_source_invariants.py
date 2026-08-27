@@ -47,9 +47,17 @@ class PluginSourceInvariantTests(unittest.TestCase):
         self.assertLess(forward, return_after_forward)
         self.assertNotIn("if (num_edges == 0) return", self.source)
 
-    def test_mps_empty_cache_is_diagnostic_default_off_and_after_tensor_scope(self):
+    def test_mps_empty_cache_defaults_to_100_only_on_mps_and_runs_after_tensor_scope(self):
         header = (ROOT / "simulation" / "espresso_plugin" / "PaiNN_ML_Potential.hpp").read_text(encoding="utf-8")
         self.assertIn("MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS", self.source)
+        self.assertIn("constexpr std::int64_t default_cadence = 100", self.source)
+        self.assertIn(
+            "nonnegative_integer_environment(cadence_env, default_cadence)",
+            self.source,
+        )
+        self.assertIn("m_device.type() == torch::kMPS", self.source)
+        # The member remains zero until the constructor selects MPS.  CPU and
+        # CUDA therefore retain the original allocator behavior.
         self.assertIn("m_mps_empty_cache_every_force_calls = 0", header)
         wrapper = self.source.index("void PaiNN_ML_Potential::calculate_forces(")
         impl_call = self.source.index("calculate_forces_impl(cell_structure", wrapper)
@@ -58,6 +66,7 @@ class PluginSourceInvariantTests(unittest.TestCase):
         self.assertLess(impl_call, empty_cache)
         self.assertLess(empty_cache, impl_body)
         self.assertIn("m_mps_empty_cache_every_force_calls > 0", self.source[impl_call:empty_cache])
+        self.assertIn('"environment override" : "MPS default"', self.source)
         self.assertNotIn("ScopedMpsAutoreleasePool", self.source)
 
     def test_runtime_precision_is_selectable_without_changing_fp32_default(self):
