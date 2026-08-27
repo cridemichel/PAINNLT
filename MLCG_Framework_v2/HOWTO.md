@@ -1,5 +1,7 @@
 # MLCG Framework v2 — Guida tecnica completa
 
+> Riferimento matematico dedicato: [`MATHEMATICAL_REFERENCE.md`](MATHEMATICAL_REFERENCE.md).
+
 > Stato documentato: **17 agosto 2026**.
 > Questa guida descrive il framework nella configurazione corrente, inclusi i fix recenti per:
 > Morse switched non-bonded reversibile (pair-specific e type-pair) in ESPResSo, validazione tollerante ai round-trip `float32` del manifest,
@@ -1824,6 +1826,73 @@ e **non** per il tipo COM dummy.
 
 I COM dei corpi single-site coincidono esattamente con il loro virtual site. Applicare una SoftSphere singolare anche alla coppia site/COM a \(r=0\) può produrre `NaN` nell'energia nonbonded nonostante `a=0`.
 
+## 18.3 Policy della memoria nel runtime Apple MPS
+
+Il bridge PaiNN applica una policy specifica quando il device runtime effettivo è
+Apple MPS. Se `MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS` non è definita, il default
+è:
+
+```text
+emptyCache ogni 100 chiamate di forza PaiNN completate con successo
+```
+
+La chiamata avviene soltanto dopo il ritorno della valutazione interna delle
+forze, quando i tensori temporanei e il grafo autograd della singola valutazione
+sono già stati distrutti. `emptyCache()` può quindi rilasciare blocchi inutilizzati
+dell'allocator MPS, ma non il modello, i pesi, lo stato MD o tensori ancora vivi.
+Una chiamata di forza non è formalmente sinonimo di uno step MD: inizializzazione
+e workflow speciali possono eseguire valutazioni aggiuntive.
+
+La variabile d'ambiente resta un override esplicito:
+
+```bash
+# Default MPS del framework
+unset MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS
+
+# Disabilita lo svuotamento periodico
+export MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=0
+
+# Cadenza MPS personalizzata
+export MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=50
+```
+
+Il valore deve essere un intero non negativo. CPU e CUDA non applicano questa
+policy e mantengono il comportamento precedente. Ogni inizializzazione MPS
+scrive nel log la cadenza effettiva e la sua origine, per esempio:
+
+```text
+[PaiNN] MPS diagnostic emptyCache cadence: 100 successful force calls (MPS default)
+[PaiNN] MPS diagnostic emptyCache cadence: 0 successful force calls (environment override)
+```
+
+La scelta `100` è stata validata sul runtime TEL22: nel confronto matched da
+5000 step il picco di physical footprint è sceso da 27136 MiB (26.5 GiB) a
+8704 MiB (8.5 GiB) senza penalità temporale misurabile; nel run candidato da
+20000 step l'RSS si è stabilizzato dopo il ramp-up e il footprint finale era
+9011 MiB (8.8 GiB), con picchi transitori inferiori alla baseline. Questi numeri
+motivano il default del framework, ma non sono una garanzia universale per ogni
+modello, versione di PyTorch o hardware. `emptyCache()` gestisce memoria
+inutilizzata: non dimostra da solo l'assenza di leak e non corregge problemi
+numerici del potenziale. Un precedente esperimento con autorelease pool
+Objective-C per ogni chiamata di forza non aveva prodotto un beneficio materiale
+ed è stato rimosso; non fa parte della policy corrente.
+
+Questa policy riguarda l'**inferenza PaiNN dentro ESPResSo**. Non va confusa con
+`mps_empty_cache_every_batches` della configurazione del trainer, descritta nella
+sezione 20.5. Dopo una modifica al bridge occorre sincronizzare e ricompilare
+ESPResSo; non serve ricompilare `train_painn`:
+
+```bash
+bash simulation/espresso_plugin/copy_plugin_files.sh
+cmake --build espresso/build --parallel
+```
+
+I diagnostici TEL22 `25_test_mps_memory_growth.sh` e
+`26_test_mps_empty_cache_ab.sh` misurano rispettivamente una singola policy e un
+confronto controllato `0` contro una cadenza positiva. I report sono diagnostici:
+devono essere interpretati considerando ramp-up, plateau e campionamento sparso
+di `vmmap`, non soltanto una regressione globale.
+
 ---
 
 # 19. Configurazione `topology_config.json`
@@ -3382,6 +3451,10 @@ Usare una sola rank salvo parity experiment esplicito con:
 MPS può accelerare training/runtime, ma parti del calcolo restano float32.
 
 Per certificazione energetica usare CPU, dove il plugin può usare accumulo più accurato.
+
+Se un run MPS mostra crescita del physical footprint, verificare innanzitutto nel
+log la riga `MPS diagnostic emptyCache cadence`. La policy runtime, gli override e
+i diagnostici matched sono descritti nella sezione 18.3.
 
 ---
 

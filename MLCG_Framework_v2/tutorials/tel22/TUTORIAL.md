@@ -1,5 +1,9 @@
 # TEL22 reference example
 
+For the equations, sign conventions, units, and parameter sensitivities used by
+the framework, see [`../../MATHEMATICAL_REFERENCE_EN.md`](../../MATHEMATICAL_REFERENCE_EN.md)
+or the [Italian version](../../MATHEMATICAL_REFERENCE.md).
+
 This directory is an **application example**, not part of the MLCG core API.
 No code under `preprocessing/`, `training/`, `simulation/` or `tests/` imports
 TEL22 files.
@@ -28,6 +32,49 @@ Inputs kept under version control:
 Generated files such as `tel22_dataset.bin`, `cg_priors.json`,
 `rigid_bodies_info.json`, `*.pt`, manifests, checkpoints and trajectories are
 runtime artifacts and are intentionally excluded from the source tree.
+
+## Apple MPS runtime memory
+
+When `DEVICE=mps`, or when `DEVICE=auto` selects Apple MPS, the PaiNN ESPResSo
+bridge empties unused MPS allocator blocks after every 100 successful force
+calls by default. CPU and CUDA runs are unchanged. The startup log records the
+effective policy:
+
+```text
+[PaiNN] MPS diagnostic emptyCache cadence: 100 successful force calls (MPS default)
+```
+
+No environment variable is required for the validated default. To disable it
+for a controlled comparison, or to select another cadence:
+
+```bash
+# Disable on MPS
+MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=0 \
+PYRESSO=/path/to/pypresso DEVICE=mps bash 05_run_espresso.sh
+
+# Example custom cadence
+MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=50 \
+PYRESSO=/path/to/pypresso DEVICE=mps bash 05_run_espresso.sh
+```
+
+The default `100` was selected from TEL22 matched memory diagnostics and a
+20000-step NVT validation. It reduces retained MPS memory substantially, but it
+does not change forces, energies, checkpoints, or the Hamiltonian: cache release
+occurs only after per-call tensors are dead. Strict NVE certification still uses
+CPU by default because accelerator precision, rather than allocator retention,
+is the relevant concern there.
+
+After changing the bridge source, synchronize it into ESPResSo and rebuild only
+ESPResSo:
+
+```bash
+bash simulation/espresso_plugin/copy_plugin_files.sh
+cmake --build espresso/build --parallel
+```
+
+The trainer executable is unaffected. For memory regression or allocator A/B
+tests, use `diagnostics/scripts/25_test_mps_memory_growth.sh` and
+`diagnostics/scripts/26_test_mps_empty_cache_ab.sh`.
 
 ## NVE energy-conservation certification
 

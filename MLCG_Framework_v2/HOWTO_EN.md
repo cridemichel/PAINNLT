@@ -1,5 +1,7 @@
 # MLCG Framework v2 — Complete Technical Guide
 
+> Dedicated mathematical reference: [`MATHEMATICAL_REFERENCE_EN.md`](MATHEMATICAL_REFERENCE_EN.md).
+
 > Documented state: **17 August 2026**.
 > This guide describes the current framework configuration, including the recent fixes for:
 > reversible switched non-bonded Morse interactions (pair-specific and type-pair) in ESPResSo, manifest validation tolerant to harmless
@@ -1740,6 +1742,73 @@ TEL22 step-zero terms
 
 and was fixed by restricting the dummy interaction to `0 .. num_species-1`.
 
+## 18.3 Apple MPS runtime memory policy
+
+The PaiNN bridge applies a device-specific policy when the effective runtime
+device is Apple MPS. If `MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS` is unset, the
+default is:
+
+```text
+emptyCache after every 100 successfully completed PaiNN force calls
+```
+
+The cache is emptied only after the internal force evaluation has returned, so
+the temporary tensors and per-call autograd graph have already been destroyed.
+`emptyCache()` can therefore release unused MPS allocator blocks, but not the
+model, its weights, the MD state, or any live tensor. A force call is not
+formally identical to one MD step: initialization and specialized workflows may
+perform additional evaluations.
+
+The environment variable remains an explicit override:
+
+```bash
+# Framework MPS default
+unset MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS
+
+# Disable periodic cache emptying
+export MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=0
+
+# Select a custom MPS cadence
+export MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS=50
+```
+
+The value must be a non-negative integer. CPU and CUDA do not apply this policy
+and retain their previous behavior. Every MPS initialization logs the effective
+cadence and its source, for example:
+
+```text
+[PaiNN] MPS diagnostic emptyCache cadence: 100 successful force calls (MPS default)
+[PaiNN] MPS diagnostic emptyCache cadence: 0 successful force calls (environment override)
+```
+
+The value `100` was validated on the TEL22 runtime. In the matched 5000-step
+comparison, peak physical footprint decreased from 27136 MiB (26.5 GiB) to
+8704 MiB (8.5 GiB) without a measurable timing penalty. In the 20000-step
+candidate run, RSS stabilized after the allocation ramp and the final footprint
+was 9011 MiB (8.8 GiB), with transient peaks below the baseline. These
+measurements motivate the framework default, but they are not a universal
+guarantee for every model, PyTorch release, or machine. `emptyCache()` manages
+unused memory; by itself it neither proves the absence of a leak nor fixes
+numerical problems in a potential. An earlier per-force-call Objective-C
+autorelease-pool experiment produced no material benefit and was removed; it is
+not part of the current policy.
+
+This policy applies to **PaiNN inference inside ESPResSo**. It is separate from
+the trainer configuration option `mps_empty_cache_every_batches` described in
+section 20.5. After changing the bridge, synchronize and rebuild ESPResSo; the
+`train_painn` executable does not need to be rebuilt:
+
+```bash
+bash simulation/espresso_plugin/copy_plugin_files.sh
+cmake --build espresso/build --parallel
+```
+
+The TEL22 diagnostics `25_test_mps_memory_growth.sh` and
+`26_test_mps_empty_cache_ab.sh` measure a single policy and a controlled `0`
+versus positive-cadence comparison, respectively. Their reports are diagnostic:
+interpret ramp-up, plateau behavior, and sparse `vmmap` sampling rather than
+relying only on a global regression.
+
 ---
 
 # 19. `topology_config.json` reference
@@ -3360,6 +3429,10 @@ multi-rank pair/energy regression has been established.
 MPS is useful for throughput where supported, but strict energy scaling can reach fluctuations small
 enough for single-precision arithmetic to matter. Use CPU for NVE certification and compare backends
 before making a precision-sensitive claim.
+
+If an MPS run shows physical-footprint growth, first check the
+`MPS diagnostic emptyCache cadence` line in the runtime log. Section 18.3
+documents the runtime policy, its overrides, and the matched diagnostics.
 
 ---
 
