@@ -47,6 +47,19 @@ class PluginSourceInvariantTests(unittest.TestCase):
         self.assertLess(forward, return_after_forward)
         self.assertNotIn("if (num_edges == 0) return", self.source)
 
+    def test_mps_empty_cache_is_diagnostic_default_off_and_after_tensor_scope(self):
+        header = (ROOT / "simulation" / "espresso_plugin" / "PaiNN_ML_Potential.hpp").read_text(encoding="utf-8")
+        self.assertIn("MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS", self.source)
+        self.assertIn("m_mps_empty_cache_every_force_calls = 0", header)
+        wrapper = self.source.index("void PaiNN_ML_Potential::calculate_forces(")
+        impl_call = self.source.index("calculate_forces_impl(cell_structure", wrapper)
+        empty_cache = self.source.index("getIMPSAllocator()->emptyCache()", impl_call)
+        impl_body = self.source.index("void PaiNN_ML_Potential::calculate_forces_impl(", empty_cache)
+        self.assertLess(impl_call, empty_cache)
+        self.assertLess(empty_cache, impl_body)
+        self.assertIn("m_mps_empty_cache_every_force_calls > 0", self.source[impl_call:empty_cache])
+        self.assertNotIn("ScopedMpsAutoreleasePool", self.source)
+
     def test_runtime_precision_is_selectable_without_changing_fp32_default(self):
         header = (ROOT / "simulation" / "espresso_plugin" / "PaiNN_ML_Potential.hpp").read_text(encoding="utf-8")
         pyx = (ROOT / "simulation" / "espresso_plugin" / "painn.pyx").read_text(encoding="utf-8")

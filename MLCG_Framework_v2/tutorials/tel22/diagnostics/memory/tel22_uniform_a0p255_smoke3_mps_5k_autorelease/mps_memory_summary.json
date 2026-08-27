@@ -1,0 +1,136 @@
+{
+  "command": [
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/espresso/build/pypresso",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/simulation/run_cg_md.py",
+    "--model",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_model.pt",
+    "--config",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_training_config.json",
+    "--priors",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/inputs/cg_priors.json",
+    "--rb_info",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/rigid_bodies_info.json",
+    "--dataset",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_dataset.bin",
+    "--checkpoint",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/equilibrated.npz",
+    "--steps",
+    "5000",
+    "--dt",
+    "0.001",
+    "--kT",
+    "2.49",
+    "--device",
+    "mps",
+    "--ml_precision",
+    "float32",
+    "--neighbor_search",
+    "link-cell",
+    "--energy_file",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/memory/tel22_uniform_a0p255_smoke3_mps_5k_autorelease/energy.csv",
+    "--out_checkpoint",
+    "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/memory/tel22_uniform_a0p255_smoke3_mps_5k_autorelease/final_state.npz",
+    "--log_interval",
+    "10",
+    "--no_vtf"
+  ],
+  "command_shell": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/espresso/build/pypresso /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/simulation/run_cg_md.py --model /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_model.pt --config /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_training_config.json --priors /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/inputs/cg_priors.json --rb_info /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/rigid_bodies_info.json --dataset /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_dataset.bin --checkpoint /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/equilibrated.npz --steps 5000 --dt 0.001 --kT 2.49 --device mps --ml_precision float32 --neighbor_search link-cell --energy_file /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/memory/tel22_uniform_a0p255_smoke3_mps_5k_autorelease/energy.csv --out_checkpoint /Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/memory/tel22_uniform_a0p255_smoke3_mps_5k_autorelease/final_state.npz --log_interval 10 --no_vtf",
+  "diagnostic_only": true,
+  "environment": {},
+  "kind": "tel22_painn_mps_process_memory_diagnostic",
+  "memory_analysis": {
+    "caution": "External RSS/physical-footprint growth cannot by itself distinguish live tensors, MPS allocator cache, Objective-C autorelease accumulation, or allocator fragmentation.",
+    "classification": "sustained_process_memory_growth_observed",
+    "classification_basis": [
+      "macos_physical_footprint"
+    ],
+    "distinct_steps": 130,
+    "first_post_warmup_step": 2010,
+    "last_step": 4970,
+    "peak_rss_mib": 2460.3125,
+    "peak_swap_used_mib": 19.0,
+    "physical_footprint": {
+      "at_last_step_mib": 27136.0,
+      "at_warmup_mib": 25600.0,
+      "end_minus_warmup_mib": 1536.0,
+      "first_step": 2010,
+      "last_step": 4930,
+      "metric": "macos_physical_footprint",
+      "peak_mib": 27136.0,
+      "peak_minus_warmup_mib": 1536.0,
+      "slope_mib_per_1000_steps": 616.7237893100945
+    },
+    "post_warmup_distinct_steps": 77,
+    "rss_at_last_step_mib": 2460.3125,
+    "rss_at_warmup_mib": 1898.734375,
+    "rss_end_minus_warmup_mib": 561.578125,
+    "rss_peak_minus_warmup_mib": 561.578125,
+    "rss_slope_mib_per_1000_steps": 159.19310393978648,
+    "thresholds": {
+      "growth_mib": 1024.0,
+      "slope_mib_per_1000_steps": 256.0,
+      "warmup_step": 2000
+    }
+  },
+  "platform": {
+    "physical_memory_mib": 49152.0,
+    "sys_platform": "darwin"
+  },
+  "production_change_allowed": false,
+  "provenance_inputs": {
+    "bridge_source": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/simulation/espresso_plugin/PaiNN_ML_Potential.cpp",
+      "sha256": "afb06a93498fba4b74e8a07463a35f99805dcd327a0379546c151b937222ddec"
+    },
+    "checkpoint": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/equilibrated.npz",
+      "sha256": "92c2a72b3ecd999dcf0bd49837881399d3ea8245e7465581e8672b0d99be9795"
+    },
+    "config": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_training_config.json",
+      "sha256": "575ee2fb1156bd90a7c9aa3057ea6e5f0bc3302ab126bdefd2620205d74e7b94"
+    },
+    "dataset": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_dataset.bin",
+      "sha256": "ab6135c99d2f580e8cbbc7549dc2410e18c9791c03ac7f8a8b84ffb2b714631d"
+    },
+    "installed_bridge_source": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/espresso/src/core/nonbonded_interactions/PaiNN_ML_Potential.cpp",
+      "sha256": "afb06a93498fba4b74e8a07463a35f99805dcd327a0379546c151b937222ddec"
+    },
+    "model": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_model.pt",
+      "sha256": "51eabc7204274891b37fb68a6ae01d5236d571324245ff2ad8c7602a61b21d8c"
+    },
+    "model_manifest": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/tel22_model.pt.manifest.json",
+      "sha256": "a57a1ad9286e82d29baf90ddc9e6cd87ed8c48d0025ab690211099d8c3f53f9f"
+    },
+    "priors": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/inputs/cg_priors.json",
+      "sha256": "185cf931e9ead3f36a866dd04c1a82db144d2fae9d94daaf798e57c483f6d88e"
+    },
+    "rb_info": {
+      "path": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255_smoke3/artifacts/rigid_bodies_info.json",
+      "sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+    }
+  },
+  "run": {
+    "complete": true,
+    "completed_step": 5000,
+    "expected_final_step": 5000,
+    "interrupted": false,
+    "returncode": 0,
+    "safety_abort": false
+  },
+  "sampling": {
+    "csv": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/memory/tel22_uniform_a0p255_smoke3_mps_5k_autorelease/process_memory_samples.csv",
+    "footprint_every_samples": 5,
+    "interval_seconds": 2.0,
+    "physical_footprint_csv_semantics": "A value is present only when vmmap was sampled on that row; blanks are not forward-filled.",
+    "run_log": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/memory/tel22_uniform_a0p255_smoke3_mps_5k_autorelease/run.log",
+    "samples": 132
+  },
+  "schema_version": 2,
+  "scope": "External process-memory observation only; no Hamiltonian, model, precision, allocator setting, or integration behavior is modified."
+}

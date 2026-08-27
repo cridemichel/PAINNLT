@@ -32,12 +32,17 @@ public:
     std::string get_profile_json() const;
 
 private:
+    void calculate_forces_impl(
+        CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion);
+
     PaiNNModel model{nullptr};
     double m_cutoff;
     int m_num_species;
     double m_last_energy = 0.0;
     torch::Device m_device{torch::kCPU};
     torch::Dtype m_dtype{torch::kFloat32};
+    std::int64_t m_mps_empty_cache_every_force_calls = 0;
+    std::int64_t m_successful_force_calls = 0;
 
     struct ProfileAccumulator {
         bool enabled = false;

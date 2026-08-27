@@ -22,7 +22,7 @@ CMAKE_AR:FILEPATH=/usr/bin/ar
 
 //Choose the type of build, options are: None Debug Release RelWithDebInfo
 // MinSizeRel ...
-CMAKE_BUILD_TYPE:STRING=
+CMAKE_BUILD_TYPE:STRING=Release
 
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
@@ -44,24 +44,6 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 
 //Flags used by the CXX compiler during RELWITHDEBINFO builds.
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
-
-//C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
-
-//Flags used by the C compiler during all build types.
-CMAKE_C_FLAGS:STRING=
-
-//Flags used by the C compiler during DEBUG builds.
-CMAKE_C_FLAGS_DEBUG:STRING=-g
-
-//Flags used by the C compiler during MINSIZEREL builds.
-CMAKE_C_FLAGS_MINSIZEREL:STRING=-Os -DNDEBUG
-
-//Flags used by the C compiler during RELEASE builds.
-CMAKE_C_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
-
-//Flags used by the C compiler during RELWITHDEBINFO builds.
-CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
 //Path to a program.
 CMAKE_DLLTOOL:FILEPATH=CMAKE_DLLTOOL-NOTFOUND
@@ -219,32 +201,30 @@ CMAKE_TAPI:FILEPATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeD
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
-//The directory containing a CMake configuration file for Caffe2.
-Caffe2_DIR:PATH=/opt/homebrew/share/cmake/Caffe2
-
-//The directory containing a CMake configuration file for Protobuf.
-Protobuf_DIR:PATH=/opt/homebrew/lib/cmake/protobuf
+//Caffe2 CMake package from the selected Torch distribution
+Caffe2_DIR:PATH=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/share/cmake/Caffe2
 
 //Path to a library.
-TORCH_LIBRARY:FILEPATH=/opt/homebrew/lib/libtorch.dylib
-
-//The directory containing a CMake configuration file for Torch.
-Torch_DIR:PATH=/opt/homebrew/share/cmake/Torch
-
-//Path to a file.
-ZLIB_INCLUDE_DIR:PATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include
+MLCG_C10_LIBRARY:FILEPATH=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/lib/libc10.dylib
 
 //Path to a library.
-ZLIB_LIBRARY_DEBUG:FILEPATH=ZLIB_LIBRARY_DEBUG-NOTFOUND
+MLCG_OBJC_LIBRARY:FILEPATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libobjc.tbd
 
 //Path to a library.
-ZLIB_LIBRARY_RELEASE:FILEPATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libz.tbd
+MLCG_TORCH_LIBRARY:FILEPATH=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/lib/libtorch.dylib
 
-//The directory containing a CMake configuration file for absl.
-absl_DIR:PATH=/opt/homebrew/lib/cmake/absl
+//Root of the single LibTorch/Python-Torch distribution used for
+// this build
+MLCG_TORCH_ROOT:PATH=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch
 
-//Path to a library.
-c10_LIBRARY:FILEPATH=/opt/homebrew/lib/libc10.dylib
+//Pinned libtorch library
+TORCH_LIBRARY:FILEPATH=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/lib/libtorch.dylib
+
+//Torch CMake package
+Torch_DIR:PATH=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/share/cmake/Torch
+
+//Pinned c10 library
+c10_LIBRARY:FILEPATH=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/lib/libc10.dylib
 
 //Path to a library.
 kineto_LIBRARY:FILEPATH=kineto_LIBRARY-NOTFOUND
@@ -257,15 +237,6 @@ mlcg_train_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 mlcg_train_SOURCE_DIR:STATIC=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/training
-
-//CMake built-in FindProtobuf.cmake module compatible
-protobuf_MODULE_COMPATIBLE:BOOL=OFF
-
-//Enable for verbose output
-protobuf_VERBOSE:BOOL=OFF
-
-//The directory containing a CMake configuration file for utf8_range.
-utf8_range_DIR:PATH=/opt/homebrew/lib/cmake/utf8_range
 
 
 ########################
@@ -304,18 +275,6 @@ CMAKE_CXX_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
 CMAKE_CXX_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_CXX_FLAGS_RELWITHDEBINFO
 CMAKE_CXX_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_COMPILER
-CMAKE_C_COMPILER-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS
-CMAKE_C_FLAGS-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_DEBUG
-CMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_MINSIZEREL
-CMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_RELEASE
-CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_RELWITHDEBINFO
-CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //Set initial state for CMake diagnostics; used to persist state
 // set by command-line options across invocations.
 CMAKE_DIAGNOSTIC_INIT:INTERNAL=CMD_AUTHOR=WARN;CMD_DEPRECATED=WARN;CMD_EXPERIMENTAL=WARN;CMD_INSTALL_ABSOLUTE_DESTINATION=IGNORE;CMD_POLICY=WARN;CMD_UNINITIALIZED=IGNORE;CMD_UNUSED_CLI=WARN
@@ -349,8 +308,6 @@ CMAKE_GENERATOR_INSTANCE:INTERNAL=
 CMAKE_GENERATOR_PLATFORM:INTERNAL=
 //Name of generator toolset.
 CMAKE_GENERATOR_TOOLSET:INTERNAL=
-//Test CMAKE_HAVE_LIBC_PTHREAD
-CMAKE_HAVE_LIBC_PTHREAD:INTERNAL=1
 //Source directory with the top level CMakeLists.txt file for this
 // project
 CMAKE_HOME_DIRECTORY:INTERNAL=/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/training
@@ -422,20 +379,6 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Deprecated.  Use -W[no-]deprecated instead.
 CMAKE_WARN_DEPRECATED:INTERNAL=ON
-//Details about finding Threads
-FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //Details about finding Torch
-FIND_PACKAGE_MESSAGE_DETAILS_Torch:INTERNAL=[/opt/homebrew/lib/libtorch.dylib][/opt/homebrew/include;/opt/homebrew/include/torch/csrc/api/include][v()]
-//Details about finding ZLIB
-FIND_PACKAGE_MESSAGE_DETAILS_ZLIB:INTERNAL=[/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libz.tbd][/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include][ ][v1.2.12()]
-//ADVANCED property for variable: ZLIB_INCLUDE_DIR
-ZLIB_INCLUDE_DIR-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: ZLIB_LIBRARY_DEBUG
-ZLIB_LIBRARY_DEBUG-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: ZLIB_LIBRARY_RELEASE
-ZLIB_LIBRARY_RELEASE-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: protobuf_MODULE_COMPATIBLE
-protobuf_MODULE_COMPATIBLE-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: protobuf_VERBOSE
-protobuf_VERBOSE-ADVANCED:INTERNAL=1
+FIND_PACKAGE_MESSAGE_DETAILS_Torch:INTERNAL=[/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/lib/libtorch.dylib][/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/include;/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework/mlcg_venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include][v()]
 

@@ -7,6 +7,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -17,11 +18,36 @@
 #include <utility>
 #include <vector>
 
+#ifdef __APPLE__
+#include <ATen/mps/MPSAllocatorInterface.h>
+#endif
+
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
 namespace {
 
 using ProfileClock = std::chrono::steady_clock;
+
+std::int64_t nonnegative_integer_environment(const char* name) {
+    const char* raw = std::getenv(name);
+    if (raw == nullptr) {
+        return 0;
+    }
+    const std::string text(raw);
+    std::size_t consumed = 0;
+    long long value = 0;
+    try {
+        value = std::stoll(text, &consumed, 10);
+    } catch (const std::exception&) {
+        throw std::invalid_argument(
+            std::string(name) + " must be a non-negative integer, got '" + text + "'");
+    }
+    if (consumed != text.size() || value < 0) {
+        throw std::invalid_argument(
+            std::string(name) + " must be a non-negative integer, got '" + text + "'");
+    }
+    return static_cast<std::int64_t>(value);
+}
 
 double elapsed_ms(ProfileClock::time_point const &start, ProfileClock::time_point const &end) {
     return std::chrono::duration<double, std::milli>(end - start).count();
@@ -99,6 +125,21 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
         model->to(m_device);
         std::cout << "[PaiNN] Inference precision: "
                   << (m_dtype == torch::kFloat64 ? "float64" : "float32") << "\n";
+
+        if (m_device.type() == torch::kMPS) {
+            constexpr const char* cadence_env =
+                "MLCG_MPS_EMPTY_CACHE_EVERY_FORCE_CALLS";
+            m_mps_empty_cache_every_force_calls =
+                nonnegative_integer_environment(cadence_env);
+            if (std::getenv(cadence_env) != nullptr) {
+                // stderr + endl is intentional: pypresso may not flush C++
+                // stdout when it finalizes MPI, while the A/B diagnostic must
+                // attest which allocator policy the loaded binary applied.
+                std::cerr << "[PaiNN] MPS diagnostic emptyCache cadence: "
+                          << m_mps_empty_cache_every_force_calls
+                          << " successful force calls" << std::endl;
+            }
+        }
 
         // Report the raw, unconstrained isolated-species offsets.  They are
         // subtracted inside every forward pass by the fixed energy gauge and
@@ -193,7 +234,26 @@ std::string PaiNN_ML_Potential::get_profile_json() const {
     return out.str();
 }
 
-void PaiNN_ML_Potential::calculate_forces(CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion) {
+void PaiNN_ML_Potential::calculate_forces(
+    CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion) {
+    calculate_forces_impl(cell_structure, verlet_criterion);
+
+#ifdef __APPLE__
+    // calculate_forces_impl has returned, so every per-call tensor and the
+    // autograd graph have already been destroyed.  emptyCache can therefore
+    // release only unused allocator blocks; it cannot invalidate live tensors.
+    if (m_device.type() == torch::kMPS &&
+        m_mps_empty_cache_every_force_calls > 0) {
+        ++m_successful_force_calls;
+        if (m_successful_force_calls % m_mps_empty_cache_every_force_calls == 0) {
+            at::mps::getIMPSAllocator()->emptyCache();
+        }
+    }
+#endif
+}
+
+void PaiNN_ML_Potential::calculate_forces_impl(
+    CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion) {
     // Never expose an energy value from a previous integration step.
     m_last_energy = 0.0;
 

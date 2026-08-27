@@ -1,0 +1,51 @@
+{
+  "baseline": {
+    "elapsed_seconds": 306.5970763749938,
+    "footprint_growth_after_warmup_mib": 1536.0,
+    "footprint_slope_mib_per_1000_steps": 610.9651229007964,
+    "last_footprint_mib": 27136.0,
+    "last_rss_mib": 1864.734375,
+    "peak_footprint_mib": 27136.0,
+    "peak_rss_mib": 1864.96875,
+    "rss_slope_mib_per_1000_steps": 126.45503525809418
+  },
+  "candidate": {
+    "elapsed_seconds": 286.79136704200937,
+    "footprint_growth_after_warmup_mib": 5734.4,
+    "footprint_slope_mib_per_1000_steps": 1238.6162692053915,
+    "last_footprint_mib": 7680.0,
+    "last_rss_mib": 2454.03125,
+    "peak_footprint_mib": 8704.0,
+    "peak_rss_mib": 2454.03125,
+    "rss_slope_mib_per_1000_steps": 157.14290750369673
+  },
+  "candidate_cadence_force_calls": 100,
+  "caution": "This A/B isolates periodic MPS allocator emptyCache calls. It does not prove that retained driver memory is a leak, and a useful cadence still requires a longer performance/stability validation.",
+  "comparison": {
+    "elapsed_ratio_candidate_over_baseline": 0.9354015062141025,
+    "footprint_growth_ratio_candidate_over_baseline": 3.733333333333333,
+    "footprint_slope_ratio_candidate_over_baseline": 2.0273109262351596,
+    "peak_footprint_reduction_fraction": 0.6792452830188679,
+    "peak_footprint_reduction_mib": 18432.0,
+    "performance_penalty_fraction": -0.06459849378589755
+  },
+  "decision": "do_not_promote_empty_cache_no_material_memory_benefit",
+  "gates": {
+    "effective": false,
+    "meaningful_peak_reduction": true,
+    "tail_improves": false
+  },
+  "kind": "tel22_mps_empty_cache_ab_summary",
+  "provenance_sha256": {
+    "bridge_source": "df71cf1a9a8b269f141b56f931521ffe242b70be4b291a10ad39d47db885e267",
+    "checkpoint": "92c2a72b3ecd999dcf0bd49837881399d3ea8245e7465581e8672b0d99be9795",
+    "config": "575ee2fb1156bd90a7c9aa3057ea6e5f0bc3302ab126bdefd2620205d74e7b94",
+    "dataset": "ab6135c99d2f580e8cbbc7549dc2410e18c9791c03ac7f8a8b84ffb2b714631d",
+    "installed_bridge_source": "df71cf1a9a8b269f141b56f931521ffe242b70be4b291a10ad39d47db885e267",
+    "model": "51eabc7204274891b37fb68a6ae01d5236d571324245ff2ad8c7602a61b21d8c",
+    "model_manifest": "a57a1ad9286e82d29baf90ddc9e6cd87ed8c48d0025ab690211099d8c3f53f9f",
+    "priors": "185cf931e9ead3f36a866dd04c1a82db144d2fae9d94daaf798e57c483f6d88e",
+    "rb_info": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f"
+  },
+  "schema_version": 1
+}

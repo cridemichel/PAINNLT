@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "tel22_full_pipeline_residual_build",
+  "input_manifest": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255/inputs/full_pipeline_input_manifest.json",
+  "input_manifest_sha256": "cb2ed386d82ff796e1e378af8e2dc7aaafbd4ed33edc34e81e276baa99ef3db4",
+  "dataset": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255/artifacts/tel22_dataset.bin",
+  "dataset_sha256": "ab6135c99d2f580e8cbbc7549dc2410e18c9791c03ac7f8a8b84ffb2b714631d",
+  "rb_info": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255/artifacts/rigid_bodies_info.json",
+  "rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+  "baseline_rb_info_sha256": "6d4868e70ba71cb032adae8b0af189cd628fad660819a1d60c45b39b3e84c80f",
+  "rb_info_semantically_equal_to_production": true,
+  "candidate_priors": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255/inputs/cg_priors.json",
+  "candidate_priors_sha256": "185cf931e9ead3f36a866dd04c1a82db144d2fae9d94daaf798e57c483f6d88e",
+  "candidate_topology": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/diagnostics/full_pipeline/tel22_uniform_morse_a0p255/inputs/tel22_topology_uniform_a0p255.json",
+  "candidate_topology_sha256": "bc5d61cb2dccc5a9eb83f8390988ad413a2ab7702961ac70bc10f5233ea27cc5",
+  "aa_topology": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/md.gro",
+  "aa_topology_sha256": "c01e35ac9699ac854f51d468258cdf8cd119178a32adb125130d36bafcd59cda",
+  "aa_trajectory": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/tutorials/tel22/md_whole.trr",
+  "aa_trajectory_sha256": "124441bb0d7973d3da12677177461d7c816c7999f87b5817d4d8b5f3f0ebe0cb",
+  "builder": "/Users/demichel/WORK/NEURAL_NETWORKS/PAINNLT/MLCG_Framework_v2/preprocessing/build_cg_dataset.py",
+  "builder_sha256": "40945931bc46fa78c951b5f4b1e96d3138ce000ee1f714a7400e7cb61e46e294",
+  "residual_definition": "reference CG force/torque minus exact candidate priors; all 180 Morse use a=0.255"
+}
