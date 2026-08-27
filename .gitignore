@@ -35,3 +35,4 @@ GROMACS
 **/*.gif
 **/*.vtf
 **/.DS_Store
+**/MLCG_framework_v2.zip
