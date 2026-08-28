@@ -33,6 +33,33 @@ Generated files such as `tel22_dataset.bin`, `cg_priors.json`,
 `rigid_bodies_info.json`, `*.pt`, manifests, checkpoints and trajectories are
 runtime artifacts and are intentionally excluded from the source tree.
 
+## PDB 143D antiparallel contact graph
+
+The three G-tetrads in `MODEL 1` of PDB 143D are, using one-based residue
+numbers:
+
+```text
+2  10  14  22
+3   9  15  21
+4   8  16  20
+```
+
+Each layer is represented by its complete K4 graph (six pair-specific Morse
+contacts), repeated with an offset of 22 residues for all ten copies. The
+second and fourth G-tracts run in the opposite direction in the antiparallel
+basket fold; grouping equal sequence positions across all four tracts mixes
+the two outer tetrads and is invalid.
+
+The source topology uses explicit COM-COM endpoints and `r0: "auto"`. After
+any contact-graph edit, regenerate `cg_priors.json`, `tel22_dataset.bin`, the
+model and every checkpoint. Values inferred for an obsolete pair must never be
+transferred to a corrected pair.
+
+Static validation and the isolated local 40-epoch end-to-end smoke test are
+documented in [`diagnostics/README.md`](diagnostics/README.md). Diagnostic
+outputs stay below `diagnostics/` and do not replace the canonical tutorial
+artifacts.
+
 ## Apple MPS runtime memory
 
 When `DEVICE=mps`, or when `DEVICE=auto` selects Apple MPS, the PaiNN ESPResSo

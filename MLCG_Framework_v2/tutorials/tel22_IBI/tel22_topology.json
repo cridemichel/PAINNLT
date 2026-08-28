@@ -2177,1443 +2177,1983 @@
         },
         {
             "mol_i": 1,
-            "mol_j": 7,
+            "mol_j": 9,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5748742931065052
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 7,
+            "mol_i": 9,
             "mol_j": 13,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5407415968677376
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 13,
-            "mol_j": 19,
+            "mol_j": 21,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1711201559774038
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 19,
+            "mol_i": 21,
             "mol_j": 1,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.8379700521990276
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 1,
             "mol_j": 13,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0483833660234625
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 7,
-            "mol_j": 19,
+            "mol_i": 9,
+            "mol_j": 21,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1181035044134753
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 2,
             "mol_j": 8,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3118791203691886
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 8,
             "mol_j": 14,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.498127091748807
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 14,
             "mol_j": 20,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0580904235024398
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 20,
             "mol_j": 2,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7440040638849499
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 2,
             "mol_j": 14,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1281805995772194
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 8,
             "mol_j": 20,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1238517122701928
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 3,
-            "mol_j": 9,
+            "mol_j": 7,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4951851649093542
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 9,
+            "mol_i": 7,
             "mol_j": 15,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.9263749065782225
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 15,
-            "mol_j": 21,
+            "mol_j": 19,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5181152992636748
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 21,
+            "mol_i": 19,
             "mol_j": 3,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7042252209153983
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 3,
             "mol_j": 15,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.103355527038127
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 9,
-            "mol_j": 21,
+            "mol_i": 7,
+            "mol_j": 19,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.033882997460437
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 23,
-            "mol_j": 29,
+            "mol_j": 31,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4914516773366602
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 29,
+            "mol_i": 31,
             "mol_j": 35,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3844585378903504
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 35,
-            "mol_j": 41,
+            "mol_j": 43,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9529660525653494
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 41,
+            "mol_i": 43,
             "mol_j": 23,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5179510283238717
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 23,
             "mol_j": 35,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0031018032350092
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 29,
-            "mol_j": 41,
+            "mol_i": 31,
+            "mol_j": 43,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1131297560449724
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 24,
             "mol_j": 30,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3228603048137437
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 30,
             "mol_j": 36,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4954386665826995
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 36,
             "mol_j": 42,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9840640645304978
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 42,
             "mol_j": 24,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6454610073563622
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 24,
             "mol_j": 36,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0458372082864518
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 30,
             "mol_j": 42,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1536018264290924
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 25,
-            "mol_j": 31,
+            "mol_j": 29,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4489020112082858
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 31,
+            "mol_i": 29,
             "mol_j": 37,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.926631078186647
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 37,
-            "mol_j": 43,
+            "mol_j": 41,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7024818506349835
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 43,
+            "mol_i": 41,
             "mol_j": 25,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.8179451238222861
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 25,
             "mol_j": 37,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1297788497382266
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 31,
-            "mol_j": 43,
+            "mol_i": 29,
+            "mol_j": 41,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0987271292566587
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 45,
-            "mol_j": 51,
+            "mol_j": 53,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.562572375728372
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 51,
+            "mol_i": 53,
             "mol_j": 57,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3921288381293397
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 57,
-            "mol_j": 63,
+            "mol_j": 65,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9701031841372058
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 63,
+            "mol_i": 65,
             "mol_j": 45,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6848076871327087
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 45,
             "mol_j": 57,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0197209226590855
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 51,
-            "mol_j": 63,
+            "mol_i": 53,
+            "mol_j": 65,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1350281983439594
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 46,
             "mol_j": 52,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3322975210468067
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 52,
             "mol_j": 58,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.494204994214924
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 58,
             "mol_j": 64,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9579068720034123
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 64,
             "mol_j": 46,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6799922362479656
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 46,
             "mol_j": 58,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0741421756684844
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 52,
             "mol_j": 64,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1772020919730826
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 47,
-            "mol_j": 53,
+            "mol_j": 51,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4399463672995632
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 53,
+            "mol_i": 51,
             "mol_j": 59,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.9403131890404814
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 59,
-            "mol_j": 65,
+            "mol_j": 63,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6368830125653557
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 65,
+            "mol_i": 63,
             "mol_j": 47,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.740216563177423
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 47,
             "mol_j": 59,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0685514610563556
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 53,
-            "mol_j": 65,
+            "mol_i": 51,
+            "mol_j": 63,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0878257446266153
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 67,
-            "mol_j": 73,
+            "mol_j": 75,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5149209437292386
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 73,
+            "mol_i": 75,
             "mol_j": 79,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.431845104109637
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 79,
-            "mol_j": 85,
+            "mol_j": 87,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9583690648051979
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 85,
+            "mol_i": 87,
             "mol_j": 67,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6130852312721837
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 67,
             "mol_j": 79,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0570088977906096
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 73,
-            "mol_j": 85,
+            "mol_i": 75,
+            "mol_j": 87,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.088616802229378
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 68,
             "mol_j": 74,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.345410935249903
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 74,
             "mol_j": 80,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5905303445233376
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 80,
             "mol_j": 86,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.988052104590895
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 86,
             "mol_j": 68,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6396878516406368
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 68,
             "mol_j": 80,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1525507805831472
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 74,
             "mol_j": 86,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1254403110809277
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 69,
-            "mol_j": 75,
+            "mol_j": 73,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.454243579468973
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 75,
+            "mol_i": 73,
             "mol_j": 81,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 2.041793440602275
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 81,
-            "mol_j": 87,
+            "mol_j": 85,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6730488643539525
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 87,
+            "mol_i": 85,
             "mol_j": 69,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.744602749151114
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 69,
             "mol_j": 81,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2207232825490997
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 75,
-            "mol_j": 87,
+            "mol_i": 73,
+            "mol_j": 85,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0468485994351968
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 89,
-            "mol_j": 95,
+            "mol_j": 97,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.474267329785237
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 95,
+            "mol_i": 97,
             "mol_j": 101,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.347661938536196
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 101,
-            "mol_j": 107,
+            "mol_j": 109,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9720441472240152
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 107,
+            "mol_i": 109,
             "mol_j": 89,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7046242138740013
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 89,
             "mol_j": 101,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0714977077868475
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 95,
-            "mol_j": 107,
+            "mol_i": 97,
+            "mol_j": 109,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1261789378675713
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 90,
             "mol_j": 96,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2250576749843964
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 96,
             "mol_j": 102,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5267553131364244
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 102,
             "mol_j": 108,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9407468875759699
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 108,
             "mol_j": 90,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6048114897744836
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 90,
             "mol_j": 102,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.123159064993111
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 96,
             "mol_j": 108,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1641495917904847
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 91,
-            "mol_j": 97,
+            "mol_j": 95,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5289341302980803
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 97,
+            "mol_i": 95,
             "mol_j": 103,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 2.0555468812384516
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 103,
-            "mol_j": 109,
+            "mol_j": 107,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7137253241017945
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 109,
+            "mol_i": 107,
             "mol_j": 91,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.769143586618025
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 91,
             "mol_j": 103,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1234126003501226
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 97,
-            "mol_j": 109,
+            "mol_i": 95,
+            "mol_j": 107,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0684621286551041
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 111,
-            "mol_j": 117,
+            "mol_j": 119,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.569447028340346
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 117,
+            "mol_i": 119,
             "mol_j": 123,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4442912667383216
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 123,
-            "mol_j": 129,
+            "mol_j": 131,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9374885012624776
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 129,
+            "mol_i": 131,
             "mol_j": 111,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6526660449104205
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 111,
             "mol_j": 123,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.126301410965336
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 117,
-            "mol_j": 129,
+            "mol_i": 119,
+            "mol_j": 131,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0962037629782209
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 112,
             "mol_j": 118,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.229755293402691
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 118,
             "mol_j": 124,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5773553700867853
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 124,
             "mol_j": 130,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9042439892464026
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 130,
             "mol_j": 112,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6916894247183527
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 112,
             "mol_j": 124,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3684370942025472
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 118,
             "mol_j": 130,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1432518845258424
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 113,
-            "mol_j": 119,
+            "mol_j": 117,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3181802556621203
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 119,
+            "mol_i": 117,
             "mol_j": 125,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.9164275203799004
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 125,
-            "mol_j": 131,
+            "mol_j": 129,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6037718854445062
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 131,
+            "mol_i": 129,
             "mol_j": 113,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7081624034845413
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 113,
             "mol_j": 125,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2919188665684167
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 119,
-            "mol_j": 131,
+            "mol_i": 117,
+            "mol_j": 129,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.02364041399364
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 133,
-            "mol_j": 139,
+            "mol_j": 141,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5138231797711916
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 139,
+            "mol_i": 141,
             "mol_j": 145,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.494294849271823
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 145,
-            "mol_j": 151,
+            "mol_j": 153,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9655628096435865
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 151,
+            "mol_i": 153,
             "mol_j": 133,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4692014610791044
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 133,
             "mol_j": 145,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0598156293667855
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 139,
-            "mol_j": 151,
+            "mol_i": 141,
+            "mol_j": 153,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0885568527400293
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 134,
             "mol_j": 140,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.270358803996851
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 140,
             "mol_j": 146,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5688920531509285
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 146,
             "mol_j": 152,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9346248997180368
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 152,
             "mol_j": 134,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.590213136265843
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 134,
             "mol_j": 146,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1477927350835906
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 140,
             "mol_j": 152,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.150124687188234
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 135,
-            "mol_j": 141,
+            "mol_j": 139,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3507434773474438
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 141,
+            "mol_i": 139,
             "mol_j": 147,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.8995898053020075
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 147,
-            "mol_j": 153,
+            "mol_j": 151,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.68280952946839
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 153,
+            "mol_i": 151,
             "mol_j": 135,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.8265548201456965
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 135,
             "mol_j": 147,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2540130446677822
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 141,
-            "mol_j": 153,
+            "mol_i": 139,
+            "mol_j": 151,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0542856671172496
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 155,
-            "mol_j": 161,
+            "mol_j": 163,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5124126447239519
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 161,
+            "mol_i": 163,
             "mol_j": 167,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3690940902584066
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 167,
-            "mol_j": 173,
+            "mol_j": 175,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9237426160066897
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 173,
+            "mol_i": 175,
             "mol_j": 155,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.706095283935373
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 155,
             "mol_j": 167,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1392846606051654
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 161,
-            "mol_j": 173,
+            "mol_i": 163,
+            "mol_j": 175,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1126756880888802
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 156,
             "mol_j": 162,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2375716618674208
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 162,
             "mol_j": 168,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.544636752389881
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 168,
             "mol_j": 174,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.9677090313346127
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 174,
             "mol_j": 156,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6111532317220696
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 156,
             "mol_j": 168,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1345026944878722
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 162,
             "mol_j": 174,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1521162510885001
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 157,
-            "mol_j": 163,
+            "mol_j": 161,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4892951854169623
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 163,
+            "mol_i": 161,
             "mol_j": 169,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 2.0161106949283907
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 169,
-            "mol_j": 175,
+            "mol_j": 173,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6671176483133474
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 175,
+            "mol_i": 173,
             "mol_j": 157,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7341769823168958
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 157,
             "mol_j": 169,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1446219736982208
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 163,
-            "mol_j": 175,
+            "mol_i": 161,
+            "mol_j": 173,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0374213883544536
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 177,
-            "mol_j": 183,
+            "mol_j": 185,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.4846880654094543
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 183,
+            "mol_i": 185,
             "mol_j": 189,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.3704693100760539
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 189,
-            "mol_j": 195,
+            "mol_j": 197,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.009475380928579
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 195,
+            "mol_i": 197,
             "mol_j": 177,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.733121218051029
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 177,
             "mol_j": 189,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0674602926768808
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 183,
-            "mol_j": 195,
+            "mol_i": 185,
+            "mol_j": 197,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1159916466337403
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 178,
             "mol_j": 184,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.219957859861598
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 184,
             "mol_j": 190,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5182095271504377
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 190,
             "mol_j": 196,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 0.992288735059218
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 196,
             "mol_j": 178,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6256844473701353
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 178,
             "mol_j": 190,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.115221491449359
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 184,
             "mol_j": 196,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1540804747799966
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 179,
-            "mol_j": 185,
+            "mol_j": 183,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5121646593204705
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 185,
+            "mol_i": 183,
             "mol_j": 191,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 2.047174430638022
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 191,
-            "mol_j": 197,
+            "mol_j": 195,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6830634202006585
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 197,
+            "mol_i": 195,
             "mol_j": 179,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7574123947080629
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 179,
             "mol_j": 191,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2086621638882764
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 185,
-            "mol_j": 197,
+            "mol_i": 183,
+            "mol_j": 195,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.052241442150659
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 199,
-            "mol_j": 205,
+            "mol_j": 207,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.540196756577786
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 205,
+            "mol_i": 207,
             "mol_j": 211,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.439650766364416
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 211,
-            "mol_j": 217,
+            "mol_j": 219,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.015975735075608
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 217,
+            "mol_i": 219,
             "mol_j": 199,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7985943551427888
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 199,
             "mol_j": 211,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.117372965406729
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 205,
-            "mol_j": 217,
+            "mol_i": 207,
+            "mol_j": 219,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1534417703442004
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 200,
             "mol_j": 206,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2361112211500542
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 206,
             "mol_j": 212,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.520714656704128
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 212,
             "mol_j": 218,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0425175008445438
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 218,
             "mol_j": 200,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.6873904490655425
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 200,
             "mol_j": 212,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1219322159679799
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 206,
             "mol_j": 218,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.1632961424964074
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 201,
-            "mol_j": 207,
+            "mol_j": 205,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.426862546794262
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 207,
+            "mol_i": 205,
             "mol_j": 213,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.9560615410723943
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 213,
-            "mol_j": 219,
+            "mol_j": 217,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.5934385496669563
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 219,
+            "mol_i": 217,
             "mol_j": 201,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.7590640031172464
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
             "mol_i": 201,
             "mol_j": 213,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.2390246183373805
+            "r0": "auto",
+            "exclude_wca": false
         },
         {
-            "mol_i": 207,
-            "mol_j": 219,
+            "mol_i": 205,
+            "mol_j": 217,
+            "site_i": -1,
+            "site_j": -1,
             "type": "morse",
             "D": 50.0,
             "a": 0.3,
-            "r0": 1.0528329855323395
+            "r0": "auto",
+            "exclude_wca": false
         }
     ],
     "angles": [
@@ -5419,5 +5959,32 @@
         }
     ],
     "dihedrals": [],
-    "allow_unmasked_zero_target_decoys": false
+    "allow_unmasked_zero_target_decoys": false,
+    "tel22_g4_topology": {
+        "pdb": "143D",
+        "model": 1,
+        "fold": "antiparallel basket UDDU",
+        "residues_per_copy": 22,
+        "tetrads_1based": [
+            [
+                2,
+                10,
+                14,
+                22
+            ],
+            [
+                3,
+                9,
+                15,
+                21
+            ],
+            [
+                4,
+                8,
+                16,
+                20
+            ]
+        ],
+        "morse_representation": "complete K4 per tetrad, explicit COM-COM endpoints"
+    }
 }

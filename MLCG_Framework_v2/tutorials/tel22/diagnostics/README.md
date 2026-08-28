@@ -1,5 +1,49 @@
 # TEL22 diagnostics
 
+This directory contains non-production validation entry points and their output.
+
+## Antiparallel 143D topology
+
+Validate the source topology against PDB 143D MODEL 1:
+
+```bash
+python3 tutorials/tel22/diagnostics/scripts/validate_antiparallel_topology.py \
+  --topology tutorials/tel22/tel22_topology.json \
+  --pdb tutorials/tel22/143D.pdb \
+  --r0-mode auto \
+  --require-reference-metadata
+```
+
+The source configuration intentionally stores `r0: "auto"`. The corrected
+distances must be inferred from the same atomistic trajectory used to rebuild
+the residual-force dataset. Existing `cg_priors.json`, datasets, models and
+checkpoints generated from the legacy contact graph are stale.
+
+## Local 40-epoch pipeline smoke test
+
+The runner creates a fresh, isolated directory below
+`diagnostics/smoke/antiparallel_pipeline_40ep` and executes mapping/prior
+inference, residual training, short equilibration and short NVT production:
+
+```bash
+AA_TOPOLOGY=/path/to/md.gro \
+AA_TRAJECTORY=/path/to/md_whole.trr \
+TRAINER=/path/to/training/build/train_painn \
+PYRESSO=/path/to/espresso/build/pypresso \
+DEVICE=auto \
+bash tutorials/tel22/diagnostics/scripts/07_test_antiparallel_pipeline_40ep.sh
+```
+
+It refuses to overwrite an existing result directory. Set a fresh
+`PIPELINE_TEST_RUN_DIR` for another run. The training profile disables early
+stopping within the requested 40 epochs; the final validator requires exactly
+40 finite log rows, provenance hashes, finite short-MD output and all expected
+artifacts.
+
+This is a functional smoke test. It does not validate thermodynamics, folding
+populations, kinetics, production convergence or NVE energy conservation.
+# TEL22 diagnostics
+
 This directory contains validation, certification, convergence and exploratory test evidence.
 It is deliberately separated from the tutorial root, which contains the pipeline and canonical artifacts.
 

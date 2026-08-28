@@ -54,3 +54,7 @@ smoke_equilibrated.npz
 md_sanity_100.log
 tel22_dataset.bin
 tel22_model.pt
+
+# Local diagnostic run products
+diagnostics/smoke/*
+!diagnostics/smoke/.gitkeep
