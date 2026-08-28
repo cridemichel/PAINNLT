@@ -1,0 +1,13 @@
+Molecule 1:
+  Res 2 closest in other tracts: [10, 14, 20]
+  Res 3 closest in other tracts: [8, 20, 14]
+  Res 4 closest in other tracts: [9, 22, 14]
+  Res 8 closest in other tracts: [3, 20, 14]
+  Res 9 closest in other tracts: [2, 22, 14]
+  Res 10 closest in other tracts: [2, 14, 22]
+  Res 14 closest in other tracts: [20, 2, 9]
+  Res 15 closest in other tracts: [20, 3, 8]
+  Res 16 closest in other tracts: [20, 3, 9]
+  Res 20 closest in other tracts: [15, 3, 8]
+  Res 21 closest in other tracts: [15, 3, 8]
+  Res 22 closest in other tracts: [15, 9, 3]

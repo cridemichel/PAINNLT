@@ -168,11 +168,11 @@ def main():
             out.write("set sphere_scale, 0.07, sim_traj\n")
             
             # Colora le tetradi (tutto il residuo, incluso il backbone CA)
-            out.write("select tetrad_1, resi 2+10+14+22\n")
+            out.write("select tetrad_1, resi 2+8+14+20\n")
             out.write("color red, tetrad_1\n")
             out.write("select tetrad_2, resi 3+9+15+21\n")
             out.write("color green, tetrad_2\n")
-            out.write("select tetrad_3, resi 4+8+16+20\n")
+            out.write("select tetrad_3, resi 4+10+16+22\n")
             out.write("color blue, tetrad_3\n")
             out.write("deselect\n")
         else:
