@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.10.2" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>MATHEMATICAL_REFERENCE</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <script defer=""
+  src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"
+  type="text/javascript"></script>
+  <style id="markdown-page-width">
+    body { width: auto; max-width: 90% !important; }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">MATHEMATICAL_REFERENCE</h1>
+</header>
+<h1 id="mlcg-framework-v2--riferimento-matematico">MLCG Framework v2 —
+Riferimento matematico</h1>
+<p>Questo documento descrive la matematica implementata dal framework:
+mapping atomistico-CG, rigid body, prior, target residuali, rete PaiNN,
+training, dinamica e certificazione NVE. L'obiettivo è permettere di
+interpretare i parametri senza dover ricostruire le convenzioni dai
+sorgenti.</p>
+<p>La guida operativa completa resta <a
+href="HOWTO.md"><code>HOWTO.md</code></a>; la versione inglese di questo
+riferimento è <a
+href="MATHEMATICAL_REFERENCE_EN.md"><code>MATHEMATICAL_REFERENCE_EN.md</code></a>.
+Le sezioni 1–14 forniscono la mappa compatta; la Parte II, dalle sezioni
+15–21, espone le derivazioni implementative complete di PaiNN, prior,
+DBI/IBI e interpolazione conservativa.</p>
+<h2 id="1-convenzioni-e-unità">1. Convenzioni e unità</h2>
+<table>
+<thead>
+<tr>
+<th>Grandezza</th>
+<th style="text-align: right;">Simbolo</th>
+<th style="text-align: right;">Unità interna</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>posizione/distanza</td>
+<td style="text-align: right;"><span class="math inline">\(\mathbf
+r,r\)</span></td>
+<td style="text-align: right;">nm</td>
+</tr>
+<tr>
+<td>tempo</td>
+<td style="text-align: right;"><span
+class="math inline">\(t\)</span></td>
+<td style="text-align: right;">ps</td>
+</tr>
+<tr>
+<td>energia</td>
+<td style="text-align: right;"><span
+class="math inline">\(U,E\)</span></td>
+<td style="text-align: right;">kJ mol<span
+class="math inline">\(^{-1}\)</span></td>
+</tr>
+<tr>
+<td>forza</td>
+<td style="text-align: right;"><span class="math inline">\(\mathbf
+F\)</span></td>
+<td style="text-align: right;">kJ mol<span
+class="math inline">\(^{-1}\)</span> nm<span
+class="math inline">\(^{-1}\)</span></td>
+</tr>
+<tr>
+<td>torque</td>
+<td style="text-align: right;"><span
+class="math inline">\(\boldsymbol\tau\)</span></td>
+<td style="text-align: right;">kJ mol<span
+class="math inline">\(^{-1}\)</span></td>
+</tr>
+<tr>
+<td>massa</td>
+<td style="text-align: right;"><span
+class="math inline">\(m\)</span></td>
+<td style="text-align: right;">u</td>
+</tr>
+<tr>
+<td>inerzia</td>
+<td style="text-align: right;"><span
+class="math inline">\(I\)</span></td>
+<td style="text-align: right;">u nm<span
+class="math inline">\(^2\)</span></td>
+</tr>
+<tr>
+<td>angolo</td>
+<td style="text-align: right;"><span
+class="math inline">\(\theta,\phi\)</span></td>
+<td style="text-align: right;">rad</td>
+</tr>
+<tr>
+<td>temperatura energetica</td>
+<td style="text-align: right;"><span
+class="math inline">\(k_BT=RT\)</span></td>
+<td style="text-align: right;">kJ mol<span
+class="math inline">\(^{-1}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Per ogni energia conservativa vale</p>
+<p><span class="math display">\[
+\mathbf F_i=-\nabla_{\mathbf r_i}U.
+\]</span></p>
+<p>Con box ortorombico, la minimum image convention (MIC) è applicata
+componente per componente:</p>
+<p><span class="math display">\[
+\Delta\mathbf r\leftarrow\Delta\mathbf r-\mathbf L\,
+\operatorname{round}(\Delta\mathbf r/\mathbf L).
+\]</span></p>
+<p>I vettori di edge PaiNN sono orientati come <span
+class="math inline">\(\mathbf r_{ij}=\mathbf r_i-\mathbf r_j\)</span>.
+Le formule dei prior tabulati hanno convenzioni specifiche descritte
+nella sezione 6.</p>
+<h2 id="2-stato-coarse-grained-e-rigid-body">2. Stato coarse grained e
+rigid body</h2>
+<h3 id="21-mapping-atomistico">2.1 Mapping atomistico</h3>
+<p>Per un corpo <span class="math inline">\(m\)</span> composto dagli
+atomi <span class="math inline">\(a\in m\)</span>, il centro di massa
+è</p>
+<p><span class="math display">\[
+\mathbf R_m=\frac{\sum_{a\in m}m_a\mathbf r_a}{\sum_{a\in m}m_a}.
+\]</span></p>
+<p>Il mapping può usare anche il centro geometrico o un atomo
+selezionato, ma il centro dinamico del rigid body e i torque sono
+riferiti al COM. La forza e il torque generalizzati atomistici sono</p>
+<p><span class="math display">\[
+\mathbf F_m^{AA}=\sum_{a\in m}\mathbf f_a^{AA},\qquad
+\boldsymbol\tau_m^{AA}=\sum_{a\in m}
+(\mathbf r_a-\mathbf R_m)\times\mathbf f_a^{AA}.
+\]</span></p>
+<p>Un corpo single-site deve avere il sito sul COM: una forza fuori
+centro richiederebbe un grado di libertà rotazionale che il corpo non
+possiede.</p>
+<h3 id="22-massa-inerzia-e-assi-principali">2.2 Massa, inerzia e assi
+principali</h3>
+<p>Indicando con <span class="math inline">\(\boldsymbol\rho_a=\mathbf
+r_a-\mathbf R_m\)</span>,</p>
+<p><span class="math display">\[
+\mathbf I_m=\sum_{a\in m}m_a
+\left[(\boldsymbol\rho_a\cdot\boldsymbol\rho_a)\mathbf 1
+-\boldsymbol\rho_a\boldsymbol\rho_a^T\right].
+\]</span></p>
+<p>Il tensore simmetrico viene diagonalizzato; gli autovettori sono
+ordinati per autovalore e corretti affinché la terna sia destrorsa.
+Masse, momenti principali e geometria body-frame vengono salvati in
+<code>rigid_bodies_info.json</code>.</p>
+<h3 id="23-geometria-media-e-kabsch">2.3 Geometria media e Kabsch</h3>
+<p>Le geometrie multi-site dei frame vengono allineate iterativamente
+con Kabsch. Date due configurazioni centrate <span
+class="math inline">\(P,Q\)</span>,</p>
+<p><span class="math display">\[
+H=P^TQ=U\Sigma V^T,\qquad
+R=V\,\operatorname{diag}(1,1,\operatorname{sign}\det(VU^T))\,U^T.
+\]</span></p>
+<p>La correzione del determinante evita riflessioni. Al runtime, la
+posizione di un sito virtuale <span class="math inline">\(s\)</span> è
+<span class="math inline">\(\mathbf r_{ms}=\mathbf R_m+Q_m\mathbf
+d_{ms}\)</span>, dove <span class="math inline">\(Q_m\)</span> è la
+rotazione del corpo e <span class="math inline">\(\mathbf
+d_{ms}\)</span> l'offset body-frame.</p>
+<h2 id="3-hamiltoniana-e-force-matching-residuale">3. Hamiltoniana e
+force matching residuale</h2>
+<p>La decomposizione fondamentale è</p>
+<p><span class="math display">\[
+U_{CG}(\mathbf R,Q)=U_{prior}(\mathbf R,Q)+U_{ML}(\mathbf R,Q).
+\]</span></p>
+<p>Il dataset non contiene le forze AA totali, ma i target
+residuali:</p>
+<p><span class="math display">\[
+\mathbf F_m^{res}=\mathbf F_m^{AA}-\mathbf F_m^{prior},\qquad
+\boldsymbol\tau_m^{res}=\boldsymbol\tau_m^{AA}-\boldsymbol\tau_m^{prior}.
+\]</span></p>
+<p>Questa identità è una condizione di coerenza, non un dettaglio di
+training. Cambiare un prior cambia il target; occorre ricostruire il
+dataset, riaddestrare PaiNN e rigenerare il checkpoint. Sottrarre e
+simulare geometrie o parametri diversi produce una Hamiltoniana
+incoerente.</p>
+<p>Per un sito a offset <span class="math inline">\(\mathbf d\)</span>
+su cui agisce <span class="math inline">\(\mathbf f\)</span>,</p>
+<p><span class="math display">\[
+\mathbf F_m\mathrel{+}=\mathbf f,\qquad
+\boldsymbol\tau_m\mathrel{+}=(\mathbf r_s-\mathbf R_m)\times\mathbf f.
+\]</span></p>
+<h2 id="4-prior-analitici">4. Prior analitici</h2>
+<h3 id="41-bond-armonico">4.1 Bond armonico</h3>
+<p><span class="math display">\[
+U(r)=\frac12k(r-r_0)^2,\qquad F_r=-k(r-r_0).
+\]</span></p>
+<p>Se automatici, <span class="math inline">\(r_0=\langle
+r\rangle\)</span> e <span
+class="math inline">\(k=[\beta\operatorname{Var}(r)]^{-1}\)</span>, con
+<span class="math inline">\(\beta=(RT)^{-1}\)</span>. <code>r0</code>
+sposta il minimo; aumentare <code>k</code> restringe le fluttuazioni e
+aumenta la frequenza più rapida, imponendo in genere un timestep
+minore.</p>
+<h3 id="42-fene">4.2 FENE</h3>
+<p>Con <span class="math inline">\(x=r-r_0\)</span> e estensione massima
+<span class="math inline">\(r_{max}\)</span>,</p>
+<p><span class="math display">\[
+U(r)=-\frac12kr_{max}^2\ln\left[1-(x/r_{max})^2\right],\qquad
+F_r=-\frac{kx}{1-(x/r_{max})^2}.
+\]</span></p>
+<p>Il dominio è <span class="math inline">\(|x|&lt;r_{max}\)</span>; la
+forza diverge al bordo. <code>k</code> regola la curvatura locale,
+<code>r_max</code> il limite geometrico.</p>
+<h3 id="43-angolo-armonico">4.3 Angolo armonico</h3>
+<p><span class="math display">\[
+U(\theta)=\frac12k(\theta-\theta_0)^2,
+\qquad \frac{dU}{d\theta}=k(\theta-\theta_0).
+\]</span></p>
+<p>Se automatici, <span
+class="math inline">\(\theta_0=\langle\theta\rangle\)</span> e <span
+class="math inline">\(k=[\beta\operatorname{Var}(\theta)]^{-1}\)</span>.
+La conversione in forze cartesiane contiene <span
+class="math inline">\(1/\sin\theta\)</span>; geometrie vicine a <span
+class="math inline">\(0\)</span> o <span
+class="math inline">\(\pi\)</span> sono singolari.</p>
+<h3 id="44-dihedro-cosine">4.4 Dihedro cosine</h3>
+<p><span class="math display">\[
+U(\phi)=K[1-\cos(n\phi-\phi_0)],\qquad
+\frac{dU}{d\phi}=Kn\sin(n\phi-\phi_0).
+\]</span></p>
+<p><code>n</code> è la molteplicità, <code>K</code> l'altezza della
+modulazione e <code>phi0</code> la fase. La fase automatica usa la media
+circolare <span
+class="math inline">\(\operatorname{atan2}(\langle\sin\phi\rangle,\langle\cos\phi\rangle)\)</span>.</p>
+<h3 id="45-morse-switched">4.5 Morse switched</h3>
+<p>Posto <span class="math inline">\(y=e^{-a(r-r_0)}\)</span>,</p>
+<p><span class="math display">\[
+U_0(r)=D(y^2-2y),\qquad F_0(r)=2D\,a\,y(y-1).
+\]</span></p>
+<p>Il minimo è <span class="math inline">\(U_0(r_0)=-D\)</span> e la
+curvatura locale è</p>
+<p><span class="math display">\[
+U_0&#39;&#39;(r_0)=2Da^2.
+\]</span></p>
+<p>Quindi <code>D</code> controlla profondità e curvatura,
+<code>a</code> controlla larghezza e stiffness quadraticamente,
+<code>r0</code> la distanza di equilibrio. Nel tratto <span
+class="math inline">\(r_s&lt;r&lt;r_c\)</span>, con <span
+class="math inline">\(t=(r-r_s)/(r_c-r_s)\)</span>,</p>
+<p><span class="math display">\[
+S(t)=1-10t^3+15t^4-6t^5,
+\]</span></p>
+<p><span class="math display">\[
+U=SU_0,\qquad F=SF_0-U_0\frac{dS}{dr},\qquad
+\frac{dS}{dr}=-\frac{30t^2(1-t)^2}{r_c-r_s}.
+\]</span></p>
+<p>Per <span class="math inline">\(r\ge r_c\)</span>, <span
+class="math inline">\(U=F=0\)</span>. Lo switch rende continui energia,
+forza e curvatura ai bordi. Ridurre troppo <span
+class="math inline">\(r_c-r_s\)</span> concentra la curvatura nella
+coda. I Morse pair-specific e type-pair condividono il kernel e, se
+sovrapposti, si sommano.</p>
+<h3 id="46-wca">4.6 WCA</h3>
+<p>Con <span class="math inline">\(r_c=2^{1/6}\sigma\)</span>,</p>
+<p><span class="math display">\[
+U_{WCA}(r)=
+\begin{cases}
+4\epsilon[(\sigma/r)^{12}-(\sigma/r)^6]+\epsilon,&amp;r&lt;r_c,\\
+0,&amp;r\ge r_c,
+\end{cases}
+\]</span></p>
+<p><span class="math display">\[
+F_r=\frac{24\epsilon}{r}
+\left[2(\sigma/r)^{12}-(\sigma/r)^6\right].
+\]</span></p>
+<p><code>sigma</code> fissa la scala del core, <code>epsilon</code> la
+sua altezza. Nel fit automatico, il cutoff di coppia deriva da un
+quantile basso regolarizzato e rispetta</p>
+<p><span class="math display">\[
+r_c\le\frac{m\,r_{min}^{phys}}{g},
+\]</span></p>
+<p>dove <span class="math inline">\(g=\)</span>
+<code>wca_guard_fraction</code> e <span
+class="math inline">\(m=\)</span>
+<code>wca_physical_guard_margin</code>. Infine <code>epsilon</code> è
+scelta imponendo <span class="math inline">\(U(g r_c)=\)</span>
+<code>wca_guard_kbt</code> <span class="math inline">\(\,k_BT\)</span>.
+Un <code>guard_kbt</code> maggiore irrigidisce il core; un margine
+minore lo allontana dai dati fisici.</p>
+<h2 id="5-dbi-e-ibi">5. DBI e IBI</h2>
+<p>La direct Boltzmann inversion usa la densità corretta per il
+Jacobiano:</p>
+<p><span class="math display">\[
+U_0(q)=-k_BT\ln P_{corr}(q)+C,
+\]</span></p>
+<p>con <span class="math inline">\(P_{corr}(r)=P(r)/r^2\)</span>, <span
+class="math inline">\(P_{corr}(\theta)=P(\theta)/\sin\theta\)</span> e
+nessuna correzione Jacobiana per il dihedro periodico. Il codice
+identifica supporto statistico, leviga il profilo e costruisce code
+confining fuori supporto.</p>
+<p>L'aggiornamento IBI sul supporto comune target/simulazione è</p>
+<p><span class="math display">\[
+U_{i+1}(q)=U_i(q)+\alpha k_BT
+\ln\frac{P_i(q)}{P_{target}(q)}.
+\]</span></p>
+<p><code>alpha</code> smorza l'update; <code>max_update_kT</code> lo
+limita; smoothing e taper riducono rumore e discontinuità. Dopo ogni
+modifica dei prior IBI si ricostruiscono i target residuali.</p>
+<h2 id="6-tabelle-e-spline-conservative">6. Tabelle e spline
+conservative</h2>
+<p>Le tabelle legacy interpolano linearmente energia e terza colonna. Le
+convenzioni sono: bond = forza radiale <span
+class="math inline">\(-dU/dr\)</span>; angle = <span
+class="math inline">\(dU/d\theta\)</span>; dihedral = fattore geometrico
+ESPResSo, non semplicemente <span
+class="math inline">\(-dU/d\phi\)</span>. Interpolare energia e forza
+separatamente non garantisce <span class="math inline">\(\mathbf
+F=-\nabla U\)</span> e non è adatto a una certificazione NVE
+stretta.</p>
+<p>La rappresentazione <code>pchip_hermite_v1</code> memorizza nodi
+<span class="math inline">\((q_i,U_i,m_i)\)</span> con <span
+class="math inline">\(m_i=dU/dq\)</span>. Nell'intervallo <span
+class="math inline">\(q=q_i+th\)</span>, <span
+class="math inline">\(t\in[0,1]\)</span>:</p>
+<p><span class="math display">\[
+U(t)=h_{00}U_i+h_{10}hm_i+h_{01}U_{i+1}+h_{11}hm_{i+1},
+\]</span></p>
+<p>con <span class="math inline">\(h_{00}=2t^3-3t^2+1\)</span>, <span
+class="math inline">\(h_{10}=t^3-2t^2+t\)</span>, <span
+class="math inline">\(h_{01}=-2t^3+3t^2\)</span>, <span
+class="math inline">\(h_{11}=t^3-t^2\)</span>. Energia e derivata
+provengono dallo stesso polinomio. Gli angoli coprono <span
+class="math inline">\([0,\pi]\)</span>; i dihedri <span
+class="math inline">\([0,2\pi]\)</span> con energia e derivata
+periodiche.</p>
+<h2 id="7-grafo-e-architettura-painn">7. Grafo e architettura PaiNN</h2>
+<p>Ogni sito fisico ha tipo <span class="math inline">\(z_i\)</span>,
+scalari <span class="math inline">\(\mathbf s_i\in\mathbb R^D\)</span> e
+vettori <span class="math inline">\(\mathbf v_i\in\mathbb R^{3\times
+D}\)</span>:</p>
+<p><span class="math display">\[
+\mathbf s_i^{(0)}=\operatorname{Embedding}(z_i),\qquad \mathbf
+v_i^{(0)}=0.
+\]</span></p>
+<p>Gli edge con MIC collegano siti di molecole diverse entro
+<code>cutoff</code>; ogni coppia compare in entrambe le direzioni.</p>
+<h3 id="71-base-radiale-e-cutoff">7.1 Base radiale e cutoff</h3>
+<p>Per centri <span class="math inline">\(\mu_k\)</span> uniformi in
+<span class="math inline">\([0,r_c]\)</span> e <span
+class="math inline">\(\sigma_{RBF}=r_c/N_{RBF}\)</span>,</p>
+<p><span class="math display">\[
+R_k(d)=\exp[-(d-\mu_k)^2/\sigma_{RBF}^2]c(d),
+\]</span></p>
+<p><span class="math display">\[
+c(d)=\frac{x^4}{x^4+\alpha^4},\quad
+x=(r_c-d)/r_c,\quad d\le r_c,
+\]</span></p>
+<p>e <span class="math inline">\(c=0\)</span> oltre il cutoff. Aumentare
+<code>num_rbf</code> aumenta la risoluzione radiale; aumentare
+<code>cutoff</code> aumenta contesto, edge, costo e memoria. Aumentare
+<code>toxvaerd_alpha</code> sopprime il filtro più all'interno del
+cutoff; ridurlo mantiene <span class="math inline">\(c\simeq1\)</span>
+più a lungo ma rende la transizione più concentrata.</p>
+<h3 id="72-message-block">7.2 Message block</h3>
+<p>Una MLP <code>D -&gt; D -&gt; 3D</code> con SiLU produce il contesto
+scalare; una trasformazione lineare <code>num_rbf -&gt; 3D</code>
+produce il filtro radiale. Il prodotto è diviso in <span
+class="math inline">\((q_0,q_1,q_2)\)</span>. Per l'edge <span
+class="math inline">\(j\to i\)</span>:</p>
+<p><span class="math display">\[
+\Delta\mathbf s_i\mathrel{+}=q_0,\qquad
+\Delta\mathbf v_i\mathrel{+}=\mathbf v_j\odot q_1+
+\hat{\mathbf r}_{ij}\,q_2.
+\]</span></p>
+<p>L'aggregazione è una somma (<code>sum_v1</code>).</p>
+<h3 id="73-update-e-readout">7.3 Update e readout</h3>
+<p>Con <span class="math inline">\(\mathbf v_v=W_v\mathbf v\)</span>,
+<span class="math inline">\(\mathbf v_u=W_u\mathbf v\)</span> e</p>
+<p><span class="math display">\[
+\|\mathbf v_v\|_\varepsilon=
+\sqrt{\sum_{a=1}^3v_{v,a}^2+10^{-8}},
+\]</span></p>
+<p>una MLP su <span class="math inline">\([\mathbf s,\|\mathbf
+v_v\|_\varepsilon]\)</span> produce <span
+class="math inline">\((a,b,c)\)</span>:</p>
+<p><span class="math display">\[
+\Delta\mathbf s=a+(\mathbf v_v\cdot\mathbf v_u)\odot b,
+\qquad \Delta\mathbf v=\mathbf v_u\odot c.
+\]</span></p>
+<p>Dopo <code>n_layers</code>, il readout
+<code>D -&gt; D/2 -&gt; 1</code> con SiLU produce <span
+class="math inline">\(u_i\)</span>. <code>hidden_channels</code>
+controlla la larghezza; <code>n_layers</code> la profondità di message
+passing. Entrambi aumentano capacità, costo e memoria.</p>
+<h2 id="8-gauge-energetico-forze-e-torque-painn">8. Gauge energetico,
+forze e torque PaiNN</h2>
+<p>Il modello sottrae, per specie, l'energia dello stesso sito isolato
+propagato solo attraverso gli update block:</p>
+<p><span class="math display">\[
+u_i=s_E[\tilde u_i-u_{iso}(z_i)],\qquad U_{ML}=\sum_i u_i.
+\]</span></p>
+<p>Questo fissa il gauge di un training basato sulle forze. Nel trainer
+<span class="math inline">\(s_E=\)</span> <code>energy_scale</code>
+viene posto al Force RMS del training; scala insieme energie e loro
+derivate.</p>
+<p>Le forze di edge sono calcolate con autograd dalla stessa
+energia:</p>
+<p><span class="math display">\[
+\mathbf f_{ij}=-\frac{\partial U_{ML}}{\partial\mathbf r_{ij}}.
+\]</span></p>
+<p>Le forze sui corpi si ottengono sommando gli edge con segno opposto
+sui due estremi; i torque sono <span
+class="math inline">\(\sum_s(\mathbf r_s-\mathbf R_m)\times\mathbf
+f_s\)</span>. Durante il training <code>create_graph=true</code> perché
+ottimizzare una loss sulle forze richiede derivate seconde dell'energia
+rispetto a coordinate e pesi.</p>
+<h2 id="9-loss-e-ottimizzazione">9. Loss e ottimizzazione</h2>
+<p>Le scale, calcolate soltanto sul training split, sono</p>
+<p><span class="math display">\[
+F_{RMS}=\sqrt{N_F^{-1}\sum F_{target}^2},\qquad
+\tau_{RMS}=\sqrt{N_\tau^{-1}\sum\tau_{target}^2}.
+\]</span></p>
+<p>Il torque include soltanto corpi multi-site. La loss è</p>
+<p><span class="math display">\[
+L=\frac{\operatorname{MSE}(\mathbf F,\mathbf F^*)}{F_{RMS}^2}
++\lambda_\tau
+\frac{\operatorname{MSE}(\boldsymbol\tau,\boldsymbol\tau^*)}{\tau_{RMS}^2}
++\lambda_L\frac{\langle\|\mathbf f_s\|^2\rangle}{F_{RMS}^2}.
+\]</span></p>
+<p><code>torque_weight</code> è <span
+class="math inline">\(\lambda_\tau\)</span>.
+<code>lipschitz_lambda</code> è <span
+class="math inline">\(\lambda_L\)</span>, ma il termine implementato è
+una penalità sulla norma delle forze di sito, non una stima rigorosa
+della costante di Lipschitz globale.</p>
+<p>L'ottimizzatore è AdamW. <code>learning_rate</code> regola il passo;
+<code>weight_decay</code> la penalità sui pesi;
+<code>grad_clip_norm</code> limita la norma globale del gradiente;
+<code>batch_size</code> scambia rumore statistico con memoria;
+<code>epochs</code> è un limite superiore.
+<code>reduce_lr_patience</code> riduce il learning rate dopo plateau;
+<code>early_stopping_patience</code> termina dopo mancati miglioramenti.
+Split e normalizzazione devono restare train-only per evitare
+leakage.</p>
+<h2 id="10-dinamica-e-termostato">10. Dinamica e termostato</h2>
+<p>La Hamiltoniana meccanica è</p>
+<p><span class="math display">\[
+H=K_{trans}+K_{rot}+U_{prior}+U_{ML}.
+\]</span></p>
+<p>ESPResSo integra traslazioni e rotazioni dei rigid body. In NVT il
+Langevin aggiunge attrito e rumore con relazione
+fluttuazione-dissipazione; in forma continua traslazionale,</p>
+<p><span class="math display">\[
+m\dot{\mathbf v}=\mathbf F-\gamma\mathbf v+
+\sqrt{2\gamma k_BT}\,\boldsymbol\eta(t),
+\]</span></p>
+<p>con analogo termine rotazionale. In NVE il termostato è disattivato.
+<code>dt</code> deve risolvere la frequenza più alta del potenziale;
+aumentarlo accelera il run ma aumenta l'errore di discretizzazione e può
+destabilizzare Morse, WCA, FENE o angoli rigidi. <code>kT</code> imposta
+la distribuzione termica, non la stiffness dei prior. Force cap e
+steepest descent sono strumenti di warm-up e non devono restare
+nell'Hamiltoniana produttiva.</p>
+<p><code>device</code> e <code>ml_precision</code> cambiano il rumore
+numerico, non le equazioni. CPU/float64 è una closure diagnostica;
+CPU/float32 è il riferimento ordinario per la certificazione. Su MPS,
+<code>MLCG_MPS_EMPTY_CACHE_INTERVAL=100</code> è la policy runtime
+predefinita di rilascio cache; <code>0</code> la disabilita. Il
+parametro training <code>mps_empty_cache_every_batches</code> è separato
+e non modifica la loss.</p>
+<h2 id="11-certificazione-nve">11. Certificazione NVE</h2>
+<p>Per ogni timestep, dalla serie <span
+class="math inline">\(E_n\)</span> si calcola</p>
+<p><span class="math display">\[
+\sigma_E=\sqrt{N^{-1}\sum_n(E_n-\bar E)^2}.
+\]</span></p>
+<p>Su run di uguale durata fisica si adatta</p>
+<p><span class="math display">\[
+\sigma_E=C\Delta t^p,\qquad
+\log\sigma_E=\log C+p\log\Delta t.
+\]</span></p>
+<p>Velocity Verlet è di ordine due: nel regime asintotico conservativo
+ci si aspetta <span class="math inline">\(p\simeq2\)</span>. Il fit
+riporta <span class="math inline">\(R^2\)</span> in spazio log-log. Il
+drift usa le medie del primo e ultimo 20%:</p>
+<p><span class="math display">\[
+D_{rel}=\frac{|\bar E_{last}-\bar E_{first}|}
+{\max(|E_0|,\langle|E|\rangle,1)}.
+\]</span></p>
+<p>I default del certificatore sono <span class="math inline">\(1.7\le
+p\le2.3\)</span>, <span class="math inline">\(R^2\ge0.97\)</span> e
+<span class="math inline">\(D_{rel}\le10^{-4}\)</span>. Un <span
+class="math inline">\(p\)</span> basso ai timestep minimi può indicare
+floor FP32; un punto grande fuori fit può essere fuori dal regime
+asintotico; un drift alto è un criterio distinto dallo scaling.</p>
+<h2 id="12-riferimento-rapido-dei-parametri">12. Riferimento rapido dei
+parametri</h2>
+<h3 id="topologia-e-prior">Topologia e prior</h3>
+<table>
+<thead>
+<tr>
+<th>Parametro</th>
+<th>Significato matematico</th>
+<th>Se aumenta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>temperature</code></td>
+<td><span class="math inline">\(T\)</span> usata in <span
+class="math inline">\(\beta=(RT)^{-1}\)</span></td>
+<td>prior auto/DBI più morbidi a varianza fissa</td>
+</tr>
+<tr>
+<td><code>k</code>, <code>D</code>, <code>epsilon</code></td>
+<td>scale energetiche</td>
+<td>forze e curvature maggiori</td>
+</tr>
+<tr>
+<td><code>r0</code>, <code>theta0</code>, <code>phi0</code></td>
+<td>posizione/fase del minimo</td>
+<td>trasla il riferimento geometrico</td>
+</tr>
+<tr>
+<td>Morse <code>a</code></td>
+<td>inverso della larghezza</td>
+<td>curvatura locale <span class="math inline">\(2Da^2\)</span>
+maggiore</td>
+</tr>
+<tr>
+<td><code>r_switch</code></td>
+<td>inizio smooth switch</td>
+<td>più vicino a <code>r_cut</code>: coda più concentrata</td>
+</tr>
+<tr>
+<td><code>r_cut</code></td>
+<td>fine esatta dell'interazione</td>
+<td>più coppie e costo maggiore</td>
+</tr>
+<tr>
+<td><code>wca_quantile_percent</code></td>
+<td>quantile basso per il core</td>
+<td>onset tendenzialmente più esterno</td>
+</tr>
+<tr>
+<td><code>wca_guard_fraction</code></td>
+<td><span class="math inline">\(r_{guard}/r_c\)</span></td>
+<td>calibrazione più vicina al cutoff</td>
+</tr>
+<tr>
+<td><code>wca_guard_kbt</code></td>
+<td><span class="math inline">\(U(r_{guard})/k_BT\)</span></td>
+<td>core più alto/rigido</td>
+</tr>
+<tr>
+<td><code>wca_physical_guard_margin</code></td>
+<td>margine sul minimo fisico</td>
+<td>core ammesso più vicino ai dati</td>
+</tr>
+</tbody>
+</table>
+<h3 id="painn-e-training">PaiNN e training</h3>
+<table>
+<thead>
+<tr>
+<th>Parametro</th>
+<th>Ruolo</th>
+<th>Trade-off principale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>num_species</code></td>
+<td>cardinalità dei tipi</td>
+<td>deve coprire esattamente i site type</td>
+</tr>
+<tr>
+<td><code>hidden_channels</code></td>
+<td><span class="math inline">\(D\)</span></td>
+<td>capacità contro memoria/costo</td>
+</tr>
+<tr>
+<td><code>n_layers</code></td>
+<td>blocchi message/update</td>
+<td>contesto/capacità contro costo</td>
+</tr>
+<tr>
+<td><code>num_rbf</code></td>
+<td>risoluzione radiale</td>
+<td>dettaglio contro costo</td>
+</tr>
+<tr>
+<td><code>cutoff</code></td>
+<td><span class="math inline">\(r_c\)</span> del grafo</td>
+<td>contesto contro numero di edge</td>
+</tr>
+<tr>
+<td><code>toxvaerd_alpha</code></td>
+<td>forma del cutoff</td>
+<td>transizione più larga se maggiore</td>
+</tr>
+<tr>
+<td><code>torque_weight</code></td>
+<td><span class="math inline">\(\lambda_\tau\)</span></td>
+<td>accuratezza rotazionale contro forza COM</td>
+</tr>
+<tr>
+<td><code>lipschitz_lambda</code></td>
+<td><span class="math inline">\(\lambda_L\)</span></td>
+<td>forze di sito più piccole, possibile underfit</td>
+</tr>
+<tr>
+<td><code>learning_rate</code></td>
+<td>passo AdamW</td>
+<td>velocità contro instabilità</td>
+</tr>
+<tr>
+<td><code>weight_decay</code></td>
+<td>regolarizzazione pesi</td>
+<td>controllo capacità contro underfit</td>
+</tr>
+<tr>
+<td><code>grad_clip_norm</code></td>
+<td>soglia norma gradiente</td>
+<td>stabilità contro update attenuati</td>
+</tr>
+<tr>
+<td><code>batch_size</code></td>
+<td>frame per update</td>
+<td>varianza contro memoria</td>
+</tr>
+<tr>
+<td><code>validation_fraction</code></td>
+<td>quota validation</td>
+<td>stima più stabile contro meno training data</td>
+</tr>
+</tbody>
+</table>
+<h3 id="runtime-e-certificazione">Runtime e certificazione</h3>
+<table>
+<thead>
+<tr>
+<th>Parametro</th>
+<th>Significato</th>
+<th>Effetto principale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dt</code></td>
+<td><span class="math inline">\(\Delta t\)</span></td>
+<td>costo <span class="math inline">\(\propto1/dt\)</span> a durata
+fissa; errore VV <span class="math inline">\(O(dt^2)\)</span></td>
+</tr>
+<tr>
+<td><code>steps</code></td>
+<td>numero di passi</td>
+<td>durata <span class="math inline">\(=steps\,dt\)</span></td>
+</tr>
+<tr>
+<td><code>kT</code></td>
+<td>temperatura energetica NVT</td>
+<td>ampiezza delle fluttuazioni termiche</td>
+</tr>
+<tr>
+<td><code>log_interval</code></td>
+<td>passo di campionamento</td>
+<td>volume I/O e risoluzione temporale</td>
+</tr>
+<tr>
+<td><code>ml_precision</code></td>
+<td>precisione PaiNN</td>
+<td>floor numerico e costo</td>
+</tr>
+<tr>
+<td><code>neighbor_search</code></td>
+<td>algoritmo di coppia</td>
+<td>prestazioni; non deve cambiare la fisica</td>
+</tr>
+<tr>
+<td><code>duration_ps</code></td>
+<td>durata NVE per dt</td>
+<td>stabilità statistica del fit</td>
+</tr>
+<tr>
+<td><code>slope_min/max</code></td>
+<td>intervallo ammesso per <span class="math inline">\(p\)</span></td>
+<td>severità del gate sull'ordine</td>
+</tr>
+<tr>
+<td><code>min_r2</code></td>
+<td>linearità log-log minima</td>
+<td>severità del power-law gate</td>
+</tr>
+<tr>
+<td><code>max_relative_drift</code></td>
+<td>drift relativo massimo</td>
+<td>severità del gate secolare</td>
+</tr>
+</tbody>
+</table>
+<h2 id="13-regole-di-interpretazione">13. Regole di interpretazione</h2>
+<ol type="1">
+<li>Un prior più rigido riduce il residuo che PaiNN deve apprendere, ma
+aumenta le frequenze dell'Hamiltoniana e può peggiorare stabilità e
+floor FP32.</li>
+<li>Una validation loss bassa non certifica conservazione energetica:
+servono parity energia-forza e sweep NVE multi-<span
+class="math inline">\(dt\)</span>.</li>
+<li><span class="math inline">\(p\simeq2\)</span> certifica l'ordine
+numerico nel dominio testato, non l'accuratezza scientifica rispetto
+alla distribuzione atomistica.</li>
+<li>Un modello più grande non è automaticamente più fisico: capacità,
+dataset, decomposizione prior/residuo e timestep vanno valutati
+insieme.</li>
+<li>Manifest e hash fanno parte della definizione matematica del
+candidato: impediscono di combinare modello, prior, dataset e checkpoint
+incompatibili.</li>
+</ol>
+<h2 id="14-sorgenti-normativi">14. Sorgenti normativi</h2>
+<p>Le formule qui riportate seguono l'implementazione corrente in:</p>
+<ul>
+<li><code>preprocessing/geometry_utils.py</code>,
+<code>build_cg_dataset.py</code>, <code>prior_kernels.py</code>,
+<code>conservative_spline.py</code>;</li>
+<li><code>ibi/ibi_core.py</code>,
+<code>ibi/build_dbi_priors.py</code>;</li>
+<li><code>training/PaiNN_Architecture.hpp</code>,
+<code>training/train_painn.cpp</code>;</li>
+<li><code>simulation/run_cg_md.py</code>, <code>equilibrate.py</code>,
+<code>nve_analysis.py</code>, <code>certify_nve.py</code>;</li>
+<li><code>simulation/espresso_plugin/</code> per il bridge
+ESPResSo.</li>
+</ul>
+<p>In caso di divergenza, test e sorgenti della revisione effettivamente
+costruita sono autoritativi; questo documento deve essere aggiornato
+insieme a ogni modifica di equazioni, convenzioni o parametri.</p>
+<hr />
+<h1 id="parte-ii--derivazioni-implementative">Parte II — Derivazioni
+implementative</h1>
+<h2 id="15-painn-formulazione-completa-della-variante-implementata">15.
+PaiNN: formulazione completa della variante implementata</h2>
+<p>La variante ammessa da trainer e runtime è
+<code>painn_canonical_context_silu_v2</code>. Questa sezione descrive
+quella variante, non una generica famiglia PaiNN. Indichiamo con <span
+class="math inline">\(N\)</span> il numero di siti fisici, <span
+class="math inline">\(D=\)</span> <code>hidden_channels</code>, <span
+class="math inline">\(K=\)</span> <code>num_rbf</code> e <span
+class="math inline">\(L=\)</span> <code>n_layers</code>.</p>
+<h3 id="151-rappresentazioni-e-simmetrie">15.1 Rappresentazioni e
+simmetrie</h3>
+<p>Per ogni sito <span class="math inline">\(i\)</span> il layer <span
+class="math inline">\(\ell\)</span> mantiene:</p>
+<p><span class="math display">\[
+\mathbf s_i^{(\ell)}\in\mathbb R^D,
+\qquad
+\mathbf v_i^{(\ell)}\in\mathbb R^{3\times D}.
+\]</span></p>
+<p>La componente <span class="math inline">\(s_{ic}\)</span> è uno
+scalare invariante; la colonna <span class="math inline">\(\mathbf
+v_{ic}\in\mathbb R^3\)</span> è un vettore equivarante. Per una
+rotazione ortogonale <span class="math inline">\(R\)</span> e una
+traslazione <span class="math inline">\(\mathbf a\)</span>:</p>
+<p><span class="math display">\[
+\mathbf r_i\mapsto R\mathbf r_i+\mathbf a,\qquad
+\mathbf s_i\mapsto\mathbf s_i,\qquad
+\mathbf v_{ic}\mapsto R\mathbf v_{ic}.
+\]</span></p>
+<p>L'energia finale deve essere invariante. Il modello ottiene:</p>
+<ul>
+<li>invarianza traslazionale usando solo spostamenti relativi;</li>
+<li>equivarianza rotazionale usando vettori, norme, prodotti scalare e
+direzioni radiali;</li>
+<li>invarianza rispetto all'ordine dei vicini mediante aggregazione per
+somma;</li>
+<li>invarianza rispetto alla permutazione di siti dello stesso tipo
+mediante embedding condivisi e readout additivo.</li>
+</ul>
+<p>Le feature iniziali sono</p>
+<p><span class="math display">\[
+\mathbf s_i^{(0)}=E_{z_i},\qquad
+\mathbf v_i^{(0)}=0,
+\]</span></p>
+<p>dove <span class="math inline">\(E\in\mathbb R^{N_{species}\times
+D}\)</span> è la matrice di embedding e <span
+class="math inline">\(z_i\)</span> è il site type.
+<code>num_species</code> deve quindi essere maggiore del massimo indice
+di tipo e deve coincidere tra dataset, config, manifest e runtime.</p>
+<h3 id="152-grafo-periodico-diretto">15.2 Grafo periodico diretto</h3>
+<p>Per ogni coppia fisica entro il cutoff vengono costruiti i due edge
+<span class="math inline">\(i\leftarrow
+j\)</span> e <span class="math inline">\(j\leftarrow i\)</span>. Con
+<code>row=i</code>, <code>col=j</code>:</p>
+<p><span class="math display">\[
+\mathbf r_{ij}=\operatorname{MIC}(\mathbf r_i-\mathbf r_j),\qquad
+d_{ij}=\sqrt{\mathbf r_{ij}\cdot\mathbf r_{ij}+\varepsilon_d},\qquad
+\widehat{\mathbf r}_{ij}=\frac{\mathbf r_{ij}}{d_{ij}},
+\]</span></p>
+<p>con <span class="math inline">\(\varepsilon_d=10^{-8}\)</span> nella
+norma implementata. Questo termine evita divisioni esattamente per zero;
+a distanze fisiche ordinarie è trascurabile. Gli edge di training sono
+precomputati per ogni frame; al runtime la neighbor list ESPResSo deve
+produrre lo stesso insieme fisico entro <code>cutoff</code>.</p>
+<p>La MIC contiene un <code>round</code> non differenziabile ai bordi
+dell'immagine. Il trainer applica <code>detach</code> alla scelta
+dell'immagine: all'interno di ciascuna regione MIC la derivata è esatta,
+mentre il salto discreto non entra nel grafo autograd. Questa è la
+convenzione corretta purché nessuna coppia rilevante sia ambigua sul
+mezzo box.</p>
+<h3 id="153-base-radiale-gaussiana">15.3 Base radiale gaussiana</h3>
+<p>I centri sono uniformi:</p>
+<p><span class="math display">\[
+\mu_k=\frac{k}{K-1}r_c,\qquad k=0,\ldots,K-1,
+\]</span></p>
+<p>e il codice usa</p>
+<p><span class="math display">\[
+\sigma_{RBF}=\frac{r_c}{K},\qquad
+g_k(d)=\exp\left[-\frac{(d-\mu_k)^2}{\sigma_{RBF}^2}\right].
+\]</span></p>
+<p>La derivata non finestrata è</p>
+<p><span class="math display">\[
+\frac{dg_k}{dd}=-\frac{2(d-\mu_k)}{\sigma_{RBF}^2}g_k(d).
+\]</span></p>
+<p>Aumentare <span class="math inline">\(K\)</span> riduce <span
+class="math inline">\(\sigma_{RBF}\)</span> e consente variazioni
+radiali più fini, ma aumenta parametri e moltiplicazioni. Un <span
+class="math inline">\(K\)</span> elevato non crea informazione se la
+distribuzione delle distanze o il numero di frame non la supportano.</p>
+<h3 id="154-cutoff-toxvaerd-e-regolarità">15.4 Cutoff Toxvaerd e
+regolarità</h3>
+<p>Per <span class="math inline">\(d\le r_c\)</span>:</p>
+<p><span class="math display">\[
+x=1-\frac d{r_c},\qquad
+c(d)=\frac{x^4}{x^4+\alpha^4},
+\]</span></p>
+<p>mentre <span class="math inline">\(c(d)=0\)</span> per <span
+class="math inline">\(d&gt;r_c\)</span>. La base effettiva è <span
+class="math inline">\(R_k(d)=g_k(d)c(d)\)</span>. Le derivate utili
+sono</p>
+<p><span class="math display">\[
+\frac{dc}{dx}=\frac{4\alpha^4x^3}{(x^4+\alpha^4)^2},
+\qquad
+\frac{dc}{dd}=-\frac{4\alpha^4x^3}
+{r_c(x^4+\alpha^4)^2},
+\]</span></p>
+<p><span class="math display">\[
+\frac{dR_k}{dd}=c\frac{dg_k}{dd}+g_k\frac{dc}{dd}.
+\]</span></p>
+<p>Poiché vicino al cutoff <span class="math inline">\(c\sim
+x^4/\alpha^4\)</span>, valore e prime tre derivate rispetto alla
+distanza vanno a zero dal lato interno. Ciò evita un impulso di forza
+quando un edge attraversa <span class="math inline">\(r_c\)</span>.
+<code>toxvaerd_alpha</code> non è un cutoff aggiuntivo: controlla la
+larghezza della regione attenuata. A <span
+class="math inline">\(x=\alpha\)</span> vale <span
+class="math inline">\(c=1/2\)</span>; quindi un <span
+class="math inline">\(\alpha\)</span> maggiore sposta il mezzo cutoff
+più all'interno.</p>
+<h3 id="155-message-block-con-indici-espliciti">15.5 Message block con
+indici espliciti</h3>
+<p>Per ogni edge <span class="math inline">\(j\to i\)</span>, una MLP
+sul contesto del mittente produce</p>
+<p><span class="math display">\[
+\mathbf h_j=W_2\operatorname{SiLU}(W_1\mathbf s_j+\mathbf b_1)+\mathbf
+b_2
+\in\mathbb R^{3D},
+\]</span></p>
+<p>mentre una trasformazione lineare senza bias della base radiale
+produce</p>
+<p><span class="math display">\[
+\mathbf w_{ij}=W_R\mathbf R(d_{ij})\in\mathbb R^{3D}.
+\]</span></p>
+<p>Il prodotto canale per canale <span class="math inline">\(\mathbf
+q_{ij}=\mathbf h_j\odot\mathbf w_{ij}\)</span> viene diviso in tre
+vettori <span class="math inline">\(\mathbf q^{s},\mathbf q^{v},\mathbf
+q^{r}\in\mathbb R^D\)</span>. Per canale <span
+class="math inline">\(c\)</span>:</p>
+<p><span class="math display">\[
+\mathbf m^{s}_{ij,c}=q^{s}_{ij,c},
+\]</span></p>
+<p><span class="math display">\[
+\mathbf m^{v}_{ij,c}=
+q^{v}_{ij,c}\mathbf v_{j,c}+
+q^{r}_{ij,c}\widehat{\mathbf r}_{ij}.
+\]</span></p>
+<p>Il destinatario riceve la somma</p>
+<p><span class="math display">\[
+\Delta s_{i,c}^{msg}=\sum_{j\in\mathcal N(i)}m^{s}_{ij,c},
+\qquad
+\Delta\mathbf v_{i,c}^{msg}=
+\sum_{j\in\mathcal N(i)}\mathbf m^{v}_{ij,c},
+\]</span></p>
+<p>seguita dal residuo</p>
+<p><span class="math display">\[
+\mathbf s_i\leftarrow\mathbf s_i+\Delta\mathbf s_i^{msg},\qquad
+\mathbf v_i\leftarrow\mathbf v_i+\Delta\mathbf v_i^{msg}.
+\]</span></p>
+<p><span class="math inline">\(q^s\)</span> è scalare; <span
+class="math inline">\(q^v\)</span> moltiplica un vettore equivarante;
+<span class="math inline">\(q^r\)</span> moltiplica la direzione radiale
+equivarante. Ogni termine ha quindi la trasformazione corretta. La
+somma, invece della media, rende l'ampiezza sensibile al numero di
+vicini: questo è intenzionale e il manifest registra
+<code>sum_v1</code>.</p>
+<h3 id="156-update-block-intra-sito">15.6 Update block intra-sito</h3>
+<p>Due mappe lineari agiscono soltanto sui canali, identicamente per le
+tre componenti spaziali:</p>
+<p><span class="math display">\[
+\mathbf v^v_{i,c}=\sum_d(W_v)_{cd}\mathbf v_{i,d},
+\qquad
+\mathbf v^u_{i,c}=\sum_d(W_u)_{cd}\mathbf v_{i,d}.
+\]</span></p>
+<p>Si costruiscono gli invarianti</p>
+<p><span class="math display">\[
+n_{i,c}=\sqrt{\mathbf v^v_{i,c}\cdot\mathbf v^v_{i,c}+10^{-8}},
+\qquad
+p_{i,c}=\mathbf v^v_{i,c}\cdot\mathbf v^u_{i,c}.
+\]</span></p>
+<p>Una MLP <code>2D -&gt; D -&gt; 3D</code> con SiLU riceve la
+concatenazione <span class="math inline">\([\mathbf s_i,\mathbf
+n_i]\)</span> e produce tre blocchi <span class="math inline">\(\mathbf
+a_i,\mathbf b_i,\mathbf c_i\in\mathbb R^D\)</span>. L'update è</p>
+<p><span class="math display">\[
+\Delta s_{i,c}^{upd}=a_{i,c}+b_{i,c}p_{i,c},
+\qquad
+\Delta\mathbf v_{i,c}^{upd}=c_{i,c}\mathbf v^u_{i,c},
+\]</span></p>
+<p><span class="math display">\[
+\mathbf s_i\leftarrow\mathbf s_i+\Delta\mathbf s_i^{upd},\qquad
+\mathbf v_i\leftarrow\mathbf v_i+\Delta\mathbf v_i^{upd}.
+\]</span></p>
+<p>Norme e prodotti scalari sono invarianti; il coefficiente <span
+class="math inline">\(c_{i,c}\)</span> è invariante e moltiplica un
+vettore equivarante. L'update non richiede nuovi edge e mescola
+l'informazione vettoriale accumulata nel sito.</p>
+<h3 id="157-readout-additivo-e-gauge-per-specie">15.7 Readout additivo e
+gauge per specie</h3>
+<p>Dopo <span class="math inline">\(L\)</span> blocchi, il readout</p>
+<p><span class="math display">\[
+\widetilde u_i=W_o^{(2)}
+\operatorname{SiLU}(W_o^{(1)}\mathbf s_i+\mathbf b_o^{(1)})+b_o^{(2)}
+\]</span></p>
+<p>produce uno scalare per sito. Un training sulle sole derivate non
+determina le costanti additive dell'energia. Il framework calcola
+quindi, per ciascuna specie <span class="math inline">\(z\)</span>, un
+riferimento isolato: embedding del tipo, vettori nulli, nessun message
+block e soli update block. Se tale readout è <span
+class="math inline">\(u_{iso}(z)\)</span>,</p>
+<p><span class="math display">\[
+u_i=s_E[\widetilde u_i-u_{iso}(z_i)],
+\qquad
+U_{ML}=\sum_i u_i.
+\]</span></p>
+<p>Un sito isolato ha così energia ML nulla per costruzione. Il buffer
+<span class="math inline">\(s_E\)</span> è inizializzato dal trainer a
+<span class="math inline">\(F_{RMS}\)</span> del training set. Il
+fattore scala energia e forze simultaneamente e rende più naturale
+l'ordine di grandezza dei pesi iniziali; non è un parametro da cambiare
+a posteriori nel runtime.</p>
+<h3 id="158-forze-da-edge-e-conservatività">15.8 Forze da edge e
+conservatività</h3>
+<p>Il forward di training usa gli spostamenti MIC come variabili foglia.
+Per ogni edge diretto:</p>
+<p><span class="math display">\[
+\mathbf g_{ij}=\frac{\partial U_{ML}}{\partial\mathbf r_{ij}},
+\qquad
+\mathbf f_{ij}=-\mathbf g_{ij}.
+\]</span></p>
+<p>Il contributo viene aggregato con segni opposti:</p>
+<p><span class="math display">\[
+\mathbf f_i\mathrel{+}=\mathbf f_{ij},
+\qquad
+\mathbf f_j\mathrel{-}=\mathbf f_{ij}.
+\]</span></p>
+<p>Poiché entrambi gli edge diretti fanno parte del forward, non si
+inserisce un fattore <span class="math inline">\(1/2\)</span> manuale:
+autograd deriva esattamente l'energia realmente calcolata.
+L'antisimettria dell'aggregazione garantisce forza totale interna nulla
+a precisione numerica, mentre l'energia scalare garantisce
+conservatività all'interno della regione MIC e della neighbor list.</p>
+<h3 id="159-costo-e-significato-dei-parametri-painn">15.9 Costo e
+significato dei parametri PaiNN</h3>
+<p>Indicando con <span class="math inline">\(E\)</span> il numero di
+edge diretti, il costo dominante di un blocco è approssimativamente
+<span class="math inline">\(O(ED+ND^2+EKD)\)</span>, con memoria
+autograd molto superiore al solo forward perché il force matching
+richiede <code>create_graph=true</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Parametro</th>
+<th>Intervento matematico</th>
+<th>Rischio se troppo grande</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hidden_channels=D</code></td>
+<td>numero di canali scalari/vettoriali</td>
+<td>memoria, overfitting, costo <span
+class="math inline">\(D^2\)</span></td>
+</tr>
+<tr>
+<td><code>n_layers=L</code></td>
+<td>raggio informativo in hop</td>
+<td>grafi profondi e derivate seconde costose</td>
+</tr>
+<tr>
+<td><code>num_rbf=K</code></td>
+<td>risoluzione di <span class="math inline">\(d_{ij}\)</span></td>
+<td>basi ridondanti rispetto ai dati</td>
+</tr>
+<tr>
+<td><code>cutoff=r_c</code></td>
+<td>supporto del grafo</td>
+<td>crescita del numero di edge e vincoli sul box</td>
+</tr>
+<tr>
+<td><code>toxvaerd_alpha</code></td>
+<td>posizione/larghezza dell'attenuazione</td>
+<td>perdita di contesto se troppo grande</td>
+</tr>
+<tr>
+<td><code>num_species</code></td>
+<td>righe dell'embedding/gauge</td>
+<td>mismatch semantico se non coincide coi tipi</td>
+</tr>
+</tbody>
+</table>
+<h2 id="16-prior-costruzione-derivate-e-geometria-delle-forze">16.
+Prior: costruzione, derivate e geometria delle forze</h2>
+<h3 id="161-regola-generale-per-un-prior-di-distanza">16.1 Regola
+generale per un prior di distanza</h3>
+<p>Sia <span
+class="math inline">\(\boldsymbol\delta=\operatorname{MIC}(\mathbf
+r_j-\mathbf r_i)\)</span>, <span
+class="math inline">\(r=\|\boldsymbol\delta\|\)</span> e <span
+class="math inline">\(\widehat{\boldsymbol\delta}=\boldsymbol\delta/r\)</span>.
+Per un'energia <span class="math inline">\(U(r)\)</span>:</p>
+<p><span class="math display">\[
+\nabla_{\mathbf r_i}r=-\widehat{\boldsymbol\delta},
+\qquad
+\mathbf F_i=\frac{dU}{dr}\widehat{\boldsymbol\delta},
+\qquad
+\mathbf F_j=-\mathbf F_i.
+\]</span></p>
+<p>Se si definisce la forza radiale <span
+class="math inline">\(F_r=-dU/dr\)</span> orientata da <span
+class="math inline">\(j\)</span> verso <span
+class="math inline">\(i\)</span>, la stessa relazione si scrive <span
+class="math inline">\(\mathbf
+F_i=-F_r\widehat{\boldsymbol\delta}\)</span>. Dichiarare la convenzione
+è essenziale quando la terza colonna di una tabella è chiamata
+genericamente <code>force</code>.</p>
+<h3 id="162-stima-armonica-automatica">16.2 Stima armonica
+automatica</h3>
+<p>Vicino a un minimo, <span class="math inline">\(U(q)\simeq
+U(q_0)+k(q-q_0)^2/2\)</span>. Se il Jacobiano della coordinata è
+trascurato localmente, la distribuzione è gaussiana:</p>
+<p><span class="math display">\[
+P(q)\propto\exp[-\beta k(q-q_0)^2/2],
+\qquad
+\operatorname{Var}(q)=\frac1{\beta k}.
+\]</span></p>
+<p>Da qui derivano</p>
+<p><span class="math display">\[
+q_0=\langle q\rangle,
+\qquad
+k=\frac1{\beta\operatorname{Var}(q)}.
+\]</span></p>
+<p>Questa stima <code>auto</code> è un'approssimazione armonica locale,
+distinta dalla DBI Jacobiano-corretta. Elementi con lo stesso
+<code>name</code> possono condividere le statistiche, aumentando il
+campione ma imponendo che siano fisicamente equivalenti. Varianza quasi
+nulla implica <span class="math inline">\(k\)</span> enorme: occorre un
+floor o una scelta manuale, non un timestep arbitrariamente piccolo come
+rimedio.</p>
+<h3 id="163-harmonic-e-fene">16.3 Harmonic e FENE</h3>
+<p>Per il bond armonico <span
+class="math inline">\(U&#39;&#39;(r)=k\)</span> ovunque. In prima
+approssimazione la frequenza relativa più rapida è <span
+class="math inline">\(\omega\sim\sqrt{k/\mu}\)</span>, con massa ridotta
+<span class="math inline">\(\mu\)</span>; stabilità e accuratezza
+richiedono <span class="math inline">\(\omega\Delta t\ll1\)</span>.</p>
+<p>Per FENE, posto <span class="math inline">\(x=r-r_0\)</span> e <span
+class="math inline">\(R=r_{max}\)</span>:</p>
+<p><span class="math display">\[
+U&#39;(r)=\frac{kx}{1-x^2/R^2},
+\]</span></p>
+<p><span class="math display">\[
+U&#39;&#39;(r)=k\frac{1+x^2/R^2}{(1-x^2/R^2)^2}.
+\]</span></p>
+<p>La curvatura è <span class="math inline">\(k\)</span> al minimo e
+diverge più rapidamente della forza al bordo. Un frame con <span
+class="math inline">\(|x|\ge R\)</span> non è semplicemente improbabile:
+è fuori dal dominio matematico del prior.</p>
+<h3 id="164-morse-forza-curvatura-e-switch">16.4 Morse: forza, curvatura
+e switch</h3>
+<p>Con <span class="math inline">\(y=e^{-a(r-r_0)}\)</span>:</p>
+<p><span class="math display">\[
+U_0&#39;=2D\,a\,y(1-y),\qquad
+U_0&#39;&#39;=2Da^2y(2y-1),\qquad
+F_0=-U_0&#39;=2D\,a\,y(y-1).
+\]</span></p>
+<p>La scala di decadimento è <span class="math inline">\(a^{-1}\)</span>
+e la stiffness al minimo è <span class="math inline">\(2Da^2\)</span>.
+Per lo switch quintico di larghezza <span
+class="math inline">\(w=r_c-r_s\)</span>:</p>
+<p><span class="math display">\[
+S&#39;=-\frac{30t^2(1-t)^2}{w},
+\qquad
+S&#39;&#39;=-\frac{60t(1-t)(1-2t)}{w^2}.
+\]</span></p>
+<p>La curvatura switched è</p>
+<p><span class="math display">\[
+U&#39;&#39;=S&#39;&#39;U_0+2S&#39;U_0&#39;+SU_0&#39;&#39;.
+\]</span></p>
+<p>Ai due bordi <span class="math inline">\(S&#39;\)</span> e <span
+class="math inline">\(S&#39;&#39;\)</span> sono nulli; al cutoff anche
+<span class="math inline">\(S=0\)</span>. Energia, forza e curvatura si
+raccordano quindi senza salto. Tuttavia i termini <span
+class="math inline">\(1/w\)</span> e <span
+class="math inline">\(1/w^2\)</span> mostrano perché una finestra troppo
+stretta può diventare numericamente rigida.</p>
+<p>I contatti pair-specific selezionano endpoint espliciti COM/site e
+usano marker tecnici coincidenti al runtime. I type-pair si applicano
+invece a tutte le coppie di tipi fisici ammesse dalle exclusions. Se
+entrambi selezionano la stessa coppia, le energie si sommano: non esiste
+deduplicazione fisica automatica.</p>
+<h3 id="165-wca-e-calibrazione-automatica-completa">16.5 WCA e
+calibrazione automatica completa</h3>
+<p>Posto <span class="math inline">\(s_6=(\sigma/r)^6\)</span>, per
+<span class="math inline">\(r&lt;r_c\)</span>:</p>
+<p><span class="math display">\[
+U=4\epsilon(s_6^2-s_6)+\epsilon,
+\]</span></p>
+<p><span class="math display">\[
+U&#39;=\frac{24\epsilon}{r}(s_6-2s_6^2),
+\qquad
+U&#39;&#39;=\frac{24\epsilon}{r^2}(26s_6^2-7s_6).
+\]</span></p>
+<p>Il fit automatico non assegna semplicemente un <code>sigma</code> per
+tipo. Per ogni coppia <span class="math inline">\((a,b)\)</span>
+raccoglie le distanze fisiche nonbonded e calcola un quantile basso
+<span class="math inline">\(q_{ab}\)</span> e il minimo streaming esatto
+<span class="math inline">\(r^{min}_{ab}\)</span>. Introduce raggi di
+tipo <span class="math inline">\(R_a\)</span> e minimizza</p>
+<p><span class="math display">\[
+\mathcal J(\{R\})=\sum_{ab}w_{ab}(R_a+R_b-q_{ab})^2,
+\qquad
+w_{ab}=\frac{N_{ab}}{N_{ab}+N_0},
+\]</span></p>
+<p>con <span class="math inline">\(N_0=1000\)</span>
+nell'implementazione e limiti numerici sui raggi. La regolarizzazione
+gerarchica fa sì che coppie poco campionate si appoggino alla somma dei
+raggi di tipo. Definendo</p>
+<p><span class="math display">\[
+\lambda_{ab}=\frac{N_{ab}}{N_{ab}+N_0},
+\]</span></p>
+<p>il cutoff preliminare è</p>
+<p><span class="math display">\[
+r_{c,ab}^{(0)}=\lambda_{ab}q_{ab}+
+(1-\lambda_{ab})(R_a+R_b),
+\]</span></p>
+<p>poi viene limitato da</p>
+<p><span class="math display">\[
+r_{c,ab}=\min\left[
+r_{c,ab}^{(0)},q_{ab},
+\frac{m\,r^{min}_{ab}}{g}
+\right].
+\]</span></p>
+<p>Qui <span class="math inline">\(g=\)</span>
+<code>wca_guard_fraction</code> e <span
+class="math inline">\(m=\)</span>
+<code>wca_physical_guard_margin</code>. Si pone</p>
+<p><span class="math display">\[
+\sigma_{ab}=\frac{r_{c,ab}}{2^{1/6}},
+\qquad r_{guard}=g r_{c,ab}.
+\]</span></p>
+<p>Se <span class="math inline">\(z=(\sigma/r_{guard})^6\)</span>, la
+calibrazione energetica <span
+class="math inline">\(U(r_{guard})=Gk_BT\)</span>, con <span
+class="math inline">\(G=\)</span> <code>wca_guard_kbt</code>, dà</p>
+<p><span class="math display">\[
+\epsilon_{ab}=\frac{Gk_BT}{4(z^2-z)+1}.
+\]</span></p>
+<p>Il minimo stimato da istogramma resta diagnostico; il guard di
+supporto usa il minimo streaming esatto, perché un istogramma può
+nascondere l'osservazione più corta. Percentuale sotto <span
+class="math inline">\(r_c\)</span>, percentuale sotto <span
+class="math inline">\(r_{guard}\)</span> e rapporto <span
+class="math inline">\(r_{guard}/r_{min}\)</span> misurano quanto il core
+invade la distribuzione fisica.</p>
+<h3 id="166-angoli-gradiente-cartesiano">16.6 Angoli: gradiente
+cartesiano</h3>
+<p>Definiamo</p>
+<p><span class="math display">\[
+\mathbf a=\operatorname{MIC}(\mathbf r_i-\mathbf r_j),\quad
+\mathbf b=\operatorname{MIC}(\mathbf r_k-\mathbf r_j),\quad
+A=\|\mathbf a\|,\quad B=\|\mathbf b\|,
+\]</span></p>
+<p><span class="math display">\[
+c=\cos\theta=\frac{\mathbf a\cdot\mathbf b}{AB}.
+\]</span></p>
+<p>I gradienti del coseno sono</p>
+<p><span class="math display">\[
+\nabla_i c=\frac{\mathbf b}{AB}-c\frac{\mathbf a}{A^2},
+\qquad
+\nabla_k c=\frac{\mathbf a}{AB}-c\frac{\mathbf b}{B^2}.
+\]</span></p>
+<p>Poiché <span class="math inline">\(d\theta/dc=-1/\sin\theta\)</span>,
+per <span class="math inline">\(G_\theta=dU/d\theta\)</span>:</p>
+<p><span class="math display">\[
+\mathbf F_i=\frac{G_\theta}{\sin\theta}\nabla_i c,
+\quad
+\mathbf F_k=\frac{G_\theta}{\sin\theta}\nabla_k c,
+\quad
+\mathbf F_j=-(\mathbf F_i+\mathbf F_k).
+\]</span></p>
+<p>Il clamp numerico di <span class="math inline">\(c\)</span> in <span
+class="math inline">\([-1,1]\)</span> corregge roundoff, ma non elimina
+la singolarità fisico-geometrica a <span
+class="math inline">\(\sin\theta=0\)</span>.</p>
+<h3 id="167-dihedri-periodicità-e-geometria">16.7 Dihedri: periodicità e
+geometria</h3>
+<p>Il dihedro è costruito da tre vettori MIC e dai normali ai due piani.
+La fase viene portata in <span class="math inline">\([0,2\pi)\)</span>.
+Per una rappresentazione conservativa, definite le derivate geometriche
+<span class="math inline">\(\nabla_x\phi\)</span>, le forze sono
+sempre</p>
+<p><span class="math display">\[
+\mathbf F_x=-\frac{dU}{d\phi}\nabla_x\phi,
+\qquad x\in\{i,j,k,l\}.
+\]</span></p>
+<p>Con <span class="math inline">\(\mathbf v_{12},\mathbf v_{23},\mathbf
+v_{34}\)</span>, normali unitari <span class="math inline">\(\mathbf
+n_{12},\mathbf n_{23}\)</span> e norme non normalizzate <span
+class="math inline">\(l_{12},l_{23}\)</span>:</p>
+<p><span class="math display">\[
+\nabla_i\phi=-\frac{\|\mathbf v_{23}\|}{l_{12}}\mathbf n_{12},
+\qquad
+\nabla_l\phi=\frac{\|\mathbf v_{23}\|}{l_{23}}\mathbf n_{23},
+\]</span></p>
+<p><span class="math display">\[
+A=\frac{\mathbf v_{12}\cdot\mathbf v_{23}}{\|\mathbf v_{23}\|^2},
+\qquad
+C=\frac{\mathbf v_{34}\cdot\mathbf v_{23}}{\|\mathbf v_{23}\|^2},
+\]</span></p>
+<p><span class="math display">\[
+\nabla_j\phi=-(1+A)\nabla_i\phi+C\nabla_l\phi,
+\qquad
+\nabla_k\phi=A\nabla_i\phi-(1+C)\nabla_l\phi.
+\]</span></p>
+<p>Normali quasi nulli rendono il dihedro indefinito. Nel percorso
+cosine legacy, il preprocessing valuta la forza mediante differenza
+centrale cartesiana con passo <span
+class="math inline">\(10^{-6}\)</span> nm e rimuove la piccola forza
+media residua da roundoff; una nuova topologia con dihedri richiede
+comunque parity esplicita col runtime.</p>
+<h3 id="168-exclusions-topologiche-e-parità-preprocessingruntime">16.8
+Exclusions topologiche e parità preprocessing/runtime</h3>
+<p>La policy corrente distingue connettività e forma energetica:</p>
+<ul>
+<li>le coppie di siti interne allo stesso rigid body sono escluse dal
+nonbonded;</li>
+<li>per una relazione 1–2, solo le site-pair esplicitamente bonded sono
+escluse;</li>
+<li>un bond COM–COM non elimina automaticamente tutte le coppie fra
+virtual site;</li>
+<li>gli endpoint 1–3 di un angle esplicitamente esclusivo applicano la
+policy all-sites prevista;</li>
+<li>un Morse ha <code>exclude_wca=false</code> per default perché non
+implica connettività covalente.</li>
+</ul>
+<p>La stessa maschera deve essere applicata nella sottrazione dei prior
+e nel runtime. Una singola coppia presente soltanto in uno dei due
+percorsi altera sia il target residuale sia l'Hamiltoniana
+ricostruita.</p>
+<h2 id="17-direct-boltzmann-inversion-in-dettaglio">17. Direct Boltzmann
+inversion in dettaglio</h2>
+<h3 id="171-dalla-distribuzione-canonica-al-potenziale">17.1 Dalla
+distribuzione canonica al potenziale</h3>
+<p>Per una coordinata interna <span class="math inline">\(q\)</span>, la
+probabilità osservata contiene la misura geometrica <span
+class="math inline">\(J(q)\)</span>:</p>
+<p><span class="math display">\[
+P(q)=Z_q^{-1}J(q)e^{-\beta U(q)}.
+\]</span></p>
+<p>Quindi</p>
+<p><span class="math display">\[
+U(q)=-k_BT\ln\frac{P(q)}{J(q)}+C.
+\]</span></p>
+<p>Le misure usate sono</p>
+<p><span class="math display">\[
+J(r)=r^2,\qquad J(\theta)=\sin\theta,\qquad J(\phi)=1.
+\]</span></p>
+<p>Dividere per il Jacobiano evita di interpretare il volume di fase
+come forza effettiva. Vicino a <span class="math inline">\(r=0\)</span>
+e agli estremi angolari il Jacobiano è regolarizzato numericamente, ma
+regioni prive di supporto non diventano per questo dati affidabili.</p>
+<h3 id="172-istogramma-e-densità">17.2 Istogramma e densità</h3>
+<p>Dato un insieme <span class="math inline">\(q_n\)</span>,
+l'istogramma produce conteggi <span class="math inline">\(C_b\)</span> e
+una densità <span class="math inline">\(P_b\)</span> sui centri <span
+class="math inline">\(q_b\)</span>. La densità viene normalizzata
+numericamente:</p>
+<p><span class="math display">\[
+\sum_b P_b\Delta q\simeq1
+\]</span></p>
+<p>o con la corrispondente quadratura sulla griglia. Il logaritmo usa un
+floor positivo per evitare <span class="math inline">\(\log0\)</span>,
+ma il floor non deve generare code fisiche: per questo il supporto è
+trattato separatamente.</p>
+<h3 id="173-supporto-statistico">17.3 Supporto statistico</h3>
+<p>Una bin è affidabile soltanto se soddisfa i criteri configurati su
+conteggio e densità. Piccoli gap interni possono essere riempiti fino a
+un numero massimo di bin; code esterne senza campioni restano non
+supportate. Se il supporto ha meno di <code>min_support_points</code>,
+il gruppo non contiene informazione sufficiente per un update
+stabile.</p>
+<p>Definita la maschera <span class="math inline">\(M_b\)</span>, la PMF
+grezza è</p>
+<p><span class="math display">\[
+U_b^{raw}=-k_BT\ln P_{corr,b},\qquad b\in M,
+\]</span></p>
+<p>e viene traslata imponendo <span class="math inline">\(\min_{b\in
+M}U_b=0\)</span>. La costante non cambia le forze ma mantiene
+confrontabili e numericamente ben scalate le tabelle.</p>
+<h3 id="174-smoothing-nel-dominio-supportato">17.4 Smoothing nel dominio
+supportato</h3>
+<p>Il profilo supportato è filtrato con una gaussiana discreta di
+ampiezza <code>histogram_smoothing_sigma</code> in unità di bin. Per un
+kernel normalizzato <span class="math inline">\(G\)</span>:</p>
+<p><span class="math display">\[
+\widetilde U_b=\sum_{b&#39;}G_{b-b&#39;}U_{b&#39;}.
+\]</span></p>
+<p>Per coordinate periodiche il filtro usa wrapping; per bond/angle usa
+condizioni non periodiche. Lo smoothing riduce la varianza della
+derivata, ma introduce bias e può cancellare barriere strette: va scelto
+rispetto alla risoluzione della griglia e al campionamento
+effettivo.</p>
+<h3 id="175-interpolazione-ed-estrapolazione-delle-code">17.5
+Interpolazione ed estrapolazione delle code</h3>
+<p>Nel supporto non periodico il profilo è interpolato con PCHIP, che
+evita molte oscillazioni spurie dei cubic spline ordinari. Ai bordi,
+pendenza e valore sono stimati su una finestra configurata; fuori
+supporto vengono costruite code confining coerenti con tali condizioni.
+L'obiettivo non è indovinare la PMF dove non esistono dati, ma impedire
+che il simulatore entri liberamente in una regione non campionata.</p>
+<p>Per un dihedro si usa una spline cubica periodica e si impone</p>
+<p><span class="math display">\[
+U(0)=U(2\pi),\qquad U&#39;(0)=U&#39;(2\pi).
+\]</span></p>
+<h3 id="176-pareti-angolari">17.6 Pareti angolari</h3>
+<p>Per proteggere le singolarità a <span
+class="math inline">\(0\)</span> e <span
+class="math inline">\(\pi\)</span>, il generatore può aggiungere pareti
+quadratiche di larghezza <span class="math inline">\(w\)</span> e
+costante <span class="math inline">\(k_w\)</span>. A sinistra:</p>
+<p><span class="math display">\[
+U_{wall}=\frac12k_w(w-\theta)^2,\qquad
+\frac{dU_{wall}}{d\theta}=-k_w(w-\theta),\quad\theta&lt;w.
+\]</span></p>
+<p>A destra, con <span
+class="math inline">\(\theta_r=\pi-w\)</span>:</p>
+<p><span class="math display">\[
+U_{wall}=\frac12k_w(\theta-\theta_r)^2,\qquad
+\frac{dU_{wall}}{d\theta}=k_w(\theta-\theta_r),\quad\theta&gt;\theta_r.
+\]</span></p>
+<p><code>wall_width</code> decide quanto dominio viene regolarizzato;
+<code>wall_k</code> decide la rigidità e quindi può limitare il
+timestep.</p>
+<h3 id="177-gruppi-pooling-e-modalità-dbiibi">17.7 Gruppi, pooling e
+modalità DBI/IBI</h3>
+<p>Le coordinate non vengono necessariamente invertite una per una. Gli
+elementi con lo stesso gruppo logico possono condividere i campioni:</p>
+<p><span class="math display">\[
+\mathcal Q_g=\bigcup_{a\in g}\{q_{a,n}\}.
+\]</span></p>
+<p>Il pooling riduce il rumore solo se gli elementi sono realmente
+equivalenti; in caso contrario produce una PMF media che non rappresenta
+nessuno di essi. La modalità iniziale DBI costruisce <span
+class="math inline">\(U_0\)</span> dalla distribuzione AA. La modalità
+IBI conserva invece lo stato <span class="math inline">\(U_i\)</span>,
+confronta una traiettoria CG col target e genera <span
+class="math inline">\(U_{i+1}\)</span>. Prior fissi non appartenenti al
+gruppo vengono copiati senza reinterpretazione.</p>
+<p>Le griglie devono essere strettamente crescenti e uniformi. I bond
+usano un dominio finito configurato o derivato dai dati; gli angle
+coprono esattamente <span class="math inline">\([0,\pi]\)</span> e i
+dihedral <span class="math inline">\([0,2\pi]\)</span>. Cambiare griglia
+fra iterazioni richiede una interpolazione esplicita e rende meno
+diretto il confronto di <span class="math inline">\(\Delta
+U\)</span>.</p>
+<h2 id="18-iterative-boltzmann-inversion-in-dettaglio">18. Iterative
+Boltzmann inversion in dettaglio</h2>
+<h3 id="181-segno-dellaggiornamento">18.1 Segno dell'aggiornamento</h3>
+<p>Se <span class="math inline">\(U_i\)</span> produce <span
+class="math inline">\(P_i\)</span> e il target è <span
+class="math inline">\(P_*\)</span>, l'update implementato è</p>
+<p><span class="math display">\[
+\Delta U_i(q)=\alpha k_BT\ln\frac{P_i(q)}{P_*(q)},
+\qquad
+U_{i+1}=U_i+\Delta U_i.
+\]</span></p>
+<p>Se <span class="math inline">\(P_i&gt;P_*\)</span>, <span
+class="math inline">\(\Delta U&gt;0\)</span>: la regione viene
+penalizzata. Se <span class="math inline">\(P_i&lt;P_*\)</span>, <span
+class="math inline">\(\Delta U&lt;0\)</span>: viene favorita.
+<code>alpha</code> è un damping, non una temperatura; per <span
+class="math inline">\(\alpha=1\)</span> si applica l'update teorico
+intero, mentre valori minori riducono oscillazioni dovute a campioni
+finiti e accoppiamento fra coordinate.</p>
+<h3 id="182-supporto-comune">18.2 Supporto comune</h3>
+<p>Target e simulazione hanno maschere <span
+class="math inline">\(M_*\)</span> e <span
+class="math inline">\(M_i\)</span>. Si aggiorna soltanto</p>
+<p><span class="math display">\[
+M_{upd}=M_*\cap M_i.
+\]</span></p>
+<p>Se l'intersezione è insufficiente, il framework preserva il
+potenziale precedente. Aggiornare una bin dove una delle distribuzioni è
+soltanto il floor numerico produrrebbe un log-ratio enorme e privo di
+significato statistico.</p>
+<h3 id="183-clipping-e-smoothing-dellupdate">18.3 Clipping e smoothing
+dell'update</h3>
+<p>Il log-ratio è limitato energeticamente:</p>
+<p><span class="math display">\[
+\Delta U\leftarrow
+\operatorname{clip}(\Delta U,-U_{max},U_{max}),
+\qquad
+U_{max}=\texttt{max_update_kT}\,k_BT.
+\]</span></p>
+<p>Poi viene applicato un filtro con ampiezza
+<code>update_smoothing_sigma</code>. Clipping e smoothing hanno ruoli
+diversi: il primo limita outlier, il secondo limita curvatura/rumore ad
+alta frequenza.</p>
+<h3 id="184-interpolazione-taper-e-code">18.4 Interpolazione, taper e
+code</h3>
+<p>Per variabili non periodiche l'update supportato viene interpolato
+con PCHIP. Una finestra coseno lo porta gradualmente a zero presso i
+bordi su <code>taper_bins</code>, così le code sicure del potenziale
+precedente non vengono distrutte da dati marginali. Successivamente le
+sole regioni target non supportate vengono ricostruite con la policy di
+extrapolazione.</p>
+<p>Per variabili periodiche l'update viene interpolato sull'intero
+periodo con wrapping e si reimpone l'uguaglianza degli endpoint. Dopo
+l'update si sottrae sempre il minimo energetico, operazione di gauge che
+non cambia le forze.</p>
+<h3 id="185-dalla-nuova-energia-alla-forza">18.5 Dalla nuova energia
+alla forza</h3>
+<p>L'oggetto fondamentale dell'IBI è <span
+class="math inline">\(U_{i+1}\)</span>, non una forza aggiornata
+indipendentemente. Il generatore deriva il profilo interpolato e lo
+converte nella convenzione richiesta dal target:</p>
+<table>
+<thead>
+<tr>
+<th>coordinata</th>
+<th>terza colonna legacy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bond</td>
+<td><span class="math inline">\(-dU/dr\)</span></td>
+</tr>
+<tr>
+<td>angle</td>
+<td><span class="math inline">\(+dU/d\theta\)</span></td>
+</tr>
+<tr>
+<td>dihedral</td>
+<td>fattore ESPResSo <span
+class="math inline">\(-(dU/d\phi)/\sin\phi\)</span> fuori dai punti
+singolari</td>
+</tr>
+</tbody>
+</table>
+<p>Il fattore dihedro viene esteso ai nodi con <span
+class="math inline">\(|\sin\phi|\)</span> piccolo usando il valore
+regolare più vicino e poi limitato da <code>force_max</code>. Questa è
+una convenzione del bonded tabulato ESPResSo, non una nuova legge
+fisica.</p>
+<h3 id="186-convergenza-e-identifiabilità">18.6 Convergenza e
+identifiabilità</h3>
+<p>IBI cerca di riprodurre distribuzioni marginali, non determina in
+generale un'unica Hamiltoniana many-body. Coordinate bonded accoppiate,
+prior nonbonded e PaiNN possono compensarsi. Una convergenza credibile
+richiede almeno:</p>
+<ol type="1">
+<li>sovrapposizione sufficiente fra supporti;</li>
+<li>riduzione stabile della distanza fra istogrammi su più
+iterazioni;</li>
+<li>update <span class="math inline">\(\Delta U\)</span> che
+diminuiscono senza saturare il clipping;</li>
+<li>assenza di code visitate artificialmente;</li>
+<li>stabilità dinamica e parity energia-forza;</li>
+<li>ricostruzione del dataset residuale prima del retraining PaiNN.</li>
+</ol>
+<p>Più iterazioni non correggono un sampling insufficiente. Se la
+simulazione non visita una regione target, occorre migliorare overlap,
+inizializzazione o potenziale, non aumentare soltanto
+<code>max_update_kT</code>.</p>
+<h3 id="187-parametri-ibi-e-loro-effetto">18.7 Parametri IBI e loro
+effetto</h3>
+<table>
+<thead>
+<tr>
+<th>Parametro</th>
+<th>Significato</th>
+<th>Troppo piccolo</th>
+<th>Troppo grande</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kT</code></td>
+<td>scala energetica dell'inversione</td>
+<td>update deboli</td>
+<td>update/barriere forti</td>
+</tr>
+<tr>
+<td><code>alpha</code></td>
+<td>damping dell'update</td>
+<td>convergenza lenta</td>
+<td>oscillazioni</td>
+</tr>
+<tr>
+<td><code>histogram_smoothing_sigma</code></td>
+<td>smoothing DBI</td>
+<td>derivate rumorose</td>
+<td>dettagli cancellati</td>
+</tr>
+<tr>
+<td><code>update_smoothing_sigma</code></td>
+<td>smoothing di <span class="math inline">\(\Delta U\)</span></td>
+<td>update ruvido</td>
+<td>correzione troppo diffusa</td>
+</tr>
+<tr>
+<td><code>max_update_kT</code></td>
+<td>clipping in unità <span class="math inline">\(k_BT\)</span></td>
+<td>correzione saturata</td>
+<td>sensibilità agli outlier</td>
+</tr>
+<tr>
+<td><code>min_support_points</code></td>
+<td>supporto minimo</td>
+<td>profili fragili</td>
+<td>gruppi validi respinti</td>
+</tr>
+<tr>
+<td><code>taper_bins</code></td>
+<td>raccordo a zero</td>
+<td>kink ai bordi</td>
+<td>supporto utile ridotto</td>
+</tr>
+<tr>
+<td><code>force_max</code></td>
+<td>limite tabella</td>
+<td>prior troncato</td>
+<td>instabilità numerica</td>
+</tr>
+<tr>
+<td><code>wall_width</code>, <code>wall_k</code></td>
+<td>pareti angolari</td>
+<td>singolarità accessibili</td>
+<td>angolo troppo rigido</td>
+</tr>
+</tbody>
+</table>
+<h3 id="188-cosa-significa-ibi-regolarizzata-nel-framework">18.8 Cosa
+significa “IBI regolarizzata” nel framework</h3>
+<p>La regolarizzazione implementativa è la composizione di più operatori
+trasparenti, non un unico termine astratto:</p>
+<p><span class="math display">\[
+U_{i+1}=\mathcal E\!\left[
+U_i+\mathcal T\!\left(
+\mathcal S\!\left(
+\mathcal C\!\left[
+\alpha k_BT\log\frac{P_i}{P_*}
+\right]\right)\right)\right],
+\]</span></p>
+<p>dove <span class="math inline">\(\mathcal C\)</span> è il clipping,
+<span class="math inline">\(\mathcal S\)</span> lo smoothing, <span
+class="math inline">\(\mathcal T\)</span> il taper sul supporto e <span
+class="math inline">\(\mathcal E\)</span> la ricostruzione delle code.
+Per gli angle si aggiunge eventualmente l'operatore di parete <span
+class="math inline">\(U\mapsto U+U_{wall}\)</span>. Ogni operatore ha un
+parametro e un effetto verificabile. Non si deve descrivere questo
+percorso come una penalità di Tikhonov o una regolarizzazione sulla
+seconda derivata, a meno che tale termine venga effettivamente aggiunto
+al codice.</p>
+<p>La promozione “conservative” è un passaggio distinto: sostituisce la
+coppia di colonne interpolate indipendentemente con un'unica energia
+Hermite e la sua derivata analitica. Regolarità statistica e
+conservatività numerica risolvono problemi diversi e vanno verificate
+entrambe.</p>
+<h2 id="19-tabelle-legacy-e-spline-conservative">19. Tabelle legacy e
+spline conservative</h2>
+<h3
+id="191-perché-energia-e-forza-interpolate-separatamente-non-bastano">19.1
+Perché energia e forza interpolate separatamente non bastano</h3>
+<p>Su una griglia uniforme <span class="math inline">\(q_i\)</span>,
+l'interpolazione lineare di una colonna <span
+class="math inline">\(T\)</span> è</p>
+<p><span class="math display">\[
+T(q)=(1-t)T_i+tT_{i+1},\qquad t=\frac{q-q_i}{h}.
+\]</span></p>
+<p>Se si interpola <span class="math inline">\(U\)</span> linearmente,
+<span class="math inline">\(dU/dq=(U_{i+1}-U_i)/h\)</span> è costante
+nell'intervallo. Se si interpola anche una colonna forza, essa varia
+linearmente. Le due possono coincidere solo in casi speciali. Perciò una
+tabella legacy può riprodurre bene la struttura ma violare localmente
+<span class="math inline">\(F=-dU/dq\)</span>.</p>
+<h3 id="192-polinomio-hermite-cubico">19.2 Polinomio Hermite cubico</h3>
+<p>La spline conservativa memorizza <span
+class="math inline">\(U_i\)</span> e <span
+class="math inline">\(m_i=U&#39;_i\)</span>. Con <span
+class="math inline">\(t=(q-q_i)/h\)</span>:</p>
+<p><span class="math display">\[
+U=h_{00}U_i+h_{10}hm_i+h_{01}U_{i+1}+h_{11}hm_{i+1},
+\]</span></p>
+<p><span class="math display">\[
+h_{00}=2t^3-3t^2+1,\quad
+h_{10}=t^3-2t^2+t,\quad
+h_{01}=-2t^3+3t^2,\quad
+h_{11}=t^3-t^2.
+\]</span></p>
+<p>La derivata analitica usata per le forze è</p>
+<p><span class="math display">\[
+U&#39;(q)=\frac{(6t^2-6t)U_i+(-6t^2+6t)U_{i+1}}{h}
++(3t^2-4t+1)m_i+(3t^2-2t)m_{i+1}.
+\]</span></p>
+<p>Valore e derivata agli estremi coincidono esattamente coi dati
+nodali. Non esiste una seconda interpolazione della forza: la
+conservatività è strutturale.</p>
+<h3 id="193-domini">19.3 Domini</h3>
+<ul>
+<li>bond: griglia uniforme; sotto il minimo usa continuazione tangente
+<span class="math inline">\(U=U_0+m_0(q-q_0)\)</span>, mentre <span
+class="math inline">\(r\ge q_{max}\)</span> è fuori dominio;</li>
+<li>angle: coordinata limitata a <span
+class="math inline">\([0,\pi]\)</span> solo per roundoff
+geometrico;</li>
+<li>dihedral: wrapping periodico in <span
+class="math inline">\([0,2\pi)\)</span> e uguaglianza di <span
+class="math inline">\(U,U&#39;\)</span> agli endpoint.</li>
+</ul>
+<p>La continuazione tangente è conservativa ma non sostituisce una coda
+fisica ben costruita. Un bond che visita spesso la continuazione segnala
+supporto insufficiente.</p>
+<h3 id="194-proiezione-delle-derivate">19.4 Proiezione delle
+derivate</h3>
+<p>Una spline di distanza restituisce <span
+class="math inline">\(U&#39;(r)\)</span> e usa la geometria della
+sezione 16.1. Una spline angolare restituisce <span
+class="math inline">\(U&#39;(\theta)\)</span> e usa il fattore <span
+class="math inline">\(1/\sin\theta\)</span> della sezione 16.6. Una
+spline dihedrale restituisce direttamente <span
+class="math inline">\(U&#39;(\phi)\)</span> e usa i gradienti geometrici
+della sezione 16.7. Questa separazione fra derivata scalare e Jacobiano
+cartesiano rende testabile ogni livello.</p>
+<h3 id="195-conversione-di-tabelle-esistenti">19.5 Conversione di
+tabelle esistenti</h3>
+<p>Per convertire una tabella legacy si ricostruisce un'energia
+compatibile con la convenzione forza mediante integrazione trapezoidale.
+Per esempio, per un bond:</p>
+<p><span class="math display">\[
+U_{i+1}=U_i-\frac h2(F_i+F_{i+1}).
+\]</span></p>
+<p>Per un angle la terza colonna è <span
+class="math inline">\(+U&#39;(\theta)\)</span> e il segno cambia di
+conseguenza. Per il dihedro legacy, se il fattore è <span
+class="math inline">\(f_{ESP}\)</span>, la derivata scalare è</p>
+<p><span class="math display">\[
+U&#39;(\phi)=-f_{ESP}(\phi)\sin\phi.
+\]</span></p>
+<p>La ricostruzione sceglie un anchor energetico, integra in entrambe le
+direzioni e sottrae il minimo. La successiva spline deve essere
+ricertificata: la conversione elimina l'incoerenza energia-forza, ma può
+modificare leggermente la distribuzione rispetto alla tabella
+originaria.</p>
+<h2 id="20-target-loss-e-derivate-seconde">20. Target, loss e derivate
+seconde</h2>
+<h3 id="201-dalle-forze-di-sito-alle-grandezze-di-corpo">20.1 Dalle
+forze di sito alle grandezze di corpo</h3>
+<p>Per il corpo <span class="math inline">\(m\)</span> con siti <span
+class="math inline">\(s\in m\)</span>:</p>
+<p><span class="math display">\[
+\mathbf F_m^{ML}=\sum_{s\in m}\mathbf f_s^{ML},
+\]</span></p>
+<p><span class="math display">\[
+\boldsymbol\tau_m^{ML}=\sum_{s\in m}
+\operatorname{MIC}(\mathbf r_s-\mathbf R_m)\times\mathbf f_s^{ML}.
+\]</span></p>
+<p>Il torque è definito in lab frame rispetto al COM. Traslare tutti i
+siti dello stesso vettore non lo cambia; cambiare offset o orientazione
+del rigid body sì.</p>
+<h3 id="202-normalizzazione-train-only">20.2 Normalizzazione
+train-only</h3>
+<p>Con <span class="math inline">\(N_F\)</span> componenti cartesiane di
+forza e <span class="math inline">\(N_\tau\)</span> componenti dei soli
+corpi multi-site:</p>
+<p><span class="math display">\[
+F_{RMS}^2=\frac1{N_F}\sum_a(F_a^*)^2,
+\qquad
+\tau_{RMS}^2=\frac1{N_\tau}\sum_b(\tau_b^*)^2.
+\]</span></p>
+<p>Le MSE normalizzate sono adimensionali. La validation usa le scale
+del training, non le proprie; così non può apparire artificialmente
+migliore per una varianza target diversa.</p>
+<p>Il baseline nullo è</p>
+<p><span class="math display">\[
+L_{0,F}^{val}=\frac{\langle|\mathbf F^*|^2\rangle_{val}}{F_{RMS}^2},
+\qquad
+L_{0,\tau}^{val}=\frac{\langle|\boldsymbol\tau^*|^2\rangle_{val}}{\tau_{RMS}^2}.
+\]</span></p>
+<p>Una validation loss vicina a tale valore significa che il modello non
+generalizza meglio della forza residuale nulla, anche se la train loss
+scende.</p>
+<h3 id="203-penalità-sulle-forze-di-sito">20.3 Penalità sulle forze di
+sito</h3>
+<p>Il termine denominato storicamente <code>lipschitz</code> è</p>
+<p><span class="math display">\[
+L_L=\frac1{N_sF_{RMS}^2}\sum_s\|\mathbf f_s^{ML}\|^2.
+\]</span></p>
+<p>Esso penalizza forze di sito grandi, incluse coppie che possono
+cancellarsi nella forza COM. Non calcola <span
+class="math inline">\(\sup_x\|\nabla f(x)\|\)</span> e quindi non è una
+stima della costante di Lipschitz globale. Può ridurre curvature
+apprese, ma un valore eccessivo porta a underfitting.</p>
+<h3 id="204-perché-il-force-matching-richiede-derivate-seconde">20.4
+Perché il force matching richiede derivate seconde</h3>
+<p>Se <span class="math inline">\(\theta\)</span> sono i pesi e <span
+class="math inline">\(\mathbf F_\theta=-\nabla_{\mathbf
+r}U_\theta\)</span>, allora</p>
+<p><span class="math display">\[
+\nabla_\theta L_F
+=2(\mathbf F_\theta-\mathbf F^*)^T
+\frac{\partial\mathbf F_\theta}{\partial\theta}
+=-2(\mathbf F_\theta-\mathbf F^*)^T
+\frac{\partial^2U_\theta}{\partial\theta\,\partial\mathbf r}.
+\]</span></p>
+<p>Per questo autograd deve conservare il grafo della prima derivata
+(<code>create_graph=true</code>). È anche la ragione per cui memoria e
+costo di training sono molto maggiori dell'inferenza energetica.</p>
+<h3 id="205-gradient-clipping-e-adamw">20.5 Gradient clipping e
+AdamW</h3>
+<p>Se il gradiente globale ha norma <span
+class="math inline">\(\|g\|_2\)</span> e la soglia è <span
+class="math inline">\(G\)</span>:</p>
+<p><span class="math display">\[
+g\leftarrow g\min\left(1,\frac G{\|g\|_2}\right).
+\]</span></p>
+<p>La <code>GradClip_Fraction</code> è la frazione di batch in cui <span
+class="math inline">\(\|g\|_2&gt;G\)</span>. Un clipping frequente
+all'inizio può essere fisiologico; persistente vicino al 100% indica
+learning rate, scale o curvature problematiche.</p>
+<p>AdamW mantiene momenti esponenziali e applica weight decay
+disaccoppiato:</p>
+<p><span class="math display">\[
+m_t=\beta_1m_{t-1}+(1-\beta_1)g_t,
+\qquad
+v_t=\beta_2v_{t-1}+(1-\beta_2)g_t^2,
+\]</span></p>
+<p><span class="math display">\[
+\theta_{t+1}=(1-\eta\lambda_w)\theta_t
+-\eta\frac{\widehat m_t}{\sqrt{\widehat v_t}+\epsilon}.
+\]</span></p>
+<p><code>learning_rate</code> è <span
+class="math inline">\(\eta\)</span> e <code>weight_decay</code> è <span
+class="math inline">\(\lambda_w\)</span>; gli altri parametri seguono i
+default LibTorch se non esposti dal config.</p>
+<h2 id="21-esempi-quantitativi-e-checklist">21. Esempi quantitativi e
+checklist</h2>
+<h3 id="211-softening-morse-tel22">21.1 Softening Morse TEL22</h3>
+<p>A <span class="math inline">\(D\)</span> e <span
+class="math inline">\(r_0\)</span> invariati, passare da <span
+class="math inline">\(a_0=0.300\)</span> a <span
+class="math inline">\(a_1=0.255\)</span> mantiene la profondità <span
+class="math inline">\(-D\)</span>, ma cambia la curvatura al minimo
+secondo</p>
+<p><span class="math display">\[
+\frac{k_1}{k_0}=\left(\frac{a_1}{a_0}\right)^2
+=0.85^2=0.7225.
+\]</span></p>
+<p>La stiffness locale diminuisce del <span
+class="math inline">\(27.75\%\)</span>. Il residuale target cambia però
+in ogni frame, perché la forza Morse completa non è una semplice
+riscalatura globale; il retraining resta obbligatorio.</p>
+<h3 id="212-lettura-di-un-update-ibi">21.2 Lettura di un update IBI</h3>
+<p>Se in una bin <span class="math inline">\(P_i/P_*=2\)</span>, <span
+class="math inline">\(k_BT=2.49\)</span> kJ/mol e <span
+class="math inline">\(\alpha=0.2\)</span>:</p>
+<p><span class="math display">\[
+\Delta U=0.2\times2.49\times\ln2\simeq0.345\ \text{kJ/mol}.
+\]</span></p>
+<p>La bin viene alzata perché è sovrapopolata. Se il rapporto fosse
+<span class="math inline">\(1/2\)</span>, la correzione avrebbe lo
+stesso modulo e segno opposto, prima di clipping, smoothing e taper.</p>
+<h3 id="213-diagnostica-painn">21.3 Diagnostica PaiNN</h3>
+<p>Per distinguere accuratezza e correttezza numerica:</p>
+<ol type="1">
+<li>confrontare validation loss con il baseline nullo;</li>
+<li>controllare train/validation gap e più split temporali;</li>
+<li>verificare parity energia-forza e forza/torque di rigid body;</li>
+<li>eseguire NVE multi-<span class="math inline">\(\Delta t\)</span> in
+FP32;</li>
+<li>ripetere in FP64 per localizzare il floor di precisione;</li>
+<li>confrontare priors-only e full Hamiltonian dallo stesso checkpoint
+meccanico.</li>
+</ol>
+<p>Una closure FP64 con <span class="math inline">\(p\simeq2\)</span>
+dimostra coerenza conservativa del percorso numerico, ma non dimostra
+che il residuale appreso sia accurato rispetto all'atomistico.</p>
+<h3 id="214-checklist-prima-di-cambiare-un-prior">21.4 Checklist prima
+di cambiare un prior</h3>
+<ul>
+<li>verificare unità, segno e dominio;</li>
+<li>controllare <span class="math inline">\(U\)</span>, <span
+class="math inline">\(U&#39;\)</span> e, per NVE, la regolarità di <span
+class="math inline">\(U&#39;&#39;\)</span> ai raccordi;</li>
+<li>applicare le stesse exclusions offline e runtime;</li>
+<li>misurare l'invasione del supporto fisico;</li>
+<li>ricostruire dataset e manifest;</li>
+<li>riaddestrare da zero o riprendere soltanto con provenance
+compatibile;</li>
+<li>riequilibrare senza riusare un checkpoint incoerente;</li>
+<li>certificare NVT, NVE FP32 e closure FP64 quando necessaria.</li>
+</ul>
+<h3 id="215-checklist-per-una-nuova-coordinata-ibi">21.5 Checklist per
+una nuova coordinata IBI</h3>
+<ul>
+<li>scegliere il Jacobiano corretto;</li>
+<li>verificare numero di campioni ed effective sample size;</li>
+<li>scegliere binning e griglia senza sovrarisoluzione;</li>
+<li>ispezionare supporto e gap;</li>
+<li>regolare smoothing e code separatamente;</li>
+<li>limitare update e forze con motivazione fisica;</li>
+<li>usare rappresentazione conservativa per NVE;</li>
+<li>controllare distribuzione, energia-forza e stabilità dopo ogni
+iterazione;</li>
+<li>ricostruire il residuale PaiNN soltanto dopo aver fissato i prior
+promossi.</li>
+</ul>
+</body>
+</html>
