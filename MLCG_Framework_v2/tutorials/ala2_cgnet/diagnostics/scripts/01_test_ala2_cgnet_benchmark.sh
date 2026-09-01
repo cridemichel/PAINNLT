@@ -48,6 +48,7 @@ cp "${CONFIG_SOURCE}" "${RUN_DIR}/ala2_training_config_50ep.json"
     --forces "${DATA_DIR}/ala2_forces.npy" \
     --output "${RUN_DIR}/ala2_dataset.bin" \
     --priors-output "${RUN_DIR}/ala2_priors.json" \
+    --rb-info-output "${RUN_DIR}/ala2_rigid_bodies_info.json" \
     --reference-output "${RUN_DIR}/ala2_reference.npz" \
     --report "${RUN_DIR}/ala2_conversion_report.json" \
     --prior-mode "${PRIOR_MODE}" \

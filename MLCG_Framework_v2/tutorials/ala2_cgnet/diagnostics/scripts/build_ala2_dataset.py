@@ -15,10 +15,13 @@ import numpy as np
 ANGSTROM_TO_NM = 0.1
 KCAL_PER_MOL_ANGSTROM_TO_KJ_PER_MOL_NM = 41.84
 R_KJ_MOL_K = 0.008314462618
+WCA_CUTOFF_NM = 0.22
+WCA_SIGMA_NM = WCA_CUTOFF_NM / (2.0 ** (1.0 / 6.0))
 BEAD_TYPES = np.asarray([6, 7, 6, 6, 7], dtype=np.int32)
 BEAD_NAMES = ["ACE_C", "ALA_N", "ALA_CA", "ALA_C", "NME_N"]
 BOND_TUPLES = [(0, 1), (1, 2), (2, 3), (3, 4)]
 ANGLE_TUPLES = [(0, 1, 2), (1, 2, 3), (2, 3, 4)]
+NONBONDED_TUPLES = [(0, 3), (0, 4), (1, 4)]
 
 
 def sha256_file(path: Path) -> str:
@@ -42,6 +45,13 @@ def angles_for_triplets(coordinates: np.ndarray) -> np.ndarray:
     return np.stack(values, axis=1)
 
 
+def minimum_nonbonded_distance(coordinates: np.ndarray) -> float:
+    return min(
+        float(np.min(np.linalg.norm(coordinates[:, j] - coordinates[:, i], axis=1)))
+        for i, j in NONBONDED_TUPLES
+    )
+
+
 def fit_harmonic_priors(
     coordinates: np.ndarray, temperature: float
 ) -> tuple[list[dict], list[dict]]:
@@ -56,8 +66,8 @@ def fit_harmonic_priors(
             {
                 "mol_i": i,
                 "mol_j": j,
-                "site_i": -1,
-                "site_j": -1,
+                "site_i": 0,
+                "site_j": 0,
                 "type": "harmonic",
                 "k": kbt / variance,
                 "r0": float(np.mean(distances)),
@@ -77,9 +87,9 @@ def fit_harmonic_priors(
                 "mol_i": i,
                 "mol_j": j,
                 "mol_k": k,
-                "site_i": -1,
-                "site_j": -1,
-                "site_k": -1,
+                "site_i": 0,
+                "site_j": 0,
+                "site_k": 0,
                 "type": "harmonic",
                 "k": kbt / variance,
                 "theta0": float(np.mean(theta[:, index])),
@@ -182,13 +192,40 @@ def write_dataset(
 def build_priors_document(
     bonds: list[dict], angles: list[dict], temperature: float, prior_mode: str
 ) -> dict:
+    direct_pairs = [list(pair) for pair in BOND_TUPLES] if bonds else []
+    direct_site_pairs = [[i, j, 0, 0] for i, j in BOND_TUPLES] if bonds else []
+    one_three_pairs = [[0, 2], [1, 3], [2, 4]] if bonds else []
     return {
         "bonds": bonds,
         "morse_type_pairs": [],
         "wca": {"sigma": 0.0, "epsilon": 0.0, "overrides": {}},
         "angles": angles,
         "dihedrals": [],
-        "wca_pairs": {},
+        "wca_pairs": {
+            f"{type_i}_{type_j}": {
+                "type_i": type_i,
+                "type_j": type_j,
+                "sigma_nm": WCA_SIGMA_NM,
+                "epsilon_kjmol": R_KJ_MOL_K * temperature,
+                "cutoff_nm": WCA_CUTOFF_NM,
+                "source": "cgnet_style_ood_excluded_volume",
+            }
+            for type_i, type_j in ((6, 6), (6, 7), (7, 7))
+        },
+        "wca_exclusions": {
+            "policy_version": 3,
+            "exclude_12": True,
+            "exclude_13": True,
+            "direct_scope": "bonded_site_pairs_only",
+            "one_three_scope": "molecule_pair_all_sites",
+            "pair_source": "explicit_topology_pairs_v3",
+            "direct_pairs": direct_pairs,
+            "direct_site_pairs": direct_site_pairs,
+            "one_three_pairs": one_three_pairs,
+            "direct_pair_count": len(direct_pairs),
+            "direct_site_pair_count": len(direct_site_pairs),
+            "one_three_pair_count": len(one_three_pairs),
+        },
         "benchmark": {
             "system": "alanine_dipeptide_5bead",
             "source": "coarse-graining/cgnet examples/data",
@@ -197,6 +234,32 @@ def build_priors_document(
             "temperature_kelvin": temperature,
             "prior_mode": prior_mode,
             "fit_policy": "training_prefix_only",
+            "wca_policy": (
+                "active only for pairs separated by more than two bonds; "
+                "cutoff lies below every such distance in the official 10000-frame subset"
+            ),
+        },
+    }
+
+
+def build_rigid_bodies_document() -> dict:
+    """Return the two unique one-site templates required by ESPResSo."""
+    return {
+        "ALA2_C": {
+            "schema_version": 2,
+            "body_frame": "principal_axes",
+            "auto_align_sites": True,
+            "mass_amu": 12.011,
+            "inertia_amu_nm2": [1.0, 1.0, 1.0],
+            "sites": {"C": {"type": 6, "relative_pos_nm": [0.0, 0.0, 0.0]}},
+        },
+        "ALA2_N": {
+            "schema_version": 2,
+            "body_frame": "principal_axes",
+            "auto_align_sites": True,
+            "mass_amu": 14.007,
+            "inertia_amu_nm2": [1.0, 1.0, 1.0],
+            "sites": {"N": {"type": 7, "relative_pos_nm": [0.0, 0.0, 0.0]}},
         },
     }
 
@@ -207,6 +270,7 @@ def main() -> None:
     parser.add_argument("--forces", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--priors-output", required=True, type=Path)
+    parser.add_argument("--rb-info-output", type=Path)
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--reference-output", type=Path)
     parser.add_argument("--prior-mode", choices=("harmonic", "none"), default="harmonic")
@@ -237,6 +301,12 @@ def main() -> None:
     coordinates += args.box_nm / 2.0
     if np.min(coordinates) <= 0.0 or np.max(coordinates) >= args.box_nm:
         raise ValueError("Centered Ala2 coordinates do not fit inside the selected box")
+    minimum_nonbonded_nm = minimum_nonbonded_distance(coordinates)
+    if minimum_nonbonded_nm <= WCA_CUTOFF_NM:
+        raise ValueError(
+            f"The OOD WCA cutoff {WCA_CUTOFF_NM} nm is not inactive on the dataset; "
+            f"minimum nonbonded distance is {minimum_nonbonded_nm} nm"
+        )
 
     train_frames = coordinates.shape[0] - args.validation_tail_frames
     if args.prior_mode == "harmonic":
@@ -251,6 +321,12 @@ def main() -> None:
     priors_document = build_priors_document(bonds, angles, args.temperature, args.prior_mode)
     args.priors_output.parent.mkdir(parents=True, exist_ok=True)
     args.priors_output.write_text(json.dumps(priors_document, indent=2, sort_keys=True) + "\n")
+
+    if args.rb_info_output is not None:
+        args.rb_info_output.parent.mkdir(parents=True, exist_ok=True)
+        args.rb_info_output.write_text(
+            json.dumps(build_rigid_bodies_document(), indent=2, sort_keys=True) + "\n"
+        )
 
     if args.reference_output is not None:
         args.reference_output.parent.mkdir(parents=True, exist_ok=True)
@@ -293,6 +369,9 @@ def main() -> None:
             "bonds": bonds,
             "angles": angles,
             "fit_frames": train_frames,
+            "ood_wca_cutoff_nm": WCA_CUTOFF_NM,
+            "minimum_nonbonded_distance_nm": minimum_nonbonded_nm,
+            "ood_wca_zero_on_all_frames": True,
         },
         "statistics": {
             "raw_train": target_statistics(forces[:train_frames]),
