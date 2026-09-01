@@ -117,3 +117,54 @@ contact-specific physical fits, the test asks whether one uniform stabilizer
 parameter is cleaner and more robust than the snapshot-ranked selective rule.
 Any chosen changed-prior model must still go through the PaiNN closure and then
 residual regeneration/retraining before production validation.
+
+## Variant A: WCA plus harmonic bonds and angles, without Morse
+
+This ablation changes only the prior topology: it derives a temporary topology
+from the corrected PDB-143D source, removes all 180 pair-specific Morse
+contacts, and retains WCA, 210 harmonic backbone bonds and 200 harmonic
+backbone angles. The source topology and normal TEL22 pipeline are not edited.
+
+The diagnostic uses the same architecture, optimizer, random split and seed as
+the 40-epoch Morse run, but stops after 15 epochs because that run reached its
+best validation loss at epoch 6. Run it in a new isolated directory:
+
+```bash
+AA_TOPOLOGY="$PWD/tutorials/tel22/md.gro" \
+AA_TRAJECTORY="$PWD/tutorials/tel22/long_run/md_whole.trr" \
+TRAINER="$PWD/training/build/train_painn" \
+PYRESSO="$PWD/espresso/build/pypresso" \
+VARIANT_A_RUN_DIR="$PWD/tutorials/tel22/diagnostics/smoke/variant_a_long_1001f_15ep" \
+DEVICE=auto \
+bash tutorials/tel22/diagnostics/scripts/08_test_variant_a_pipeline_15ep.sh
+```
+
+The generated `pipeline_test_report.json` records the best validation epoch
+and loss in addition to the initial/final values. Compare raw validation MAE
+and best validation loss with the Morse run; normalized losses from datasets
+with different residual priors are not sufficient on their own.
+
+## Variant A-R: reduced-capacity, regularized PaiNN
+
+This test keeps the Variant-A priors and the same dataset split/seed, but uses
+32 instead of 64 hidden channels and Adam weight decay `1e-4`. It allows up to
+30 epochs, reduces the learning rate after four validation plateaus and stops
+after eight epochs without improvement. The runner and report accept a valid
+early-stopped training log.
+
+```bash
+AA_TOPOLOGY="$PWD/tutorials/tel22/md.gro" \
+AA_TRAJECTORY="$PWD/tutorials/tel22/long_run/md_whole.trr" \
+TRAINER="$PWD/training/build/train_painn" \
+PYRESSO="$PWD/espresso/build/pypresso" \
+VARIANT_AR_RUN_DIR="$PWD/tutorials/tel22/diagnostics/smoke/variant_ar_long_1001f" \
+VARIANT_A_REUSE_DATASET_DIR="$PWD/tutorials/tel22/diagnostics/smoke/variant_a_long_1001f_15ep" \
+DEVICE=auto \
+bash tutorials/tel22/diagnostics/scripts/09_test_variant_ar_regularized_pipeline.sh
+```
+
+Use a fresh run directory. This experiment intentionally changes model
+capacity and weight regularization together; if it improves validation, a
+later one-factor ablation can determine which change is responsible. The
+optional `VARIANT_A_REUSE_DATASET_DIR` avoids rebuilding the identical
+Variant-A dataset; its priors are revalidated as Morse-free before training.

@@ -76,6 +76,46 @@ class Tel22VariantATopologyTests(unittest.TestCase):
         self.assertEqual(variant["epochs"], 15)
         self.assertGreater(variant["early_stopping_patience"], variant["epochs"])
 
+    def test_regularized_profile_reduces_capacity_and_enables_early_stopping(self):
+        baseline = json.loads(
+            (
+                ROOT
+                / "tutorials"
+                / "tel22"
+                / "diagnostics"
+                / "configs"
+                / "tel22_training_config_variant_a_15ep.json"
+            ).read_text(encoding="utf-8")
+        )
+        regularized = json.loads(
+            (
+                ROOT
+                / "tutorials"
+                / "tel22"
+                / "diagnostics"
+                / "configs"
+                / "tel22_training_config_variant_ar_30ep.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(regularized["hidden_channels"], 32)
+        self.assertEqual(regularized["n_layers"], baseline["n_layers"])
+        self.assertEqual(regularized["weight_decay"], 1.0e-4)
+        self.assertEqual(regularized["epochs"], 30)
+        self.assertEqual(regularized["early_stopping_patience"], 8)
+        self.assertEqual(regularized["reduce_lr_patience"], 4)
+        for key in (
+            "num_species",
+            "num_rbf",
+            "cutoff",
+            "learning_rate",
+            "batch_size",
+            "torque_weight",
+            "split_seed",
+            "validation_fraction",
+            "architecture_variant",
+        ):
+            self.assertEqual(regularized[key], baseline[key], key)
+
 
 if __name__ == "__main__":
     unittest.main()

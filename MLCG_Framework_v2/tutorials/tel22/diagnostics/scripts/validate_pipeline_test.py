@@ -33,12 +33,20 @@ def require_file(path: Path) -> Path:
     return path
 
 
-def validate_training_log(path: Path, expected_epochs: int) -> dict:
+def validate_training_log(
+    path: Path, expected_epochs: int, *, allow_early_stop: bool = False
+) -> dict:
     with path.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
-    require(len(rows) == expected_epochs, f"Expected {expected_epochs} training rows, found {len(rows)}")
+    if allow_early_stop:
+        require(
+            1 <= len(rows) <= expected_epochs,
+            f"Expected 1..{expected_epochs} training rows with early stopping, found {len(rows)}",
+        )
+    else:
+        require(len(rows) == expected_epochs, f"Expected {expected_epochs} training rows, found {len(rows)}")
     epochs = [int(row["Epoch"]) for row in rows]
-    require(epochs == list(range(1, expected_epochs + 1)), f"Non-contiguous training epochs: {epochs}")
+    require(epochs == list(range(1, len(rows) + 1)), f"Non-contiguous training epochs: {epochs}")
     for row in rows:
         for key, value in row.items():
             if key == "Epoch" or value in (None, ""):
@@ -90,6 +98,7 @@ def validate_run(
     *,
     topology_mode: str = "antiparallel",
     config_name: str = "tel22_training_config_pipeline40.json",
+    allow_early_stop: bool = False,
 ) -> dict:
     require(topology_mode in {"antiparallel", "variant-a"}, f"Unknown topology mode: {topology_mode}")
     names = {
@@ -115,10 +124,16 @@ def validate_run(
 
     config = json.loads(files["config"].read_text(encoding="utf-8"))
     require(int(config["epochs"]) == expected_epochs, "Training config epoch count mismatch")
-    require(
-        int(config["early_stopping_patience"]) > expected_epochs,
-        "Pipeline-test config must not early-stop before the requested epoch count",
-    )
+    if allow_early_stop:
+        require(
+            int(config["early_stopping_patience"]) > 0,
+            "Early-stopping patience must be positive",
+        )
+    else:
+        require(
+            int(config["early_stopping_patience"]) > expected_epochs,
+            "Pipeline-test config must not early-stop before the requested epoch count",
+        )
 
     if topology_mode == "antiparallel":
         priors_summary = validate_topology_file(files["priors"], r0_mode="numeric")
@@ -134,7 +149,9 @@ def validate_run(
     require(manifest.get("config_sha256") == sha256_file(files["config"]), "Model/config SHA256 mismatch")
     require(manifest.get("model_sha256") == sha256_file(files["model"]), "Model SHA256 mismatch")
 
-    training = validate_training_log(files["training_log"], expected_epochs)
+    training = validate_training_log(
+        files["training_log"], expected_epochs, allow_early_stop=allow_early_stop
+    )
     energy = validate_energy_log(files["energy"])
     artifact_hashes = {key: sha256_file(path) for key, path in files.items()}
     return {
@@ -161,6 +178,11 @@ def main() -> None:
         default="antiparallel",
     )
     parser.add_argument("--config-name", default="tel22_training_config_pipeline40.json")
+    parser.add_argument(
+        "--allow-early-stop",
+        action="store_true",
+        help="Accept a contiguous training log shorter than the configured maximum epoch count",
+    )
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
 
@@ -169,6 +191,7 @@ def main() -> None:
         args.expected_epochs,
         topology_mode=args.topology_mode,
         config_name=args.config_name,
+        allow_early_stop=args.allow_early_stop,
     )
     report_path = args.report or args.run_dir / "pipeline_test_report.json"
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
