@@ -88,6 +88,14 @@ Forces are always obtained by differentiating this single scalar energy with
 respect to the same directed minimum-image edge vectors. No direct force head
 or nonconservative correction is introduced.
 
+The completed `v2` diagnostic confirmed that this scale correction was
+necessary: the best validation force MSE moved from a negative-skill result to
+`0.975231` against a zero-predictor baseline of `0.982019`. This corresponds to
+`0.691%` explained residual-force variance and a `0.359%` validation-MAE
+improvement. The first-epoch blow-up was also greatly reduced. Nevertheless,
+the result is not materially better than the approximately `0.65%` canonical
+PaiNN baseline, so merely extending the hybrid run is not justified.
+
 ## Fail-closed runtime contract
 
 The ordered head requires:
@@ -114,6 +122,29 @@ representation, uses the framework's residual-force normalization and runs in
 the framework's conservative ESPResSo integration path. Conclusions must
 therefore be based on the matched prior-only versus prior+model FES diagnostic,
 not on nominal architecture labels.
+
+## CGnet-exact head-only isolation
+
+The follow-up architecture `cgnet_ordered_geometry_tanh_v1` is deliberately
+separate from the hybrid variant. It isolates the official dense
+representation inside the framework:
+
+- the PaiNN embedding, message/update blocks and readout are not instantiated;
+- torsions follow CGnet's grouped feature order: both cosines precede both
+  sines, rather than interleaved cosine/sine pairs;
+- each `Linear` layer is first constructed normally and then only its weight is
+  overwritten with Xavier-uniform values. This matches
+  `cgnet.feature.utils.LinearLayer(weight_init="xavier")`, including retention
+  of PyTorch's default bias initialization;
+- training and runtime reconstruct the same head-only module, and the manifest
+  records both `ordered_geometry_head_only=true` and
+  `ordered_geometry_weight_initialization=xavier_uniform_weight_default_bias`.
+
+This is still a controlled reproduction rather than bitwise parity: the C++
+trainer uses the converted framework units and its own deterministic batch
+implementation. It is, however, the clean test of whether the ordered dense
+representation learns the same residual-force signal without interference
+from the parallel PaiNN energy.
 
 ## Commands
 
@@ -158,3 +189,18 @@ Only proceed to the FES stage if the five-epoch report shows a material gain
 over the approximately 0.65% explained residual-force variance of the
 canonical PaiNN baseline. This prevents a long simulation from hiding a failed
 representation diagnostic.
+
+Run the isolated CGnet-exact head from the framework root with:
+
+```bash
+cmake --build training/build -j
+
+PYTHON_BIN="$(command -v python3)" \
+TRAINER="$PWD/training/build/train_painn" \
+ALA2_CGNET_EXACT_SOURCE_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/cgnet_harmonic_50ep" \
+ALA2_CGNET_EXACT_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/cgnet_exact_head_5ep" \
+bash tutorials/ala2_cgnet/diagnostics/scripts/06_test_ala2_cgnet_exact_head.sh
+```
+
+The default is training-only and takes five epochs. Inspect the three reported
+training artifacts before considering `--fes-only`.

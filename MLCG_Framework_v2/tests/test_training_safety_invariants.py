@@ -28,6 +28,7 @@ class TrainingSafetyInvariantTests(unittest.TestCase):
     def test_canonical_painn_context_network_and_stable_norm(self):
         self.assertIn('PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"', self.header)
         self.assertIn('"painn_ordered_geometry_tanh_v2"', self.header)
+        self.assertIn('"cgnet_ordered_geometry_tanh_v1"', self.header)
         self.assertIn('torch::nn::Linear(dim, dim)', self.header)
         self.assertIn('torch::nn::SiLU()', self.header)
         self.assertIn('torch::nn::Linear(dim, dim * 3)', self.header)

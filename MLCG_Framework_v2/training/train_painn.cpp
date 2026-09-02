@@ -201,7 +201,8 @@ static double ordered_norm(const OrderedVec3& value) {
 
 static std::vector<double> ordered_geometry_features_for_frame(
     const CGFrame& frame,
-    int ordered_nodes) {
+    int ordered_nodes,
+    bool cgnet_feature_order) {
     if (static_cast<int>(frame.molecules.size()) != ordered_nodes) {
         throw std::runtime_error(
             "Ordered geometry head requires exactly ordered_geometry_nodes molecules per frame");
@@ -237,6 +238,8 @@ static std::vector<double> ordered_geometry_features_for_frame(
             0.9999999);
         features.push_back(std::acos(cosine));
     }
+    std::vector<double> dihedral_cosines;
+    std::vector<double> dihedral_sines;
     for (int i = 0; i < ordered_nodes - 3; ++i) {
         const auto b0 = ordered_minimum_image(frame, *nodes[i + 1], *nodes[i]);
         const auto b1 = ordered_minimum_image(frame, *nodes[i + 2], *nodes[i + 1]);
@@ -252,15 +255,25 @@ static std::vector<double> ordered_geometry_features_for_frame(
         OrderedVec3 b1_unit{b1[0] / b1_norm, b1[1] / b1_norm, b1[2] / b1_norm};
         const double sine = std::clamp(
             ordered_dot(normal_cross, b1_unit) / normal_product, -1.0, 1.0);
-        features.push_back(cosine);
-        features.push_back(sine);
+        if (cgnet_feature_order) {
+            dihedral_cosines.push_back(cosine);
+            dihedral_sines.push_back(sine);
+        } else {
+            features.push_back(cosine);
+            features.push_back(sine);
+        }
+    }
+    if (cgnet_feature_order) {
+        features.insert(features.end(), dihedral_cosines.begin(), dihedral_cosines.end());
+        features.insert(features.end(), dihedral_sines.begin(), dihedral_sines.end());
     }
     return features;
 }
 
 static std::pair<std::vector<float>, std::vector<float>> fit_ordered_geometry_statistics(
     const std::vector<CGFrame>& train_dataset,
-    int ordered_nodes) {
+    int ordered_nodes,
+    bool cgnet_feature_order) {
     if (train_dataset.empty()) {
         throw std::runtime_error("Cannot fit ordered geometry statistics on an empty train set");
     }
@@ -271,7 +284,8 @@ static std::pair<std::vector<float>, std::vector<float>> fit_ordered_geometry_st
     std::vector<double> m2(feature_count, 0.0);
     std::size_t count = 0;
     for (const auto& frame : train_dataset) {
-        const auto features = ordered_geometry_features_for_frame(frame, ordered_nodes);
+        const auto features = ordered_geometry_features_for_frame(
+            frame, ordered_nodes, cgnet_feature_order);
         ++count;
         for (std::size_t feature = 0; feature < feature_count; ++feature) {
             const double delta = features[feature] - mean[feature];
@@ -608,8 +622,9 @@ static void validate_resume_manifest(
     }
     std::vector<std::string> integer_keys = {
         "num_species", "hidden_channels", "n_layers", "num_rbf"};
-    if (architecture.value("variant", std::string()) ==
-        std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+    const std::string resume_variant = architecture.value("variant", std::string());
+    if (resume_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
+        resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
         integer_keys.insert(integer_keys.end(), {
             "ordered_geometry_nodes", "ordered_geometry_head_layers",
             "ordered_geometry_head_width"});
@@ -620,14 +635,23 @@ static void validate_resume_manifest(
         }
     }
     std::vector<std::string> floating_keys = {"cutoff", "toxvaerd_alpha"};
-    if (architecture.value("variant", std::string()) ==
-        std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+    if (resume_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
+        resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
         floating_keys.push_back("ordered_geometry_energy_scale_kj_mol");
     }
     for (const auto& key : floating_keys) {
         if (std::abs(architecture.at(key).get<double>() -
                      effective_config.at(key).get<double>()) > 1e-12) {
             throw std::runtime_error("Cannot resume: model manifest mismatch for " + key);
+        }
+    }
+    if (resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
+        if (architecture.at("ordered_geometry_head_only").get<bool>() !=
+                effective_config.at("ordered_geometry_head_only").get<bool>() ||
+            architecture.at("ordered_geometry_weight_initialization").get<std::string>() !=
+                effective_config.at("ordered_geometry_weight_initialization").get<std::string>()) {
+            throw std::runtime_error(
+                "Cannot resume: ordered geometry branch mode or initialization changed");
         }
     }
     if (manifest.contains("model_file_size_bytes") &&
@@ -659,13 +683,21 @@ static void write_model_manifest(
         {"cutoff", effective_config.at("cutoff")},
         {"toxvaerd_alpha", effective_config.at("toxvaerd_alpha")},
     };
-    if (effective_config.at("architecture_variant").get<std::string>() ==
-        std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+    const std::string manifest_variant =
+        effective_config.at("architecture_variant").get<std::string>();
+    if (manifest_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
+        manifest_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
         architecture["ordered_geometry_nodes"] = effective_config.at("ordered_geometry_nodes");
         architecture["ordered_geometry_head_layers"] = effective_config.at("ordered_geometry_head_layers");
         architecture["ordered_geometry_head_width"] = effective_config.at("ordered_geometry_head_width");
         architecture["ordered_geometry_energy_scale_kj_mol"] =
             effective_config.at("ordered_geometry_energy_scale_kj_mol");
+        if (manifest_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
+            architecture["ordered_geometry_head_only"] =
+                effective_config.at("ordered_geometry_head_only");
+            architecture["ordered_geometry_weight_initialization"] =
+                effective_config.at("ordered_geometry_weight_initialization");
+        }
     }
     json manifest = {
         {"schema_version", 3},
@@ -854,15 +886,20 @@ int main(int argc, char* argv[]) {
 
     const std::string base_architecture_variant(PAINN_ARCHITECTURE_VARIANT);
     const std::string ordered_architecture_variant(PAINN_ORDERED_GEOMETRY_VARIANT);
+    const std::string cgnet_architecture_variant(CGNET_ORDERED_GEOMETRY_VARIANT);
     const std::string configured_architecture_variant =
         loaded_config.value("architecture_variant", std::string());
     if (configured_architecture_variant != base_architecture_variant &&
-        configured_architecture_variant != ordered_architecture_variant) {
+        configured_architecture_variant != ordered_architecture_variant &&
+        configured_architecture_variant != cgnet_architecture_variant) {
         throw std::runtime_error(
             "Unsupported training architecture_variant '" + configured_architecture_variant + "'");
     }
     const bool ordered_geometry_enabled =
-        configured_architecture_variant == ordered_architecture_variant;
+        configured_architecture_variant == ordered_architecture_variant ||
+        configured_architecture_variant == cgnet_architecture_variant;
+    const bool ordered_geometry_head_only =
+        configured_architecture_variant == cgnet_architecture_variant;
     if (ordered_geometry_enabled) {
         if (ordered_geometry_nodes < 4 || ordered_geometry_head_layers <= 0 ||
             ordered_geometry_head_width <= 0 ||
@@ -914,6 +951,9 @@ int main(int argc, char* argv[]) {
         ? ordered_geometry_head_width : 0;
     effective_config["ordered_geometry_energy_scale_kj_mol"] = ordered_geometry_enabled
         ? ordered_geometry_energy_scale_kj_mol : 0.0;
+    effective_config["ordered_geometry_head_only"] = ordered_geometry_head_only;
+    effective_config["ordered_geometry_weight_initialization"] =
+        ordered_geometry_head_only ? "xavier_uniform_weight_default_bias" : "libtorch_default";
     effective_config["decoy_detection"] = "exact_zero_residual_target_v1";
     effective_config["loss_normalization"] = "train_target_rms_v1";
     effective_config["energy_gauge"] = "isolated_species_zero_v1";
@@ -930,7 +970,8 @@ int main(int argc, char* argv[]) {
         ordered_geometry_nodes,
         ordered_geometry_enabled ? ordered_geometry_head_layers : 0,
         ordered_geometry_enabled ? ordered_geometry_head_width : 0,
-        ordered_geometry_enabled ? ordered_geometry_energy_scale_kj_mol : 0.0);
+        ordered_geometry_enabled ? ordered_geometry_energy_scale_kj_mol : 0.0,
+        ordered_geometry_head_only);
     std::ifstream f(model_path.c_str());
     if (f.good()) {
         if (!resume_training) {
@@ -1123,15 +1164,16 @@ int main(int argc, char* argv[]) {
 
     if (ordered_geometry_enabled) {
         const auto statistics = fit_ordered_geometry_statistics(
-            train_dataset, ordered_geometry_nodes);
+            train_dataset, ordered_geometry_nodes, ordered_geometry_head_only);
         model->set_ordered_geometry_statistics(
             torch::tensor(statistics.first, torch::kFloat32),
             torch::tensor(statistics.second, torch::kFloat32));
         effective_config["ordered_geometry_feature_count"] = statistics.first.size();
         effective_config["ordered_geometry_feature_mean"] = statistics.first;
         effective_config["ordered_geometry_feature_std"] = statistics.second;
-        effective_config["ordered_geometry_feature_order"] =
-            "all_pair_distances_lexicographic_then_consecutive_angles_then_consecutive_dihedral_cos_sin_v1";
+        effective_config["ordered_geometry_feature_order"] = ordered_geometry_head_only
+            ? "cgnet_all_pair_distances_then_angles_then_all_dihedral_cosines_then_all_dihedral_sines_v1"
+            : "all_pair_distances_lexicographic_then_consecutive_angles_then_consecutive_dihedral_cos_sin_v1";
         effective_config["ordered_geometry_dihedral_convention"] =
             "b0=x1-x0;b1=x2-x1;b2=x3-x2;n1=b0_cross_b1;n2=b1_cross_b2;sin=dot(cross(n1,n2),unit(b1))/(norm(n1)*norm(n2))";
         effective_config["ordered_geometry_normalization"] =
@@ -1143,7 +1185,12 @@ int main(int argc, char* argv[]) {
                   << ordered_geometry_head_width
                   << " tanh | normalization fitted on TRAIN only"
                   << " | independent energy scale="
-                  << ordered_geometry_energy_scale_kj_mol << " kJ/mol.\n";
+                  << ordered_geometry_energy_scale_kj_mol << " kJ/mol"
+                  << " | learned branches="
+                  << (ordered_geometry_head_only ? "CGnet-exact ordered head only" : "PaiNN + ordered head")
+                  << " | initialization="
+                  << effective_config["ordered_geometry_weight_initialization"].get<std::string>()
+                  << ".\n";
     }
 
     // -----------------------------------------------------------------

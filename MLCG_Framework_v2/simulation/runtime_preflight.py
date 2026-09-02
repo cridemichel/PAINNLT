@@ -112,6 +112,13 @@ def _architecture_from_config(config: dict[str, Any]) -> dict[str, Any]:
             "ordered_geometry_head_width": int(config["ordered_geometry_head_width"]),
             "ordered_geometry_energy_scale_kj_mol": ordered_energy_scale,
         })
+        if str(config.get("architecture_variant")) == "cgnet_ordered_geometry_tanh_v1":
+            architecture.update({
+                "ordered_geometry_head_only": bool(config["ordered_geometry_head_only"]),
+                "ordered_geometry_weight_initialization": str(
+                    config["ordered_geometry_weight_initialization"]
+                ),
+            })
     return architecture
 
 

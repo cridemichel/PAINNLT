@@ -12,6 +12,11 @@ from pathlib import Path
 
 PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
 PAINN_ORDERED_GEOMETRY_VARIANT = "painn_ordered_geometry_tanh_v2"
+CGNET_ORDERED_GEOMETRY_VARIANT = "cgnet_ordered_geometry_tanh_v1"
+ORDERED_GEOMETRY_VARIANTS = {
+    PAINN_ORDERED_GEOMETRY_VARIANT,
+    CGNET_ORDERED_GEOMETRY_VARIANT,
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -35,7 +40,7 @@ def main() -> None:
 
     config = json.loads(args.config.read_text())
     variant = str(config.get("architecture_variant", ""))
-    if variant not in {PAINN_ARCHITECTURE_VARIANT, PAINN_ORDERED_GEOMETRY_VARIANT}:
+    if variant not in {PAINN_ARCHITECTURE_VARIANT, *ORDERED_GEOMETRY_VARIANTS}:
         raise ValueError(
             f"Unsupported config architecture_variant: {variant!r}"
         )
@@ -48,7 +53,7 @@ def main() -> None:
         "cutoff": float(config["cutoff"]),
         "toxvaerd_alpha": float(config.get("toxvaerd_alpha", 0.1)),
     }
-    if variant == PAINN_ORDERED_GEOMETRY_VARIANT:
+    if variant in ORDERED_GEOMETRY_VARIANTS:
         ordered_energy_scale = float(config["ordered_geometry_energy_scale_kj_mol"])
         if not math.isfinite(ordered_energy_scale) or ordered_energy_scale <= 0.0:
             raise ValueError("ordered_geometry_energy_scale_kj_mol must be positive and finite")
@@ -58,13 +63,24 @@ def main() -> None:
             "ordered_geometry_head_width": int(config["ordered_geometry_head_width"]),
             "ordered_geometry_energy_scale_kj_mol": ordered_energy_scale,
         })
+        if variant == CGNET_ORDERED_GEOMETRY_VARIANT:
+            architecture.update({
+                "ordered_geometry_head_only": bool(config["ordered_geometry_head_only"]),
+                "ordered_geometry_weight_initialization": str(
+                    config["ordered_geometry_weight_initialization"]
+                ),
+            })
+            if not architecture["ordered_geometry_head_only"]:
+                raise ValueError(
+                    "CGnet-exact architecture requires ordered_geometry_head_only=true"
+                )
     manifest_path = Path(f"{args.model}.manifest.json")
     manifest = {}
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text())
     effective_config = dict(config)
     previous_effective = manifest.get("effective_config", {})
-    if variant == PAINN_ORDERED_GEOMETRY_VARIANT:
+    if variant in ORDERED_GEOMETRY_VARIANTS:
         required_statistics = {
             "ordered_geometry_feature_count",
             "ordered_geometry_feature_mean",
@@ -73,6 +89,11 @@ def main() -> None:
             "ordered_geometry_dihedral_convention",
             "ordered_geometry_normalization",
         }
+        if variant == CGNET_ORDERED_GEOMETRY_VARIANT:
+            required_statistics.update({
+                "ordered_geometry_head_only",
+                "ordered_geometry_weight_initialization",
+            })
         missing_statistics = sorted(required_statistics - set(previous_effective))
         if missing_statistics:
             raise ValueError(
@@ -83,6 +104,8 @@ def main() -> None:
         if key.startswith("ordered_geometry_feature_") or key in {
             "ordered_geometry_dihedral_convention",
             "ordered_geometry_normalization",
+            "ordered_geometry_head_only",
+            "ordered_geometry_weight_initialization",
         }:
             effective_config[key] = value
     manifest.update({

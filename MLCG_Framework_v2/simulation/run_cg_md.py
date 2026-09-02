@@ -639,6 +639,9 @@ if ml_active:
         ordered_geometry_energy_scale_kj_mol=float(
             nn_config.get("ordered_geometry_energy_scale_kj_mol", 0.0)
         ),
+        ordered_geometry_head_only=bool(
+            nn_config.get("ordered_geometry_head_only", False)
+        ),
         device=args.device,
         precision=args.ml_precision
     )
@@ -1126,6 +1129,9 @@ if simulation_ok:
             "ordered_geometry_head_width": int(nn_config.get("ordered_geometry_head_width", 0)),
             "ordered_geometry_energy_scale_kj_mol": float(
                 nn_config.get("ordered_geometry_energy_scale_kj_mol", 0.0)
+            ),
+            "ordered_geometry_head_only": bool(
+                nn_config.get("ordered_geometry_head_only", False)
             ),
         }
         report_path = os.path.abspath(args.painn_profile_report)

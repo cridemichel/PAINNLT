@@ -332,14 +332,18 @@ int main(int argc, char** argv) {
             config.value("architecture_variant", std::string());
         const bool supported_variant =
             configured_variant == std::string(PAINN_ARCHITECTURE_VARIANT) ||
-            configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT);
+            configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
+            configured_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT);
         if (!supported_variant ||
             architecture.value("variant", std::string()) != configured_variant) {
             throw std::runtime_error("Model/config PaiNN architecture variant mismatch");
         }
         std::vector<std::string> integer_keys = {
             "num_species", "hidden_channels", "n_layers", "num_rbf"};
-        if (configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+        const bool ordered_variant =
+            configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
+            configured_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT);
+        if (ordered_variant) {
             integer_keys.insert(integer_keys.end(), {
                 "ordered_geometry_nodes", "ordered_geometry_head_layers",
                 "ordered_geometry_head_width"});
@@ -355,12 +359,20 @@ int main(int argc, char** argv) {
             std::abs(manifest_alpha - config.value("toxvaerd_alpha", 0.1)) > 1e-12) {
             throw std::runtime_error("Model manifest mismatch for cutoff or toxvaerd_alpha");
         }
-        if (configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) &&
+        if (ordered_variant &&
             std::abs(
                 architecture.at("ordered_geometry_energy_scale_kj_mol").get<double>() -
                 config.at("ordered_geometry_energy_scale_kj_mol").get<double>()) > 1e-12) {
             throw std::runtime_error(
                 "Model manifest mismatch for ordered_geometry_energy_scale_kj_mol");
+        }
+        if (configured_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT) &&
+            (architecture.at("ordered_geometry_head_only").get<bool>() !=
+                 config.value("ordered_geometry_head_only", false) ||
+             architecture.at("ordered_geometry_weight_initialization").get<std::string>() !=
+                 config.value("ordered_geometry_weight_initialization", std::string("libtorch_default")))) {
+            throw std::runtime_error(
+                "Model manifest mismatch for ordered geometry branch mode or initialization");
         }
         const auto validate_file_size = [&manifest](
             const std::string& manifest_key,
@@ -406,7 +418,8 @@ int main(int argc, char** argv) {
         config.value("ordered_geometry_nodes", 0),
         config.value("ordered_geometry_head_layers", 0),
         config.value("ordered_geometry_head_width", 0),
-        config.value("ordered_geometry_energy_scale_kj_mol", 0.0)
+        config.value("ordered_geometry_energy_scale_kj_mol", 0.0),
+        config.value("ordered_geometry_head_only", false)
     );
     
     torch::load(model, model_file);

@@ -80,6 +80,7 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
     int ordered_geometry_head_layers,
     int ordered_geometry_head_width,
     double ordered_geometry_energy_scale_kj_mol,
+    bool ordered_geometry_head_only,
     const std::string& device_str,
     const std::string& precision_str)
     : m_cutoff(cutoff), m_num_species(num_species) {
@@ -95,7 +96,8 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
         ordered_geometry_nodes,
         ordered_geometry_head_layers,
         ordered_geometry_head_width,
-        ordered_geometry_energy_scale_kj_mol);
+        ordered_geometry_energy_scale_kj_mol,
+        ordered_geometry_head_only);
     
     // Carica i pesi dal file .pt salvato durante il training
     try {
@@ -168,10 +170,11 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
                       << ")" << std::endl;
         }
 
-        // Report the raw, unconstrained isolated-species offsets.  They are
-        // subtracted inside every forward pass by the fixed energy gauge and
-        // therefore never contaminate the logged Hamiltonian.
-        {
+        // Report the gauge that belongs to the active learned branch.  The
+        // CGnet-exact head-only model deliberately has no embedding/readout,
+        // so calling isolated_species_reference_table() there would access an
+        // empty ModuleHolder during construction.
+        if (model->has_painn_branch()) {
             torch::NoGradGuard no_grad;
             auto species = torch::arange(
                 m_num_species,
@@ -187,6 +190,9 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
                       << "(raw offsets min=" << min_reference
                       << ", max=" << max_reference
                       << ", max_abs=" << max_abs_reference << ")\n";
+        } else {
+            std::cout << "[PaiNN] Energy gauge: ordered_geometry_zero_feature_v1 "
+                      << "(CGnet-exact head only; no isolated-species table)\n";
         }
         
         std::cout << "[PaiNN] Modello C++ inizializzato e pesi caricati da: " << model_path << "\n";

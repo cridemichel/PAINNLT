@@ -2,11 +2,12 @@
 
 from libcpp.string cimport string
 from libcpp.memory cimport make_shared, shared_ptr
+from libcpp cimport bool as cpp_bool
 
 # Dichiara l'interfaccia C++
 cdef extern from "core/nonbonded_interactions/PaiNN_ML_Potential.hpp":
     cdef cppclass PaiNN_ML_Potential:
-        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, int ordered_geometry_nodes, int ordered_geometry_head_layers, int ordered_geometry_head_width, double ordered_geometry_energy_scale_kj_mol, const string& device_str, const string& precision_str)
+        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, int ordered_geometry_nodes, int ordered_geometry_head_layers, int ordered_geometry_head_width, double ordered_geometry_energy_scale_kj_mol, cpp_bool ordered_geometry_head_only, const string& device_str, const string& precision_str)
         double get_cutoff()
         double get_last_energy()
         void configure_profiling(bint enabled, long long warmup_calls)
@@ -43,7 +44,7 @@ def get_painn_profile():
     cdef string payload = global_painn_potential.get().get_profile_json()
     return json.loads((<bytes>payload).decode("utf-8"))
 
-def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float, device: str = "auto", precision: str = "float32", ordered_geometry_nodes: int = 0, ordered_geometry_head_layers: int = 0, ordered_geometry_head_width: int = 0, ordered_geometry_energy_scale_kj_mol: float = 0.0):
+def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float, device: str = "auto", precision: str = "float32", ordered_geometry_nodes: int = 0, ordered_geometry_head_layers: int = 0, ordered_geometry_head_width: int = 0, ordered_geometry_energy_scale_kj_mol: float = 0.0, ordered_geometry_head_only: bool = False):
     """
     Attiva il potenziale globale PaiNN in ESPResSo.
     
@@ -71,9 +72,10 @@ def activate_painn_potential(model_path: str, num_species: int, hidden_channels:
     cdef int c_ordered_geometry_head_layers = ordered_geometry_head_layers
     cdef int c_ordered_geometry_head_width = ordered_geometry_head_width
     cdef double c_ordered_geometry_energy_scale_kj_mol = ordered_geometry_energy_scale_kj_mol
+    cdef cpp_bool c_ordered_geometry_head_only = ordered_geometry_head_only
     
     global_painn_potential = make_shared[PaiNN_ML_Potential](
-        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, c_toxvaerd_alpha, c_ordered_geometry_nodes, c_ordered_geometry_head_layers, c_ordered_geometry_head_width, c_ordered_geometry_energy_scale_kj_mol, cpp_device, cpp_precision
+        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, c_toxvaerd_alpha, c_ordered_geometry_nodes, c_ordered_geometry_head_layers, c_ordered_geometry_head_width, c_ordered_geometry_energy_scale_kj_mol, c_ordered_geometry_head_only, cpp_device, cpp_precision
     )
     
     print(f"PaiNN ML Potential attivato: {model_path} (cutoff={cutoff}, device={device}, precision={precision})")

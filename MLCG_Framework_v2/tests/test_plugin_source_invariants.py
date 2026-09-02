@@ -38,6 +38,9 @@ class PluginSourceInvariantTests(unittest.TestCase):
     def test_energy_gauge_is_reported(self):
         self.assertIn("isolated_species_zero_v1", self.source)
         self.assertIn("isolated_species_reference_table", self.source)
+        self.assertIn("if (model->has_painn_branch())", self.source)
+        self.assertIn("ordered_geometry_zero_feature_v1", self.source)
+        self.assertIn("no isolated-species table", self.source)
 
     def test_zero_edge_energy_is_evaluated(self):
         zero_edge = self.source.index("if (num_edges == 0)")

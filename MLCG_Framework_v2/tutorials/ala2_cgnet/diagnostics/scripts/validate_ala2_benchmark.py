@@ -169,6 +169,9 @@ def main() -> None:
         + max(ordered_nodes - 2, 0)
         + 2 * max(ordered_nodes - 3, 0)
     )
+    cgnet_exact_head = (
+        str(config.get("architecture_variant")) == "cgnet_ordered_geometry_tanh_v1"
+    )
     if args.require_ordered_geometry:
         if (ordered_nodes, ordered_head_layers, ordered_head_width) != (5, 5, 160):
             raise ValueError(
@@ -219,7 +222,10 @@ def main() -> None:
         if np.any(feature_std < 1.0e-6):
             raise ValueError("Manifest ordered feature standard deviations violate the 1e-6 floor")
         expected_feature_order = (
-            "all_pair_distances_lexicographic_then_consecutive_angles_then_"
+            "cgnet_all_pair_distances_then_angles_then_all_dihedral_cosines_then_"
+            "all_dihedral_sines_v1"
+            if cgnet_exact_head
+            else "all_pair_distances_lexicographic_then_consecutive_angles_then_"
             "consecutive_dihedral_cos_sin_v1"
         )
         if effective.get("ordered_geometry_feature_order") != expected_feature_order:
@@ -232,6 +238,18 @@ def main() -> None:
             effective.get("ordered_geometry_dihedral_convention", "")
         ):
             raise ValueError("Manifest does not record the signed-dihedral convention")
+        expected_head_only = cgnet_exact_head
+        if bool(config.get("ordered_geometry_head_only", False)) != expected_head_only:
+            raise ValueError("Config architecture/head-only mode mismatch")
+        if bool(manifest_architecture.get("ordered_geometry_head_only", False)) != expected_head_only:
+            raise ValueError("Manifest architecture/head-only mode mismatch")
+        expected_initialization = (
+            "xavier_uniform_weight_default_bias"
+            if cgnet_exact_head
+            else "libtorch_default"
+        )
+        if effective.get("ordered_geometry_weight_initialization") != expected_initialization:
+            raise ValueError("Unexpected ordered-head initialization in model manifest")
     else:
         feature_mean = np.asarray([], dtype=np.float64)
         feature_std = np.asarray([], dtype=np.float64)
@@ -298,7 +316,9 @@ def main() -> None:
         "prior_mode": prior_mode,
         "model_diagnostic": {
             "comparison_scope": (
-                "ordered_distance_angle_signed_dihedral_head_plus_painn"
+                "cgnet_exact_ordered_head_without_painn"
+                if cgnet_exact_head
+                else "ordered_distance_angle_signed_dihedral_head_plus_painn"
                 if ordered_nodes
                 else "cgnet_matched_transferable_controls_not_architecture_equivalence"
             ),
@@ -325,7 +345,17 @@ def main() -> None:
                 "energy_scale_kj_mol": ordered_energy_scale,
                 "energy_scale_source": "one_kcal_per_mol_equals_4p184_kj_per_mol",
                 "normalization": "training_split_only_buffers_in_model",
-                "energy_mode": "conservative_scalar_sum_with_painn",
+                "energy_mode": (
+                    "conservative_cgnet_exact_ordered_head_only"
+                    if cgnet_exact_head
+                    else "conservative_scalar_sum_with_painn"
+                ),
+                "painn_branch_enabled": not cgnet_exact_head,
+                "weight_initialization": (
+                    "xavier_uniform_weight_default_bias"
+                    if cgnet_exact_head
+                    else "libtorch_default"
+                ),
                 "feature_mean": feature_mean.tolist(),
                 "feature_std": feature_std.tolist(),
                 "feature_std_min": (

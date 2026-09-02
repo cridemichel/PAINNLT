@@ -20,6 +20,11 @@ MODEL_MANIFEST_SCHEMA_VERSION = 3
 ENERGY_GAUGE = "isolated_species_zero_v1"
 PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
 PAINN_ORDERED_GEOMETRY_VARIANT = "painn_ordered_geometry_tanh_v2"
+CGNET_ORDERED_GEOMETRY_VARIANT = "cgnet_ordered_geometry_tanh_v1"
+ORDERED_GEOMETRY_VARIANTS = {
+    PAINN_ORDERED_GEOMETRY_VARIANT,
+    CGNET_ORDERED_GEOMETRY_VARIANT,
+}
 
 
 def particle_is_virtual(particle: Any) -> bool:
@@ -246,10 +251,10 @@ def _effective_architecture(config: dict[str, Any]) -> dict[str, Any]:
     if missing:
         raise ValueError(f"Model config is missing required architecture keys: {missing}")
     variant = str(config["architecture_variant"])
-    if variant not in {PAINN_ARCHITECTURE_VARIANT, PAINN_ORDERED_GEOMETRY_VARIANT}:
+    if variant not in {PAINN_ARCHITECTURE_VARIANT, *ORDERED_GEOMETRY_VARIANTS}:
         raise ValueError(
             f"Unsupported PaiNN architecture_variant {variant!r}; "
-            f"expected {PAINN_ARCHITECTURE_VARIANT!r} or {PAINN_ORDERED_GEOMETRY_VARIANT!r}."
+            f"expected one of {sorted({PAINN_ARCHITECTURE_VARIANT, *ORDERED_GEOMETRY_VARIANTS})}."
         )
     architecture = {
         "variant": variant,
@@ -260,7 +265,7 @@ def _effective_architecture(config: dict[str, Any]) -> dict[str, Any]:
         "cutoff": float(config["cutoff"]),
         "toxvaerd_alpha": float(config["toxvaerd_alpha"]),
     }
-    if variant == PAINN_ORDERED_GEOMETRY_VARIANT:
+    if variant in ORDERED_GEOMETRY_VARIANTS:
         ordered_energy_scale = float(config["ordered_geometry_energy_scale_kj_mol"])
         if not math.isfinite(ordered_energy_scale) or ordered_energy_scale <= 0.0:
             raise ValueError("ordered_geometry_energy_scale_kj_mol must be positive and finite")
@@ -270,6 +275,17 @@ def _effective_architecture(config: dict[str, Any]) -> dict[str, Any]:
             "ordered_geometry_head_width": int(config["ordered_geometry_head_width"]),
             "ordered_geometry_energy_scale_kj_mol": ordered_energy_scale,
         })
+        if variant == CGNET_ORDERED_GEOMETRY_VARIANT:
+            architecture.update({
+                "ordered_geometry_head_only": bool(config["ordered_geometry_head_only"]),
+                "ordered_geometry_weight_initialization": str(
+                    config["ordered_geometry_weight_initialization"]
+                ),
+            })
+            if not architecture["ordered_geometry_head_only"]:
+                raise ValueError(
+                    "CGnet-exact architecture requires ordered_geometry_head_only=true"
+                )
     return architecture
 
 

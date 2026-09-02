@@ -286,6 +286,56 @@ class Ala2CgnetBenchmarkTests(unittest.TestCase):
         self.assertIn("Train-only normalization", documentation)
         self.assertIn("Fail-closed runtime contract", documentation)
 
+    def test_cgnet_exact_head_is_isolated_xavier_and_documented(self):
+        config_path = (
+            ROOT
+            / "tutorials"
+            / "ala2_cgnet"
+            / "diagnostics"
+            / "configs"
+            / "ala2_training_config_cgnet_exact_head_5ep.json"
+        )
+        config = json.loads(config_path.read_text())
+        self.assertEqual(
+            config["architecture_variant"], "cgnet_ordered_geometry_tanh_v1"
+        )
+        self.assertTrue(config["ordered_geometry_head_only"])
+        self.assertEqual(
+            config["ordered_geometry_weight_initialization"],
+            "xavier_uniform_weight_default_bias",
+        )
+        self.assertEqual(config["ordered_geometry_nodes"], 5)
+        self.assertEqual(config["ordered_geometry_head_layers"], 5)
+        self.assertEqual(config["ordered_geometry_head_width"], 160)
+        self.assertEqual(config["epochs"], 5)
+
+        header = (ROOT / "training" / "PaiNN_Architecture.hpp").read_text()
+        self.assertIn("CGNET_ORDERED_GEOMETRY_VARIANT", header)
+        self.assertIn("torch::nn::init::xavier_uniform_(linear->weight)", header)
+        self.assertIn("if (!ordered_geometry_head_only)", header)
+        self.assertIn("dihedral_cosines.begin()", header)
+        self.assertIn("dihedral_sines.begin()", header)
+        self.assertEqual(
+            header,
+            (ROOT / "simulation" / "espresso_plugin" / "PaiNN_Architecture.hpp").read_text(),
+        )
+
+        trainer = (ROOT / "training" / "train_painn.cpp").read_text()
+        self.assertIn("CGnet-exact ordered head only", trainer)
+        self.assertIn(
+            "cgnet_all_pair_distances_then_angles_then_all_dihedral_cosines_then_all_dihedral_sines_v1",
+            trainer,
+        )
+        runner = (SCRIPTS / "06_test_ala2_cgnet_exact_head.sh").read_text()
+        self.assertIn("ALA2_CGNET_EXACT_SOURCE_RUN_DIR", runner)
+        self.assertIn("--expected-architecture-variant cgnet_ordered_geometry_tanh_v1", runner)
+        self.assertIn("--require-ordered-geometry", runner)
+        runtime = (ROOT / "simulation" / "run_cg_md.py").read_text()
+        self.assertIn('nn_config.get("ordered_geometry_head_only", False)', runtime)
+        documentation = (ROOT / "tutorials" / "ala2_cgnet" / "README.md").read_text()
+        self.assertIn("Framework-native CGnet-exact head isolation", documentation)
+        self.assertIn("0.691%", documentation)
+
     def test_runtime_documents_follow_framework_contract(self):
         coordinates = self.synthetic_coordinates()
         self.assertGreater(builder.minimum_nonbonded_distance(coordinates), 0.22)

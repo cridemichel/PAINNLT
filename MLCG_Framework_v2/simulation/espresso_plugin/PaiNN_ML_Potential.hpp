@@ -27,6 +27,7 @@ public:
         int ordered_geometry_head_layers = 0,
         int ordered_geometry_head_width = 0,
         double ordered_geometry_energy_scale_kj_mol = 0.0,
+        bool ordered_geometry_head_only = false,
         const std::string& device_str = "auto",
         const std::string& precision_str = "float32");
 

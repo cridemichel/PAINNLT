@@ -8,6 +8,8 @@
 inline constexpr std::string_view PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2";
 inline constexpr std::string_view PAINN_ORDERED_GEOMETRY_VARIANT =
     "painn_ordered_geometry_tanh_v2";
+inline constexpr std::string_view CGNET_ORDERED_GEOMETRY_VARIANT =
+    "cgnet_ordered_geometry_tanh_v1";
 
 // ============================================================================
 // 1. BLOCCO MESSAGGI (Message Passing)
@@ -94,6 +96,7 @@ struct PaiNNModelImpl : torch::nn::Module {
     int ordered_geometry_feature_count;
     int ordered_geometry_head_layers;
     int ordered_geometry_head_width;
+    bool ordered_geometry_head_only;
     torch::Tensor energy_scale;
     torch::Tensor ordered_geometry_energy_scale;
     torch::Tensor ordered_geometry_mean;
@@ -109,7 +112,8 @@ struct PaiNNModelImpl : torch::nn::Module {
         int ordered_nodes = 0,
         int ordered_head_layers = 5,
         int ordered_head_width = 160,
-        double ordered_energy_scale_kj_mol = 0.0)
+        double ordered_energy_scale_kj_mol = 0.0,
+        bool ordered_head_only = false)
         : num_layers(layers),
           num_embeddings(num_embeddings),
           cutoff_radius(cutoff),
@@ -118,17 +122,20 @@ struct PaiNNModelImpl : torch::nn::Module {
           ordered_geometry_nodes(ordered_nodes),
           ordered_geometry_feature_count(0),
           ordered_geometry_head_layers(ordered_head_layers),
-          ordered_geometry_head_width(ordered_head_width) {
+          ordered_geometry_head_width(ordered_head_width),
+          ordered_geometry_head_only(ordered_head_only) {
         
         energy_scale = register_buffer("energy_scale", torch::ones({1}));
-        embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
-        for (int i = 0; i < layers; ++i) {
-            messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim, num_rbf)));
-            updates.push_back(register_module("update_" + std::to_string(i), PaiNNUpdate(dim)));
+        if (!ordered_geometry_head_only) {
+            embedding = register_module("embedding", torch::nn::Embedding(num_embeddings, dim));
+            for (int i = 0; i < layers; ++i) {
+                messages.push_back(register_module("message_" + std::to_string(i), PaiNNMessage(dim, num_rbf)));
+                updates.push_back(register_module("update_" + std::to_string(i), PaiNNUpdate(dim)));
+            }
+            readout = register_module("readout", torch::nn::Sequential(
+                torch::nn::Linear(dim, dim / 2), torch::nn::SiLU(), torch::nn::Linear(dim / 2, 1)
+            ));
         }
-        readout = register_module("readout", torch::nn::Sequential(
-            torch::nn::Linear(dim, dim / 2), torch::nn::SiLU(), torch::nn::Linear(dim / 2, 1)
-        ));
         if (ordered_geometry_nodes > 0) {
             if (ordered_geometry_nodes < 4 || ordered_geometry_head_layers <= 0 ||
                 ordered_geometry_head_width <= 0 ||
@@ -151,21 +158,38 @@ struct PaiNNModelImpl : torch::nn::Module {
 
             ordered_geometry_head = register_module(
                 "ordered_geometry_head", torch::nn::Sequential());
-            ordered_geometry_head->push_back(torch::nn::Linear(
+            const auto make_ordered_linear = [this](int input, int output) {
+                auto linear = torch::nn::Linear(input, output);
+                if (ordered_geometry_head_only) {
+                    // Match cgnet.feature.utils.LinearLayer(weight_init="xavier"):
+                    // overwrite only the weight and retain nn.Linear's default bias.
+                    torch::NoGradGuard no_grad;
+                    torch::nn::init::xavier_uniform_(linear->weight);
+                }
+                return linear;
+            };
+            ordered_geometry_head->push_back(make_ordered_linear(
                 ordered_geometry_feature_count, ordered_geometry_head_width));
             ordered_geometry_head->push_back(torch::nn::Tanh());
             for (int layer = 1; layer < ordered_geometry_head_layers; ++layer) {
-                ordered_geometry_head->push_back(torch::nn::Linear(
+                ordered_geometry_head->push_back(make_ordered_linear(
                     ordered_geometry_head_width, ordered_geometry_head_width));
                 ordered_geometry_head->push_back(torch::nn::Tanh());
             }
-            ordered_geometry_head->push_back(
-                torch::nn::Linear(ordered_geometry_head_width, 1));
+            ordered_geometry_head->push_back(make_ordered_linear(
+                ordered_geometry_head_width, 1));
+        } else if (ordered_geometry_head_only) {
+            throw std::invalid_argument(
+                "CGnet-exact ordered-head-only mode requires ordered geometry");
         }
     }
 
     bool has_ordered_geometry_head() const {
         return ordered_geometry_nodes > 0;
+    }
+
+    bool has_painn_branch() const {
+        return !ordered_geometry_head_only;
     }
 
     void set_ordered_geometry_statistics(
@@ -227,6 +251,8 @@ struct PaiNNModelImpl : torch::nn::Module {
             auto cosine = torch::sum(left * right, 1) / denominator;
             features.push_back(torch::acos(torch::clamp(cosine, -0.9999999, 0.9999999)).unsqueeze(1));
         }
+        std::vector<torch::Tensor> dihedral_cosines;
+        std::vector<torch::Tensor> dihedral_sines;
         for (int i = 0; i < ordered_geometry_nodes - 3; ++i) {
             auto b0 = dense.index({torch::indexing::Slice(), i + 1, i});
             auto b1 = dense.index({torch::indexing::Slice(), i + 2, i + 1});
@@ -241,8 +267,19 @@ struct PaiNNModelImpl : torch::nn::Module {
             auto sine = torch::sum(
                 torch::linalg_cross(normal_1, normal_2, 1) * b1_unit, 1) /
                 normal_product;
-            features.push_back(torch::clamp(cosine, -1.0, 1.0).unsqueeze(1));
-            features.push_back(torch::clamp(sine, -1.0, 1.0).unsqueeze(1));
+            auto cosine_feature = torch::clamp(cosine, -1.0, 1.0).unsqueeze(1);
+            auto sine_feature = torch::clamp(sine, -1.0, 1.0).unsqueeze(1);
+            if (ordered_geometry_head_only) {
+                dihedral_cosines.push_back(cosine_feature);
+                dihedral_sines.push_back(sine_feature);
+            } else {
+                features.push_back(cosine_feature);
+                features.push_back(sine_feature);
+            }
+        }
+        if (ordered_geometry_head_only) {
+            features.insert(features.end(), dihedral_cosines.begin(), dihedral_cosines.end());
+            features.insert(features.end(), dihedral_sines.begin(), dihedral_sines.end());
         }
         return torch::cat(features, 1);
     }
@@ -299,6 +336,9 @@ struct PaiNNModelImpl : torch::nn::Module {
     torch::Tensor forward(BatchType& batch) {
         auto row = batch.edge_index[0], col = batch.edge_index[1]; 
         auto r_ij = batch.coordinates.index({row}) - batch.coordinates.index({col});
+        if (!has_painn_branch()) {
+            return ordered_geometry_energy(r_ij, batch.edge_index, batch.batch_indices);
+        }
         auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
 
         torch::Tensor s = embedding->forward(batch.atomic_numbers);
@@ -331,6 +371,9 @@ struct PaiNNModelImpl : torch::nn::Module {
                                    torch::Tensor r_ij,
                                    torch::Tensor edge_index, 
                                    torch::Tensor batch_indices) {
+        if (!has_painn_branch()) {
+            return ordered_geometry_energy(r_ij, edge_index, batch_indices).squeeze(-1);
+        }
         
         auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
         
@@ -366,6 +409,14 @@ struct PaiNNModelImpl : torch::nn::Module {
     torch::Tensor forward_atom_energies(torch::Tensor atomic_numbers, 
                                         torch::Tensor r_ij,
                                         torch::Tensor edge_index) {
+        if (!has_painn_branch()) {
+            auto batch_indices = torch::zeros(
+                {atomic_numbers.size(0)}, atomic_numbers.options());
+            auto head_energy = ordered_geometry_energy(r_ij, edge_index, batch_indices);
+            return torch::ones(
+                {atomic_numbers.size(0), 1}, head_energy.options()) *
+                head_energy.index({0, 0}) / static_cast<double>(ordered_geometry_nodes);
+        }
         
         auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
         

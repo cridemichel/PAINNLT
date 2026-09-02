@@ -265,3 +265,45 @@ remaining differences from CGnet and complete commands are documented in
 Existing base PaiNN models retain the original architecture variant and do not
 instantiate this head. The `v1` ordered checkpoint is intentionally rejected
 because it lacks the independent energy-scale buffer.
+
+The corrected `v2` trial removed the numerical failure but did not produce a
+material architectural gain: its best held-out explained residual-force
+variance was `0.691%` and its MAE improvement was `0.359%`, compared with about
+`0.65%` for canonical PaiNN and `0.86%` for the pinned official CGnet run.
+This motivates one final representation isolation rather than a longer hybrid
+training.
+
+## Framework-native CGnet-exact head isolation
+
+The `cgnet_ordered_geometry_tanh_v1` diagnostic removes the PaiNN learned
+branch entirely. It retains the identical dataset, residual targets, harmonic
+priors, split, optimizer schedule and spectral projection, while matching the
+official dense CGnet head in the remaining details:
+
+- features are ordered as all distances, all angles, all dihedral cosines,
+  then all dihedral sines;
+- five hidden layers of width 160 use `tanh`;
+- every dense weight is initialized with Xavier uniform, while the default
+  `nn.Linear` bias initialization is retained;
+- the raw scalar uses the independent `4.184 kJ/mol` energy scale;
+- no embedding, PaiNN message block, update block or PaiNN readout is
+  instantiated or optimized.
+
+Rebuild the trainer and run the five-epoch training-only diagnostic:
+
+```bash
+cmake --build training/build -j
+
+PYTHON_BIN="$(command -v python3)" \
+TRAINER="$PWD/training/build/train_painn" \
+ALA2_CGNET_EXACT_SOURCE_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/cgnet_harmonic_50ep" \
+ALA2_CGNET_EXACT_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/cgnet_exact_head_5ep" \
+bash tutorials/ala2_cgnet/diagnostics/scripts/06_test_ala2_cgnet_exact_head.sh
+```
+
+Send `ala2_benchmark_report.json`, `cg_training_log.csv` and
+`training_stdout.log` from the new run. Do not launch the optional FES before
+examining that report. If the isolated head behaves consistently with the
+official CGnet comparator, rebuild ESPResSo and use the same script with
+`--fes-only`; its default FES screen is four replicas of 50,000 production
+steps.
