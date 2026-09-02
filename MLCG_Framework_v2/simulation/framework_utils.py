@@ -19,6 +19,7 @@ CHECKPOINT_SCHEMA_VERSION = 3
 MODEL_MANIFEST_SCHEMA_VERSION = 3
 ENERGY_GAUGE = "isolated_species_zero_v1"
 PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
+PAINN_ORDERED_GEOMETRY_VARIANT = "painn_ordered_geometry_tanh_v2"
 
 
 def particle_is_virtual(particle: Any) -> bool:
@@ -245,12 +246,12 @@ def _effective_architecture(config: dict[str, Any]) -> dict[str, Any]:
     if missing:
         raise ValueError(f"Model config is missing required architecture keys: {missing}")
     variant = str(config["architecture_variant"])
-    if variant != PAINN_ARCHITECTURE_VARIANT:
+    if variant not in {PAINN_ARCHITECTURE_VARIANT, PAINN_ORDERED_GEOMETRY_VARIANT}:
         raise ValueError(
             f"Unsupported PaiNN architecture_variant {variant!r}; "
-            f"expected {PAINN_ARCHITECTURE_VARIANT!r}."
+            f"expected {PAINN_ARCHITECTURE_VARIANT!r} or {PAINN_ORDERED_GEOMETRY_VARIANT!r}."
         )
-    return {
+    architecture = {
         "variant": variant,
         "num_species": int(config["num_species"]),
         "hidden_channels": int(config["hidden_channels"]),
@@ -259,6 +260,17 @@ def _effective_architecture(config: dict[str, Any]) -> dict[str, Any]:
         "cutoff": float(config["cutoff"]),
         "toxvaerd_alpha": float(config["toxvaerd_alpha"]),
     }
+    if variant == PAINN_ORDERED_GEOMETRY_VARIANT:
+        ordered_energy_scale = float(config["ordered_geometry_energy_scale_kj_mol"])
+        if not math.isfinite(ordered_energy_scale) or ordered_energy_scale <= 0.0:
+            raise ValueError("ordered_geometry_energy_scale_kj_mol must be positive and finite")
+        architecture.update({
+            "ordered_geometry_nodes": int(config["ordered_geometry_nodes"]),
+            "ordered_geometry_head_layers": int(config["ordered_geometry_head_layers"]),
+            "ordered_geometry_head_width": int(config["ordered_geometry_head_width"]),
+            "ordered_geometry_energy_scale_kj_mol": ordered_energy_scale,
+        })
+    return architecture
 
 
 def validate_model_manifest(

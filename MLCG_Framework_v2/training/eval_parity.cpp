@@ -328,13 +328,22 @@ int main(int argc, char** argv) {
                 "Unsupported or missing energy gauge in model manifest: " + manifest_file);
         }
         const auto& architecture = manifest.at("architecture");
-        const std::string expected_variant(PAINN_ARCHITECTURE_VARIANT);
-        if (architecture.value("variant", std::string()) != expected_variant ||
-            config.value("architecture_variant", std::string()) != expected_variant) {
+        const std::string configured_variant =
+            config.value("architecture_variant", std::string());
+        const bool supported_variant =
+            configured_variant == std::string(PAINN_ARCHITECTURE_VARIANT) ||
+            configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT);
+        if (!supported_variant ||
+            architecture.value("variant", std::string()) != configured_variant) {
             throw std::runtime_error("Model/config PaiNN architecture variant mismatch");
         }
-        const std::vector<std::string> integer_keys = {
+        std::vector<std::string> integer_keys = {
             "num_species", "hidden_channels", "n_layers", "num_rbf"};
+        if (configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+            integer_keys.insert(integer_keys.end(), {
+                "ordered_geometry_nodes", "ordered_geometry_head_layers",
+                "ordered_geometry_head_width"});
+        }
         for (const auto& key : integer_keys) {
             if (architecture.at(key).get<int>() != config.at(key).get<int>()) {
                 throw std::runtime_error("Model manifest mismatch for " + key);
@@ -345,6 +354,13 @@ int main(int argc, char** argv) {
         if (std::abs(manifest_cutoff - config.at("cutoff").get<double>()) > 1e-12 ||
             std::abs(manifest_alpha - config.value("toxvaerd_alpha", 0.1)) > 1e-12) {
             throw std::runtime_error("Model manifest mismatch for cutoff or toxvaerd_alpha");
+        }
+        if (configured_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) &&
+            std::abs(
+                architecture.at("ordered_geometry_energy_scale_kj_mol").get<double>() -
+                config.at("ordered_geometry_energy_scale_kj_mol").get<double>()) > 1e-12) {
+            throw std::runtime_error(
+                "Model manifest mismatch for ordered_geometry_energy_scale_kj_mol");
         }
         const auto validate_file_size = [&manifest](
             const std::string& manifest_key,
@@ -386,7 +402,11 @@ int main(int argc, char** argv) {
     
     PaiNNModel model(
         config["num_species"], config["hidden_channels"], config["n_layers"], 
-        config["num_rbf"], cutoff, config.value("toxvaerd_alpha", 0.1)
+        config["num_rbf"], cutoff, config.value("toxvaerd_alpha", 0.1),
+        config.value("ordered_geometry_nodes", 0),
+        config.value("ordered_geometry_head_layers", 0),
+        config.value("ordered_geometry_head_width", 0),
+        config.value("ordered_geometry_energy_scale_kj_mol", 0.0)
     );
     
     torch::load(model, model_file);

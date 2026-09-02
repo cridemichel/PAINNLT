@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <cmath>
 #include <chrono>
+#include <array>
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -71,6 +72,52 @@ struct CGBatch {
     int num_molecules_in_batch;
 };
 
+struct SpectralProjectionStats {
+    std::size_t matrices_checked = 0;
+    std::size_t matrices_projected = 0;
+    double maximum_sigma_before_projection = 0.0;
+};
+
+// Project every learned dense weight matrix onto a spectral-norm ball.  The
+// embedding table is deliberately excluded: CGnet constrains dense layers,
+// not the categorical lookup table.  Power iteration avoids torch::linalg::svd,
+// which is unavailable on some MPS builds.
+static SpectralProjectionStats project_dense_spectral_norms(
+    PaiNNModel& model,
+    double strength,
+    int power_iterations) {
+    SpectralProjectionStats stats;
+    if (strength <= 0.0) return stats;
+
+    torch::NoGradGuard no_grad;
+    for (const auto& named_parameter : model->named_parameters()) {
+        const std::string& name = named_parameter.key();
+        torch::Tensor weight = named_parameter.value();
+        if (weight.dim() != 2 || name == "embedding.weight" ||
+            name.size() < 7 || name.substr(name.size() - 7) != ".weight") {
+            continue;
+        }
+
+        ++stats.matrices_checked;
+        torch::Tensor direction = torch::ones({weight.size(1)}, weight.options());
+        direction = direction / torch::clamp_min(direction.norm(), 1.0e-12);
+        for (int iteration = 0; iteration < power_iterations; ++iteration) {
+            torch::Tensor left = torch::matmul(weight, direction);
+            left = left / torch::clamp_min(left.norm(), 1.0e-12);
+            direction = torch::matmul(weight.transpose(0, 1), left);
+            direction = direction / torch::clamp_min(direction.norm(), 1.0e-12);
+        }
+        const double sigma = torch::matmul(weight, direction).norm().item<double>();
+        stats.maximum_sigma_before_projection =
+            std::max(stats.maximum_sigma_before_projection, sigma);
+        if (std::isfinite(sigma) && sigma > strength) {
+            weight.mul_(strength / sigma);
+            ++stats.matrices_projected;
+        }
+    }
+    return stats;
+}
+
 // =====================================================================
 // 2. FUNZIONI DI SUPPORTO E BATCHING
 // =====================================================================
@@ -118,6 +165,128 @@ static std::size_t cache_dataset_edges(std::vector<CGFrame>& dataset, float cuto
         total_directed_edges += cache_frame_edges(frame, cutoff);
     }
     return total_directed_edges;
+}
+
+using OrderedVec3 = std::array<double, 3>;
+
+static OrderedVec3 ordered_minimum_image(
+    const CGFrame& frame,
+    const CGSite& from,
+    const CGSite& to) {
+    OrderedVec3 displacement{
+        static_cast<double>(from.x - to.x),
+        static_cast<double>(from.y - to.y),
+        static_cast<double>(from.z - to.z)};
+    for (int axis = 0; axis < 3; ++axis) {
+        const double box = static_cast<double>(frame.box[axis]);
+        displacement[axis] -= box * std::round(displacement[axis] / box);
+    }
+    return displacement;
+}
+
+static double ordered_dot(const OrderedVec3& lhs, const OrderedVec3& rhs) {
+    return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
+}
+
+static OrderedVec3 ordered_cross(const OrderedVec3& lhs, const OrderedVec3& rhs) {
+    return {
+        lhs[1] * rhs[2] - lhs[2] * rhs[1],
+        lhs[2] * rhs[0] - lhs[0] * rhs[2],
+        lhs[0] * rhs[1] - lhs[1] * rhs[0]};
+}
+
+static double ordered_norm(const OrderedVec3& value) {
+    return std::sqrt(ordered_dot(value, value) + 1.0e-12);
+}
+
+static std::vector<double> ordered_geometry_features_for_frame(
+    const CGFrame& frame,
+    int ordered_nodes) {
+    if (static_cast<int>(frame.molecules.size()) != ordered_nodes) {
+        throw std::runtime_error(
+            "Ordered geometry head requires exactly ordered_geometry_nodes molecules per frame");
+    }
+    std::vector<const CGSite*> nodes;
+    nodes.reserve(ordered_nodes);
+    for (const auto& molecule : frame.molecules) {
+        if (molecule.sites.size() != 1) {
+            throw std::runtime_error(
+                "Ordered geometry head currently requires one site per ordered molecule");
+        }
+        nodes.push_back(&molecule.sites.front());
+    }
+
+    std::vector<double> features;
+    features.reserve(
+        ordered_nodes * (ordered_nodes - 1) / 2 +
+        (ordered_nodes - 2) + 2 * (ordered_nodes - 3));
+    for (int i = 0; i < ordered_nodes; ++i) {
+        for (int j = i + 1; j < ordered_nodes; ++j) {
+            features.push_back(ordered_norm(
+                ordered_minimum_image(frame, *nodes[i], *nodes[j])));
+        }
+    }
+    for (int i = 0; i < ordered_nodes - 2; ++i) {
+        const auto left = ordered_minimum_image(frame, *nodes[i], *nodes[i + 1]);
+        const auto right = ordered_minimum_image(frame, *nodes[i + 2], *nodes[i + 1]);
+        const double denominator = std::sqrt(
+            ordered_dot(left, left) * ordered_dot(right, right) + 1.0e-12);
+        const double cosine = std::clamp(
+            ordered_dot(left, right) / denominator,
+            -0.9999999,
+            0.9999999);
+        features.push_back(std::acos(cosine));
+    }
+    for (int i = 0; i < ordered_nodes - 3; ++i) {
+        const auto b0 = ordered_minimum_image(frame, *nodes[i + 1], *nodes[i]);
+        const auto b1 = ordered_minimum_image(frame, *nodes[i + 2], *nodes[i + 1]);
+        const auto b2 = ordered_minimum_image(frame, *nodes[i + 3], *nodes[i + 2]);
+        const auto normal_1 = ordered_cross(b0, b1);
+        const auto normal_2 = ordered_cross(b1, b2);
+        const double normal_product = std::sqrt(
+            ordered_dot(normal_1, normal_1) * ordered_dot(normal_2, normal_2) + 1.0e-12);
+        const double cosine = std::clamp(
+            ordered_dot(normal_1, normal_2) / normal_product, -1.0, 1.0);
+        const auto normal_cross = ordered_cross(normal_1, normal_2);
+        const double b1_norm = ordered_norm(b1);
+        OrderedVec3 b1_unit{b1[0] / b1_norm, b1[1] / b1_norm, b1[2] / b1_norm};
+        const double sine = std::clamp(
+            ordered_dot(normal_cross, b1_unit) / normal_product, -1.0, 1.0);
+        features.push_back(cosine);
+        features.push_back(sine);
+    }
+    return features;
+}
+
+static std::pair<std::vector<float>, std::vector<float>> fit_ordered_geometry_statistics(
+    const std::vector<CGFrame>& train_dataset,
+    int ordered_nodes) {
+    if (train_dataset.empty()) {
+        throw std::runtime_error("Cannot fit ordered geometry statistics on an empty train set");
+    }
+    const std::size_t feature_count = static_cast<std::size_t>(
+        ordered_nodes * (ordered_nodes - 1) / 2 +
+        (ordered_nodes - 2) + 2 * (ordered_nodes - 3));
+    std::vector<double> mean(feature_count, 0.0);
+    std::vector<double> m2(feature_count, 0.0);
+    std::size_t count = 0;
+    for (const auto& frame : train_dataset) {
+        const auto features = ordered_geometry_features_for_frame(frame, ordered_nodes);
+        ++count;
+        for (std::size_t feature = 0; feature < feature_count; ++feature) {
+            const double delta = features[feature] - mean[feature];
+            mean[feature] += delta / static_cast<double>(count);
+            m2[feature] += delta * (features[feature] - mean[feature]);
+        }
+    }
+    std::vector<float> mean_float(feature_count);
+    std::vector<float> std_float(feature_count);
+    for (std::size_t feature = 0; feature < feature_count; ++feature) {
+        mean_float[feature] = static_cast<float>(mean[feature]);
+        std_float[feature] = static_cast<float>(std::max(
+            std::sqrt(m2[feature] / static_cast<double>(count)), 1.0e-6));
+    }
+    return {mean_float, std_float};
 }
 
 CGBatch collate_batch(const std::vector<CGFrame>& frames, torch::Device device) {
@@ -437,14 +606,25 @@ static void validate_resume_manifest(
         effective_config.at("architecture_variant").get<std::string>()) {
         throw std::runtime_error("Cannot resume: model manifest mismatch for architecture variant");
     }
-    const std::vector<std::string> integer_keys = {
+    std::vector<std::string> integer_keys = {
         "num_species", "hidden_channels", "n_layers", "num_rbf"};
+    if (architecture.value("variant", std::string()) ==
+        std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+        integer_keys.insert(integer_keys.end(), {
+            "ordered_geometry_nodes", "ordered_geometry_head_layers",
+            "ordered_geometry_head_width"});
+    }
     for (const auto& key : integer_keys) {
         if (architecture.at(key).get<int>() != effective_config.at(key).get<int>()) {
             throw std::runtime_error("Cannot resume: model manifest mismatch for " + key);
         }
     }
-    for (const auto& key : {std::string("cutoff"), std::string("toxvaerd_alpha")}) {
+    std::vector<std::string> floating_keys = {"cutoff", "toxvaerd_alpha"};
+    if (architecture.value("variant", std::string()) ==
+        std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+        floating_keys.push_back("ordered_geometry_energy_scale_kj_mol");
+    }
+    for (const auto& key : floating_keys) {
         if (std::abs(architecture.at(key).get<double>() -
                      effective_config.at(key).get<double>()) > 1e-12) {
             throw std::runtime_error("Cannot resume: model manifest mismatch for " + key);
@@ -479,6 +659,14 @@ static void write_model_manifest(
         {"cutoff", effective_config.at("cutoff")},
         {"toxvaerd_alpha", effective_config.at("toxvaerd_alpha")},
     };
+    if (effective_config.at("architecture_variant").get<std::string>() ==
+        std::string(PAINN_ORDERED_GEOMETRY_VARIANT)) {
+        architecture["ordered_geometry_nodes"] = effective_config.at("ordered_geometry_nodes");
+        architecture["ordered_geometry_head_layers"] = effective_config.at("ordered_geometry_head_layers");
+        architecture["ordered_geometry_head_width"] = effective_config.at("ordered_geometry_head_width");
+        architecture["ordered_geometry_energy_scale_kj_mol"] =
+            effective_config.at("ordered_geometry_energy_scale_kj_mol");
+    }
     json manifest = {
         {"schema_version", 3},
         {"framework", "MLCG_Framework_v2"},
@@ -542,6 +730,9 @@ int main(int argc, char* argv[]) {
     int max_epochs = 500;
     float initial_lr = 5e-4;
     float lipschitz_lambda = 0.0f;
+    float spectral_projection_strength = 0.0f;
+    int spectral_projection_power_iterations = 8;
+    float epoch_lr_decay_factor = 1.0f;
     float weight_decay_val = 0.0f;
     int es_patience = 10;
     int reduce_lr_patience = 5;
@@ -556,6 +747,10 @@ int main(int argc, char* argv[]) {
     float validation_fraction = 0.2f;
     std::string validation_split_mode = "random";
     int validation_tail_frames = 0;
+    int ordered_geometry_nodes = 0;
+    int ordered_geometry_head_layers = 5;
+    int ordered_geometry_head_width = 160;
+    double ordered_geometry_energy_scale_kj_mol = 0.0;
 
     std::string dataset_path = "cg_dataset.bin";
     std::string model_path = "best_cg_model.pt";
@@ -596,6 +791,9 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("learning_rate")) initial_lr = loaded_config["learning_rate"];
         if (loaded_config.contains("weight_decay")) weight_decay_val = loaded_config["weight_decay"];
         if (loaded_config.contains("lipschitz_lambda")) lipschitz_lambda = loaded_config["lipschitz_lambda"];
+        if (loaded_config.contains("spectral_projection_strength")) spectral_projection_strength = loaded_config["spectral_projection_strength"];
+        if (loaded_config.contains("spectral_projection_power_iterations")) spectral_projection_power_iterations = loaded_config["spectral_projection_power_iterations"];
+        if (loaded_config.contains("epoch_lr_decay_factor")) epoch_lr_decay_factor = loaded_config["epoch_lr_decay_factor"];
         if (loaded_config.contains("early_stopping_patience")) es_patience = loaded_config["early_stopping_patience"];
         if (loaded_config.contains("reduce_lr_patience")) reduce_lr_patience = loaded_config["reduce_lr_patience"];
         if (loaded_config.contains("torque_weight")) torque_weight = loaded_config["torque_weight"];
@@ -611,6 +809,10 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("validation_fraction")) validation_fraction = loaded_config["validation_fraction"];
         if (loaded_config.contains("validation_split_mode")) validation_split_mode = loaded_config["validation_split_mode"].get<std::string>();
         if (loaded_config.contains("validation_tail_frames")) validation_tail_frames = loaded_config["validation_tail_frames"];
+        if (loaded_config.contains("ordered_geometry_nodes")) ordered_geometry_nodes = loaded_config["ordered_geometry_nodes"];
+        if (loaded_config.contains("ordered_geometry_head_layers")) ordered_geometry_head_layers = loaded_config["ordered_geometry_head_layers"];
+        if (loaded_config.contains("ordered_geometry_head_width")) ordered_geometry_head_width = loaded_config["ordered_geometry_head_width"];
+        if (loaded_config.contains("ordered_geometry_energy_scale_kj_mol")) ordered_geometry_energy_scale_kj_mol = loaded_config["ordered_geometry_energy_scale_kj_mol"];
         if (batch_size <= 0) {
             throw std::runtime_error("batch_size must be positive");
         }
@@ -632,6 +834,15 @@ int main(int argc, char* argv[]) {
         if (grad_clip_norm < 0.0f) {
             throw std::runtime_error("grad_clip_norm must be non-negative (0 disables clipping)");
         }
+        if (spectral_projection_strength < 0.0f) {
+            throw std::runtime_error("spectral_projection_strength must be non-negative (0 disables projection)");
+        }
+        if (spectral_projection_power_iterations <= 0) {
+            throw std::runtime_error("spectral_projection_power_iterations must be positive");
+        }
+        if (epoch_lr_decay_factor <= 0.0f || epoch_lr_decay_factor > 1.0f) {
+            throw std::runtime_error("epoch_lr_decay_factor must be in (0, 1]");
+        }
         if (mps_empty_cache_every_batches < 0) {
             throw std::runtime_error("mps_empty_cache_every_batches must be >= 0 (0 disables periodic emptyCache)");
         }
@@ -641,17 +852,33 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
-    const std::string expected_architecture_variant(PAINN_ARCHITECTURE_VARIANT);
+    const std::string base_architecture_variant(PAINN_ARCHITECTURE_VARIANT);
+    const std::string ordered_architecture_variant(PAINN_ORDERED_GEOMETRY_VARIANT);
     const std::string configured_architecture_variant =
         loaded_config.value("architecture_variant", std::string());
-    if (configured_architecture_variant != expected_architecture_variant) {
+    if (configured_architecture_variant != base_architecture_variant &&
+        configured_architecture_variant != ordered_architecture_variant) {
         throw std::runtime_error(
-            "Training config architecture_variant must be '" + expected_architecture_variant +
-            "' for this build; got '" + configured_architecture_variant + "'");
+            "Unsupported training architecture_variant '" + configured_architecture_variant + "'");
+    }
+    const bool ordered_geometry_enabled =
+        configured_architecture_variant == ordered_architecture_variant;
+    if (ordered_geometry_enabled) {
+        if (ordered_geometry_nodes < 4 || ordered_geometry_head_layers <= 0 ||
+            ordered_geometry_head_width <= 0 ||
+            !std::isfinite(ordered_geometry_energy_scale_kj_mol) ||
+            ordered_geometry_energy_scale_kj_mol <= 0.0) {
+            throw std::runtime_error(
+                "Ordered geometry architecture requires ordered_geometry_nodes>=4, positive "
+                "head sizes, and ordered_geometry_energy_scale_kj_mol>0");
+        }
+    } else if (ordered_geometry_nodes != 0) {
+        throw std::runtime_error(
+            "ordered_geometry_nodes must be zero/absent for the base PaiNN architecture");
     }
 
     json effective_config = loaded_config;
-    effective_config["architecture_variant"] = expected_architecture_variant;
+    effective_config["architecture_variant"] = configured_architecture_variant;
     effective_config["num_species"] = num_species;
     effective_config["hidden_channels"] = dim;
     effective_config["n_layers"] = layers;
@@ -662,6 +889,9 @@ int main(int argc, char* argv[]) {
     effective_config["learning_rate"] = initial_lr;
     effective_config["weight_decay"] = weight_decay_val;
     effective_config["lipschitz_lambda"] = lipschitz_lambda;
+    effective_config["spectral_projection_strength"] = spectral_projection_strength;
+    effective_config["spectral_projection_power_iterations"] = spectral_projection_power_iterations;
+    effective_config["epoch_lr_decay_factor"] = epoch_lr_decay_factor;
     effective_config["early_stopping_patience"] = es_patience;
     effective_config["reduce_lr_patience"] = reduce_lr_patience;
     effective_config["torque_weight"] = torque_weight;
@@ -677,13 +907,30 @@ int main(int argc, char* argv[]) {
     effective_config["validation_fraction"] = validation_fraction;
     effective_config["validation_split_mode"] = validation_split_mode;
     effective_config["validation_tail_frames"] = validation_tail_frames;
+    effective_config["ordered_geometry_nodes"] = ordered_geometry_nodes;
+    effective_config["ordered_geometry_head_layers"] = ordered_geometry_enabled
+        ? ordered_geometry_head_layers : 0;
+    effective_config["ordered_geometry_head_width"] = ordered_geometry_enabled
+        ? ordered_geometry_head_width : 0;
+    effective_config["ordered_geometry_energy_scale_kj_mol"] = ordered_geometry_enabled
+        ? ordered_geometry_energy_scale_kj_mol : 0.0;
     effective_config["decoy_detection"] = "exact_zero_residual_target_v1";
     effective_config["loss_normalization"] = "train_target_rms_v1";
     effective_config["energy_gauge"] = "isolated_species_zero_v1";
     effective_config["message_aggregation"] = "sum_v1";
 
     // Inizializza il Modello
-    PaiNNModel model(num_species, dim, layers, num_rbf, cutoff, toxvaerd_alpha);
+    PaiNNModel model(
+        num_species,
+        dim,
+        layers,
+        num_rbf,
+        cutoff,
+        toxvaerd_alpha,
+        ordered_geometry_nodes,
+        ordered_geometry_enabled ? ordered_geometry_head_layers : 0,
+        ordered_geometry_enabled ? ordered_geometry_head_width : 0,
+        ordered_geometry_enabled ? ordered_geometry_energy_scale_kj_mol : 0.0);
     std::ifstream f(model_path.c_str());
     if (f.good()) {
         if (!resume_training) {
@@ -874,6 +1121,31 @@ int main(int argc, char* argv[]) {
               << "       - Train: " << train_dataset.size() << " frames\n"
               << "       - Val:   " << val_dataset.size() << " frames\n\n";
 
+    if (ordered_geometry_enabled) {
+        const auto statistics = fit_ordered_geometry_statistics(
+            train_dataset, ordered_geometry_nodes);
+        model->set_ordered_geometry_statistics(
+            torch::tensor(statistics.first, torch::kFloat32),
+            torch::tensor(statistics.second, torch::kFloat32));
+        effective_config["ordered_geometry_feature_count"] = statistics.first.size();
+        effective_config["ordered_geometry_feature_mean"] = statistics.first;
+        effective_config["ordered_geometry_feature_std"] = statistics.second;
+        effective_config["ordered_geometry_feature_order"] =
+            "all_pair_distances_lexicographic_then_consecutive_angles_then_consecutive_dihedral_cos_sin_v1";
+        effective_config["ordered_geometry_dihedral_convention"] =
+            "b0=x1-x0;b1=x2-x1;b2=x3-x2;n1=b0_cross_b1;n2=b1_cross_b2;sin=dot(cross(n1,n2),unit(b1))/(norm(n1)*norm(n2))";
+        effective_config["ordered_geometry_normalization"] =
+            "population_mean_std_training_split_only_floor_1e-6_v1";
+        std::cout << "[INFO] Ordered geometry head enabled: nodes="
+                  << ordered_geometry_nodes
+                  << " | features=" << statistics.first.size()
+                  << " | head=" << ordered_geometry_head_layers << "x"
+                  << ordered_geometry_head_width
+                  << " tanh | normalization fitted on TRAIN only"
+                  << " | independent energy scale="
+                  << ordered_geometry_energy_scale_kj_mol << " kJ/mol.\n";
+    }
+
     // -----------------------------------------------------------------
     // Scale fisiche del train set per una loss adimensionale e bilanciata.
     // Force/torque MAE remain in physical units for interpretable logging.
@@ -948,6 +1220,12 @@ int main(int argc, char* argv[]) {
               << (report_grad_norms ? "true" : "false")
               << " | MPS emptyCache every " << mps_empty_cache_every_batches
               << " training batches (0=disabled).\n";
+    if (spectral_projection_strength > 0.0f) {
+        std::cout << "[INFO] Dense-layer spectral projection enabled: strength="
+                  << spectral_projection_strength
+                  << " | power iterations=" << spectral_projection_power_iterations
+                  << " | embedding excluded.\n";
+    }
     if (torque_weight == 0.0f) {
         std::cout << "[INFO] Force-only fast path enabled: torque graph/loss is skipped during training; "
                      "validation torque metrics remain diagnostic only.\n";
@@ -1016,6 +1294,9 @@ int main(int argc, char* argv[]) {
         std::vector<double> epoch_grad_norms;
         std::size_t clipped_batches = 0;
         std::size_t train_batch_counter = 0;
+        std::size_t spectral_matrices_checked = 0;
+        std::size_t spectral_matrices_projected = 0;
+        double spectral_max_sigma = 0.0;
         const bool train_torque_enabled = torque_weight > 0.0f;
 
         std::vector<CGFrame> train_batch_frames;
@@ -1140,6 +1421,15 @@ int main(int argc, char* argv[]) {
                         epoch_grad_norms.push_back(grad_norm_preclip);
                     }
                     optimizer.step();
+                    const auto spectral_stats = project_dense_spectral_norms(
+                        model,
+                        static_cast<double>(spectral_projection_strength),
+                        spectral_projection_power_iterations);
+                    spectral_matrices_checked += spectral_stats.matrices_checked;
+                    spectral_matrices_projected += spectral_stats.matrices_projected;
+                    spectral_max_sigma = std::max(
+                        spectral_max_sigma,
+                        spectral_stats.maximum_sigma_before_projection);
                     ++train_batch_counter;
 
                     float current_batch_weight = static_cast<float>(train_batch_frames.size());
@@ -1336,6 +1626,11 @@ int main(int argc, char* argv[]) {
                       << " | max=" << grad_norm_max
                       << " | clipped=" << (100.0 * grad_clip_fraction) << "%\n";
         }
+        if (spectral_projection_strength > 0.0f) {
+            std::cout << "  [SPECTRAL] checked=" << spectral_matrices_checked
+                      << " | projected=" << spectral_matrices_projected
+                      << " | max sigma before projection=" << spectral_max_sigma << "\n";
+        }
 
         if (csv_file.is_open()) {
             csv_file << epoch << ","
@@ -1352,22 +1647,27 @@ int main(int argc, char* argv[]) {
             csv_file.flush();
         }
 
-        if (val_loss_avg < best_val_loss) {
+        if (epoch_lr_decay_factor < 1.0f) {
+            if (epoch < max_epochs) {
+                current_lr = std::max(current_lr * epoch_lr_decay_factor, 1.0e-6f);
+                for (auto& param_group : optimizer.param_groups()) {
+                    static_cast<torch::optim::AdamWOptions&>(param_group.options()).lr(current_lr);
+                }
+                std::cout << "  ---> [Scheduler] Decadimento per epoca. Learning Rate: "
+                          << current_lr << "\n";
+            }
+        } else if (val_loss_avg < best_val_loss) {
             best_val_loss = val_loss_avg;
-            lr_counter = 0; 
+            lr_counter = 0;
         } else {
             lr_counter++;
             if (lr_counter >= lr_patience) {
-                current_lr *= 0.5f; 
-                if (current_lr < 1e-6f) {
-                    current_lr = 1e-6f;
-                }
-                
+                current_lr = std::max(current_lr * 0.5f, 1.0e-6f);
                 for (auto& param_group : optimizer.param_groups()) {
                     static_cast<torch::optim::AdamWOptions&>(param_group.options()).lr(current_lr);
                 }
                 std::cout << "  ---> [Scheduler] Plateau raggiunto. Learning Rate abbassato a: " << current_lr << "\n";
-                lr_counter = 0; 
+                lr_counter = 0;
             }
         }
         

@@ -103,6 +103,45 @@ def prior_only_metrics(model, loader, torch) -> dict[str, float]:
     }
 
 
+def simulate_branch(
+    model,
+    initial_coordinates: np.ndarray,
+    total_steps: int,
+    sample_interval: int,
+    beta: float,
+    dt: float,
+    random_seed: int,
+    torch,
+    Simulation,
+) -> tuple[np.ndarray, float]:
+    """Run one official Brownian branch with an independently reset RNG."""
+    device = torch.device("cpu")
+    model.mount(device)
+    model.eval()
+    initial = torch.tensor(
+        initial_coordinates, dtype=torch.float32, requires_grad=True
+    )
+    log_interval = max(
+        sample_interval,
+        (max(total_steps // 10, sample_interval) // sample_interval) * sample_interval,
+    )
+    start = time.perf_counter()
+    simulation = Simulation(
+        model,
+        initial,
+        length=total_steps,
+        save_interval=sample_interval,
+        beta=beta,
+        dt=dt,
+        random_seed=random_seed,
+        device=device,
+        log_interval=log_interval,
+        log_type="print",
+    )
+    coordinates = np.asarray(simulation.simulate(), dtype=np.float32)
+    return coordinates, time.perf_counter() - start
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cgnet-source", required=True, type=Path)
@@ -293,44 +332,65 @@ def main() -> None:
         f"{total_steps} steps; retaining {target_frames} frames/replica."
     )
 
-    simulation_device = torch.device("cpu")
-    model.mount(simulation_device)
-    model.eval()
-    initial = torch.tensor(
-        coordinates[initial_indices], dtype=torch.float32, requires_grad=True
-    )
-    log_interval = max(
-        args.sample_interval,
-        (max(total_steps // 10, args.sample_interval) // args.sample_interval)
-        * args.sample_interval,
-    )
-    simulation_start = time.perf_counter()
-    simulation = Simulation(
+    simulation_seed = args.seed + 1
+    initial_coordinates = coordinates[initial_indices]
+    full_arch_state = state_dict_on_cpu(model.arch)
+    with torch.no_grad():
+        for parameter in model.arch.parameters():
+            parameter.zero_()
+
+    print("[INFO] Brownian branch 1/2: harmonic prior only.")
+    prior_simulated, prior_simulation_seconds = simulate_branch(
         model,
-        initial,
-        length=total_steps,
-        save_interval=args.sample_interval,
-        beta=stats.beta,
-        dt=args.dt,
-        random_seed=args.seed + 1,
-        device=simulation_device,
-        log_interval=log_interval,
-        log_type="print",
+        initial_coordinates,
+        total_steps,
+        args.sample_interval,
+        float(stats.beta),
+        args.dt,
+        simulation_seed,
+        torch,
+        Simulation,
     )
-    simulated = np.asarray(simulation.simulate(), dtype=np.float32)
-    simulation_seconds = time.perf_counter() - simulation_start
+    model.arch.load_state_dict(full_arch_state)
+    print("[INFO] Brownian branch 2/2: harmonic prior + official CGnet.")
+    simulated, full_simulation_seconds = simulate_branch(
+        model,
+        initial_coordinates,
+        total_steps,
+        args.sample_interval,
+        float(stats.beta),
+        args.dt,
+        simulation_seed,
+        torch,
+        Simulation,
+    )
     discard_frames = discard_steps // args.sample_interval
+    prior_retained = prior_simulated[
+        :, discard_frames : discard_frames + target_frames
+    ]
     retained = simulated[:, discard_frames : discard_frames + target_frames]
+    if prior_retained.shape != (replicas, target_frames, 5, 3):
+        raise RuntimeError(
+            f"Unexpected prior-only CGnet trajectory shape: {prior_retained.shape}"
+        )
     if retained.shape != (replicas, target_frames, 5, 3):
         raise RuntimeError(f"Unexpected official CGnet trajectory shape: {retained.shape}")
-    if not np.isfinite(retained).all():
-        raise RuntimeError("Official CGnet simulation generated non-finite coordinates")
+    if not np.isfinite(prior_retained).all() or not np.isfinite(retained).all():
+        raise RuntimeError("A Brownian comparison branch generated non-finite coordinates")
 
+    prior_sample_paths = []
     sample_paths = []
-    for replica, sample in enumerate(retained):
+    for replica, (prior_sample, sample) in enumerate(zip(prior_retained, retained)):
+        prior_path = args.output_dir / f"official_cgnet_prior_replica_{replica:02d}.npy"
         path = args.output_dir / f"official_cgnet_replica_{replica:02d}.npy"
+        np.save(prior_path, prior_sample)
         np.save(path, sample)
+        prior_sample_paths.append(str(prior_path.resolve()))
         sample_paths.append(str(path.resolve()))
+    np.save(
+        args.output_dir / "official_cgnet_prior_samples.npy",
+        prior_retained.reshape(-1, 5, 3),
+    )
     np.save(args.output_dir / "official_cgnet_samples.npy", retained.reshape(-1, 5, 3))
 
     package_versions = {}
@@ -398,8 +458,23 @@ def main() -> None:
             "frames_per_replica": target_frames,
             "initial_reference_frame_indices": initial_indices.tolist(),
             "sample_units": "angstrom",
+            "matched_branches": {
+                "prior_only": {
+                    "network_energy_disabled_by_zeroing_arch_parameters": True,
+                    "sample_paths": prior_sample_paths,
+                    "simulation_seconds": prior_simulation_seconds,
+                },
+                "prior_plus_cgnet": {
+                    "sample_paths": sample_paths,
+                    "simulation_seconds": full_simulation_seconds,
+                },
+                "same_initial_coordinates": True,
+                "same_brownian_random_seed": simulation_seed,
+                "same_brownian_noise_sequence": True,
+            },
+            "prior_only_sample_paths": prior_sample_paths,
             "sample_paths": sample_paths,
-            "simulation_seconds": simulation_seconds,
+            "simulation_seconds": prior_simulation_seconds + full_simulation_seconds,
         },
         "versions": package_versions,
     }

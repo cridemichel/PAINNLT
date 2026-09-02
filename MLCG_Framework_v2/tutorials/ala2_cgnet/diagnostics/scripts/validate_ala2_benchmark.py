@@ -10,6 +10,8 @@ import json
 import math
 from pathlib import Path
 
+import numpy as np
+
 
 REQUIRED_COLUMNS = {
     "Epoch",
@@ -53,6 +55,18 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
+    parser.add_argument("--expected-cutoff", type=float, default=0.5)
+    parser.add_argument("--expected-spectral-strength", type=float, default=0.0)
+    parser.add_argument(
+        "--expected-architecture-variant",
+        default="painn_canonical_context_silu_v2",
+    )
+    parser.add_argument("--require-all-to-all", action="store_true")
+    parser.add_argument("--require-cgnet-matched-controls", action="store_true")
+    parser.add_argument("--require-ordered-geometry", action="store_true")
+    parser.add_argument(
+        "--expected-ordered-energy-scale-kj-mol", type=float, default=4.184
+    )
     args = parser.parse_args()
     run_dir = args.run_dir.resolve()
 
@@ -60,6 +74,7 @@ def main() -> None:
         "dataset": run_dir / "ala2_dataset.bin",
         "conversion": run_dir / "ala2_conversion_report.json",
         "priors": run_dir / "ala2_priors.json",
+        "reference": run_dir / "ala2_reference.npz",
         "config": run_dir / "ala2_training_config_50ep.json",
         "model": run_dir / "ala2_model.pt",
         "manifest": run_dir / "ala2_model.pt.manifest.json",
@@ -91,8 +106,135 @@ def main() -> None:
         raise ValueError("Ala2 benchmark must use force-only training")
     if int(config.get("num_species", 0)) <= 7:
         raise ValueError("num_species must include atomic-number bead types 6 and 7")
-    if abs(float(config.get("cutoff", 0.0)) - 0.5) > 1.0e-12:
-        raise ValueError("Ala2 benchmark cutoff must be 0.5 nm (5 Angstrom)")
+    if config.get("architecture_variant") != args.expected_architecture_variant:
+        raise ValueError(
+            "Unexpected architecture variant: "
+            f"expected={args.expected_architecture_variant}, "
+            f"got={config.get('architecture_variant')}"
+        )
+    manifest_architecture = manifest.get("architecture", {})
+    if manifest_architecture.get("variant") != config.get("architecture_variant"):
+        raise ValueError("Model manifest/config architecture variant mismatch")
+    if abs(float(config.get("cutoff", 0.0)) - args.expected_cutoff) > 1.0e-12:
+        raise ValueError(
+            f"Ala2 benchmark cutoff must be {args.expected_cutoff} nm; "
+            f"got {config.get('cutoff')}"
+        )
+    spectral_strength = float(config.get("spectral_projection_strength", 0.0))
+    if abs(spectral_strength - args.expected_spectral_strength) > 1.0e-12:
+        raise ValueError(
+            "Unexpected dense-layer spectral projection strength: "
+            f"expected={args.expected_spectral_strength}, got={spectral_strength}"
+        )
+    with np.load(paths["reference"], allow_pickle=False) as reference:
+        coordinates = np.asarray(reference["coordinates_nm"], dtype=np.float64)
+    maximum_pair_distance = max(
+        float(np.max(np.linalg.norm(coordinates[:, j] - coordinates[:, i], axis=1)))
+        for i in range(coordinates.shape[1])
+        for j in range(i + 1, coordinates.shape[1])
+    )
+    all_to_all = float(config["cutoff"]) + 1.0e-12 >= maximum_pair_distance
+    if args.require_all_to_all and not all_to_all:
+        raise ValueError(
+            f"Cutoff {config['cutoff']} nm is not all-to-all: the reference subset "
+            f"contains a pair at {maximum_pair_distance} nm"
+        )
+    if args.require_cgnet_matched_controls:
+        expected_controls = {
+            "hidden_channels": 160,
+            "n_layers": 5,
+            "batch_size": 512,
+            "epochs": 5,
+        }
+        for key, expected in expected_controls.items():
+            if int(config.get(key, -1)) != expected:
+                raise ValueError(f"CGnet-matched control {key} must be {expected}")
+        expected_float_controls = {
+            "learning_rate": 0.003,
+            "epoch_lr_decay_factor": 0.3,
+            "weight_decay": 0.0,
+            "grad_clip_norm": 0.0,
+        }
+        for key, expected in expected_float_controls.items():
+            if not math.isclose(float(config.get(key, math.nan)), expected, abs_tol=1.0e-12):
+                raise ValueError(f"CGnet-matched control {key} must be {expected}")
+    ordered_nodes = int(config.get("ordered_geometry_nodes", 0))
+    ordered_head_layers = int(config.get("ordered_geometry_head_layers", 0))
+    ordered_head_width = int(config.get("ordered_geometry_head_width", 0))
+    ordered_energy_scale = float(
+        config.get("ordered_geometry_energy_scale_kj_mol", 0.0)
+    )
+    ordered_feature_count = (
+        ordered_nodes * (ordered_nodes - 1) // 2
+        + max(ordered_nodes - 2, 0)
+        + 2 * max(ordered_nodes - 3, 0)
+    )
+    if args.require_ordered_geometry:
+        if (ordered_nodes, ordered_head_layers, ordered_head_width) != (5, 5, 160):
+            raise ValueError(
+                "Ordered Ala2 diagnostic requires nodes=5, head_layers=5, head_width=160"
+            )
+        if ordered_feature_count != 17:
+            raise ValueError("Ordered Ala2 geometry head must contain 17 features")
+        if not math.isclose(
+            ordered_energy_scale,
+            args.expected_ordered_energy_scale_kj_mol,
+            rel_tol=0.0,
+            abs_tol=1.0e-12,
+        ):
+            raise ValueError(
+                "Ordered geometry energy scale must match the kcal/mol to kJ/mol "
+                f"conversion: expected={args.expected_ordered_energy_scale_kj_mol}, "
+                f"got={ordered_energy_scale}"
+            )
+        manifest_ordered_scale = float(
+            manifest_architecture.get("ordered_geometry_energy_scale_kj_mol", math.nan)
+        )
+        if not math.isclose(
+            manifest_ordered_scale,
+            ordered_energy_scale,
+            rel_tol=0.0,
+            abs_tol=1.0e-12,
+        ):
+            raise ValueError("Model manifest/config ordered energy scale mismatch")
+        effective = manifest.get("effective_config", {})
+        manifest_feature_count = int(effective.get("ordered_geometry_feature_count", -1))
+        feature_mean = np.asarray(
+            effective.get("ordered_geometry_feature_mean", []), dtype=np.float64
+        )
+        feature_std = np.asarray(
+            effective.get("ordered_geometry_feature_std", []), dtype=np.float64
+        )
+        if manifest_feature_count != ordered_feature_count:
+            raise ValueError(
+                "Manifest ordered feature count disagrees with the architecture: "
+                f"{manifest_feature_count} != {ordered_feature_count}"
+            )
+        if feature_mean.shape != (ordered_feature_count,):
+            raise ValueError("Manifest must contain all 17 ordered feature means")
+        if feature_std.shape != (ordered_feature_count,):
+            raise ValueError("Manifest must contain all 17 ordered feature standard deviations")
+        if not np.all(np.isfinite(feature_mean)) or not np.all(np.isfinite(feature_std)):
+            raise ValueError("Manifest ordered feature statistics must be finite")
+        if np.any(feature_std < 1.0e-6):
+            raise ValueError("Manifest ordered feature standard deviations violate the 1e-6 floor")
+        expected_feature_order = (
+            "all_pair_distances_lexicographic_then_consecutive_angles_then_"
+            "consecutive_dihedral_cos_sin_v1"
+        )
+        if effective.get("ordered_geometry_feature_order") != expected_feature_order:
+            raise ValueError("Unexpected ordered feature convention in model manifest")
+        if effective.get("ordered_geometry_normalization") != (
+            "population_mean_std_training_split_only_floor_1e-6_v1"
+        ):
+            raise ValueError("Ordered feature normalization is not train-only population scaling")
+        if "sin=dot(cross(n1,n2),unit(b1))" not in str(
+            effective.get("ordered_geometry_dihedral_convention", "")
+        ):
+            raise ValueError("Manifest does not record the signed-dihedral convention")
+    else:
+        feature_mean = np.asarray([], dtype=np.float64)
+        feature_std = np.asarray([], dtype=np.float64)
 
     prior_mode = conversion["prior_mode"]
     expected_bonds = 4 if prior_mode == "harmonic" else 0
@@ -154,6 +296,46 @@ def main() -> None:
         "status": "pass",
         "scope": "training_diagnostic_not_thermodynamic_certification",
         "prior_mode": prior_mode,
+        "model_diagnostic": {
+            "comparison_scope": (
+                "ordered_distance_angle_signed_dihedral_head_plus_painn"
+                if ordered_nodes
+                else "cgnet_matched_transferable_controls_not_architecture_equivalence"
+            ),
+            "architecture_variant": str(config["architecture_variant"]),
+            "cutoff_nm": float(config["cutoff"]),
+            "maximum_pair_distance_nm": maximum_pair_distance,
+            "all_to_all_for_every_reference_frame": all_to_all,
+            "hidden_channels": int(config["hidden_channels"]),
+            "interaction_layers": int(config["n_layers"]),
+            "initial_learning_rate": float(config["learning_rate"]),
+            "epoch_lr_decay_factor": float(config.get("epoch_lr_decay_factor", 1.0)),
+            "spectral_projection_strength": spectral_strength,
+            "spectral_projection_power_iterations": int(
+                config.get("spectral_projection_power_iterations", 0)
+            ),
+            "ordered_geometry": {
+                "nodes": ordered_nodes,
+                "feature_count": ordered_feature_count,
+                "distance_features": ordered_nodes * (ordered_nodes - 1) // 2,
+                "consecutive_angle_features": max(ordered_nodes - 2, 0),
+                "signed_dihedral_sin_cos_features": 2 * max(ordered_nodes - 3, 0),
+                "head_layers": ordered_head_layers,
+                "head_width": ordered_head_width,
+                "energy_scale_kj_mol": ordered_energy_scale,
+                "energy_scale_source": "one_kcal_per_mol_equals_4p184_kj_per_mol",
+                "normalization": "training_split_only_buffers_in_model",
+                "energy_mode": "conservative_scalar_sum_with_painn",
+                "feature_mean": feature_mean.tolist(),
+                "feature_std": feature_std.tolist(),
+                "feature_std_min": (
+                    float(np.min(feature_std)) if feature_std.size else None
+                ),
+                "feature_std_max": (
+                    float(np.max(feature_std)) if feature_std.size else None
+                ),
+            },
+        },
         "frames": {"train": 8000, "validation_tail": 2000},
         "epochs": {
             "configured": max_epochs,

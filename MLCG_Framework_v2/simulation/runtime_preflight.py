@@ -93,7 +93,7 @@ def _architecture_from_config(config: dict[str, Any]) -> dict[str, Any]:
     missing = [key for key in required if key not in config]
     if missing:
         raise ValueError(f"Runtime config is missing architecture fields: {missing}")
-    return {
+    architecture = {
         "variant": str(config["architecture_variant"]),
         "num_species": int(config["num_species"]),
         "hidden_channels": int(config["hidden_channels"]),
@@ -102,6 +102,17 @@ def _architecture_from_config(config: dict[str, Any]) -> dict[str, Any]:
         "cutoff": float(config["cutoff"]),
         "toxvaerd_alpha": float(config.get("toxvaerd_alpha", 0.1)),
     }
+    if int(config.get("ordered_geometry_nodes", 0)) > 0:
+        ordered_energy_scale = float(config["ordered_geometry_energy_scale_kj_mol"])
+        if not math.isfinite(ordered_energy_scale) or ordered_energy_scale <= 0.0:
+            raise ValueError("ordered_geometry_energy_scale_kj_mol must be positive and finite")
+        architecture.update({
+            "ordered_geometry_nodes": int(config["ordered_geometry_nodes"]),
+            "ordered_geometry_head_layers": int(config["ordered_geometry_head_layers"]),
+            "ordered_geometry_head_width": int(config["ordered_geometry_head_width"]),
+            "ordered_geometry_energy_scale_kj_mol": ordered_energy_scale,
+        })
+    return architecture
 
 
 def _check_architecture(manifest: dict[str, Any], config: dict[str, Any]) -> None:

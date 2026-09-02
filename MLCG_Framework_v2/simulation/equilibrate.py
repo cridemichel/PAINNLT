@@ -549,6 +549,12 @@ espressomd.painn.activate_painn_potential(
     num_rbf=nn_config["num_rbf"],
     cutoff=nn_config["cutoff"],
     toxvaerd_alpha=args.toxvaerd_alpha,
+    ordered_geometry_nodes=int(nn_config.get("ordered_geometry_nodes", 0)),
+    ordered_geometry_head_layers=int(nn_config.get("ordered_geometry_head_layers", 0)),
+    ordered_geometry_head_width=int(nn_config.get("ordered_geometry_head_width", 0)),
+    ordered_geometry_energy_scale_kj_mol=float(
+        nn_config.get("ordered_geometry_energy_scale_kj_mol", 0.0)
+    ),
     device=args.device,
 )
 

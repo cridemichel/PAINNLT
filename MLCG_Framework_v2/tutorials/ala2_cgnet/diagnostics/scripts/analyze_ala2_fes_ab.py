@@ -191,6 +191,7 @@ def main() -> None:
     parser.add_argument("--prior-samples", required=True, nargs="+", type=Path)
     parser.add_argument("--ml-samples", required=True, nargs="+", type=Path)
     parser.add_argument("--cgnet-samples", nargs="+", type=Path)
+    parser.add_argument("--cgnet-prior-samples", nargs="+", type=Path)
     parser.add_argument("--cgnet-units", choices=("angstrom", "nm"), default="angstrom")
     parser.add_argument("--training-report", type=Path)
     parser.add_argument("--bins", type=int, default=48)
@@ -203,6 +204,13 @@ def main() -> None:
 
     if len(args.prior_samples) != len(args.ml_samples) or len(args.prior_samples) < 2:
         raise ValueError("Provide at least two matched prior/ML trajectory pairs")
+    if args.cgnet_prior_samples is not None and args.cgnet_samples is None:
+        raise ValueError("--cgnet-prior-samples requires --cgnet-samples")
+    if (
+        args.cgnet_prior_samples is not None
+        and len(args.cgnet_prior_samples) != len(args.cgnet_samples)
+    ):
+        raise ValueError("Provide one matched Brownian prior trajectory per CGnet trajectory")
     if (
         args.bins < 8
         or args.pseudocount <= 0.0
@@ -281,6 +289,38 @@ def main() -> None:
         ("Solo prior", prior_total),
         ("Prior + PaiNN", ml_total),
     ]
+    cgnet_prior_counts_per_replica = None
+    cgnet_prior_per_replica = None
+    aggregate_cgnet_prior = None
+    if args.cgnet_prior_samples is not None:
+        cgnet_prior_counts_per_replica = []
+        cgnet_prior_per_replica = []
+        for replica, sample_path in enumerate(args.cgnet_prior_samples):
+            coordinates = load_optional_cgnet(sample_path, args.cgnet_units)
+            phi, psi = torsions(coordinates)
+            counts = histogram(phi, psi, edges)
+            metrics = surface_metrics(
+                reference_counts, counts, args.pseudocount, args.min_reference_count
+            )
+            cgnet_prior_counts_per_replica.append(counts)
+            cgnet_prior_per_replica.append(
+                {
+                    "replica": replica,
+                    "frames": int(len(phi)),
+                    "source": str(sample_path.resolve()),
+                    "metrics": metrics,
+                }
+            )
+        cgnet_prior_counts = sum(
+            cgnet_prior_counts_per_replica, np.zeros_like(reference_counts)
+        )
+        aggregate_cgnet_prior = surface_metrics(
+            reference_counts,
+            cgnet_prior_counts,
+            args.pseudocount,
+            args.min_reference_count,
+        )
+        model_surfaces.append(("Prior armonico\n(Browniano)", cgnet_prior_counts))
     cgnet_metrics = None
     if args.cgnet_samples is not None:
         cgnet_counts_per_replica = []
@@ -327,6 +367,67 @@ def main() -> None:
                 ),
             },
         }
+        if (
+            cgnet_prior_counts_per_replica is not None
+            and cgnet_prior_per_replica is not None
+            and aggregate_cgnet_prior is not None
+        ):
+            brownian_bootstrap = bootstrap_delta(
+                reference_counts,
+                cgnet_prior_counts_per_replica,
+                cgnet_counts_per_replica,
+                args.pseudocount,
+                args.bootstrap_samples,
+            )
+            brownian_js_improvement = float(
+                aggregate_cgnet_prior["js_divergence_nats"]
+                - aggregate_cgnet["js_divergence_nats"]
+            )
+            if (
+                brownian_js_improvement > 0.0
+                and brownian_bootstrap["ci95_low_nats"] > 0.0
+            ):
+                brownian_verdict = "cgnet_correction_improves_fes"
+            elif (
+                brownian_js_improvement < 0.0
+                and brownian_bootstrap["ci95_high_nats"] < 0.0
+            ):
+                brownian_verdict = "cgnet_correction_worsens_fes"
+            else:
+                brownian_verdict = "inconclusive_at_current_sampling"
+            cgnet_metrics["matched_brownian_ab"] = {
+                "control": (
+                    "same official integrator, harmonic priors, initial frames, dt, "
+                    "length, sampling interval and Brownian random seed"
+                ),
+                "prior_only": aggregate_cgnet_prior,
+                "prior_plus_cgnet": aggregate_cgnet,
+                "comparison": {
+                    "js_improvement_nats_positive_is_cgnet_better": (
+                        brownian_js_improvement
+                    ),
+                    "fes_mse_improvement_kbt2_positive_is_cgnet_better": float(
+                        aggregate_cgnet_prior["fes_mse_kbt2"]
+                        - aggregate_cgnet["fes_mse_kbt2"]
+                    ),
+                },
+                "paired_replica_bootstrap": brownian_bootstrap,
+                "scientific_verdict": brownian_verdict,
+                "per_replica": [
+                    {
+                        "replica": replica,
+                        "prior_only": prior_item["metrics"],
+                        "prior_plus_cgnet": full_item["metrics"],
+                        "js_improvement_nats": float(
+                            prior_item["metrics"]["js_divergence_nats"]
+                            - full_item["metrics"]["js_divergence_nats"]
+                        ),
+                    }
+                    for replica, (prior_item, full_item) in enumerate(
+                        zip(cgnet_prior_per_replica, cgnet_per_replica)
+                    )
+                ],
+            }
         if len(cgnet_counts_per_replica) == len(prior_counts):
             vs_prior = bootstrap_delta(
                 reference_counts,

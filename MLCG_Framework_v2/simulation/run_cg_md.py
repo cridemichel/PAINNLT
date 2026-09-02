@@ -633,6 +633,12 @@ if ml_active:
         num_rbf=nn_config["num_rbf"],
         cutoff=nn_config["cutoff"],
         toxvaerd_alpha=args.toxvaerd_alpha,
+        ordered_geometry_nodes=int(nn_config.get("ordered_geometry_nodes", 0)),
+        ordered_geometry_head_layers=int(nn_config.get("ordered_geometry_head_layers", 0)),
+        ordered_geometry_head_width=int(nn_config.get("ordered_geometry_head_width", 0)),
+        ordered_geometry_energy_scale_kj_mol=float(
+            nn_config.get("ordered_geometry_energy_scale_kj_mol", 0.0)
+        ),
         device=args.device,
         precision=args.ml_precision
     )
@@ -1114,6 +1120,13 @@ if simulation_ok:
             "n_layers": int(nn_config["n_layers"]),
             "num_rbf": int(nn_config["num_rbf"]),
             "cutoff_nm": float(nn_config["cutoff"]),
+            "architecture_variant": str(nn_config["architecture_variant"]),
+            "ordered_geometry_nodes": int(nn_config.get("ordered_geometry_nodes", 0)),
+            "ordered_geometry_head_layers": int(nn_config.get("ordered_geometry_head_layers", 0)),
+            "ordered_geometry_head_width": int(nn_config.get("ordered_geometry_head_width", 0)),
+            "ordered_geometry_energy_scale_kj_mol": float(
+                nn_config.get("ordered_geometry_energy_scale_kj_mol", 0.0)
+            ),
         }
         report_path = os.path.abspath(args.painn_profile_report)
         report_dir = os.path.dirname(report_path)

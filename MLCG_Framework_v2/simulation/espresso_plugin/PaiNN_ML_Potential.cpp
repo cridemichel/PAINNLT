@@ -68,11 +68,34 @@ torch::Tensor sum_atom_energies_for_hamiltonian(torch::Tensor const &atom_energi
 
 } // namespace
 
-PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, const std::string& device_str, const std::string& precision_str) 
+PaiNN_ML_Potential::PaiNN_ML_Potential(
+    const std::string& model_path,
+    int num_species,
+    int hidden_channels,
+    int n_layers,
+    int num_rbf,
+    double cutoff,
+    double toxvaerd_alpha,
+    int ordered_geometry_nodes,
+    int ordered_geometry_head_layers,
+    int ordered_geometry_head_width,
+    double ordered_geometry_energy_scale_kj_mol,
+    const std::string& device_str,
+    const std::string& precision_str)
     : m_cutoff(cutoff), m_num_species(num_species) {
     
     // Inizializza il modello C++ con i parametri di architettura
-    model = PaiNNModel(num_species, hidden_channels, n_layers, num_rbf, cutoff, toxvaerd_alpha);
+    model = PaiNNModel(
+        num_species,
+        hidden_channels,
+        n_layers,
+        num_rbf,
+        cutoff,
+        toxvaerd_alpha,
+        ordered_geometry_nodes,
+        ordered_geometry_head_layers,
+        ordered_geometry_head_width,
+        ordered_geometry_energy_scale_kj_mol);
     
     // Carica i pesi dal file .pt salvato durante il training
     try {
@@ -118,7 +141,8 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(const std::string& model_path, int num_sp
                 "' (expected float32 or float64)");
         }
 
-        // Convert both parameters and floating buffers (including energy_scale)
+        // Convert both parameters and floating buffers (including the independent
+        // PaiNN and ordered-geometry energy scales)
         // before moving the model to its execution device.  The float64 mode is
         // diagnostic: it promotes the trained FP32 weights and removes FP32
         // roundoff from the forward/autograd evaluation without retraining.

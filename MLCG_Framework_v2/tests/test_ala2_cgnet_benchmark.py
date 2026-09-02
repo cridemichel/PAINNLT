@@ -163,6 +163,129 @@ class Ala2CgnetBenchmarkTests(unittest.TestCase):
         self.assertEqual(validator.classify_skill(0.07), "moderate")
         self.assertEqual(validator.classify_skill(0.15), "strong")
 
+    def test_alltoall_spectral_diagnostic_is_controlled(self):
+        config_path = (
+            ROOT
+            / "tutorials"
+            / "ala2_cgnet"
+            / "diagnostics"
+            / "configs"
+            / "ala2_training_config_painn_cgnetmatched_5ep.json"
+        )
+        baseline_path = config_path.with_name("ala2_training_config_50ep.json")
+        config = json.loads(config_path.read_text())
+        baseline = json.loads(baseline_path.read_text())
+        changed = {key for key in set(config) | set(baseline) if config.get(key) != baseline.get(key)}
+        self.assertEqual(
+            changed,
+            {
+                "cutoff",
+                "early_stopping_patience",
+                "epoch_lr_decay_factor",
+                "epochs",
+                "grad_clip_norm",
+                "hidden_channels",
+                "learning_rate",
+                "reduce_lr_patience",
+                "spectral_projection_strength",
+                "spectral_projection_power_iterations",
+            },
+        )
+        self.assertEqual(config["cutoff"], 1.0)
+        self.assertEqual(config["hidden_channels"], 160)
+        self.assertEqual(config["learning_rate"], 0.003)
+        self.assertEqual(config["epoch_lr_decay_factor"], 0.3)
+        self.assertEqual(config["epochs"], 5)
+        self.assertEqual(config["grad_clip_norm"], 0.0)
+        self.assertEqual(config["spectral_projection_strength"], 4.0)
+        self.assertEqual(config["spectral_projection_power_iterations"], 8)
+
+        runner = (SCRIPTS / "04_test_ala2_painn_alltoall_spectral.sh").read_text()
+        self.assertIn("ALA2_ALLTOALL_SOURCE_RUN_DIR", runner)
+        self.assertIn("--require-all-to-all", runner)
+        self.assertIn("--fes-only", runner)
+        trainer = (ROOT / "training" / "train_painn.cpp").read_text()
+        self.assertIn("project_dense_spectral_norms", trainer)
+        self.assertIn('name == "embedding.weight"', trainer)
+        self.assertIn("spectral_projection_strength", trainer)
+        self.assertIn("epoch_lr_decay_factor", trainer)
+
+    def test_ordered_geometry_head_is_chirality_aware_and_bound_to_runtime(self):
+        config_path = (
+            ROOT
+            / "tutorials"
+            / "ala2_cgnet"
+            / "diagnostics"
+            / "configs"
+            / "ala2_training_config_painn_ordered_geometry_5ep.json"
+        )
+        config = json.loads(config_path.read_text())
+        self.assertEqual(config["architecture_variant"], "painn_ordered_geometry_tanh_v2")
+        self.assertEqual(config["ordered_geometry_nodes"], 5)
+        self.assertEqual(config["ordered_geometry_head_layers"], 5)
+        self.assertEqual(config["ordered_geometry_head_width"], 160)
+        self.assertEqual(config["ordered_geometry_energy_scale_kj_mol"], 4.184)
+        self.assertAlmostEqual(
+            config["ordered_geometry_energy_scale_kj_mol"],
+            builder.KCAL_PER_MOL_ANGSTROM_TO_KJ_PER_MOL_NM * 0.1,
+            places=12,
+        )
+        feature_count = 5 * 4 // 2 + (5 - 2) + 2 * (5 - 3)
+        self.assertEqual(feature_count, 17)
+
+        coordinates = self.synthetic_coordinates(frames=1)[0]
+
+        def signed_dihedral(points):
+            b0 = points[1] - points[0]
+            b1 = points[2] - points[1]
+            b2 = points[3] - points[2]
+            n1 = np.cross(b0, b1)
+            n2 = np.cross(b1, b2)
+            denominator = np.linalg.norm(n1) * np.linalg.norm(n2)
+            cosine = np.dot(n1, n2) / denominator
+            sine = np.dot(np.cross(n1, n2), b1 / np.linalg.norm(b1)) / denominator
+            return cosine, sine
+
+        reflected = coordinates.copy()
+        reflected[:, 2] *= -1.0
+        cosine, sine = signed_dihedral(coordinates[:4])
+        reflected_cosine, reflected_sine = signed_dihedral(reflected[:4])
+        self.assertAlmostEqual(cosine, reflected_cosine, places=12)
+        self.assertAlmostEqual(sine, -reflected_sine, places=12)
+        self.assertGreater(abs(sine), 1.0e-3)
+
+        header = (ROOT / "training" / "PaiNN_Architecture.hpp").read_text()
+        self.assertIn("PAINN_ORDERED_GEOMETRY_VARIANT", header)
+        self.assertIn("ordered_geometry_features", header)
+        self.assertIn("torch::linalg_cross(normal_1, normal_2, 1)", header)
+        self.assertIn("ordered_geometry_mean", header)
+        self.assertIn("* ordered_geometry_energy_scale", header)
+        self.assertNotIn("return (raw - reference) * energy_scale;", header)
+        trainer = (ROOT / "training" / "train_painn.cpp").read_text()
+        self.assertIn("fit_ordered_geometry_statistics", trainer)
+        self.assertIn("normalization fitted on TRAIN only", trainer)
+        self.assertIn('effective_config["ordered_geometry_feature_mean"]', trainer)
+        manifest_writer = (ROOT / "training" / "create_model_manifest.py").read_text()
+        self.assertIn("required_statistics", manifest_writer)
+        self.assertIn("Do not recreate this manifest from config alone", manifest_writer)
+        runner = (SCRIPTS / "05_test_ala2_painn_ordered_geometry.sh").read_text()
+        self.assertIn("--require-ordered-geometry", runner)
+        runtime = (ROOT / "simulation" / "run_cg_md.py").read_text()
+        self.assertIn('ordered_geometry_nodes=int(nn_config.get("ordered_geometry_nodes", 0))', runtime)
+        self.assertIn('nn_config.get("ordered_geometry_energy_scale_kj_mol", 0.0)', runtime)
+        cython_api = (ROOT / "simulation" / "espresso_plugin" / "painn.pyx").read_text()
+        self.assertLess(
+            cython_api.index('device: str = "auto"'),
+            cython_api.index("ordered_geometry_nodes: int = 0"),
+        )
+        self.assertLess(
+            cython_api.index('device: str = "auto"'),
+            cython_api.index("ordered_geometry_energy_scale_kj_mol: float = 0.0"),
+        )
+        documentation = (ROOT / "tutorials" / "ala2_cgnet" / "ORDERED_GEOMETRY_HEAD.md").read_text()
+        self.assertIn("Train-only normalization", documentation)
+        self.assertIn("Fail-closed runtime contract", documentation)
+
     def test_runtime_documents_follow_framework_contract(self):
         coordinates = self.synthetic_coordinates()
         self.assertGreater(builder.minimum_nonbonded_distance(coordinates), 0.22)
@@ -246,10 +369,20 @@ class Ala2CgnetBenchmarkTests(unittest.TestCase):
         self.assertIn("LEARNING_RATE = 0.003", source)
         self.assertIn("LIPSCHITZ_STRENGTH = 4.0", source)
         self.assertIn("Simulation(", source)
+        self.assertIn("Brownian branch 1/2: harmonic prior only", source)
+        self.assertIn("same_brownian_random_seed", source)
+        self.assertIn("parameter.zero_()", source)
+        self.assertIn("full_arch_state = state_dict_on_cpu(model.arch)", source)
+        self.assertIn("model.arch.load_state_dict(full_arch_state)", source)
+        self.assertNotIn("copy.deepcopy(model)", source)
         runner = (SCRIPTS / "03_compare_official_cgnet.sh").read_text()
         self.assertIn("--matched-runtime-samples", runner)
+        self.assertIn("--cgnet-prior-samples", runner)
         self.assertIn("--cgnet-samples", runner)
         self.assertNotIn("PYRESSO=", runner)
+        analyzer_source = (SCRIPTS / "analyze_ala2_fes_ab.py").read_text()
+        self.assertIn('"matched_brownian_ab"', analyzer_source)
+        self.assertIn('"cgnet_correction_improves_fes"', analyzer_source)
 
     def test_generic_paired_bootstrap_rewards_candidate(self):
         reference = np.asarray([[50.0, 1.0], [1.0, 25.0]])

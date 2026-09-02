@@ -7,7 +7,7 @@ ALA2_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 TRAINING_RUN_DIR="${ALA2_TRAINING_RUN_DIR:-${ALA2_DIR}/diagnostics/smoke/cgnet_harmonic_50ep}"
 AB_RUN_DIR="${ALA2_AB_RUN_DIR:-${ALA2_DIR}/diagnostics/smoke/fes_ab_quick_4x50k}"
-RUN_DIR="${ALA2_CGNET_COMPARATOR_RUN_DIR:-${ALA2_DIR}/diagnostics/smoke/official_cgnet_comparator}"
+RUN_DIR="${ALA2_CGNET_COMPARATOR_RUN_DIR:-${ALA2_DIR}/diagnostics/smoke/official_cgnet_brownian_ab}"
 DATA_DIR="${ALA2_DATA_DIR:-${ALA2_DIR}/data}"
 
 CGNET_EPOCHS="${ALA2_CGNET_EPOCHS:-5}"
@@ -90,8 +90,9 @@ PY
     2>&1 | tee "${RUN_DIR}/official_cgnet_stdout.log"
 
 cgnet_samples=("${RUN_DIR}"/official_cgnet_replica_*.npy)
-if [[ ${#cgnet_samples[@]} -ne ${#prior_samples[@]} ]]; then
-    printf '[ERROR] Official CGnet did not produce one trajectory per A/B replica.\n' >&2
+cgnet_prior_samples=("${RUN_DIR}"/official_cgnet_prior_replica_*.npy)
+if [[ ${#cgnet_samples[@]} -ne ${#prior_samples[@]} || ${#cgnet_prior_samples[@]} -ne ${#cgnet_samples[@]} ]]; then
+    printf '[ERROR] Brownian A/B did not produce one prior and one CGnet trajectory per replica.\n' >&2
     exit 2
 fi
 
@@ -99,6 +100,7 @@ fi
     --reference "${TRAINING_RUN_DIR}/ala2_reference.npz" \
     --prior-samples "${prior_samples[@]}" \
     --ml-samples "${ml_samples[@]}" \
+    --cgnet-prior-samples "${cgnet_prior_samples[@]}" \
     --cgnet-samples "${cgnet_samples[@]}" \
     --cgnet-units angstrom \
     --training-report "${TRAINING_RUN_DIR}/ala2_benchmark_report.json" \

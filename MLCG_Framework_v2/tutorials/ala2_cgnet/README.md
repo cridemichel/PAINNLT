@@ -145,7 +145,7 @@ Run this after the A/B trajectories already exist:
 PYTHON_BIN="$(command -v python3)" \
 ALA2_TRAINING_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/cgnet_harmonic_50ep" \
 ALA2_AB_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/fes_ab_quick_4x50k" \
-ALA2_CGNET_COMPARATOR_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/official_cgnet_quick" \
+ALA2_CGNET_COMPARATOR_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/official_cgnet_brownian_ab" \
 bash tutorials/ala2_cgnet/diagnostics/scripts/03_compare_official_cgnet.sh
 ```
 
@@ -153,16 +153,21 @@ The official model is trained on CPU by default because this old reference
 code predates MPS. The system is only five beads, so GPU acceleration is not
 normally useful; `ALA2_CGNET_DEVICE=mps` or `cuda` remains available for an
 explicit experiment. Simulation always uses the official CPU Brownian
-integrator. Its retained frame count is inferred from the completed A/B
-replicas, preventing a comparison with unequal sample counts.
+integrator. The script now runs two matched Brownian branches: harmonic prior
+only and harmonic prior plus CGnet. Both start from the same reference frames
+and reset the official random generator to the same seed, so `dt`, the full
+noise sequence, length and sampling are controlled. Its retained frame count is inferred from
+the completed A/B replicas, preventing a comparison with unequal sample
+counts.
 
 The decisive outputs are:
 
 - `official_cgnet_training_report.json`, including force MSE relative to the
   harmonic-prior baseline;
 - `ala2_painn_vs_official_cgnet_report.json`, including aggregate and paired
-  replica bootstrap comparisons against both prior-only and PaiNN;
-- `ala2_painn_vs_official_cgnet.png`, containing all four FES surfaces.
+  replica bootstrap comparisons against both prior-only and PaiNN, plus the
+  matched Brownian prior-only/CGnet A/B result;
+- `ala2_painn_vs_official_cgnet.png`, containing all five FES surfaces.
 
 A positive
 `js_improvement_vs_painn_nats_positive_is_cgnet_better` means that official
@@ -171,3 +176,92 @@ if the corresponding paired 95% bootstrap interval also excludes zero. This
 public 10,000-frame subset still cannot reproduce the paper's one-million-frame
 production result, but it cleanly tests whether the current failure is specific
 to the PaiNN/framework path.
+
+For the architecture-specific conclusion, use
+`cgnet_external.matched_brownian_ab`. Its
+`js_improvement_nats_positive_is_cgnet_better` compares CGnet with its own
+harmonic prior under the identical official integrator. A positive confidence
+interval demonstrates that the learned CGnet correction, rather than the
+difference between Brownian and ESPResSo dynamics, improves the sampled FES.
+
+## CGnet-matched PaiNN diagnostic
+
+The controlled official result motivates a PaiNN test that transfers every
+CGnet training choice with a direct framework analogue before adding an
+Ala2-specific torsional head. This variant keeps the exact same 10,000 frames,
+residual targets, harmonic priors and 8000/2000 tail split. It uses:
+
+- the cutoff is increased from 0.5 to 1.0 nm; the validator computes the
+  maximum pair distance over all reference frames and refuses the run unless
+  every one of the five beads is connected to every other bead;
+- after each optimizer step, every dense weight matrix is projected onto a
+  spectral-norm ball of strength 4 using deterministic power iteration. The
+  embedding table is excluded. This is separate from the legacy
+  `lipschitz_lambda`, which is a force-magnitude penalty rather than CGnet's
+  dense-layer projection;
+- width 160, five interaction layers, batch size 512, AdamW with zero weight
+  decay, initial learning rate 0.003, a factor-0.3 decay after every epoch, no
+  gradient clipping and five epochs, matching the transferable settings of the
+  pinned official tutorial.
+
+This remains PaiNN, not CGnet: its message-passing/RBF representation and SiLU
+nonlinearity do not become the official standardized distance-angle-dihedral
+features and `tanh` MLP. The report therefore labels the run as a controlled
+architecture diagnostic, not as an equivalent reproduction.
+
+Rebuild the trainer after applying the patch, then run the training stage:
+
+```bash
+cmake --build training/build -j
+
+PYTHON_BIN="$(command -v python3)" \
+TRAINER="$PWD/training/build/train_painn" \
+ALA2_ALLTOALL_SOURCE_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/cgnet_harmonic_50ep" \
+bash tutorials/ala2_cgnet/diagnostics/scripts/04_test_ala2_painn_alltoall_spectral.sh
+```
+
+The script reuses rather than regenerates the baseline dataset and writes a
+fresh `painn_cgnetmatched_5ep` run. First inspect
+`ala2_benchmark_report.json`. If force skill is not materially better, there is
+no reason to spend time on dynamics. If it improves, run the matched quick FES
+stage without retraining:
+
+```bash
+PYTHON_BIN="$(command -v python3)" \
+PYRESSO="$PWD/espresso/build/pypresso" \
+ALA2_ALLTOALL_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/painn_cgnetmatched_5ep" \
+ALA2_ALLTOALL_AB_RUN_DIR="$PWD/tutorials/ala2_cgnet/diagnostics/smoke/painn_cgnetmatched_fes_4x50k" \
+bash tutorials/ala2_cgnet/diagnostics/scripts/04_test_ala2_painn_alltoall_spectral.sh --fes-only
+```
+
+The quick FES stage uses four matched replicas, 25,000 equilibration steps and
+50,000 production steps per branch. It is a screening diagnostic, not the
+final production estimate. Explicit angle/dihedral features are intentionally
+not mixed into that all-to-all diagnostic: its negative result motivates the
+separate architectural intervention below.
+
+## Ordered, chirality-aware geometry head
+
+The all-to-all CGnet-matched PaiNN run remained at approximately the same weak
+residual-force skill as the original PaiNN model, while its strength-4 spectral
+projection never activated. The next diagnostic therefore changes the
+representation rather than the optimizer: `painn_ordered_geometry_tanh_v2`
+adds a conservative train-normalized head containing all ten five-bead
+distances, three consecutive angles and sine/cosine pairs for both ordered
+backbone dihedrals.
+
+The initial `v1` trial reused PaiNN's `824.081` force-RMS multiplier for this
+standardized head and therefore over-scaled its raw CGnet-like energy by about
+197 times relative to the required kcal/mol-to-kJ/mol factor `4.184`. Its
+negative force skill is retained as a diagnostic result, not interpreted as a
+failure of the ordered representation. Version `v2` gives the ordered branch
+an independent `4.184 kJ/mol` energy buffer while leaving the canonical PaiNN
+branch and every other matched control unchanged.
+
+The exact feature order, signed-torsion convention, energy expression,
+train-only normalization and manifest provenance, fail-closed graph contract,
+remaining differences from CGnet and complete commands are documented in
+[ORDERED_GEOMETRY_HEAD.md](ORDERED_GEOMETRY_HEAD.md).
+Existing base PaiNN models retain the original architecture variant and do not
+instantiate this head. The `v1` ordered checkpoint is intentionally rejected
+because it lacks the independent energy-scale buffer.
