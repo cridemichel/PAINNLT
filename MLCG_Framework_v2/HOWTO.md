@@ -23,6 +23,8 @@
 10. [Architettura PaiNN implementata](#10-architettura-painn-implementata)
 11. [Forze e torque predetti dalla rete](#11-forze-e-torque-predetti-dalla-rete)
 12. [Funzione di loss e normalizzazione](#12-funzione-di-loss-e-normalizzazione)
+    - 12.1 [Perché la loss sulle forze non basta, e cosa guardare invece](#121-perché-la-loss-sulle-forze-non-basta-e-cosa-guardare-invece)
+    - 12.2 [Confrontare due modelli: pavimento di rumore e test appaiato](#122-confrontare-due-modelli-pavimento-di-rumore-e-test-appaiato)
 13. [Energy gauge e scala energetica](#13-energy-gauge-e-scala-energetica)
 14. [Formato del dataset binario](#14-formato-del-dataset-binario)
 15. [Manifest del modello e provenance](#15-manifest-del-modello-e-provenance)
@@ -1538,6 +1540,108 @@ L_F^{\mathrm{val}}\approx L_{F,0}^{\mathrm{val}},
 
 il modello non sta ottenendo un vantaggio significativo rispetto alla predizione di forza nulla.
 
+## 12.1 Perché la loss sulle forze non basta, e cosa guardare invece
+
+Il target del force matching non è una funzione dello stato CG. Al variare dei
+gradi di libertà atomistici integrati fuori, a stato CG fissato la forza di
+riferimento resta una variabile aleatoria:
+
+\[
+\mathbf F^\ast = \mathbf f(\mathbf R) + \boldsymbol\varepsilon,
+\qquad
+\mathbf f(\mathbf R) = \langle \mathbf F^\ast \mid \mathbf R\rangle .
+\]
+
+Solo $\mathbf f$, la **forza media**, è apprendibile — ed è anche l'unica parte
+che conta, perché è $-\nabla A$ con $A$ l'energia libera CG: è lei a determinare
+la termodinamica campionata. Il termine $\boldsymbol\varepsilon$ contribuisce
+alla MSE una costante che nessun peso può ridurre (derivazione in
+`MATHEMATICAL_REFERENCE.md` §9.1).
+
+Su TEL22 la frazione di varianza massima spiegabile è dell'ordine dell'1%.
+Conseguenza pratica: `Val_Loss_F_Norm` si muove in una banda utile di pochi
+punti percentuali, e **le differenze fra checkpoint entro quella banda sono in
+larga parte rumore.** Selezionare il modello sul minimo della validation force
+loss significa in buona misura scegliere a caso. Gli script
+`diagnostics/scripts/31_measure_noise_floor.py`,
+`32_measure_noise_floor_local.py` e `33_check_mean_force_signal.py` misurano
+questo pavimento sul proprio dataset; conviene farlo una volta per sistema
+nuovo, prima di interpretare qualunque loss.
+
+Per questo il trainer stampa a ogni epoca, oltre alla loss, due righe:
+
+```
+  [SKILL] forze istantanee vs predittore-zero: 1.16039%
+  [THERMO] curva forza media di coppia: R2=-3.65554 | Pearson=0.740448 | SNR target=4.25903 | bin usati=20/24
+```
+
+`[SKILL]` è $1 - L_F^{\mathrm{val}}/L_{F,0}^{\mathrm{val}}$, cioè il vantaggio
+sul predittore-zero espresso in percentuale. Va letto sapendo che il suo
+massimo raggiungibile è di pochi punti: un valore **negativo** significa che la
+rete predice le forze peggio del predire forza nulla, e da quel punto in poi
+allenare peggiora il modello.
+
+`[THERMO]` misura la forza media. Per ogni coppia di corpi entro cutoff si
+proietta la forza molecolare sull'asse della coppia e si media entro bin
+radiali: mediando, $\boldsymbol\varepsilon$ si cancella come $n^{-1/2}$ e resta
+il segnale. Le tre quantità vanno lette in quest'ordine:
+
+| campo | significato | come leggerlo |
+|---|---|---|
+| `SNR target` | ampiezza della curva target rispetto all'errore standard delle sue medie di bin | **si guarda per primo.** Dipende solo dal dataset e dallo split, quindi è costante fra le epoche. Sotto ~3 la curva non è risolta e `R2` non è interpretabile |
+| `Pearson` | correlazione fra curva predetta e curva target | misura la **forma**, insensibile a un fattore di scala |
+| `R2` | varianza della curva target riprodotta | misura forma **e ampiezza**. 1 = riprodotta, 0 = predice solo la media, < 0 = peggio di una costante |
+| `bin usati` | bin sopra la soglia minima di coppie | se scende molto, il cutoff o il dataset non popolano abbastanza il range radiale |
+
+La combinazione informativa è `Pearson` alto con `R2` negativo: la rete
+azzecca la dipendenza radiale della forza media ma la scala di un fattore
+sbagliato. In quel caso il sospetto va su `energy_scale_source`, perché la
+scala di energia è fissata su $F_{\mathrm{RMS}}$ del training, che è una
+quantità dominata dal rumore (§13).
+
+Le stesse quantità finiscono in `cg_training_log.csv` nelle colonne
+`Val_MeanForce_R2`, `Val_MeanForce_Pearson`, `Val_MeanForce_SNR` e
+`Val_MeanForce_Bins`, così l'andamento si può tracciare a posteriori.
+
+**Regola operativa.** La loss istantanea serve a verificare che
+l'ottimizzazione stia girando; `[THERMO]` serve a decidere se sta imparando
+qualcosa di utile. La selezione finale del modello non si fa su nessuna delle
+due, ma su osservabili termodinamici da traiettorie replicate — vedi §12.2.
+
+## 12.2 Confrontare due modelli: pavimento di rumore e test appaiato
+
+Nessun numero strutturale va confrontato senza il suo pavimento di rumore. Due
+produzioni MD dello stesso identico modello, con gli stessi input e lo stesso
+seed del termostato, divergono per non-determinismo in virgola mobile: su TEL22
+due run identici arrivano a differire di 0.3 nm in 10 ps. Un effetto più
+piccolo di quella differenza non è un effetto.
+
+Il pavimento si misura, non si assume: basta simulare due volte lo stesso
+checkpoint e passare le due traiettorie allo strumento di confronto.
+
+Ogni frame contiene più copie indipendenti dello stesso soluto, che partono
+tutte dalla stessa configurazione equilibrata. La copia $c$ del run A e la copia
+$c$ del run B sono quindi **appaiate**, e questo dà un test esatto di
+permutazione sui segni delle differenze. Lo strumento è
+`diagnostics/scripts/42_paired_copy_compare.py`:
+
+```bash
+python3 diagnostics/scripts/42_paired_copy_compare.py <dataset.bin> \
+    A=<runA>/samples.npz B=<runB>/samples.npz [t0 t1]
+```
+
+Riporta, per finestra temporale e con errore standard sulle copie, due misure
+distinte:
+
+- un **conteggio in banda** (frazione di contatti entro una finestra di
+  distanza). Attenzione: quando la maggior parte dei contatti è già oltre il
+  limite superiore, questo conteggio legge la coda sinistra di una
+  distribuzione che collassa, e una distribuzione più larga e più calda può
+  segnare più alto pur essendo più lontana dal riferimento;
+- la **distanza di Wasserstein-1** dalla distribuzione di riferimento, che non
+  è gonfiabile dalla dispersione. Quando le due misure discordano, è questa a
+  fare fede.
+
 ---
 
 # 13. Energy gauge e scala energetica
@@ -2224,6 +2328,29 @@ Il learning rate non scende sotto circa `1e-6`.
 Numero di epoche senza miglioramento prima dello stop.
 
 Il modello migliore viene salvato quando la validation loss migliora.
+
+> **Avvertenza.** Il criterio è la validation loss sulle forze istantanee, che
+> ha un floor di rumore irriducibile (§12.1): su TEL22 il suo margine utile è
+> di pochi punti percentuali, quindi il minimo che seleziona è determinato in
+> larga parte dal rumore e non identifica il modello migliore. Le conseguenze
+> pratiche sono due. Primo: non fidarsi del checkpoint "best" come scelta
+> finale — va confrontato con gli altri su osservabili termodinamici (§12.2).
+> Secondo: con una patience piccola il training si ferma poco dopo il minimo
+> apparente e i pesi delle epoche successive non sono nemmeno valutabili.
+> Per una diagnosi conviene disattivare lo stop (`early_stopping_patience`
+> molto grande) e usare `checkpoint_every_epochs` per conservare snapshot
+> periodici indipendenti dalla metrica rumorosa.
+
+### `checkpoint_every_epochs`
+
+Salva uno snapshot ogni $N$ epoche, con nome `<modello>.ep<N>.pt`, in modo
+indipendente dall'early stopping. `0` disattiva (comportamento storico).
+
+Serve proprio perché il salvataggio "on improvement" è guidato da una metrica
+rumorosa: senza snapshot periodici i pesi delle epoche successive alla prima
+manciata vengono scartati e resi non valutabili, e non si può più rispondere a
+posteriori alla domanda "un checkpoint più tardo si comporta meglio in
+dinamica?". Con snapshot conservati la domanda diventa un confronto §12.2.
 
 ## 20.3 Loss
 
