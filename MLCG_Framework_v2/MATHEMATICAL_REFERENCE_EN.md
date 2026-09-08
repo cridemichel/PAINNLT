@@ -390,6 +390,128 @@ penalizes weights; `grad_clip_norm` bounds the global gradient norm;
 `early_stopping_patience` stops after no improvement. Split statistics and
 normalization must remain train-only to prevent leakage.
 
+### 9.1 Irreducible target noise and the loss floor
+
+The force-matching target is not a function of the CG state. With $\mathbf R$
+the coarse-grained state and $\mathbf F^*$ the reference generalized force,
+
+$$
+\mathbf F^*=\mathbf f(\mathbf R)+\boldsymbol\varepsilon,\qquad
+\mathbf f(\mathbf R)=\langle\mathbf F^*\mid\mathbf R\rangle,\qquad
+\langle\boldsymbol\varepsilon\mid\mathbf R\rangle=\mathbf 0 .
+$$
+
+$\mathbf f$ is the **mean force**, i.e. $-\nabla_{\mathbf R}A(\mathbf R)$ with
+$A$ the CG free energy: it is the only learnable part and the only one that
+determines the sampled thermodynamics. $\boldsymbol\varepsilon$ collects the
+fluctuations of the integrated-out atomistic degrees of freedom, which remain
+random variables at fixed CG state.
+
+Because the cross term vanishes for $\langle\boldsymbol\varepsilon\mid\mathbf
+R\rangle=\mathbf 0$, the MSE decomposes as
+
+$$
+\operatorname{MSE}(\mathbf F,\mathbf F^*)
+=\underbrace{\langle\|\mathbf F-\mathbf f\|^2\rangle}_{\text{model error}}
++\underbrace{\langle\|\boldsymbol\varepsilon\|^2\rangle}_{\text{irreducible floor}} .
+$$
+
+The second term is weight-independent: no model reduces it. The maximum
+explainable variance fraction is therefore
+
+$$
+R^2_{max}=1-\frac{\langle\|\boldsymbol\varepsilon\|^2\rangle}
+{\operatorname{Var}(\mathbf F^*)} .
+$$
+
+On TEL22 the measured $R^2_{max}$ is of order $10^{-2}$, with an operational
+consequence: `Val_Loss_F_Norm` moves within a useful band of a few percent, and
+differences between checkpoints inside that band are largely noise.
+**Instantaneous-force loss does not rank models reliably and must not be used
+alone for selection.** Estimators of $R^2_{max}$ live in
+`diagnostics/scripts/31_measure_noise_floor.py` (frame level),
+`32_measure_noise_floor_local.py` (local-environment level, invariant
+descriptor) and `33_check_mean_force_signal.py` (mean-force signal amplitude).
+The frame-level estimator degenerates when consecutive frames do not share a
+nearly identical CG configuration: with copies free to translate and rotate,
+raw RMSD is dominated by the rigid degrees of freedom and the estimate carries
+no information.
+
+### 9.2 Pair mean-force curve
+
+To measure $\mathbf f$ rather than $\mathbf F^*$ we exploit
+$\langle\boldsymbol\varepsilon\rangle=\mathbf 0$: averaging over many pairs
+cancels the noise as $n^{-1/2}$ and leaves the systematic part.
+
+For every pair $(m,n)$ of distinct bodies within cutoff, with
+$\mathbf u_{mn}=\mathbf r_{mn}/\|\mathbf r_{mn}\|$, define the projections
+
+$$
+\varphi^*_{mn}=\mathbf F^*_m\cdot\mathbf u_{mn},\qquad
+\varphi_{mn}=\mathbf F_m\cdot\mathbf u_{mn} .
+$$
+
+Pairs are collected into $N_b$ radial bins $B_k$ over $[0,r_c]$ and averaged:
+
+$$
+\bar\varphi^*_k=\frac{1}{n_k}\sum_{(m,n)\in B_k}\varphi^*_{mn},\qquad
+\bar\varphi_k=\frac{1}{n_k}\sum_{(m,n)\in B_k}\varphi_{mn} .
+$$
+
+$\bar\varphi^*_k$ has standard error $s_k/\sqrt{n_k}$, where $s^2_k$ is the
+within-bin variance of $\varphi^*$: averaging cancels
+$\boldsymbol\varepsilon$ and leaves the systematic part. At fixed separation the
+contributions to $\mathbf F^*_m$ from neighbours other than $n$ point in
+directions largely uncorrelated with $\mathbf u_{mn}$ and tend to cancel, while
+the contribution associated with $n$ is systematically along
+$\pm\mathbf u_{mn}$.
+
+**Estimator limits.** $\bar\varphi^*_k$ is not the rigorous pair-PMF derivative,
+for three reasons: (i) cancellation of the other neighbours is approximate, and
+in a folded structure neighbour directions are correlated, leaving a residue;
+(ii) axis and distance are site-site while the projected force is molecular, so
+a body pair with several site pairs within cutoff contributes several times,
+weighted by how many are in range; (iii) the edge list is symmetric by
+construction — every pair appears in both directions — which symmetrizes the
+statistic but does not remove (i) and (ii). $R^2_{mf}$ and $\rho_{mf}$ must
+therefore be read as **relative** measures between prediction and target, which
+pass through the identical construction, and not as the measurement of a
+thermodynamic observable. Only bins with $n_k$ above a threshold
+(`kMeanForceMinPairsPerBin`) enter the comparison; below it the bin average is
+itself noise. The statistics below are weighted by $n_k$, so a better-determined
+bin counts more; $\bar\varphi^*$ and $\bar\varphi$ without index are the global
+weighted means and $W=\sum_k n_k$.
+
+$$
+R^2_{mf}=1-\frac{\sum_k n_k(\bar\varphi_k-\bar\varphi^*_k)^2}
+{\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)^2},\qquad
+\rho_{mf}=\frac{\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)(\bar\varphi_k-\bar\varphi)}
+{\sqrt{\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)^2\;
+\sum_k n_k(\bar\varphi_k-\bar\varphi)^2}} .
+$$
+
+$$
+\mathrm{SNR}=\left[
+\frac{W^{-1}\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)^2}
+{W^{-1}\sum_k n_k\,s^2_k/n_k}
+\right]^{1/2}
+$$
+
+is the RMS amplitude of the target curve relative to the typical standard error
+of its bin averages. It depends only on the target and the split, not on the
+weights: it is constant across epochs of a run and serves as a validity check.
+Below $\mathrm{SNR}\simeq3$ the target curve is unresolved and $R^2_{mf}$ is
+uninterpretable, whatever its value.
+
+The two statistics must be read together because they isolate different errors.
+$\rho_{mf}$ is invariant under rescaling of $\bar\varphi$ and measures only the
+**shape** of the curve; $R^2_{mf}$ also penalizes **amplitude**. High
+$\rho_{mf}$ with negative $R^2_{mf}$ therefore identifies a model that
+reproduces the radial dependence of the mean force but scales it by the wrong
+factor — a diagnosis the instantaneous loss cannot produce, and one to check
+against `energy_scale_source`, since the energy scale is fixed on the training
+$F_{RMS}$, a noise-dominated quantity.
+
 ## 10. Dynamics and thermostat
 
 The mechanical Hamiltonian is
@@ -505,11 +627,22 @@ drift is a separate failure mode.
    frequencies and may worsen stability and the FP32 floor.
 2. Low validation loss does not certify energy conservation; energy-force
    parity and a multi-$dt$ NVE sweep are still required.
-3. $p\simeq2$ certifies numerical order in the tested domain, not scientific
+3. Instantaneous-force loss has an irreducible floor
+   $\langle\|\boldsymbol\varepsilon\|^2\rangle$ (§9.1) that on TEL22 leaves a
+   useful band of a few percent: ranking checkpoints with it largely means
+   ranking noise. Selection must use $R^2_{mf}$ and $\rho_{mf}$ (§9.2) during
+   training, and replicated thermodynamic observables afterwards. An
+   $\mathrm{SNR}<3$ invalidates $R^2_{mf}$ before any other consideration.
+4. Comparing models requires a measured noise floor, not an assumed one: two
+   runs of the same model with the same seed differ by floating-point
+   non-determinism, and an effect smaller than that difference is not an
+   effect. Replicates must be paired over the independent copies present in
+   each frame.
+5. $p\simeq2$ certifies numerical order in the tested domain, not scientific
    accuracy relative to the atomistic distribution.
-4. A larger model is not automatically more physical: capacity, data,
+6. A larger model is not automatically more physical: capacity, data,
    prior/residual decomposition, and timestep must be assessed together.
-5. Manifests and hashes are part of the candidate's mathematical definition:
+7. Manifests and hashes are part of the candidate's mathematical definition:
    they prevent mixing incompatible models, priors, datasets, and checkpoints.
 
 ## 14. Normative source map

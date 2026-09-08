@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <limits>
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
@@ -12,6 +13,7 @@
 #include <cmath>
 #include <chrono>
 #include <array>
+#include <cstdint>
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -24,6 +26,17 @@ using json = nlohmann::json;
 
 // Assicurati di avere questo file nella stessa cartella
 #include "PaiNN_Architecture.hpp"
+
+// Numero di bin radiali della curva di forza media di coppia (metrica
+// termodinamica di validazione).  24 bin su [0, cutoff] danno ~0.05 nm per bin
+// al cutoff tipico di 1.26 nm: abbastanza fini per risolvere la struttura
+// della forza media, abbastanza larghi da avere alcune migliaia di coppie per
+// bin e quindi un SEM piccolo rispetto all'ampiezza del segnale.
+static constexpr int64_t kMeanForceBins = 24;
+// Un bin entra nel confronto solo con almeno questo numero di coppie: sotto
+// questa soglia la media di bin e' dominata dal rumore e degraderebbe R^2
+// senza portare informazione.
+static constexpr double kMeanForceMinPairsPerBin = 200.0;
 
 // =====================================================================
 // 1. STRUTTURE DATI (Siti, Molecole, Frame)
@@ -121,7 +134,15 @@ static SpectralProjectionStats project_dense_spectral_norms(
 // =====================================================================
 // 2. FUNZIONI DI SUPPORTO E BATCHING
 // =====================================================================
-static std::size_t cache_frame_edges(CGFrame& frame, float cutoff) {
+struct EdgeCacheStats {
+    std::size_t directed_edges = 0;
+    std::size_t mandatory_directed_edges_added = 0;
+};
+
+static EdgeCacheStats cache_frame_edges(
+    CGFrame& frame,
+    float cutoff,
+    bool augment_tel22_mandatory_edges) {
     std::vector<const CGSite*> frame_sites;
     std::size_t nsites = 0;
     for (const auto& mol : frame.molecules) nsites += mol.sites.size();
@@ -136,6 +157,27 @@ static std::size_t cache_frame_edges(CGFrame& frame, float cutoff) {
     const float box_x = frame.box[0];
     const float box_y = frame.box[1];
     const float box_z = frame.box[2];
+    std::unordered_set<std::uint64_t> cached_pairs;
+    cached_pairs.reserve(frame_sites.size() * 32);
+
+    const auto pair_key = [](std::size_t i, std::size_t j) {
+        const std::uint64_t low = static_cast<std::uint64_t>(std::min(i, j));
+        const std::uint64_t high = static_cast<std::uint64_t>(std::max(i, j));
+        return (low << 32) | high;
+    };
+    const auto add_directed_pair = [&](std::size_t i, std::size_t j) {
+        if (i >= frame_sites.size() || j >= frame_sites.size() || i == j) {
+            throw std::runtime_error("Invalid TEL22 mandatory topology edge");
+        }
+        if (frame_sites[i]->molecule_id == frame_sites[j]->molecule_id) {
+            throw std::runtime_error("TEL22 mandatory edge must join distinct residues");
+        }
+        if (!cached_pairs.insert(pair_key(i, j)).second) return;
+        frame.edge_rows_local.push_back(static_cast<int64_t>(i));
+        frame.edge_cols_local.push_back(static_cast<int64_t>(j));
+        frame.edge_rows_local.push_back(static_cast<int64_t>(j));
+        frame.edge_cols_local.push_back(static_cast<int64_t>(i));
+    };
 
     for (std::size_t i = 0; i < frame_sites.size(); ++i) {
         for (std::size_t j = i + 1; j < frame_sites.size(); ++j) {
@@ -149,22 +191,60 @@ static std::size_t cache_frame_edges(CGFrame& frame, float cutoff) {
             dz -= box_z * std::round(dz / box_z);
 
             if ((dx * dx + dy * dy + dz * dz) <= cutoff_sq) {
-                frame.edge_rows_local.push_back(static_cast<int64_t>(i));
-                frame.edge_cols_local.push_back(static_cast<int64_t>(j));
-                frame.edge_rows_local.push_back(static_cast<int64_t>(j));
-                frame.edge_cols_local.push_back(static_cast<int64_t>(i));
+                add_directed_pair(i, j);
             }
         }
     }
-    return frame.edge_rows_local.size();
+
+    std::size_t mandatory_directed_edges_added = 0;
+    if (augment_tel22_mandatory_edges) {
+        if (frame_sites.size() !=
+            static_cast<std::size_t>(TEL22_SHARED_COPIES * TEL22_SHARED_SITES_PER_COPY)) {
+            throw std::runtime_error(
+                "TEL22 mandatory-edge augmentation requires exactly 820 ordered sites");
+        }
+        const auto add_mandatory = [&](int copy, int residue_i, int site_i,
+                                       int residue_j, int site_j) {
+            const std::size_t node_i = static_cast<std::size_t>(
+                copy * TEL22_SHARED_SITES_PER_COPY +
+                TEL22_SITE_OFFSETS[residue_i] + site_i);
+            const std::size_t node_j = static_cast<std::size_t>(
+                copy * TEL22_SHARED_SITES_PER_COPY +
+                TEL22_SITE_OFFSETS[residue_j] + site_j);
+            const std::size_t before = frame.edge_rows_local.size();
+            add_directed_pair(node_i, node_j);
+            mandatory_directed_edges_added += frame.edge_rows_local.size() - before;
+        };
+        for (int copy = 0; copy < TEL22_SHARED_COPIES; ++copy) {
+            for (int residue = 0; residue < 21; ++residue) {
+                add_mandatory(copy, residue, 0, residue + 1, 0);
+            }
+            for (const auto& contact : TEL22_TETRAD_CONTACTS) {
+                add_mandatory(copy, contact[0], 3, contact[1], 3);
+                add_mandatory(copy, contact[0], contact[2], contact[1], contact[3]);
+            }
+            for (const auto& pair : TEL22_STACKING_PAIRS) {
+                add_mandatory(copy, pair[0], 3, pair[1], 3);
+                add_mandatory(copy, pair[0], 5, pair[1], 5);
+            }
+        }
+    }
+    return {frame.edge_rows_local.size(), mandatory_directed_edges_added};
 }
 
-static std::size_t cache_dataset_edges(std::vector<CGFrame>& dataset, float cutoff) {
-    std::size_t total_directed_edges = 0;
+static EdgeCacheStats cache_dataset_edges(
+    std::vector<CGFrame>& dataset,
+    float cutoff,
+    bool augment_tel22_mandatory_edges) {
+    EdgeCacheStats total;
     for (auto& frame : dataset) {
-        total_directed_edges += cache_frame_edges(frame, cutoff);
+        const auto frame_stats = cache_frame_edges(
+            frame, cutoff, augment_tel22_mandatory_edges);
+        total.directed_edges += frame_stats.directed_edges;
+        total.mandatory_directed_edges_added +=
+            frame_stats.mandatory_directed_edges_added;
     }
-    return total_directed_edges;
+    return total;
 }
 
 using OrderedVec3 = std::array<double, 3>;
@@ -197,6 +277,113 @@ static OrderedVec3 ordered_cross(const OrderedVec3& lhs, const OrderedVec3& rhs)
 
 static double ordered_norm(const OrderedVec3& value) {
     return std::sqrt(ordered_dot(value, value) + 1.0e-12);
+}
+
+static bool tel22_is_adenine(int residue) {
+    return residue == 0 || residue == 6 || residue == 12 || residue == 18;
+}
+
+static bool tel22_is_thymine(int residue) {
+    return residue == 4 || residue == 5 || residue == 10 || residue == 11 ||
+           residue == 16 || residue == 17;
+}
+
+static std::vector<std::vector<double>> tel22_shared_features_for_frame(
+    const CGFrame& frame) {
+    constexpr int residues_per_copy = 22;
+    if (frame.molecules.size() !=
+        static_cast<std::size_t>(TEL22_SHARED_COPIES * residues_per_copy)) {
+        throw std::runtime_error("TEL22 shared head requires exactly 220 ordered molecules");
+    }
+
+    for (int copy = 0; copy < TEL22_SHARED_COPIES; ++copy) {
+        for (int residue = 0; residue < residues_per_copy; ++residue) {
+            const int molecule_index = copy * residues_per_copy + residue;
+            const auto& molecule = frame.molecules.at(molecule_index);
+            if (molecule.molecule_id != molecule_index) {
+                throw std::runtime_error(
+                    "TEL22 shared head requires molecule ids ordered as copy*22+residue");
+            }
+            const int expected_sites =
+                (tel22_is_adenine(residue) || tel22_is_thymine(residue)) ? 1 : 6;
+            if (molecule.sites.size() != static_cast<std::size_t>(expected_sites)) {
+                throw std::runtime_error("TEL22 residue/site-count contract mismatch");
+            }
+            for (int site = 0; site < expected_sites; ++site) {
+                const int expected_type = expected_sites == 1
+                    ? (tel22_is_adenine(residue) ? 0 : 1)
+                    : 2 + site;
+                if (molecule.sites.at(site).site_type != expected_type) {
+                    throw std::runtime_error("TEL22 residue/site-type contract mismatch");
+                }
+            }
+        }
+    }
+
+    std::vector<std::vector<double>> all_copy_features;
+    all_copy_features.reserve(TEL22_SHARED_COPIES);
+    for (int copy = 0; copy < TEL22_SHARED_COPIES; ++copy) {
+        const auto site = [&](int residue, int local_site) -> const CGSite& {
+            return frame.molecules.at(copy * residues_per_copy + residue).sites.at(local_site);
+        };
+        const auto displacement = [&](int residue_i, int site_i, int residue_j, int site_j) {
+            return ordered_minimum_image(
+                frame, site(residue_i, site_i), site(residue_j, site_j));
+        };
+
+        std::vector<double> features;
+        features.reserve(TEL22_SHARED_FEATURES);
+        for (int residue = 0; residue < 21; ++residue) {
+            features.push_back(ordered_norm(
+                displacement(residue, 0, residue + 1, 0)));
+        }
+        for (int residue = 0; residue < 20; ++residue) {
+            const auto left = displacement(residue, 0, residue + 1, 0);
+            const auto right = displacement(residue + 2, 0, residue + 1, 0);
+            const double denominator = std::sqrt(
+                ordered_dot(left, left) * ordered_dot(right, right) + 1.0e-12);
+            features.push_back(std::acos(std::clamp(
+                ordered_dot(left, right) / denominator, -0.9999999, 0.9999999)));
+        }
+        std::vector<double> dihedral_cosines;
+        std::vector<double> dihedral_sines;
+        for (int residue = 0; residue < 19; ++residue) {
+            const auto b0 = displacement(residue + 1, 0, residue, 0);
+            const auto b1 = displacement(residue + 2, 0, residue + 1, 0);
+            const auto b2 = displacement(residue + 3, 0, residue + 2, 0);
+            const auto normal_1 = ordered_cross(b0, b1);
+            const auto normal_2 = ordered_cross(b1, b2);
+            const double normal_product = std::sqrt(
+                ordered_dot(normal_1, normal_1) * ordered_dot(normal_2, normal_2) +
+                1.0e-12);
+            dihedral_cosines.push_back(std::clamp(
+                ordered_dot(normal_1, normal_2) / normal_product, -1.0, 1.0));
+            const auto normal_cross = ordered_cross(normal_1, normal_2);
+            const double b1_norm = ordered_norm(b1);
+            const OrderedVec3 b1_unit{
+                b1[0] / b1_norm, b1[1] / b1_norm, b1[2] / b1_norm};
+            dihedral_sines.push_back(std::clamp(
+                ordered_dot(normal_cross, b1_unit) / normal_product, -1.0, 1.0));
+        }
+        features.insert(features.end(), dihedral_cosines.begin(), dihedral_cosines.end());
+        features.insert(features.end(), dihedral_sines.begin(), dihedral_sines.end());
+
+        for (const auto& contact : TEL22_TETRAD_CONTACTS) {
+            features.push_back(ordered_norm(
+                displacement(contact[0], 3, contact[1], 3)));
+            features.push_back(ordered_norm(
+                displacement(contact[0], contact[2], contact[1], contact[3])));
+        }
+        for (const auto& pair : TEL22_STACKING_PAIRS) {
+            features.push_back(ordered_norm(displacement(pair[0], 3, pair[1], 3)));
+            features.push_back(ordered_norm(displacement(pair[0], 5, pair[1], 5)));
+        }
+        if (features.size() != TEL22_SHARED_FEATURES) {
+            throw std::runtime_error("Internal TEL22 CPU feature-count mismatch");
+        }
+        all_copy_features.push_back(std::move(features));
+    }
+    return all_copy_features;
 }
 
 static std::vector<double> ordered_geometry_features_for_frame(
@@ -273,24 +460,34 @@ static std::vector<double> ordered_geometry_features_for_frame(
 static std::pair<std::vector<float>, std::vector<float>> fit_ordered_geometry_statistics(
     const std::vector<CGFrame>& train_dataset,
     int ordered_nodes,
-    bool cgnet_feature_order) {
+    bool cgnet_feature_order,
+    bool tel22_shared_geometry) {
     if (train_dataset.empty()) {
         throw std::runtime_error("Cannot fit ordered geometry statistics on an empty train set");
     }
-    const std::size_t feature_count = static_cast<std::size_t>(
-        ordered_nodes * (ordered_nodes - 1) / 2 +
-        (ordered_nodes - 2) + 2 * (ordered_nodes - 3));
+    const std::size_t feature_count = tel22_shared_geometry
+        ? static_cast<std::size_t>(TEL22_SHARED_FEATURES)
+        : static_cast<std::size_t>(
+              ordered_nodes * (ordered_nodes - 1) / 2 +
+              (ordered_nodes - 2) + 2 * (ordered_nodes - 3));
     std::vector<double> mean(feature_count, 0.0);
     std::vector<double> m2(feature_count, 0.0);
     std::size_t count = 0;
     for (const auto& frame : train_dataset) {
-        const auto features = ordered_geometry_features_for_frame(
-            frame, ordered_nodes, cgnet_feature_order);
-        ++count;
-        for (std::size_t feature = 0; feature < feature_count; ++feature) {
-            const double delta = features[feature] - mean[feature];
-            mean[feature] += delta / static_cast<double>(count);
-            m2[feature] += delta * (features[feature] - mean[feature]);
+        std::vector<std::vector<double>> samples;
+        if (tel22_shared_geometry) {
+            samples = tel22_shared_features_for_frame(frame);
+        } else {
+            samples.push_back(ordered_geometry_features_for_frame(
+                frame, ordered_nodes, cgnet_feature_order));
+        }
+        for (const auto& features : samples) {
+            ++count;
+            for (std::size_t feature = 0; feature < feature_count; ++feature) {
+                const double delta = features[feature] - mean[feature];
+                mean[feature] += delta / static_cast<double>(count);
+                m2[feature] += delta * (features[feature] - mean[feature]);
+            }
         }
     }
     std::vector<float> mean_float(feature_count);
@@ -624,10 +821,14 @@ static void validate_resume_manifest(
         "num_species", "hidden_channels", "n_layers", "num_rbf"};
     const std::string resume_variant = architecture.value("variant", std::string());
     if (resume_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
-        resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
+        resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT) ||
+        resume_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT)) {
         integer_keys.insert(integer_keys.end(), {
             "ordered_geometry_nodes", "ordered_geometry_head_layers",
             "ordered_geometry_head_width"});
+        if (resume_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT)) {
+            integer_keys.push_back("ordered_geometry_copies");
+        }
     }
     for (const auto& key : integer_keys) {
         if (architecture.at(key).get<int>() != effective_config.at(key).get<int>()) {
@@ -636,7 +837,8 @@ static void validate_resume_manifest(
     }
     std::vector<std::string> floating_keys = {"cutoff", "toxvaerd_alpha"};
     if (resume_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
-        resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
+        resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT) ||
+        resume_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT)) {
         floating_keys.push_back("ordered_geometry_energy_scale_kj_mol");
     }
     for (const auto& key : floating_keys) {
@@ -645,7 +847,8 @@ static void validate_resume_manifest(
             throw std::runtime_error("Cannot resume: model manifest mismatch for " + key);
         }
     }
-    if (resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
+    if (resume_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT) ||
+        resume_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT)) {
         if (architecture.at("ordered_geometry_head_only").get<bool>() !=
                 effective_config.at("ordered_geometry_head_only").get<bool>() ||
             architecture.at("ordered_geometry_weight_initialization").get<std::string>() !=
@@ -653,6 +856,13 @@ static void validate_resume_manifest(
             throw std::runtime_error(
                 "Cannot resume: ordered geometry branch mode or initialization changed");
         }
+    }
+    if (resume_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT) &&
+        previous_effective_config.value(
+            "ordered_geometry_edge_policy", std::string()) !=
+        effective_config.at("ordered_geometry_edge_policy").get<std::string>()) {
+        throw std::runtime_error(
+            "Cannot resume: TEL22 ordered-geometry edge policy changed");
     }
     if (manifest.contains("model_file_size_bytes") &&
         manifest.at("model_file_size_bytes").get<std::uintmax_t>() != file_size_or_zero(model_path)) {
@@ -686,13 +896,19 @@ static void write_model_manifest(
     const std::string manifest_variant =
         effective_config.at("architecture_variant").get<std::string>();
     if (manifest_variant == std::string(PAINN_ORDERED_GEOMETRY_VARIANT) ||
-        manifest_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
+        manifest_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT) ||
+        manifest_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT)) {
         architecture["ordered_geometry_nodes"] = effective_config.at("ordered_geometry_nodes");
         architecture["ordered_geometry_head_layers"] = effective_config.at("ordered_geometry_head_layers");
         architecture["ordered_geometry_head_width"] = effective_config.at("ordered_geometry_head_width");
         architecture["ordered_geometry_energy_scale_kj_mol"] =
             effective_config.at("ordered_geometry_energy_scale_kj_mol");
-        if (manifest_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT)) {
+        if (manifest_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT)) {
+            architecture["ordered_geometry_copies"] =
+                effective_config.at("ordered_geometry_copies");
+        }
+        if (manifest_variant == std::string(CGNET_ORDERED_GEOMETRY_VARIANT) ||
+            manifest_variant == std::string(TEL22_SHARED_GEOMETRY_VARIANT)) {
             architecture["ordered_geometry_head_only"] =
                 effective_config.at("ordered_geometry_head_only");
             architecture["ordered_geometry_weight_initialization"] =
@@ -770,6 +986,7 @@ int main(int argc, char* argv[]) {
     int reduce_lr_patience = 5;
     int batch_size = 16;
     int diagnostic_overfit_frames = 0;
+    int checkpoint_every_epochs = 0;  // 0 = disattivo (comportamento storico)
     bool physical_validation_only = true;
     bool include_decoys_in_train = false;
     bool shuffle_each_epoch = true;
@@ -782,6 +999,7 @@ int main(int argc, char* argv[]) {
     int ordered_geometry_nodes = 0;
     int ordered_geometry_head_layers = 5;
     int ordered_geometry_head_width = 160;
+    int ordered_geometry_copies = 1;
     double ordered_geometry_energy_scale_kj_mol = 0.0;
 
     std::string dataset_path = "cg_dataset.bin";
@@ -832,6 +1050,7 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("grad_clip_norm")) grad_clip_norm = loaded_config["grad_clip_norm"];
         if (loaded_config.contains("batch_size")) batch_size = loaded_config["batch_size"];
         if (loaded_config.contains("diagnostic_overfit_frames")) diagnostic_overfit_frames = loaded_config["diagnostic_overfit_frames"];
+        if (loaded_config.contains("checkpoint_every_epochs")) checkpoint_every_epochs = loaded_config["checkpoint_every_epochs"];
         if (loaded_config.contains("physical_validation_only")) physical_validation_only = loaded_config["physical_validation_only"];
         if (loaded_config.contains("include_decoys_in_train")) include_decoys_in_train = loaded_config["include_decoys_in_train"];
         if (loaded_config.contains("shuffle_each_epoch")) shuffle_each_epoch = loaded_config["shuffle_each_epoch"];
@@ -844,9 +1063,13 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("ordered_geometry_nodes")) ordered_geometry_nodes = loaded_config["ordered_geometry_nodes"];
         if (loaded_config.contains("ordered_geometry_head_layers")) ordered_geometry_head_layers = loaded_config["ordered_geometry_head_layers"];
         if (loaded_config.contains("ordered_geometry_head_width")) ordered_geometry_head_width = loaded_config["ordered_geometry_head_width"];
+        if (loaded_config.contains("ordered_geometry_copies")) ordered_geometry_copies = loaded_config["ordered_geometry_copies"];
         if (loaded_config.contains("ordered_geometry_energy_scale_kj_mol")) ordered_geometry_energy_scale_kj_mol = loaded_config["ordered_geometry_energy_scale_kj_mol"];
         if (batch_size <= 0) {
             throw std::runtime_error("batch_size must be positive");
+        }
+        if (checkpoint_every_epochs < 0) {
+            throw std::runtime_error("checkpoint_every_epochs must be non-negative (0 disables periodic snapshots)");
         }
         if (diagnostic_overfit_frames < 0) {
             throw std::runtime_error("diagnostic_overfit_frames must be non-negative (0 disables tiny-set mode)");
@@ -887,19 +1110,27 @@ int main(int argc, char* argv[]) {
     const std::string base_architecture_variant(PAINN_ARCHITECTURE_VARIANT);
     const std::string ordered_architecture_variant(PAINN_ORDERED_GEOMETRY_VARIANT);
     const std::string cgnet_architecture_variant(CGNET_ORDERED_GEOMETRY_VARIANT);
+    const std::string tel22_shared_architecture_variant(TEL22_SHARED_GEOMETRY_VARIANT);
     const std::string configured_architecture_variant =
         loaded_config.value("architecture_variant", std::string());
     if (configured_architecture_variant != base_architecture_variant &&
         configured_architecture_variant != ordered_architecture_variant &&
-        configured_architecture_variant != cgnet_architecture_variant) {
+        configured_architecture_variant != cgnet_architecture_variant &&
+        configured_architecture_variant != tel22_shared_architecture_variant) {
         throw std::runtime_error(
             "Unsupported training architecture_variant '" + configured_architecture_variant + "'");
     }
     const bool ordered_geometry_enabled =
         configured_architecture_variant == ordered_architecture_variant ||
-        configured_architecture_variant == cgnet_architecture_variant;
+        configured_architecture_variant == cgnet_architecture_variant ||
+        configured_architecture_variant == tel22_shared_architecture_variant;
     const bool ordered_geometry_head_only =
-        configured_architecture_variant == cgnet_architecture_variant;
+        configured_architecture_variant == cgnet_architecture_variant ||
+        configured_architecture_variant == tel22_shared_architecture_variant;
+    const bool tel22_shared_geometry =
+        configured_architecture_variant == tel22_shared_architecture_variant;
+    const std::string ordered_geometry_edge_policy = loaded_config.value(
+        "ordered_geometry_edge_policy", std::string("cutoff_only_v1"));
     if (ordered_geometry_enabled) {
         if (ordered_geometry_nodes < 4 || ordered_geometry_head_layers <= 0 ||
             ordered_geometry_head_width <= 0 ||
@@ -908,6 +1139,19 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error(
                 "Ordered geometry architecture requires ordered_geometry_nodes>=4, positive "
                 "head sizes, and ordered_geometry_energy_scale_kj_mol>0");
+        }
+        if (tel22_shared_geometry &&
+            (ordered_geometry_nodes != TEL22_SHARED_SITES_PER_COPY ||
+             ordered_geometry_copies != TEL22_SHARED_COPIES)) {
+            throw std::runtime_error(
+                "TEL22 shared geometry config requires ordered_geometry_nodes=82 and "
+                "ordered_geometry_copies=10");
+        }
+        if (tel22_shared_geometry &&
+            ordered_geometry_edge_policy != "augment_required_topology_edges_v1") {
+            throw std::runtime_error(
+                "TEL22 shared geometry requires "
+                "ordered_geometry_edge_policy=augment_required_topology_edges_v1");
         }
     } else if (ordered_geometry_nodes != 0) {
         throw std::runtime_error(
@@ -935,6 +1179,7 @@ int main(int argc, char* argv[]) {
     effective_config["grad_clip_norm"] = grad_clip_norm;
     effective_config["batch_size"] = batch_size;
     effective_config["diagnostic_overfit_frames"] = diagnostic_overfit_frames;
+    effective_config["checkpoint_every_epochs"] = checkpoint_every_epochs;
     effective_config["physical_validation_only"] = physical_validation_only;
     effective_config["include_decoys_in_train"] = include_decoys_in_train;
     effective_config["shuffle_each_epoch"] = shuffle_each_epoch;
@@ -949,11 +1194,15 @@ int main(int argc, char* argv[]) {
         ? ordered_geometry_head_layers : 0;
     effective_config["ordered_geometry_head_width"] = ordered_geometry_enabled
         ? ordered_geometry_head_width : 0;
+    effective_config["ordered_geometry_copies"] = ordered_geometry_enabled
+        ? ordered_geometry_copies : 0;
     effective_config["ordered_geometry_energy_scale_kj_mol"] = ordered_geometry_enabled
         ? ordered_geometry_energy_scale_kj_mol : 0.0;
     effective_config["ordered_geometry_head_only"] = ordered_geometry_head_only;
     effective_config["ordered_geometry_weight_initialization"] =
         ordered_geometry_head_only ? "xavier_uniform_weight_default_bias" : "libtorch_default";
+    effective_config["ordered_geometry_edge_policy"] = tel22_shared_geometry
+        ? ordered_geometry_edge_policy : "cutoff_only_v1";
     effective_config["decoy_detection"] = "exact_zero_residual_target_v1";
     effective_config["loss_normalization"] = "train_target_rms_v1";
     effective_config["energy_gauge"] = "isolated_species_zero_v1";
@@ -971,7 +1220,9 @@ int main(int argc, char* argv[]) {
         ordered_geometry_enabled ? ordered_geometry_head_layers : 0,
         ordered_geometry_enabled ? ordered_geometry_head_width : 0,
         ordered_geometry_enabled ? ordered_geometry_energy_scale_kj_mol : 0.0,
-        ordered_geometry_head_only);
+        ordered_geometry_head_only,
+        ordered_geometry_enabled ? ordered_geometry_copies : 1,
+        tel22_shared_geometry);
     std::ifstream f(model_path.c_str());
     if (f.good()) {
         if (!resume_training) {
@@ -1015,7 +1266,8 @@ int main(int argc, char* argv[]) {
         csv_file << "Epoch,Train_Loss,Val_Loss,Train_Loss_F_Norm,Train_Loss_T_Norm,"
                     "Val_Loss_F_Norm,Val_Loss_T_Norm,Train_MAE_F,Train_MAE_T,"
                     "Val_MAE_F,Val_MAE_T,Val_Zero_F_Norm,Val_Zero_T_Norm,Val_Zero_Total,"
-                    "GradNorm_Mean,GradNorm_P50,GradNorm_P95,GradNorm_Max,GradClip_Fraction\n";
+                    "GradNorm_Mean,GradNorm_P50,GradNorm_P95,GradNorm_Max,GradClip_Fraction,"
+                    "Val_MeanForce_R2,Val_MeanForce_Pearson,Val_MeanForce_SNR,Val_MeanForce_Bins\n";
     }
 
     std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
@@ -1028,13 +1280,20 @@ int main(int argc, char* argv[]) {
     }
 
     const auto edge_cache_t0 = std::chrono::steady_clock::now();
-    const std::size_t total_cached_edges = cache_dataset_edges(full_dataset, cutoff);
+    const EdgeCacheStats edge_cache_stats = cache_dataset_edges(
+        full_dataset, cutoff, tel22_shared_geometry);
     const auto edge_cache_t1 = std::chrono::steady_clock::now();
     const double edge_cache_seconds =
         std::chrono::duration<double>(edge_cache_t1 - edge_cache_t0).count();
     std::cout << "[INFO] Neighbor lists cached once for cutoff=" << cutoff
-              << " nm: " << total_cached_edges << " directed edges across "
+              << " nm: " << edge_cache_stats.directed_edges
+              << " directed edges across "
               << full_dataset.size() << " frames in " << edge_cache_seconds << " s.\n";
+    if (tel22_shared_geometry) {
+        std::cout << "[INFO] TEL22 mandatory topology-edge augmentation added "
+                  << edge_cache_stats.mandatory_directed_edges_added
+                  << " directed descriptor edges outside the physical cutoff.\n";
+    }
 
     std::mt19937 g(static_cast<std::mt19937::result_type>(split_seed));
 
@@ -1164,22 +1423,35 @@ int main(int argc, char* argv[]) {
 
     if (ordered_geometry_enabled) {
         const auto statistics = fit_ordered_geometry_statistics(
-            train_dataset, ordered_geometry_nodes, ordered_geometry_head_only);
+            train_dataset, ordered_geometry_nodes, ordered_geometry_head_only,
+            tel22_shared_geometry);
         model->set_ordered_geometry_statistics(
             torch::tensor(statistics.first, torch::kFloat32),
             torch::tensor(statistics.second, torch::kFloat32));
         effective_config["ordered_geometry_feature_count"] = statistics.first.size();
         effective_config["ordered_geometry_feature_mean"] = statistics.first;
         effective_config["ordered_geometry_feature_std"] = statistics.second;
-        effective_config["ordered_geometry_feature_order"] = ordered_geometry_head_only
-            ? "cgnet_all_pair_distances_then_angles_then_all_dihedral_cosines_then_all_dihedral_sines_v1"
-            : "all_pair_distances_lexicographic_then_consecutive_angles_then_consecutive_dihedral_cos_sin_v1";
+        effective_config["ordered_geometry_feature_order"] = tel22_shared_geometry
+            ? "tel22_per_copy_backbone21_angles20_dihedral_cos19_sin19_tetrad36_stacking16_v1"
+            : (ordered_geometry_head_only
+                ? "cgnet_all_pair_distances_then_angles_then_all_dihedral_cosines_then_all_dihedral_sines_v1"
+                : "all_pair_distances_lexicographic_then_consecutive_angles_then_consecutive_dihedral_cos_sin_v1");
         effective_config["ordered_geometry_dihedral_convention"] =
             "b0=x1-x0;b1=x2-x1;b2=x3-x2;n1=b0_cross_b1;n2=b1_cross_b2;sin=dot(cross(n1,n2),unit(b1))/(norm(n1)*norm(n2))";
         effective_config["ordered_geometry_normalization"] =
             "population_mean_std_training_split_only_floor_1e-6_v1";
+        effective_config["ordered_geometry_normalization_samples"] =
+            train_dataset.size() * static_cast<std::size_t>(ordered_geometry_copies);
+        effective_config["ordered_geometry_energy_aggregation"] = tel22_shared_geometry
+            ? "shared_head_sum_over_10_copies_v1"
+            : "single_frame_head_v1";
+        if (tel22_shared_geometry) {
+            effective_config["ordered_geometry_site_contract"] =
+                "10_copies_x_22_residues_x_82_ordered_physical_sites_v1";
+        }
         std::cout << "[INFO] Ordered geometry head enabled: nodes="
                   << ordered_geometry_nodes
+                  << " | copies=" << ordered_geometry_copies
                   << " | features=" << statistics.first.size()
                   << " | head=" << ordered_geometry_head_layers << "x"
                   << ordered_geometry_head_width
@@ -1187,7 +1459,11 @@ int main(int argc, char* argv[]) {
                   << " | independent energy scale="
                   << ordered_geometry_energy_scale_kj_mol << " kJ/mol"
                   << " | learned branches="
-                  << (ordered_geometry_head_only ? "CGnet-exact ordered head only" : "PaiNN + ordered head")
+                  << (tel22_shared_geometry
+                        ? "TEL22 shared topology-aware head only"
+                        : (ordered_geometry_head_only
+                            ? "CGnet-exact ordered head only"
+                            : "PaiNN + ordered head"))
                   << " | initialization="
                   << effective_config["ordered_geometry_weight_initialization"].get<std::string>()
                   << ".\n";
@@ -1525,6 +1801,40 @@ int main(int argc, char* argv[]) {
         float val_mae_torques_tot = 0.0f;
         int val_torque_frames = 0;
 
+        // ── Metrica termodinamica: curva della forza media di coppia ─────────
+        //
+        // PERCHE' SERVE.  La MSE sulle forze istantanee e' dominata dal rumore
+        // irriducibile del coarse graining: il target e' F = f(config) + eps,
+        // dove eps sono le fluttuazioni all-atom non rappresentabili nella
+        // descrizione CG.  Su questo dataset il segnale apprendibile e'
+        // dell'ordine dell'1% della varianza del target, quindi Val_Loss_F_Norm
+        // varia fra checkpoint per ragioni che sono quasi tutte rumore e non
+        // ordina i modelli in modo utile.
+        //
+        // Cio' che il force matching apprende davvero e' la forza MEDIA, che e'
+        // il gradiente dell'energia libera CG: e' quella a determinare la
+        // termodinamica campionata.  Mediando la proiezione della forza
+        // sull'asse di coppia entro bin di distanza, eps si media via (SEM
+        // ~ 1/sqrt(n)) e resta la parte sistematica.
+        //
+        // ATTENZIONE ALL'INTERPRETAZIONE.  La curva binnata NON e' la derivata
+        // rigorosa della PMF di coppia: la cancellazione dei vicini diversi da
+        // quello dell'arco e' approssimata (in una struttura ripiegata le loro
+        // direzioni sono correlate), e l'asse e la distanza sono sito-sito
+        // mentre la forza proiettata e' molecolare, cosi' una coppia di corpi
+        // con piu' coppie di siti entro cutoff pesa piu' volte.  E' una
+        // statistica di confronto ben definita - target e predizione passano
+        // per la costruzione identica - e va letta come misura RELATIVA, non
+        // come osservabile termodinamico.  Dettagli in
+        // MATHEMATICAL_REFERENCE.md §9.2.
+        //
+        // Accumulatori su CPU in float64: le somme per bin coprono ~10^5-10^6
+        // contributi per epoca e in float32 perderebbero cifre significative.
+        torch::Tensor mf_sum_target = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mf_sum_pred   = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mf_sum_tsq    = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mf_count      = torch::zeros({kMeanForceBins}, torch::kFloat64);
+
         std::vector<CGFrame> val_batch_frames;
 
         printf("Validation:\n");
@@ -1612,6 +1922,48 @@ int main(int argc, char* argv[]) {
                     val_torque_frames   += val_batch_frames.size();
                 }
 
+                // ── Accumulo della curva di forza media di coppia ───────────
+                // Per ogni arco entro cutoff si proietta la forza molecolare
+                // del corpo che possiede il sito "row" sull'asse dell'arco e si
+                // accumula nel bin radiale.  La stessa proiezione e' calcolata
+                // su target e predizione, quindi le due curve sono confrontabili
+                // per costruzione.
+                //
+                // La lista archi contiene ogni coppia in ENTRAMBE le direzioni
+                // (add_directed_pair), quindi la coppia contribuisce sia
+                // F_a . u_ab sia F_b . (-u_ab): stesso segno - positivo = corpo
+                // spinto via dal vicino - e la statistica si simmetrizza da se'.
+                //
+                // Il fattore "inter" oggi non filtra nulla: la costruzione del
+                // grafo salta gia' le coppie intra-molecolari.  E' tenuto come
+                // difesa se quella policy cambiasse.
+                {
+                    torch::NoGradGuard no_grad_thermo;
+                    torch::Tensor rij_d = r_ij.detach();
+                    torch::Tensor rlen = rij_d.norm(2, 1);
+                    torch::Tensor uij = rij_d / rlen.unsqueeze(-1).clamp_min(1e-12);
+                    torch::Tensor inter =
+                        (mol_of_row != mol_of_col).to(torch::kFloat32);
+                    torch::Tensor proj_t =
+                        (batch.target_mol_forces.index_select(0, mol_of_row) * uij)
+                            .sum(1) * inter;
+                    torch::Tensor proj_p =
+                        (pred_mol_forces.detach().index_select(0, mol_of_row) * uij)
+                            .sum(1) * inter;
+                    torch::Tensor bin_idx =
+                        (rlen / cutoff * static_cast<double>(kMeanForceBins))
+                            .to(torch::kLong)
+                            .clamp(0, kMeanForceBins - 1);
+                    mf_sum_target += torch::bincount(bin_idx, proj_t, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                    mf_sum_pred   += torch::bincount(bin_idx, proj_p, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                    mf_sum_tsq    += torch::bincount(bin_idx, proj_t * proj_t, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                    mf_count      += torch::bincount(bin_idx, inter, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                }
+
                 progress_bar(static_cast<double>(i + 1) / val_dataset.size());
                 val_batch_frames.clear();
             }
@@ -1629,6 +1981,77 @@ int main(int argc, char* argv[]) {
         float val_loss_t_norm_avg = val_loss_t_norm_tot / val_dataset.size();
         float val_mae_forces_avg = val_mae_forces_tot / val_dataset.size();
         float val_mae_torques_avg = (val_torque_frames > 0) ? (val_mae_torques_tot / val_torque_frames) : 0.0f;
+
+        // ── Riduzione della metrica termodinamica ────────────────────────────
+        // Su ogni bin sufficientemente popolato si confrontano la forza media
+        // target e quella predetta.  Le statistiche sono pesate per il numero
+        // di coppie: un bin con piu' coppie ha una media meglio determinata.
+        //
+        // mf_r2      quanto della VARIAZIONE della forza media col raggio la
+        //            rete riproduce.  1 = curva riprodotta, 0 = predice solo la
+        //            media globale, < 0 = peggio di una costante.
+        // mf_pearson forma della curva, indipendente da un fattore di scala:
+        //            distingue "giusta ma sottostimata" da "sbagliata".
+        // mf_snr     ampiezza della curva target rispetto all'errore standard
+        //            delle sue medie di bin.  E' il controllo di sanita' della
+        //            metrica: sotto ~3 il segnale non e' risolto e mf_r2 non va
+        //            interpretato, per quanto alto o basso risulti.
+        double mf_r2 = std::numeric_limits<double>::quiet_NaN();
+        double mf_pearson = std::numeric_limits<double>::quiet_NaN();
+        double mf_snr = std::numeric_limits<double>::quiet_NaN();
+        int mf_bins_used = 0;
+        {
+            const auto* cnt = mf_count.data_ptr<double>();
+            const auto* st  = mf_sum_target.data_ptr<double>();
+            const auto* sp  = mf_sum_pred.data_ptr<double>();
+            const auto* sq  = mf_sum_tsq.data_ptr<double>();
+            std::vector<double> w, mt, mp, sem2;
+            double wsum = 0.0, wmt = 0.0;
+            for (int64_t b = 0; b < kMeanForceBins; ++b) {
+                if (cnt[b] < kMeanForceMinPairsPerBin) continue;
+                const double n = cnt[b];
+                const double mean_t = st[b] / n;
+                const double mean_p = sp[b] / n;
+                // Varianza delle proiezioni nel bin -> errore standard della media.
+                const double var_t = std::max(0.0, sq[b] / n - mean_t * mean_t);
+                w.push_back(n);
+                mt.push_back(mean_t);
+                mp.push_back(mean_p);
+                sem2.push_back(var_t / n);
+                wsum += n;
+                wmt  += n * mean_t;
+            }
+            mf_bins_used = static_cast<int>(w.size());
+            if (mf_bins_used >= 3 && wsum > 0.0) {
+                const double mt_bar = wmt / wsum;
+                double ss_res = 0.0, ss_tot = 0.0, sem2_bar = 0.0;
+                double wmp = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    ss_res += w[k] * (mp[k] - mt[k]) * (mp[k] - mt[k]);
+                    ss_tot += w[k] * (mt[k] - mt_bar) * (mt[k] - mt_bar);
+                    sem2_bar += w[k] * sem2[k];
+                    wmp += w[k] * mp[k];
+                }
+                sem2_bar /= wsum;
+                if (ss_tot > 0.0) {
+                    mf_r2 = 1.0 - ss_res / ss_tot;
+                    // Ampiezza RMS della curva target / errore standard tipico.
+                    mf_snr = std::sqrt((ss_tot / wsum) / std::max(sem2_bar, 1e-30));
+                }
+                const double mp_bar = wmp / wsum;
+                double cov = 0.0, vt = 0.0, vp = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    const double dt = mt[k] - mt_bar;
+                    const double dp = mp[k] - mp_bar;
+                    cov += w[k] * dt * dp;
+                    vt  += w[k] * dt * dt;
+                    vp  += w[k] * dp * dp;
+                }
+                if (vt > 0.0 && vp > 0.0) {
+                    mf_pearson = cov / std::sqrt(vt * vp);
+                }
+            }
+        }
 
         double grad_norm_mean = 0.0;
         double grad_norm_p50 = 0.0;
@@ -1666,6 +2089,31 @@ int main(int argc, char* argv[]) {
                   << ", T: " << val_loss_t_norm_avg << ")"
                   << " | MAE Forze: " << val_mae_forces_avg
                   << " | MAE Torques: " << val_mae_torques_avg << "\n";
+        // Skill sulle forze istantanee, riferita al predittore-zero: e' la
+        // quantita' che l'early stopping usa, e va letta sapendo che su questo
+        // problema il suo margine utile e' di pochi punti percentuali.
+        if (val_zero_f_norm > 0.0f) {
+            std::cout << "  [SKILL] forze istantanee vs predittore-zero: "
+                      << (100.0 * (1.0 - val_loss_f_norm_avg / val_zero_f_norm))
+                      << "%\n";
+        }
+        // Metrica termodinamica: e' questa a dire se la rete sta imparando la
+        // forza media, cioe' il gradiente dell'energia libera CG.
+        if (mf_bins_used >= 3 && std::isfinite(mf_r2)) {
+            std::cout << "  [THERMO] curva forza media di coppia: R2=" << mf_r2
+                      << " | Pearson=" << mf_pearson
+                      << " | SNR target=" << mf_snr
+                      << " | bin usati=" << mf_bins_used << "/" << kMeanForceBins;
+            if (mf_snr < 3.0) {
+                std::cout << "  <- SNR basso: R2 non interpretabile";
+            }
+            std::cout << "\n";
+        } else {
+            std::cout << "  [THERMO] curva forza media di coppia: non calcolabile ("
+                      << mf_bins_used << " bin sopra "
+                      << static_cast<long>(kMeanForceMinPairsPerBin)
+                      << " coppie; servono almeno 3)\n";
+        }
         if (!epoch_grad_norms.empty()) {
             std::cout << "  [GRAD]  pre-clip mean=" << grad_norm_mean
                       << " | P50=" << grad_norm_p50
@@ -1690,7 +2138,9 @@ int main(int argc, char* argv[]) {
                      << val_zero_total << ","
                      << grad_norm_mean << "," << grad_norm_p50 << ","
                      << grad_norm_p95 << "," << grad_norm_max << ","
-                     << grad_clip_fraction << "\n";
+                     << grad_clip_fraction << ","
+                     << mf_r2 << "," << mf_pearson << ","
+                     << mf_snr << "," << mf_bins_used << "\n";
             csv_file.flush();
         }
 
@@ -1718,6 +2168,23 @@ int main(int argc, char* argv[]) {
             }
         }
         
+        // Snapshot periodico, indipendente dall'early stopping.  Serve perche'
+        // il salvataggio "on improvement" e' guidato dalla val force loss, che su
+        // questo problema ha SNR ~1:300: i pesi delle epoche successive alla
+        // prima manciata verrebbero altrimenti scartati e resi non valutabili.
+        if (checkpoint_every_epochs > 0 && epoch % checkpoint_every_epochs == 0) {
+            std::filesystem::path snapshot_base(model_path);
+            std::filesystem::path snapshot_path =
+                snapshot_base.parent_path() /
+                (snapshot_base.stem().string() + ".ep" + std::to_string(epoch) +
+                 snapshot_base.extension().string());
+            model->to(torch::kCPU);
+            torch::save(model, snapshot_path.string());
+            model->to(device);
+            std::cout << "  ---> [Checkpoint] Snapshot epoca " << epoch << ": "
+                      << snapshot_path.filename().string() << "\n";
+        }
+
         early_stopping.check(model, val_loss_avg, device);
         if (early_stopping.early_stop) {
             std::cout << "[INFO] Addestramento interrotto (Early Stopping).\n";

@@ -1474,6 +1474,102 @@ A useful interpretation is:
 - rare clipping -> safety guard;
 - nearly every batch clipped -> learning rate / scaling / architecture may be poorly conditioned.
 
+## 12.1 Why force loss is not enough, and what to read instead
+
+The force-matching target is not a function of the CG state. As the
+integrated-out atomistic degrees of freedom vary, the reference force at fixed
+CG state remains a random variable:
+
+\[
+\mathbf F^\ast = \mathbf f(\mathbf R) + \boldsymbol\varepsilon,
+\qquad
+\mathbf f(\mathbf R) = \langle \mathbf F^\ast \mid \mathbf R\rangle .
+\]
+
+Only $\mathbf f$, the **mean force**, is learnable — and it is also the only
+part that matters, being $-\nabla A$ with $A$ the CG free energy: it determines
+the sampled thermodynamics. The term $\boldsymbol\varepsilon$ contributes a
+constant to the MSE that no weight can reduce (derivation in
+`MATHEMATICAL_REFERENCE_EN.md` §9.1).
+
+On TEL22 the maximum explainable variance fraction is of order 1%. Practical
+consequence: `Val_Loss_F_Norm` moves within a useful band of a few percent, and
+**differences between checkpoints inside that band are largely noise.**
+Selecting the model at the validation-force-loss minimum is close to choosing at
+random. The scripts `diagnostics/scripts/31_measure_noise_floor.py`,
+`32_measure_noise_floor_local.py` and `33_check_mean_force_signal.py` measure
+this floor on your own dataset; run them once per new system, before
+interpreting any loss.
+
+The trainer therefore prints two extra lines each epoch:
+
+```
+  [SKILL] forze istantanee vs predittore-zero: 1.16039%
+  [THERMO] curva forza media di coppia: R2=-3.65554 | Pearson=0.740448 | SNR target=4.25903 | bin usati=20/24
+```
+
+`[SKILL]` is $1 - L_F^{\mathrm{val}}/L_{F,0}^{\mathrm{val}}$, the advantage over
+the zero predictor in percent. Read it knowing its achievable maximum is a few
+percent: a **negative** value means the network predicts forces worse than
+predicting no force at all, and training further degrades the model.
+
+`[THERMO]` measures the mean force. For every pair of bodies within cutoff the
+molecular force is projected onto the pair axis and averaged within radial bins:
+averaging cancels $\boldsymbol\varepsilon$ as $n^{-1/2}$ and leaves the signal.
+Read the three quantities in this order:
+
+| field | meaning | how to read it |
+|---|---|---|
+| `SNR target` | amplitude of the target curve relative to the standard error of its bin averages | **look at this first.** It depends only on dataset and split, so it is constant across epochs. Below ~3 the curve is unresolved and `R2` is uninterpretable |
+| `Pearson` | correlation between predicted and target curve | measures **shape**, insensitive to a scale factor |
+| `R2` | fraction of target-curve variance reproduced | measures shape **and amplitude**. 1 = reproduced, 0 = predicts only the mean, < 0 = worse than a constant |
+| `bin usati` | bins above the minimum pair count | if it drops sharply, cutoff or dataset do not populate the radial range |
+
+The informative combination is high `Pearson` with negative `R2`: the network
+gets the radial dependence of the mean force right but scales it by the wrong
+factor. In that case suspect `energy_scale_source`, since the energy scale is
+fixed on the training $F_{\mathrm{RMS}}$, a noise-dominated quantity (§13).
+
+The same quantities are written to `cg_training_log.csv` as
+`Val_MeanForce_R2`, `Val_MeanForce_Pearson`, `Val_MeanForce_SNR` and
+`Val_MeanForce_Bins`, so the trend can be plotted afterwards.
+
+**Operational rule.** Instantaneous loss tells you the optimization is running;
+`[THERMO]` tells you whether it is learning something useful. Final model
+selection uses neither, but replicated thermodynamic observables — see §12.2.
+
+## 12.2 Comparing two models: noise floor and paired test
+
+No structural number should be compared without its noise floor. Two MD
+productions of the identical model, with identical inputs and the same
+thermostat seed, diverge through floating-point non-determinism: on TEL22 two
+identical runs reach a 0.3 nm difference within 10 ps. An effect smaller than
+that difference is not an effect.
+
+The floor is measured, not assumed: simulate the same checkpoint twice and pass
+both trajectories to the comparison tool.
+
+Each frame contains several independent copies of the same solute, all starting
+from the same equilibrated configuration. Copy $c$ of run A and copy $c$ of run
+B are therefore **paired**, which gives an exact permutation test over the signs
+of the differences. The tool is
+`diagnostics/scripts/42_paired_copy_compare.py`:
+
+```bash
+python3 diagnostics/scripts/42_paired_copy_compare.py <dataset.bin> \
+    A=<runA>/samples.npz B=<runB>/samples.npz [t0 t1]
+```
+
+It reports, per time window and with a standard error over copies, two distinct
+measures:
+
+- an **in-band count** (fraction of contacts within a distance window).
+  Caution: once most contacts are already beyond the upper bound, this count
+  reads the left tail of a collapsing distribution, and a broader, hotter
+  distribution can score higher while being further from the reference;
+- the **Wasserstein-1 distance** from the reference distribution, which cannot
+  be inflated by dispersion. When the two measures disagree, this one governs.
+
 ---
 
 # 13. Energy gauge and energy scale
@@ -2147,6 +2243,28 @@ multiplicatively (halving in the present implementation) until a small lower bou
 
 Validation plateau length tolerated before stopping. Best-model weights are saved based on validation
 behavior rather than blindly using the final epoch.
+
+> **Caveat.** The criterion is validation loss on instantaneous forces, which
+> has an irreducible noise floor (§12.1): on TEL22 its useful margin is a few
+> percent, so the minimum it selects is largely set by noise and does not
+> identify the best model. Two practical consequences. First, do not trust the
+> "best" checkpoint as the final choice — compare it against the others on
+> thermodynamic observables (§12.2). Second, with a small patience training
+> stops shortly after the apparent minimum and later epochs' weights are never
+> even evaluable. For a diagnostic run, disable stopping (very large
+> `early_stopping_patience`) and use `checkpoint_every_epochs` to retain
+> periodic snapshots independent of the noisy metric.
+
+### `checkpoint_every_epochs`
+
+Saves a snapshot every $N$ epochs as `<model>.ep<N>.pt`, independently of early
+stopping. `0` disables it (historical behavior).
+
+It exists precisely because "on improvement" saving is driven by a noisy
+metric: without periodic snapshots the weights of all epochs after the first few
+are discarded and rendered unevaluable, and the question "does a later
+checkpoint behave better in dynamics?" can no longer be answered after the fact.
+With snapshots retained, that question becomes a §12.2 comparison.
 
 ## 20.3 Loss parameters
 

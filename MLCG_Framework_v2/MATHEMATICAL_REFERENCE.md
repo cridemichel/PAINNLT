@@ -389,6 +389,128 @@ superiore. `reduce_lr_patience` riduce il learning rate dopo plateau;
 `early_stopping_patience` termina dopo mancati miglioramenti. Split e
 normalizzazione devono restare train-only per evitare leakage.
 
+### 9.1 Rumore irriducibile del target e tetto sulla loss
+
+Il target di force matching non è una funzione dello stato CG. Detto
+$\mathbf R$ lo stato coarse grained e $\mathbf F^*$ la forza generalizzata di
+riferimento,
+
+$$
+\mathbf F^*=\mathbf f(\mathbf R)+\boldsymbol\varepsilon,\qquad
+\mathbf f(\mathbf R)=\langle\mathbf F^*\mid\mathbf R\rangle,\qquad
+\langle\boldsymbol\varepsilon\mid\mathbf R\rangle=\mathbf 0 .
+$$
+
+$\mathbf f$ è la **forza media**, cioè $-\nabla_{\mathbf R}A(\mathbf R)$ con $A$
+l'energia libera CG: è l'unica parte apprendibile e l'unica che determina la
+termodinamica campionata. $\boldsymbol\varepsilon$ raccoglie le fluttuazioni dei
+gradi di libertà atomistici integrati fuori, che a stato CG fissato restano
+variabili aleatorie.
+
+Poiché il termine incrociato si annulla per $\langle\boldsymbol\varepsilon\mid
+\mathbf R\rangle=\mathbf 0$, la MSE si decompone come
+
+$$
+\operatorname{MSE}(\mathbf F,\mathbf F^*)
+=\underbrace{\langle\|\mathbf F-\mathbf f\|^2\rangle}_{\text{errore del modello}}
++\underbrace{\langle\|\boldsymbol\varepsilon\|^2\rangle}_{\text{floor irriducibile}} .
+$$
+
+Il secondo termine non dipende dai pesi: nessun modello lo riduce. La frazione
+di varianza massima spiegabile è quindi
+
+$$
+R^2_{max}=1-\frac{\langle\|\boldsymbol\varepsilon\|^2\rangle}
+{\operatorname{Var}(\mathbf F^*)} .
+$$
+
+Su TEL22, $R^2_{max}$ misurato è dell'ordine di $10^{-2}$. Ne segue una
+conseguenza operativa: `Val_Loss_F_Norm` si muove in una banda utile di pochi
+punto percentuali, e le differenze fra checkpoint entro quella banda sono in
+larga parte rumore. **La loss sulle forze istantanee non ordina i modelli in
+modo affidabile e non va usata da sola per la selezione.** Gli stimatori di
+$R^2_{max}$ sono in `diagnostics/scripts/31_measure_noise_floor.py` (a livello
+di frame), `32_measure_noise_floor_local.py` (a livello di ambiente locale,
+descrittore invariante) e `33_check_mean_force_signal.py` (ampiezza del segnale
+di forza media). Lo stimatore a livello di frame degenera quando i frame
+consecutivi non hanno configurazione CG quasi identica: con copie libere di
+traslare e ruotare, l'RMSD grezzo è dominato dai gradi di libertà rigidi e la
+stima non è informativa.
+
+### 9.2 Curva della forza media di coppia
+
+Per misurare $\mathbf f$ invece di $\mathbf F^*$ si sfrutta il fatto che
+$\boldsymbol\varepsilon$ ha media nulla: mediando su molte coppie il rumore si
+cancella come $n^{-1/2}$ e resta la parte sistematica.
+
+Per ogni coppia $(m,n)$ di corpi distinti entro cutoff, con
+$\mathbf u_{mn}=\mathbf r_{mn}/\|\mathbf r_{mn}\|$, si definiscono le proiezioni
+
+$$
+\varphi^*_{mn}=\mathbf F^*_m\cdot\mathbf u_{mn},\qquad
+\varphi_{mn}=\mathbf F_m\cdot\mathbf u_{mn} .
+$$
+
+Le coppie sono raccolte in $N_b$ bin radiali $B_k$ su $[0,r_c]$ e si mediano:
+
+$$
+\bar\varphi^*_k=\frac{1}{n_k}\sum_{(m,n)\in B_k}\varphi^*_{mn},\qquad
+\bar\varphi_k=\frac{1}{n_k}\sum_{(m,n)\in B_k}\varphi_{mn} .
+$$
+
+$\bar\varphi^*_k$ ha errore standard $s_k/\sqrt{n_k}$, dove $s^2_k$ è la
+varianza entro bin di $\varphi^*$: mediando, $\boldsymbol\varepsilon$ si
+cancella e resta la parte sistematica. A separazione fissata i contributi a
+$\mathbf F^*_m$ dei vicini diversi da $n$ puntano in direzioni largamente
+scorrelate da $\mathbf u_{mn}$ e tendono a cancellarsi, mentre il contributo
+associato a $n$ è sistematicamente lungo $\pm\mathbf u_{mn}$.
+
+**Limiti dello stimatore.** $\bar\varphi^*_k$ non è la derivata rigorosa della
+PMF di coppia, per tre ragioni: (i) la cancellazione degli altri vicini è
+approssimata, e in una struttura ripiegata le direzioni dei vicini sono
+correlate, quindi resta un residuo; (ii) l'asse e la distanza sono sito-sito
+mentre la forza proiettata è molecolare, quindi una coppia di corpi con più
+coppie di siti entro cutoff contribuisce più volte, pesata da quante ne ha in
+range; (iii) la lista archi è simmetrica per costruzione — ogni coppia è
+presente in entrambe le direzioni — e questo simmetrizza la statistica ma non
+rimuove (i) e (ii). $R^2_{mf}$ e $\rho_{mf}$ vanno quindi letti come misure
+**relative** fra predizione e target, che passano per la costruzione identica,
+e non come la misura di un osservabile termodinamico. Entrano nel confronto solo i bin con $n_k$ sopra una soglia
+(`kMeanForceMinPairsPerBin`), sotto la quale la media di bin è essa stessa
+rumore. Le statistiche seguenti sono pesate per $n_k$, così un bin meglio
+determinato pesa di più; $\bar\varphi^*$ e $\bar\varphi$ senza indice sono le
+medie pesate globali e $W=\sum_k n_k$.
+
+$$
+R^2_{mf}=1-\frac{\sum_k n_k(\bar\varphi_k-\bar\varphi^*_k)^2}
+{\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)^2},\qquad
+\rho_{mf}=\frac{\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)(\bar\varphi_k-\bar\varphi)}
+{\sqrt{\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)^2\;
+\sum_k n_k(\bar\varphi_k-\bar\varphi)^2}} .
+$$
+
+$$
+\mathrm{SNR}=\left[
+\frac{W^{-1}\sum_k n_k(\bar\varphi^*_k-\bar\varphi^*)^2}
+{W^{-1}\sum_k n_k\,s^2_k/n_k}
+\right]^{1/2}
+$$
+
+è l'ampiezza RMS della curva target rapportata all'errore standard tipico delle
+sue medie di bin. Dipende solo dal target e dallo split, non dai pesi: è
+costante fra le epoche di una stessa run e serve da controllo di validità. Sotto
+$\mathrm{SNR}\simeq3$ la curva target non è risolta e $R^2_{mf}$ non è
+interpretabile, quale che sia il suo valore.
+
+Le due statistiche vanno lette insieme perché isolano errori diversi.
+$\rho_{mf}$ è invariante per riscalamento di $\bar\varphi$ e misura solo la
+**forma** della curva; $R^2_{mf}$ penalizza anche l'**ampiezza**. Quindi
+$\rho_{mf}$ alto con $R^2_{mf}$ negativo identifica un modello che riproduce la
+dipendenza radiale della forza media ma la scala di un fattore sbagliato — una
+diagnosi che la loss istantanea non può produrre, e che va confrontata con
+`energy_scale_source`, dato che la scala di energia è fissata su $F_{RMS}$ del
+training, quantità dominata dal rumore.
+
 ## 10. Dinamica e termostato
 
 La Hamiltoniana meccanica è
@@ -504,11 +626,23 @@ alto è un criterio distinto dallo scaling.
    le frequenze dell'Hamiltoniana e può peggiorare stabilità e floor FP32.
 2. Una validation loss bassa non certifica conservazione energetica: servono
    parity energia-forza e sweep NVE multi-$dt$.
-3. $p\simeq2$ certifica l'ordine numerico nel dominio testato, non l'accuratezza
+3. La loss sulle forze istantanee ha un floor irriducibile
+   $\langle\|\boldsymbol\varepsilon\|^2\rangle$ (§9.1) che su TEL22 lascia una
+   banda utile di pochi punti percentuali: ordinare checkpoint con essa
+   significa in larga parte ordinare rumore. La selezione va fatta su
+   $R^2_{mf}$ e $\rho_{mf}$ (§9.2) durante il training, e su osservabili
+   termodinamici replicati dopo. Un $\mathrm{SNR}<3$ invalida $R^2_{mf}$ prima
+   di ogni altra considerazione.
+4. Un confronto fra modelli richiede un pavimento di rumore misurato, non
+   assunto: due run dello stesso modello con lo stesso seed differiscono per
+   non-determinismo in virgola mobile, e un effetto più piccolo di quella
+   differenza non è un effetto. Le repliche vanno appaiate sulle copie
+   indipendenti presenti in ogni frame.
+5. $p\simeq2$ certifica l'ordine numerico nel dominio testato, non l'accuratezza
    scientifica rispetto alla distribuzione atomistica.
-4. Un modello più grande non è automaticamente più fisico: capacità, dataset,
+6. Un modello più grande non è automaticamente più fisico: capacità, dataset,
    decomposizione prior/residuo e timestep vanno valutati insieme.
-5. Manifest e hash fanno parte della definizione matematica del candidato:
+7. Manifest e hash fanno parte della definizione matematica del candidato:
    impediscono di combinare modello, prior, dataset e checkpoint incompatibili.
 
 ## 14. Sorgenti normativi

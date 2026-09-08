@@ -221,6 +221,109 @@ At 300 K, one contact depth `D` is about 20 `kBT`. Six pair contacts in one idea
 Do not define unfolding as "ESPResSo bond deletion". For TEL22, use geometric/contact-state observables (and, when needed, free-energy or kinetic analysis). Crossing `r_cut` simply means that the switched Morse contribution is zero until the pair re-enters the interaction range.
 
 
+## Reading the training metrics on TEL22
+
+TEL22 is the system where the force-matching noise floor was first quantified in
+this framework, so the numbers below are concrete reference values rather than
+illustrations. The general treatment is in `../../HOWTO_EN.md` §12.1-12.2 and
+`../../MATHEMATICAL_REFERENCE_EN.md` §9.1-9.2.
+
+### The noise floor is about 1%
+
+Run once per system, before interpreting any loss:
+
+```bash
+D=diagnostics/smoke/antiparallel_long_40ep/tel22_dataset.bin
+python3 diagnostics/scripts/33_check_mean_force_signal.py "$D"
+python3 diagnostics/scripts/32_measure_noise_floor_local.py "$D"
+```
+
+On the 1001-frame antiparallel dataset, script 33 reports a mean-force signal
+that is unambiguously real — maximum $|z|=10.9$ against $|z|=2.4$ for the
+shuffled control, which simultaneously rules out a force/configuration
+misalignment and rules out the priors having absorbed everything — with a radial
+pair amplitude of 51.1 against an instantaneous RMS of 887.1, i.e. about 0.33%
+of the instantaneous force variance. The network reaches roughly 1.7%, which is
+consistent: the pair projection sees only the radial component and not the
+angular and many-body terms PaiNN can capture.
+
+Script 31 (frame level) returns $R^2_{max}\approx0$ on this dataset and that
+value must **not** be used: with ten copies free to translate and rotate, its
+lag-1 site RMSD is already 1.55, so consecutive frames do not share a nearly
+identical CG configuration and the estimator is degenerate. Script 32 is
+inconclusive for a different reason — its tightest descriptor bin holds only 88
+pairs and $R^2$ scatters around zero without a trend. Neither is evidence that
+the target is pure noise; script 33 shows it is not.
+
+### What the per-epoch lines look like
+
+Expect a skill peak of order 2% in the first handful of epochs, then monotone
+decay through zero. With `validation_split_mode: "tail"` (the honest temporal
+holdout, 801 train / 200 validation frames):
+
+| epoch | 6 | 10 | 15 | 18 | 20 | 25 | 40 |
+|---|---|---|---|---|---|---|---|
+| `[SKILL]` random split | +1.80% | +1.66% | +0.85% | +0.21% | -0.24% | -1.22% | -6.57% |
+| `[SKILL]` temporal split | +1.66% | +1.36% | +0.60% | -0.32% | -0.44% | -2.18% | -7.14% |
+
+The temporal split costs only about 0.14 percentage points at the peak, so the
+skill is real generalization and not interpolation between temporally adjacent
+frames. Past epoch 18-19 the network predicts forces **worse than predicting
+zero force**.
+
+That crossing is not, however, the point where the model becomes unusable, and
+it is important not to read it that way. Measured on structure, the epoch-20
+checkpoint (skill -0.24%) is statistically **indistinguishable** from the
+epoch-5 one (skill +1.80%) of the same run: paired over the ten copies, the
+differences are +2.2 pp wide-criterion (p=0.465), -0.3 pp strict (p=0.898) and
+-0.062 nm in $W_1$ (p=0.328), with directions that do not even agree. Force
+skill and structural quality are decoupled over a wide range of epochs — which
+is the same conclusion the noise floor predicts, seen from the other side.
+
+What does fail catastrophically is far beyond the crossing: at epoch 40
+(skill -6.6%) the CG-MD trips the safety guardrail after a few picoseconds.
+So the practical rule is not "stop at the crossing" but "the force metric
+cannot rank checkpoints at all — rank them on structure, and check stability
+explicitly".
+
+Because of that, keep `early_stopping_patience` large and set
+`checkpoint_every_epochs: 5`. The val-loss minimum is noise-dominated and the
+snapshots are what make later checkpoints evaluable at all.
+
+### Judging the model: compare against the prior, with error bars
+
+The meaningful TEL22 acceptance test is the one used for the Ala2 CGnet
+comparison — does the learned residual improve a thermodynamic observable over
+the prior, by a margin that survives replication. Run a prior-only production
+and an ML production, then:
+
+```bash
+python3 diagnostics/scripts/42_paired_copy_compare.py \
+    diagnostics/smoke/antiparallel_long_40ep/tel22_dataset.bin \
+    priors=diagnostics/thermo/priors_10kstep/samples.npz \
+    ml=diagnostics/thermo/ml_10kstep/samples.npz
+```
+
+Reference result over the 5-10 ps window, paired over the ten copies
+(all-atom reference: 82.6% in-band):
+
+| measure | prior only | prior + PaiNN | paired delta | p | copies better |
+|---|---|---|---|---|---|
+| Hoogsteen H-bonds, wide | 4.8% | 19.2% | +14.4 pp | 0.002 | 10/10 |
+| Hoogsteen H-bonds, strict | 3.1% | 14.1% | +11.0 pp | 0.002 | 10/10 |
+| $W_1$ from reference | 0.987 nm | 0.341 nm | -0.646 nm | 0.002 | 10/10 |
+
+`p=0.002` is the floor of the exact permutation test on ten paired samples. For
+calibration, the same tool on two productions of the **identical** checkpoint
+returns +2.1 pp with `p=0.172` — correctly "no effect". That is the noise floor
+any claimed improvement must clear; differences of a few percentage points
+between checkpoints do not clear it.
+
+Read $W_1$ rather than the in-band count whenever they disagree. In the 7.5-10 ps
+window 76-82% of pairs have already escaped the upper bound, so the in-band
+count reads the left tail of a collapsing distribution and a hotter, broader
+trajectory can score higher while sitting further from the reference.
+
 ## Artifact cleanup and deduplication audit
 
 See `../TEL22_CLEANUP.md`. Before sharing files between `tel22` and `tel22_IBI`,
