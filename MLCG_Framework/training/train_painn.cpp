@@ -449,6 +449,20 @@ int main(int argc, char* argv[]) {
     
     int lr_patience = reduce_lr_patience; 
     int lr_counter = 0;
+    // Stop quando la rete diventa peggio del predittore-zero: bound duro, non
+    // optimum.  Due epoche consecutive, perche' la skill e' rumorosa.
+    bool stop_when_skill_negative = false;
+    {
+        std::ifstream cfg_probe(config_path);
+        if (cfg_probe.is_open()) {
+            try {
+                nlohmann::json jj; cfg_probe >> jj;
+                if (jj.contains("stop_when_skill_negative"))
+                    stop_when_skill_negative = jj["stop_when_skill_negative"];
+            } catch (...) { /* config gia' validato altrove */ }
+        }
+    }
+    int consecutive_negative_skill = 0;
     float best_val_loss = std::numeric_limits<float>::max();
     
     std::ofstream csv_file("cg_training_log.csv");
@@ -897,6 +911,25 @@ int main(int argc, char* argv[]) {
                       << skill << "%";
             if (skill < 0.0) std::cout << "  <- peggio del non avere rete";
             std::cout << "\n";
+            consecutive_negative_skill = (skill < 0.0) ? consecutive_negative_skill + 1 : 0;
+        }
+        // Abort incondizionato su loss non finita.  Un training divergente non
+        // torna piu' utile: senza questo controllo macinava tutte le epoche
+        // restanti producendo NaN, e la skill NaN non fa scattare il confronto
+        // "skill < 0" (ogni confronto con NaN e' falso), quindi nemmeno lo stop
+        // sulla skill lo intercettava.
+        if (!std::isfinite(val_loss_avg)) {
+            std::cout << "[ERROR] Loss di validazione non finita all'epoca " << epoch
+                      << ": il training e' divergente.  Interrompo.  Cause tipiche: "
+                         "learning_rate troppo alto, grad_clip_norm disattivato, "
+                         "o target con valori non finiti nel dataset.\n";
+            break;
+        }
+
+        if (stop_when_skill_negative && consecutive_negative_skill >= 2) {
+            std::cout << "[INFO] Addestramento interrotto: skill negativa per due "
+                         "epoche consecutive, la rete e' peggio del predittore-zero.\n";
+            break;
         }
 
         if (csv_file.is_open()) {

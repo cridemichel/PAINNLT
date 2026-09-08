@@ -987,6 +987,13 @@ int main(int argc, char* argv[]) {
     int batch_size = 16;
     int diagnostic_overfit_frames = 0;
     int checkpoint_every_epochs = 0;  // 0 = disattivo (comportamento storico)
+    // Stop quando la rete diventa peggio del predittore-zero.  Non e' l'optimum
+    // - quello si trova solo a posteriori su osservabili strutturali - ma e' un
+    // bound duro: oltre quel punto il residuo appreso peggiora le forze rispetto
+    // al non averlo, e nessuno snapshot successivo e' utilizzabile.  Richiede
+    // DUE epoche consecutive negative, perche' la skill ha ~1 punto percentuale
+    // di rumore epoca-su-epoca e una singola lettura negativa non basta.
+    bool stop_when_skill_negative = false;
     bool physical_validation_only = true;
     bool include_decoys_in_train = false;
     bool shuffle_each_epoch = true;
@@ -1051,6 +1058,7 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("batch_size")) batch_size = loaded_config["batch_size"];
         if (loaded_config.contains("diagnostic_overfit_frames")) diagnostic_overfit_frames = loaded_config["diagnostic_overfit_frames"];
         if (loaded_config.contains("checkpoint_every_epochs")) checkpoint_every_epochs = loaded_config["checkpoint_every_epochs"];
+        if (loaded_config.contains("stop_when_skill_negative")) stop_when_skill_negative = loaded_config["stop_when_skill_negative"];
         if (loaded_config.contains("physical_validation_only")) physical_validation_only = loaded_config["physical_validation_only"];
         if (loaded_config.contains("include_decoys_in_train")) include_decoys_in_train = loaded_config["include_decoys_in_train"];
         if (loaded_config.contains("shuffle_each_epoch")) shuffle_each_epoch = loaded_config["shuffle_each_epoch"];
@@ -1180,6 +1188,7 @@ int main(int argc, char* argv[]) {
     effective_config["batch_size"] = batch_size;
     effective_config["diagnostic_overfit_frames"] = diagnostic_overfit_frames;
     effective_config["checkpoint_every_epochs"] = checkpoint_every_epochs;
+    effective_config["stop_when_skill_negative"] = stop_when_skill_negative;
     effective_config["physical_validation_only"] = physical_validation_only;
     effective_config["include_decoys_in_train"] = include_decoys_in_train;
     effective_config["shuffle_each_epoch"] = shuffle_each_epoch;
@@ -1256,6 +1265,7 @@ int main(int argc, char* argv[]) {
     float current_lr = initial_lr; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(weight_decay_val));
     EarlyStopping early_stopping(es_patience, model_path);
+    int consecutive_negative_skill = 0;
     
     int lr_patience = reduce_lr_patience; 
     int lr_counter = 0;
@@ -2163,6 +2173,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "  <- peggio del non avere rete";
             }
             std::cout << "\n";
+            consecutive_negative_skill = (skill < 0.0) ? consecutive_negative_skill + 1 : 0;
         }
         if (!epoch_grad_norms.empty()) {
             std::cout << "  [GRAD]  pre-clip mean=" << grad_norm_mean
@@ -2234,6 +2245,28 @@ int main(int argc, char* argv[]) {
             model->to(device);
             std::cout << "  ---> [Checkpoint] Snapshot epoca " << epoch << ": "
                       << snapshot_path.filename().string() << "\n";
+        }
+
+        // Abort incondizionato su loss non finita.  Un training divergente non
+        // torna piu' utile: senza questo controllo macinava tutte le epoche
+        // restanti producendo NaN, e la skill NaN non fa scattare il confronto
+        // "skill < 0" (ogni confronto con NaN e' falso), quindi nemmeno lo stop
+        // sulla skill lo intercettava.
+        if (!std::isfinite(val_loss_avg)) {
+            std::cout << "[ERROR] Loss di validazione non finita all'epoca " << epoch
+                      << ": il training e' divergente.  Interrompo.  Cause tipiche: "
+                         "learning_rate troppo alto, grad_clip_norm disattivato, "
+                         "o target con valori non finiti nel dataset.\n";
+            break;
+        }
+
+        if (stop_when_skill_negative && consecutive_negative_skill >= 2) {
+            std::cout << "[INFO] Addestramento interrotto: skill sulle forze negativa "
+                      << "per due epoche consecutive, la rete e' peggio del "
+                         "predittore-zero.  Gli snapshot da qui in poi non sono "
+                         "utilizzabili; scegliere fra quelli precedenti su "
+                         "osservabili strutturali.\n";
+            break;
         }
 
         early_stopping.check(model, val_loss_avg, device);

@@ -26,5 +26,6 @@
   "report_grad_norms": true,
   "mps_empty_cache_every_batches": 4,
   "checkpoint_every_epochs": 3,
-  "validation_split_mode": "tail"
+  "validation_split_mode": "tail",
+  "stop_when_skill_negative": true
 }
