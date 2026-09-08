@@ -1,5 +1,6 @@
 import espressomd
 import espressomd.painn
+import re
 import json
 import argparse
 import numpy as np
@@ -541,7 +542,7 @@ system.force_cap = 0
 system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
 
 print("[INFO] Activating ML Potential now that the system is physically relaxed...")
-espressomd.painn.activate_painn_potential(
+_painn_kwargs = dict(
     model_path=args.model,
     num_species=nn_config["num_species"],
     hidden_channels=nn_config["hidden_channels"],
@@ -564,6 +565,50 @@ espressomd.painn.activate_painn_potential(
     ),
     device=args.device,
 )
+# Compatibilita' driver/plugin, identica a quella di run_cg_md.py: il plugin
+# compilato puo' essere piu' vecchio del driver e non conoscere i kwargs
+# ordered-geometry.  Vengono scartati SOLO se il loro valore e' inerte; se
+# portano un valore significativo il run si ferma, perche' ignorarli
+# cambierebbe silenziosamente il modello simulato.  Senza questo blocco
+# l'equilibrazione moriva con TypeError mentre la produzione proseguiva, cioe'
+# la pipeline si spezzava al passo 04.
+_painn_inert_defaults = {
+    "ordered_geometry_nodes": 0,
+    "ordered_geometry_head_layers": 0,
+    "ordered_geometry_head_width": 0,
+    "ordered_geometry_energy_scale_kj_mol": 0.0,
+    "ordered_geometry_head_only": False,
+    "ordered_geometry_copies": 1,
+    "tel22_shared_geometry": False,
+}
+for _ in range(len(_painn_inert_defaults) + 1):
+    try:
+        espressomd.painn.activate_painn_potential(**_painn_kwargs)
+        break
+    except TypeError as _exc:
+        _match = re.search(r"unexpected keyword argument '([^']+)'", str(_exc))
+        if _match is None:
+            raise
+        _bad = _match.group(1)
+        if _bad not in _painn_kwargs:
+            raise
+        _val = _painn_kwargs.pop(_bad)
+        if _bad not in _painn_inert_defaults or _val != _painn_inert_defaults[_bad]:
+            raise SystemExit(
+                f"[FATAL] espressomd.painn non supporta '{_bad}', ma la "
+                f"configurazione lo richiede (valore={_val!r}). Applica il lato "
+                "plugin di PATCH_TEL22_SHARED_CGNET_HEAD.md e ricompila "
+                "ESPResSo: ignorarlo cambierebbe il modello simulato."
+            )
+        print(
+            f"[WARN] espressomd.painn non supporta '{_bad}' (plugin piu' "
+            f"vecchio del driver). Valore inerte {_val!r}: proseguo senza."
+        )
+else:
+    raise SystemExit(
+        "[FATAL] Impossibile attivare il potenziale PaiNN: kwargs non "
+        "supportati oltre il limite di tentativi."
+    )
 
 system.integrator.set_vv()
 system.time_step = args.dt
