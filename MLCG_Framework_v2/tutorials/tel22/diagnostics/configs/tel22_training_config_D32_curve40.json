@@ -10,7 +10,7 @@
   "batch_size": 4,
   "torque_weight": 0.5,
   "grad_clip_norm": 1.0,
-  "early_stopping_patience": 8,
+  "early_stopping_patience": 9999,
   "reduce_lr_patience": 6,
   "weight_decay": 0.0,
   "lipschitz_lambda": 0.0,
@@ -25,6 +25,6 @@
   "mps_empty_cache_every_batches": 4,
   "checkpoint_every_epochs": 4,
   "validation_split_mode": "tail",
-  "stop_when_skill_negative": true,
-  "early_stopping_min_delta": 0.002
+  "stop_when_skill_negative": false,
+  "early_stopping_min_delta": 0.0
 }

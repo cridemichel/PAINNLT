@@ -730,24 +730,47 @@ struct Metrics {
 struct EarlyStopping {
     int patience, counter;
     float best_loss;
+    float min_delta;   // miglioramento minimo perche' conti come tale
     bool early_stop;
     std::string save_path;
 
-    EarlyStopping(int p, std::string path) : 
-        patience(p), counter(0), best_loss(std::numeric_limits<float>::infinity()), 
-        early_stop(false), save_path(path) {}
+    // PERCHE' SERVE min_delta.  Il criterio originale resettava il contatore su
+    // QUALUNQUE miglioramento, anche di 1e-6.  Su questo problema la validation
+    // loss oscilla in una banda di rumore (misurata: ~0.004 in unita'
+    // normalizzate) molto piu' larga del suo trend residuo (~0.0005 su sei
+    // epoche una volta raggiunto il plateau).  Il risultato era che ogni volta
+    // che la patience stava per scadere, il rumore pescava un punto un po' piu'
+    // basso nella banda e azzerava il contatore: l'early stopping non scattava
+    // mai, e il training arrivava al limite di epoche invece di fermarsi al
+    // plateau.  Con min_delta > 0 un miglioramento conta solo se supera il
+    // rumore.  Il modello migliore viene comunque salvato a ogni nuovo minimo,
+    // anche marginale: la soglia governa il CONTATORE, non il salvataggio.
+    EarlyStopping(int p, std::string path, float delta = 0.0f) :
+        patience(p), counter(0), best_loss(std::numeric_limits<float>::infinity()),
+        min_delta(delta), early_stop(false), save_path(path) {}
 
-    void check(PaiNNModel& model, float val_loss, torch::Device device) { 
-        if (val_loss < best_loss) {
+    void check(PaiNNModel& model, float val_loss, torch::Device device) {
+        const bool is_new_min = val_loss < best_loss;
+        const bool is_material = val_loss < best_loss - min_delta;
+        if (is_new_min) {
             best_loss = val_loss;
-            counter = 0;
             model->to(torch::kCPU);
             torch::save(model, save_path);
             model->to(device);
+        }
+        if (is_material) {
+            counter = 0;
             std::cout << "   ---> [Early Stopping] Miglioramento! Modello salvato.\n";
         } else {
             counter++;
-            std::cout << "   ---> [Early Stopping] Nessun miglioramento (" << counter << "/" << patience << ").\n";
+            if (is_new_min) {
+                std::cout << "   ---> [Early Stopping] Nuovo minimo ma sotto min_delta="
+                          << min_delta << " (rumore): modello salvato, contatore "
+                          << counter << "/" << patience << ".\n";
+            } else {
+                std::cout << "   ---> [Early Stopping] Nessun miglioramento ("
+                          << counter << "/" << patience << ").\n";
+            }
             if (counter >= patience) early_stop = true;
         }
     }
@@ -994,6 +1017,8 @@ int main(int argc, char* argv[]) {
     // DUE epoche consecutive negative, perche' la skill ha ~1 punto percentuale
     // di rumore epoca-su-epoca e una singola lettura negativa non basta.
     bool stop_when_skill_negative = false;
+    // Soglia di rumore per l'early stopping.  0 = comportamento storico.
+    float early_stopping_min_delta = 0.0f;
     bool physical_validation_only = true;
     bool include_decoys_in_train = false;
     bool shuffle_each_epoch = true;
@@ -1059,6 +1084,7 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("diagnostic_overfit_frames")) diagnostic_overfit_frames = loaded_config["diagnostic_overfit_frames"];
         if (loaded_config.contains("checkpoint_every_epochs")) checkpoint_every_epochs = loaded_config["checkpoint_every_epochs"];
         if (loaded_config.contains("stop_when_skill_negative")) stop_when_skill_negative = loaded_config["stop_when_skill_negative"];
+        if (loaded_config.contains("early_stopping_min_delta")) early_stopping_min_delta = loaded_config["early_stopping_min_delta"];
         if (loaded_config.contains("physical_validation_only")) physical_validation_only = loaded_config["physical_validation_only"];
         if (loaded_config.contains("include_decoys_in_train")) include_decoys_in_train = loaded_config["include_decoys_in_train"];
         if (loaded_config.contains("shuffle_each_epoch")) shuffle_each_epoch = loaded_config["shuffle_each_epoch"];
@@ -1189,6 +1215,7 @@ int main(int argc, char* argv[]) {
     effective_config["diagnostic_overfit_frames"] = diagnostic_overfit_frames;
     effective_config["checkpoint_every_epochs"] = checkpoint_every_epochs;
     effective_config["stop_when_skill_negative"] = stop_when_skill_negative;
+    effective_config["early_stopping_min_delta"] = early_stopping_min_delta;
     effective_config["physical_validation_only"] = physical_validation_only;
     effective_config["include_decoys_in_train"] = include_decoys_in_train;
     effective_config["shuffle_each_epoch"] = shuffle_each_epoch;
@@ -1264,7 +1291,7 @@ int main(int argc, char* argv[]) {
     // Iperparametri Training 
     float current_lr = initial_lr; 
     torch::optim::AdamW optimizer(model->parameters(), torch::optim::AdamWOptions(initial_lr).weight_decay(weight_decay_val));
-    EarlyStopping early_stopping(es_patience, model_path);
+    EarlyStopping early_stopping(es_patience, model_path, early_stopping_min_delta);
     int consecutive_negative_skill = 0;
     bool skill_was_ever_positive = false;
     

@@ -14,6 +14,12 @@ DEVICE="${DEVICE:-auto}"
 CG_STEPS="${CG_STEPS:-20000}"
 CG_DT="${CG_DT:-0.001}"
 NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
+# Traiettoria strutturata per l'analisi.  run_cg_md.py la scrive SOLO se
+# --sample_npz e' passato: senza, la produzione gira ma non lascia nulla da
+# analizzare, e la g(r), la W1 e il confronto appaiato sulle copie non hanno
+# input.  Lo script diagnostico 35 la passava, questo no.
+SAMPLE_NPZ="${SAMPLE_NPZ:-samples.npz}"
+LOG_INTERVAL="${LOG_INTERVAL:-20}"
 
 cd "${SCRIPT_DIR}"
 
@@ -35,4 +41,19 @@ done
     --dt "${CG_DT}" \
     --kT 2.49 \
     --device "${DEVICE}" \
-    --neighbor_search "${NEIGHBOR_SEARCH}"
+    --neighbor_search "${NEIGHBOR_SEARCH}" \
+    --sample_npz "${SAMPLE_NPZ}" \
+    --log_interval "${LOG_INTERVAL}"
+
+echo
+echo "[DONE] Produzione completata."
+if [ -s "${SAMPLE_NPZ}" ]; then
+    echo "[INFO] Traiettoria per l'analisi: ${SAMPLE_NPZ}"
+    echo "[INFO] Confronto strutturale col riferimento all-atom:"
+    echo "  D=tel22_dataset.bin"
+    echo "  python3 diagnostics/scripts/44_tel22_rdf.py \"\$D\" run=${SAMPLE_NPZ}"
+    echo "  python3 diagnostics/scripts/42_paired_copy_compare.py \"\$D\" run=${SAMPLE_NPZ}"
+else
+    echo "[ERROR] ${SAMPLE_NPZ} non prodotto: l'analisi strutturale non e' possibile." >&2
+    exit 2
+fi

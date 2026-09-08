@@ -48,3 +48,7 @@ GROMACS
 # Stub di provenance lasciati al posto delle copie deduplicate del dataset.
 # Puntano a un master su disco, quindi in git sarebbero rumore.
 *.bin.sha256
+
+# Archivi locali delle run: stesso genere di thermo/ e smoke/, evidenza locale.
+# Contengono copie del config e manifest che altrimenti risulterebbero non tracciati.
+**/tutorials/*/archive_*/
