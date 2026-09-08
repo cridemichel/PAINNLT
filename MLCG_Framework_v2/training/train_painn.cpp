@@ -33,6 +33,21 @@ using json = nlohmann::json;
 // della forza media, abbastanza larghi da avere alcune migliaia di coppie per
 // bin e quindi un SEM piccolo rispetto all'ampiezza del segnale.
 static constexpr int64_t kMeanForceBins = 24;
+// Canale di tipo su cui misurare la curva di forza media, oltre a "tutti".
+//
+// PERCHE' SERVE.  La relazione di Yvon-Born-Green lega la g(r) alla forza media
+// condizionata: -kT d ln g(r)/dr = <f_r>_r.  La curva di forza media di coppia
+// e' quindi la FORMA DIFFERENZIALE della g(r), non un suo surrogato - il che
+// rende possibile una metrica di training equivalente alla g(r) senza dover
+// simulare.  Ma vale canale per canale: sommando tutte le coppie di tipo, gli
+// errori di canali diversi si cancellano, esattamente come la g(r) totale su
+// TEL22 legge 0.92 mentre il canale B3-B3 dei legami di Hoogsteen legge 0.746.
+// Misurare la curva sul canale che porta l'informazione strutturale la rende
+// predittiva; misurarla sul totale no.
+//
+// -1 disattiva la decomposizione (solo la curva su tutte le coppie).
+static constexpr int64_t kMeanForceChannelTypeDefault = -1;
+
 // Un bin entra nel confronto solo con almeno questo numero di coppie: sotto
 // questa soglia la media di bin e' dominata dal rumore e degraderebbe R^2
 // senza portare informazione.
@@ -84,6 +99,78 @@ struct CGBatch {
     
     int num_molecules_in_batch;
 };
+
+// Curva di forza media di RIFERIMENTO, ricavata dalla distribuzione radiale
+// misurata sui frame di validazione invece che dalle forze.
+//
+// PERCHE'.  Entrambe le strade stimano la stessa quantita' (Yvon-Born-Green le
+// lega), ma con rumore molto diverso.  Stimarla dalle forze porta il rumore
+// delle forze istantanee, che su TEL22 hanno RMS ~887 contro un segnale di
+// forza media ~51: 17 a 1, che si media come n^-1/2 ma lascia un SNR marginale
+// (~4.3 misurato).  Stimarla dall'istogramma delle distanze porta solo rumore
+// di conteggio, trascurabile con ~10^6 coppie per bin.  Cosi' il lato target e'
+// praticamente esatto e il rumore residuo viene tutto dal modello, che e' dove
+// serve se la metrica deve giudicare il modello.
+//
+// Per una distribuzione radiale in 3D: P(r) ~ r^2 exp(-W(r)/kT), quindi
+//   d ln P/dr = 2/r - (1/kT) dW/dr
+//   f_r = -dW/dr = kT (d ln P/dr - 2/r)
+// Il termine 2/r e' il jacobiano radiale e va sottratto: ometterlo darebbe una
+// forza spuriamente repulsiva a piccolo r.  Vale sia per i contributi intra
+// che inter, perche' non usa la normalizzazione di gas ideale.
+struct RefForceCurve {
+    std::vector<double> f;      // forza media di riferimento per bin
+    std::vector<double> counts; // coppie per bin
+    bool valid = false;
+};
+
+static RefForceCurve build_reference_force_curve(
+    const std::vector<CGFrame>& frames, float cutoff, double kbt,
+    int type_i, int type_j) {
+    RefForceCurve out;
+    const int64_t nb = kMeanForceBins;
+    std::vector<double> h(nb, 0.0);
+    const double dr = static_cast<double>(cutoff) / static_cast<double>(nb);
+    const bool channel = (type_i >= 0 && type_j >= 0);
+    for (const auto& fr : frames) {
+        std::vector<const CGSite*> sites;
+        for (const auto& mol : fr.molecules)
+            for (const auto& st : mol.sites) sites.push_back(&st);
+        const std::size_t n = sites.size();
+        for (std::size_t a = 0; a < n; ++a) {
+            for (std::size_t b = a + 1; b < n; ++b) {
+                if (sites[a]->molecule_id == sites[b]->molecule_id) continue;
+                if (channel) {
+                    const int ta = sites[a]->site_type, tb = sites[b]->site_type;
+                    if (!((ta == type_i && tb == type_j) || (ta == type_j && tb == type_i)))
+                        continue;
+                }
+                float dx = sites[a]->x - sites[b]->x;
+                float dy = sites[a]->y - sites[b]->y;
+                float dz = sites[a]->z - sites[b]->z;
+                dx -= fr.box[0] * std::round(dx / fr.box[0]);
+                dy -= fr.box[1] * std::round(dy / fr.box[1]);
+                dz -= fr.box[2] * std::round(dz / fr.box[2]);
+                const double r = std::sqrt(double(dx)*dx + double(dy)*dy + double(dz)*dz);
+                if (r >= cutoff) continue;
+                int64_t k = static_cast<int64_t>(r / dr);
+                if (k >= nb) k = nb - 1;
+                h[k] += 1.0;
+            }
+        }
+    }
+    out.counts = h;
+    out.f.assign(nb, std::numeric_limits<double>::quiet_NaN());
+    // differenze centrate su ln P, solo dove i bin adiacenti sono popolati
+    for (int64_t k = 1; k + 1 < nb; ++k) {
+        if (h[k - 1] <= 0.0 || h[k] <= 0.0 || h[k + 1] <= 0.0) continue;
+        const double r = (static_cast<double>(k) + 0.5) * dr;
+        const double dlnP = (std::log(h[k + 1]) - std::log(h[k - 1])) / (2.0 * dr);
+        out.f[k] = kbt * (dlnP - 2.0 / r);
+        out.valid = true;
+    }
+    return out;
+}
 
 struct SpectralProjectionStats {
     std::size_t matrices_checked = 0;
@@ -1019,6 +1106,13 @@ int main(int argc, char* argv[]) {
     bool stop_when_skill_negative = false;
     // Soglia di rumore per l'early stopping.  0 = comportamento storico.
     float early_stopping_min_delta = 0.0f;
+    // Coppia di tipi (a,b) su cui misurare la curva di forza media in aggiunta
+    // al totale.  Su TEL22: 5,5 = B3-B3, il canale dei legami di Hoogsteen.
+    // kBT in kJ/mol: serve a convertire la forza media in d ln g/dr.  Default
+    // 300 K, lo stesso valore usato da MATHEMATICAL_REFERENCE.md per TEL22.
+    double mean_force_kbt_kj_mol = 2.4943387854;
+    int mean_force_channel_type_i = kMeanForceChannelTypeDefault;
+    int mean_force_channel_type_j = kMeanForceChannelTypeDefault;
     bool physical_validation_only = true;
     bool include_decoys_in_train = false;
     bool shuffle_each_epoch = true;
@@ -1039,12 +1133,25 @@ int main(int argc, char* argv[]) {
     std::string config_path = "cg_model_config.json";
     bool resume_training = false;
     
+    bool eval_only = false;
     if (argc >= 2) dataset_path = argv[1];
     if (argc >= 3) model_path = argv[2];
     if (argc >= 4) config_path = argv[3];
     for (int i = 4; i < argc; ++i) {
         const std::string option = argv[i];
         if (option == "--resume") {
+            resume_training = true;
+        } else if (option == "--eval-only") {
+            // Valuta un modello esistente e esce: una sola passata di
+            // validazione, nessun passo di training, nessun salvataggio.
+            //
+            // Salta la validazione del manifest, che protegge un PROSEGUIMENTO
+            // del training - dove mescolare stati incompatibili corromperebbe
+            // il modello - mentre qui non si scrive nulla e l'unico vincolo
+            // reale, la coerenza delle dimensioni, lo impone torch::load.
+            // Serve per misurare le metriche su uno snapshot archiviato senza
+            // dovergli fabbricare un manifest.
+            eval_only = true;
             resume_training = true;
         } else {
             std::cerr << "[ERROR] Unknown training option: " << option << "\n";
@@ -1085,6 +1192,9 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("checkpoint_every_epochs")) checkpoint_every_epochs = loaded_config["checkpoint_every_epochs"];
         if (loaded_config.contains("stop_when_skill_negative")) stop_when_skill_negative = loaded_config["stop_when_skill_negative"];
         if (loaded_config.contains("early_stopping_min_delta")) early_stopping_min_delta = loaded_config["early_stopping_min_delta"];
+        if (loaded_config.contains("mean_force_kbt_kj_mol")) mean_force_kbt_kj_mol = loaded_config["mean_force_kbt_kj_mol"];
+        if (loaded_config.contains("mean_force_channel_type_i")) mean_force_channel_type_i = loaded_config["mean_force_channel_type_i"];
+        if (loaded_config.contains("mean_force_channel_type_j")) mean_force_channel_type_j = loaded_config["mean_force_channel_type_j"];
         if (loaded_config.contains("physical_validation_only")) physical_validation_only = loaded_config["physical_validation_only"];
         if (loaded_config.contains("include_decoys_in_train")) include_decoys_in_train = loaded_config["include_decoys_in_train"];
         if (loaded_config.contains("shuffle_each_epoch")) shuffle_each_epoch = loaded_config["shuffle_each_epoch"];
@@ -1216,6 +1326,9 @@ int main(int argc, char* argv[]) {
     effective_config["checkpoint_every_epochs"] = checkpoint_every_epochs;
     effective_config["stop_when_skill_negative"] = stop_when_skill_negative;
     effective_config["early_stopping_min_delta"] = early_stopping_min_delta;
+    effective_config["mean_force_kbt_kj_mol"] = mean_force_kbt_kj_mol;
+    effective_config["mean_force_channel_type_i"] = mean_force_channel_type_i;
+    effective_config["mean_force_channel_type_j"] = mean_force_channel_type_j;
     effective_config["physical_validation_only"] = physical_validation_only;
     effective_config["include_decoys_in_train"] = include_decoys_in_train;
     effective_config["shuffle_each_epoch"] = shuffle_each_epoch;
@@ -1268,9 +1381,13 @@ int main(int argc, char* argv[]) {
             return 2;
         }
         try {
-            validate_resume_manifest(model_path, dataset_path, config_path, effective_config);
+            if (!eval_only) {
+                validate_resume_manifest(model_path, dataset_path, config_path, effective_config);
+            }
             torch::load(model, model_path);
-            std::cout << "[INFO] Modello esistente e manifest coerente caricati da: "
+            std::cout << (eval_only
+                              ? "[INFO] --eval-only: pesi caricati da: "
+                              : "[INFO] Modello esistente e manifest coerente caricati da: ")
                       << model_path << "\n";
         } catch (const std::exception& e) {
             std::cerr << "[ERROR] Existing model cannot be resumed safely: "
@@ -1306,7 +1423,9 @@ int main(int argc, char* argv[]) {
                     "Val_MAE_F,Val_MAE_T,Val_Zero_F_Norm,Val_Zero_T_Norm,Val_Zero_Total,"
                     "GradNorm_Mean,GradNorm_P50,GradNorm_P95,GradNorm_Max,GradClip_Fraction,"
                     "Val_MeanForce_R2,Val_MeanForce_R2_Scaled,Val_MeanForce_Scale,"
-                    "Val_MeanForce_Pearson,Val_MeanForce_SNR,Val_MeanForce_Bins\n";
+                    "Val_MeanForce_Pearson,Val_MeanForce_SNR,Val_MeanForce_Bins,"
+                    "Val_RefEnsemble_ChanFromForces,Val_RefEnsemble_ChanFromG,Val_Channel_Pearson,Val_Channel_R2_Scaled,"
+                    "Val_Channel_SNR,Val_Channel_Bins,Val_RefEnsemble_TotFromForces,Val_RefEnsemble_TotFromG\n";
     }
 
     std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
@@ -1459,6 +1578,25 @@ int main(int argc, char* argv[]) {
     std::cout << "[INFO] Split completato:\n"
               << "       - Train: " << train_dataset.size() << " frames\n"
               << "       - Val:   " << val_dataset.size() << " frames\n\n";
+
+    // Curve di forza di riferimento dalla g(r) dei frame di VALIDAZIONE: una
+    // volta sola, non dipendono dai pesi.
+    const RefForceCurve ref_curve_total = build_reference_force_curve(
+        val_dataset, cutoff, mean_force_kbt_kj_mol, -1, -1);
+    const RefForceCurve ref_curve_chan =
+        (mean_force_channel_type_i >= 0 && mean_force_channel_type_j >= 0)
+            ? build_reference_force_curve(val_dataset, cutoff, mean_force_kbt_kj_mol,
+                                          mean_force_channel_type_i, mean_force_channel_type_j)
+            : RefForceCurve{};
+    std::cout << "[INFO] Curve di forza di riferimento da g(r) di validazione: "
+              << "totale " << (ref_curve_total.valid ? "ok" : "NON disponibile");
+    if (mean_force_channel_type_i >= 0) {
+        std::cout << " | canale " << mean_force_channel_type_i << "-"
+                  << mean_force_channel_type_j << " "
+                  << (ref_curve_chan.valid ? "ok" : "NON disponibile");
+    }
+    std::cout << " (kBT=" << mean_force_kbt_kj_mol << " kJ/mol)\n";
+
 
     if (ordered_geometry_enabled) {
         const auto statistics = fit_ordered_geometry_statistics(
@@ -1636,6 +1774,11 @@ int main(int argc, char* argv[]) {
               << " | MAE F=" << val_zero_mae_f
               << " | MAE T=" << val_zero_mae_t << "\n\n";
 
+    if (eval_only) {
+        max_epochs = 1;
+        std::cout << "[INFO] --eval-only: una passata di validazione, nessun "
+                     "passo di training, nessun salvataggio.\n";
+    }
     for (int epoch = 1; epoch <= max_epochs; ++epoch) {
         if (shuffle_each_epoch && train_dataset.size() > 1) {
             // Deterministic epoch-specific shuffling: reproducible across runs,
@@ -1873,6 +2016,12 @@ int main(int argc, char* argv[]) {
         torch::Tensor mf_sum_pred   = torch::zeros({kMeanForceBins}, torch::kFloat64);
         torch::Tensor mf_sum_tsq    = torch::zeros({kMeanForceBins}, torch::kFloat64);
         torch::Tensor mf_count      = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        const bool mf_channel_on =
+            mean_force_channel_type_i >= 0 && mean_force_channel_type_j >= 0;
+        torch::Tensor mfc_sum_target = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mfc_sum_pred   = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mfc_sum_tsq    = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mfc_count      = torch::zeros({kMeanForceBins}, torch::kFloat64);
 
         std::vector<CGFrame> val_batch_frames;
 
@@ -2001,6 +2150,26 @@ int main(int argc, char* argv[]) {
                                          .to(torch::kCPU).to(torch::kFloat64);
                     mf_count      += torch::bincount(bin_idx, inter, kMeanForceBins)
                                          .to(torch::kCPU).to(torch::kFloat64);
+
+                    // Stessa curva, ma solo sulle coppie del canale scelto.
+                    if (mf_channel_on) {
+                        torch::Tensor ta = batch.site_types.index_select(0, row);
+                        torch::Tensor tb = batch.site_types.index_select(0, col);
+                        torch::Tensor sel =
+                            ((ta == mean_force_channel_type_i) &
+                             (tb == mean_force_channel_type_j)) |
+                            ((ta == mean_force_channel_type_j) &
+                             (tb == mean_force_channel_type_i));
+                        torch::Tensor w = sel.to(torch::kFloat32) * inter;
+                        mfc_sum_target += torch::bincount(bin_idx, proj_t * w, kMeanForceBins)
+                                              .to(torch::kCPU).to(torch::kFloat64);
+                        mfc_sum_pred   += torch::bincount(bin_idx, proj_p * w, kMeanForceBins)
+                                              .to(torch::kCPU).to(torch::kFloat64);
+                        mfc_sum_tsq    += torch::bincount(bin_idx, proj_t * proj_t * w, kMeanForceBins)
+                                              .to(torch::kCPU).to(torch::kFloat64);
+                        mfc_count      += torch::bincount(bin_idx, w, kMeanForceBins)
+                                              .to(torch::kCPU).to(torch::kFloat64);
+                    }
                 }
 
                 progress_bar(static_cast<double>(i + 1) / val_dataset.size());
@@ -2035,6 +2204,137 @@ int main(int argc, char* argv[]) {
         //            delle sue medie di bin.  E' il controllo di sanita' della
         //            metrica: sotto ~3 il segnale non e' risolto e mf_r2 non va
         //            interpretato, per quanto alto o basso risulti.
+        // Riduzione condivisa fra la curva totale e quella di canale.
+        struct MfStats {
+            double r2, r2_scaled, scale, pearson, snr, curve_score; int bins;
+            // curva predetta e pesi per bin: servono al confronto con la curva
+            // di riferimento ricavata dalla g(r) misurata (seconda strada).
+            std::vector<double> mp_bin, w_bin; std::vector<int64_t> idx_bin;
+        };
+        auto reduce_mf = [](const torch::Tensor& cnt_t, const torch::Tensor& st_t,
+                            const torch::Tensor& sp_t, const torch::Tensor& sq_t) -> MfStats {
+            const double nan = std::numeric_limits<double>::quiet_NaN();
+            MfStats o; o.r2=o.r2_scaled=o.scale=o.pearson=o.snr=o.curve_score=nan; o.bins=0;
+            const auto* cnt = cnt_t.data_ptr<double>();
+            const auto* st = st_t.data_ptr<double>();
+            const auto* sp = sp_t.data_ptr<double>();
+            const auto* sq = sq_t.data_ptr<double>();
+            std::vector<double> w, mt, mp, sem2;
+            std::vector<int64_t> idx;
+            double wsum = 0.0, wmt = 0.0;
+            for (int64_t b = 0; b < kMeanForceBins; ++b) {
+                if (cnt[b] < kMeanForceMinPairsPerBin) continue;
+                idx.push_back(b);
+                const double n = cnt[b];
+                const double mean_t = st[b] / n, mean_p = sp[b] / n;
+                const double var_t = std::max(0.0, sq[b] / n - mean_t * mean_t);
+                w.push_back(n); mt.push_back(mean_t); mp.push_back(mean_p);
+                sem2.push_back(var_t / n);
+                wsum += n; wmt += n * mean_t;
+            }
+            o.bins = static_cast<int>(w.size());
+            o.mp_bin = mp; o.w_bin = w; o.idx_bin = idx;
+            if (o.bins < 3 || wsum <= 0.0) return o;
+            const double mt_bar = wmt / wsum;
+            double ss_res = 0.0, ss_tot = 0.0, sem2_bar = 0.0, wmp = 0.0;
+            for (size_t k = 0; k < w.size(); ++k) {
+                ss_res += w[k] * (mp[k] - mt[k]) * (mp[k] - mt[k]);
+                ss_tot += w[k] * (mt[k] - mt_bar) * (mt[k] - mt_bar);
+                sem2_bar += w[k] * sem2[k];
+                wmp += w[k] * mp[k];
+            }
+            sem2_bar /= wsum;
+            if (ss_tot > 0.0) {
+                o.r2 = 1.0 - ss_res / ss_tot;
+                o.snr = std::sqrt((ss_tot / wsum) / std::max(sem2_bar, 1e-30));
+            }
+            const double mp_bar = wmp / wsum;
+            double cov = 0.0, vt = 0.0, vp = 0.0;
+            for (size_t k = 0; k < w.size(); ++k) {
+                const double dt = mt[k] - mt_bar, dp = mp[k] - mp_bar;
+                cov += w[k] * dt * dp; vt += w[k] * dt * dt; vp += w[k] * dp * dp;
+            }
+            if (vt > 0.0 && vp > 0.0) o.pearson = cov / std::sqrt(vt * vp);
+            double num = 0.0, den = 0.0;
+            for (size_t k = 0; k < w.size(); ++k) {
+                num += w[k] * mp[k] * mt[k]; den += w[k] * mp[k] * mp[k];
+            }
+            if (den > 0.0 && ss_tot > 0.0) {
+                o.scale = num / den;
+                double ss_res_s = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    const double e = o.scale * mp[k] - mt[k];
+                    ss_res_s += w[k] * e * e;
+                }
+                o.r2_scaled = 1.0 - ss_res_s / ss_tot;
+            }
+
+            // ── Accordo sulla curva di forza media ──────────────────────────
+            // Yvon-Born-Green: -kT d ln g(r)/dr = <f_r>_r.  Riprodurre la curva
+            // di forza media E' quindi riprodurre d ln g/dr, e non serve
+            // integrare per ottenere un numero che ordini i modelli come la
+            // g(r): basta una distanza fra le due curve.
+            //
+            // score = 1 - RMS(pred - targ) / RMS(targ),  pesato per bin.
+            //
+            // Il rapporto fra quantita' con le stesse unita' cancella dr, kT e
+            // il segno - tutte cose che integrando andavano gestite a mano, ed
+            // e' dove il primo tentativo aveva un errore.  A differenza di R2,
+            // normalizza per l'AMPIEZZA RMS del target e non per la sua varianza
+            // attorno alla media: quella varianza e' piccola quando la curva e'
+            // piatta, ed e' cio' che rendeva R2 erratico fra epoche adiacenti.
+            //
+            // 1 = curve coincidenti.  0 = errore grande come il segnale.
+            // Negativo verrebbe troncato a 0: peggio di "nessun segnale" non e'
+            // una gradazione utile.
+            {
+                double se = 0.0, st2 = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    const double d = mp[k] - mt[k];
+                    se += w[k] * d * d;
+                    st2 += w[k] * mt[k] * mt[k];
+                }
+                if (st2 > 0.0) {
+                    o.curve_score = std::max(0.0, 1.0 - std::sqrt(se / st2));
+                }
+            }
+            return o;
+        };
+        const MfStats mf_total_stats =
+            reduce_mf(mf_count, mf_sum_target, mf_sum_pred, mf_sum_tsq);
+        MfStats mfc;
+        if (mf_channel_on) {
+            mfc = reduce_mf(mfc_count, mfc_sum_target, mfc_sum_pred, mfc_sum_tsq);
+        } else {
+            const double nanv = std::numeric_limits<double>::quiet_NaN();
+            mfc.r2 = mfc.r2_scaled = mfc.scale = mfc.pearson = mfc.snr = mfc.curve_score = nanv;
+            mfc.bins = 0;
+        }
+
+        // ── Seconda strada: confronto con la curva ricavata dalla g(r) ───────
+        // Stesso punteggio, ma il riferimento viene dall'istogramma delle
+        // distanze invece che dalle forze.  Le due strade stimano la stessa
+        // quantita' con rumore molto diverso: si riportano entrambe e si
+        // guarda quale ordina i modelli come il confronto g(r) finale.
+        auto score_vs_ref = [](const MfStats& st, const RefForceCurve& ref) -> double {
+            if (!ref.valid || st.bins < 3) return std::numeric_limits<double>::quiet_NaN();
+            double se = 0.0, st2 = 0.0;
+            for (size_t k = 0; k < st.mp_bin.size(); ++k) {
+                const int64_t b = st.idx_bin[k];
+                if (b < 0 || b >= static_cast<int64_t>(ref.f.size())) continue;
+                const double fr = ref.f[b];
+                if (!std::isfinite(fr)) continue;
+                const double d = st.mp_bin[k] - fr;
+                se += st.w_bin[k] * d * d;
+                st2 += st.w_bin[k] * fr * fr;
+            }
+            if (st2 <= 0.0) return std::numeric_limits<double>::quiet_NaN();
+            return std::max(0.0, 1.0 - std::sqrt(se / st2));
+        };
+        const double score_g_total = score_vs_ref(mf_total_stats, ref_curve_total);
+        const double score_g_chan  = mf_channel_on ? score_vs_ref(mfc, ref_curve_chan)
+                                                   : std::numeric_limits<double>::quiet_NaN();
+
         double mf_r2 = std::numeric_limits<double>::quiet_NaN();
         double mf_r2_scaled = std::numeric_limits<double>::quiet_NaN();
         double mf_scale = std::numeric_limits<double>::quiet_NaN();
@@ -2047,9 +2347,11 @@ int main(int argc, char* argv[]) {
             const auto* sp  = mf_sum_pred.data_ptr<double>();
             const auto* sq  = mf_sum_tsq.data_ptr<double>();
             std::vector<double> w, mt, mp, sem2;
+            std::vector<int64_t> idx;
             double wsum = 0.0, wmt = 0.0;
             for (int64_t b = 0; b < kMeanForceBins; ++b) {
                 if (cnt[b] < kMeanForceMinPairsPerBin) continue;
+                idx.push_back(b);
                 const double n = cnt[b];
                 const double mean_t = st[b] / n;
                 const double mean_p = sp[b] / n;
@@ -2140,71 +2442,78 @@ int main(int argc, char* argv[]) {
                                  static_cast<double>(epoch_grad_norms.size());
         }
 
-        std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "]\n"
-                  << "  [LR]    " << current_lr << "\n"
-                  << "  [TRAIN] Loss: " << train_loss_avg
-                  << " (F: " << train_loss_f_norm_avg
-                  << ", T: " << train_loss_t_norm_avg << ")"
-                  << " | MAE Forze: " << train_mae_forces_avg
-                  << " | MAE Torques: " << train_mae_torques_avg << "\n"
-                  << "  [VAL]   Loss: " << val_loss_avg
-                  << " (F: " << val_loss_f_norm_avg
-                  << ", T: " << val_loss_t_norm_avg << ")"
-                  << " | MAE Forze: " << val_mae_forces_avg
-                  << " | MAE Torques: " << val_mae_torques_avg
-                  << "   (dominata dal rumore: vedi [FORMA])\n";
-        // ── Metriche in ordine di quanto sono informative ────────────────────
+        // ── Output per epoca: tre righe, in ordine di informativita' ─────────
         //
-        // [FORMA] per primo: su questo problema e' l'unica quantita' di
-        // validazione che si muove in modo leggibile fra le epoche.
-        // [SKILL] secondo: e' la metrica riportata in letteratura CG
-        // ("explained residual variance"), ma il suo massimo raggiungibile qui
-        // e' di pochi punti percentuali.
-        // La loss e il MAE restano sopra, nella riga [VAL], perche' servono
-        // all'early stopping e al log storico - non perche' indichino progresso.
-        if (mf_bins_used >= 3 && std::isfinite(mf_pearson)) {
-            std::cout << "  [FORMA]  forza media di coppia: Pearson="
-                      << mf_pearson;
-            if (std::isfinite(mf_r2_scaled)) {
-                std::cout << " | R2 ricalibrato=" << mf_r2_scaled
-                          << " (scala " << mf_scale << "x)";
-            }
-            std::cout << " | R2 grezzo=" << mf_r2
-                      << " | SNR=" << mf_snr
-                      << " | bin=" << mf_bins_used << "/" << kMeanForceBins;
-            if (mf_snr < 3.0) {
-                std::cout << "  <- SNR basso: R2 non interpretabile";
-            } else if (std::isfinite(mf_scale) && mf_scale < 0.0) {
-                // Il fit di scala e' attraverso l'origine, quindi vede anche
-                // l'offset: una scala negativa con Pearson positivo significa
-                // che le variazioni radiali sono azzeccate ma il segno della
-                // forza media complessiva e' invertito - attrazione netta dove
-                // il target ha repulsione netta.  E' un errore piu' grave di
-                // una taratura sbagliata e va distinto da essa.
-                std::cout << "  <- SEGNO invertito, non solo ampiezza";
-            } else if (std::isfinite(mf_r2_scaled) && std::isfinite(mf_r2)
-                       && mf_r2_scaled - mf_r2 > 0.3) {
-                std::cout << "  <- forma ok, ampiezza mal calibrata";
-            }
-            std::cout << "\n";
-        } else {
-            std::cout << "  [FORMA]  forza media di coppia: non calcolabile ("
-                      << mf_bins_used << " bin sopra "
-                      << static_cast<long>(kMeanForceMinPairsPerBin)
-                      << " coppie; servono almeno 3)\n";
+        // Cosa NON viene piu' stampato, e perche', dall'evidenza raccolta su
+        // TEL22:
+        //   R2 grezzo        oscillava da +0.87 a -8 fra epoche adiacenti senza
+        //                    correlare con nulla.
+        //   R2 ricalibrato   ugualmente erratico (-1.8 a +0.7) e non predittivo
+        //                    della qualita' strutturale.
+        //   flag sul segno   scattava nelle epoche in cui la skill era al
+        //                    massimo: sovra-interpretava un'oscillazione
+        //                    dell'offset della curva.
+        //   MAE forze/torque ridondanti con le loss normalizzate.
+        //   SNR e bin        dipendono solo dal target e dallo split, quindi
+        //                    sono costanti: stampati una volta all'avvio.
+        // Tutto questo resta nel CSV: la console serve a leggere durante il
+        // training, il CSV a ricostruire dopo, e piu' di una volta in questo
+        // progetto una colonna apparentemente inutile ha permesso di rigiocare
+        // una decisione a posteriori.
+        //
+        // Il gap val-train invece e' AGGIUNTO: e' la firma del
+        // sovra-allenamento e prima andava ricostruito a mano.
+        std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "]"
+                  << "   LR " << current_lr << "\n"
+                  << "  [LOSS]  train F=" << train_loss_f_norm_avg
+                  << " | val F=" << val_loss_f_norm_avg
+                  << " | gap=" << std::showpos << (val_loss_f_norm_avg - train_loss_f_norm_avg)
+                  << std::noshowpos << "      (loss ~98% rumore: non e' progresso)\n";
+        if (epoch == 1) {
+            std::cout << "  [INFO]  curva forza media: SNR target=" << mf_snr
+                      << " su " << mf_bins_used << "/" << kMeanForceBins << " bin"
+                      << (mf_snr < 3.0 ? "  <- SOTTO 3: le metriche di forma non sono interpretabili"
+                                       : "  (>3: risolta)")
+                      << ".  Costante per tutta la run.\n";
         }
+        // NON si stampa piu' l'accordo sulla curva di forza media, ne' quello
+        // ricavato dalla g(r) di riferimento.  Validati su quattro modelli con
+        // g(r) misurata nota, ORDINANO AL CONTRARIO:
+        //
+        //   modello   g(r) B3-B3 misurata   accordo da forze   da g(r)
+        //   D=32               0.587              0.000          0.035
+        //   D=64               0.746  <- best     0.357          0.358
+        //   D=128              0.286  <- worst    0.480  <- max  0.568  <- max
+        //
+        // Entrambe premiano D=128, che rompe il quadruplex piu' del prior da
+        // solo.  La ragione e' strutturale e non rimediabile per questa via:
+        // sono calcolate sulle configurazioni di RIFERIMENTO, e D=128 e' un
+        // interpolatore migliore su quell'ensemble mentre nella sua dinamica
+        // deriva verso un ensemble peggiore.  Nessuna metrica valutata
+        // sull'ensemble di riferimento puo' vedere una deriva dell'ensemble del
+        // modello: quella richiede di campionare il modello.
+        //
+        // Restano nel CSV come Val_RefEnsemble_*, perche' il risultato negativo
+        // e' un dato.  La selezione del modello si fa con uno sweep di MD brevi:
+        // una finestra di 1 ps riproduce l'ordinamento di 10 ps con separazioni
+        // ampie (D=64 0.880 contro D=128 0.325), quindi costa ~90 s per
+        // checkpoint invece di 14 minuti.
         if (val_zero_f_norm > 0.0f) {
             const double skill = 100.0 * (1.0 - val_loss_f_norm_avg / val_zero_f_norm);
-            std::cout << "  [SKILL]  forze istantanee vs predittore-zero: "
-                      << skill << "%";
-            if (skill < 0.0) {
-                std::cout << "  <- peggio del non avere rete";
+            std::cout << "  [SKILL] " << std::showpos << skill << std::noshowpos << "%";
+            if (std::isfinite(mf_pearson)) {
+                std::cout << "   |  forma: Pearson=" << mf_pearson;
             }
+            if (skill < 0.0) std::cout << "   <- peggio del non avere rete";
             std::cout << "\n";
             if (skill > 0.0) skill_was_ever_positive = true;
             consecutive_negative_skill = (skill < 0.0) ? consecutive_negative_skill + 1 : 0;
         }
-        if (!epoch_grad_norms.empty()) {
+        // [GRAD] solo quando succede qualcosa: con clipped=0% per decine di
+        // epoche era rumore visivo.
+        const bool grad_notable = !epoch_grad_norms.empty() &&
+            (grad_clip_fraction > 0.0 || grad_norm_max > 10.0 * std::max(grad_norm_p50, 1e-12));
+        if (grad_notable) {
             std::cout << "  [GRAD]  pre-clip mean=" << grad_norm_mean
                       << " | P50=" << grad_norm_p50
                       << " | P95=" << grad_norm_p95
@@ -2308,6 +2617,8 @@ int main(int argc, char* argv[]) {
             }
             break;
         }
+
+        if (eval_only) break;   // nessun salvataggio ne' early stopping in valutazione
 
         early_stopping.check(model, val_loss_avg, device);
         if (early_stopping.early_stop) {
