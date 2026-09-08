@@ -1267,7 +1267,8 @@ int main(int argc, char* argv[]) {
                     "Val_Loss_F_Norm,Val_Loss_T_Norm,Train_MAE_F,Train_MAE_T,"
                     "Val_MAE_F,Val_MAE_T,Val_Zero_F_Norm,Val_Zero_T_Norm,Val_Zero_Total,"
                     "GradNorm_Mean,GradNorm_P50,GradNorm_P95,GradNorm_Max,GradClip_Fraction,"
-                    "Val_MeanForce_R2,Val_MeanForce_Pearson,Val_MeanForce_SNR,Val_MeanForce_Bins\n";
+                    "Val_MeanForce_R2,Val_MeanForce_R2_Scaled,Val_MeanForce_Scale,"
+                    "Val_MeanForce_Pearson,Val_MeanForce_SNR,Val_MeanForce_Bins\n";
     }
 
     std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
@@ -1997,6 +1998,8 @@ int main(int argc, char* argv[]) {
         //            metrica: sotto ~3 il segnale non e' risolto e mf_r2 non va
         //            interpretato, per quanto alto o basso risulti.
         double mf_r2 = std::numeric_limits<double>::quiet_NaN();
+        double mf_r2_scaled = std::numeric_limits<double>::quiet_NaN();
+        double mf_scale = std::numeric_limits<double>::quiet_NaN();
         double mf_pearson = std::numeric_limits<double>::quiet_NaN();
         double mf_snr = std::numeric_limits<double>::quiet_NaN();
         int mf_bins_used = 0;
@@ -2050,6 +2053,28 @@ int main(int argc, char* argv[]) {
                 if (vt > 0.0 && vp > 0.0) {
                     mf_pearson = cov / std::sqrt(vt * vp);
                 }
+
+                // R^2 dopo aver adattato UN SOLO fattore di scala.  Separa un
+                // errore di forma da un errore di ampiezza: se mf_r2 e' basso
+                // ma mf_r2_scaled e' alto, la rete ha imparato la dipendenza
+                // radiale della forza media e sbaglia solo la calibrazione
+                // complessiva - condizione rimediabile a valle, e da
+                // confrontare con energy_scale_source, che fissa la scala su
+                // F_RMS del training, quantita' dominata dal rumore.
+                double num = 0.0, den = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    num += w[k] * mp[k] * mt[k];
+                    den += w[k] * mp[k] * mp[k];
+                }
+                if (den > 0.0 && ss_tot > 0.0) {
+                    mf_scale = num / den;
+                    double ss_res_s = 0.0;
+                    for (size_t k = 0; k < w.size(); ++k) {
+                        const double e = mf_scale * mp[k] - mt[k];
+                        ss_res_s += w[k] * e * e;
+                    }
+                    mf_r2_scaled = 1.0 - ss_res_s / ss_tot;
+                }
             }
         }
 
@@ -2088,31 +2113,56 @@ int main(int argc, char* argv[]) {
                   << " (F: " << val_loss_f_norm_avg
                   << ", T: " << val_loss_t_norm_avg << ")"
                   << " | MAE Forze: " << val_mae_forces_avg
-                  << " | MAE Torques: " << val_mae_torques_avg << "\n";
-        // Skill sulle forze istantanee, riferita al predittore-zero: e' la
-        // quantita' che l'early stopping usa, e va letta sapendo che su questo
-        // problema il suo margine utile e' di pochi punti percentuali.
-        if (val_zero_f_norm > 0.0f) {
-            std::cout << "  [SKILL] forze istantanee vs predittore-zero: "
-                      << (100.0 * (1.0 - val_loss_f_norm_avg / val_zero_f_norm))
-                      << "%\n";
-        }
-        // Metrica termodinamica: e' questa a dire se la rete sta imparando la
-        // forza media, cioe' il gradiente dell'energia libera CG.
-        if (mf_bins_used >= 3 && std::isfinite(mf_r2)) {
-            std::cout << "  [THERMO] curva forza media di coppia: R2=" << mf_r2
-                      << " | Pearson=" << mf_pearson
-                      << " | SNR target=" << mf_snr
-                      << " | bin usati=" << mf_bins_used << "/" << kMeanForceBins;
+                  << " | MAE Torques: " << val_mae_torques_avg
+                  << "   (dominata dal rumore: vedi [FORMA])\n";
+        // ── Metriche in ordine di quanto sono informative ────────────────────
+        //
+        // [FORMA] per primo: su questo problema e' l'unica quantita' di
+        // validazione che si muove in modo leggibile fra le epoche.
+        // [SKILL] secondo: e' la metrica riportata in letteratura CG
+        // ("explained residual variance"), ma il suo massimo raggiungibile qui
+        // e' di pochi punti percentuali.
+        // La loss e il MAE restano sopra, nella riga [VAL], perche' servono
+        // all'early stopping e al log storico - non perche' indichino progresso.
+        if (mf_bins_used >= 3 && std::isfinite(mf_pearson)) {
+            std::cout << "  [FORMA]  forza media di coppia: Pearson="
+                      << mf_pearson;
+            if (std::isfinite(mf_r2_scaled)) {
+                std::cout << " | R2 ricalibrato=" << mf_r2_scaled
+                          << " (scala " << mf_scale << "x)";
+            }
+            std::cout << " | R2 grezzo=" << mf_r2
+                      << " | SNR=" << mf_snr
+                      << " | bin=" << mf_bins_used << "/" << kMeanForceBins;
             if (mf_snr < 3.0) {
                 std::cout << "  <- SNR basso: R2 non interpretabile";
+            } else if (std::isfinite(mf_scale) && mf_scale < 0.0) {
+                // Il fit di scala e' attraverso l'origine, quindi vede anche
+                // l'offset: una scala negativa con Pearson positivo significa
+                // che le variazioni radiali sono azzeccate ma il segno della
+                // forza media complessiva e' invertito - attrazione netta dove
+                // il target ha repulsione netta.  E' un errore piu' grave di
+                // una taratura sbagliata e va distinto da essa.
+                std::cout << "  <- SEGNO invertito, non solo ampiezza";
+            } else if (std::isfinite(mf_r2_scaled) && std::isfinite(mf_r2)
+                       && mf_r2_scaled - mf_r2 > 0.3) {
+                std::cout << "  <- forma ok, ampiezza mal calibrata";
             }
             std::cout << "\n";
         } else {
-            std::cout << "  [THERMO] curva forza media di coppia: non calcolabile ("
+            std::cout << "  [FORMA]  forza media di coppia: non calcolabile ("
                       << mf_bins_used << " bin sopra "
                       << static_cast<long>(kMeanForceMinPairsPerBin)
                       << " coppie; servono almeno 3)\n";
+        }
+        if (val_zero_f_norm > 0.0f) {
+            const double skill = 100.0 * (1.0 - val_loss_f_norm_avg / val_zero_f_norm);
+            std::cout << "  [SKILL]  forze istantanee vs predittore-zero: "
+                      << skill << "%";
+            if (skill < 0.0) {
+                std::cout << "  <- peggio del non avere rete";
+            }
+            std::cout << "\n";
         }
         if (!epoch_grad_norms.empty()) {
             std::cout << "  [GRAD]  pre-clip mean=" << grad_norm_mean
@@ -2139,7 +2189,8 @@ int main(int argc, char* argv[]) {
                      << grad_norm_mean << "," << grad_norm_p50 << ","
                      << grad_norm_p95 << "," << grad_norm_max << ","
                      << grad_clip_fraction << ","
-                     << mf_r2 << "," << mf_pearson << ","
+                     << mf_r2 << "," << mf_r2_scaled << "," << mf_scale << ","
+                     << mf_pearson << ","
                      << mf_snr << "," << mf_bins_used << "\n";
             csv_file.flush();
         }
