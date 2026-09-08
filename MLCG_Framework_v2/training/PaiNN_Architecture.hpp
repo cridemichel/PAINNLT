@@ -1,6 +1,7 @@
 #pragma once
 #include <torch/torch.h>
 #include <cmath>
+#include <array>
 #include <vector>
 #include <string_view>
 #include <stdexcept>
@@ -10,6 +11,30 @@ inline constexpr std::string_view PAINN_ORDERED_GEOMETRY_VARIANT =
     "painn_ordered_geometry_tanh_v2";
 inline constexpr std::string_view CGNET_ORDERED_GEOMETRY_VARIANT =
     "cgnet_ordered_geometry_tanh_v1";
+inline constexpr std::string_view TEL22_SHARED_GEOMETRY_VARIANT =
+    "tel22_shared_geometry_tanh_v1";
+
+inline constexpr int TEL22_SHARED_COPIES = 10;
+inline constexpr int TEL22_SHARED_SITES_PER_COPY = 82;
+inline constexpr int TEL22_SHARED_FEATURES = 131;
+
+inline constexpr std::array<int, 22> TEL22_SITE_OFFSETS = {
+    0, 1, 7, 13, 19, 20, 21, 22, 28, 34, 40,
+    41, 42, 43, 49, 55, 61, 62, 63, 64, 70, 76};
+inline constexpr std::array<std::array<int, 4>, 3> TEL22_TETRADS = {{
+    {{1, 9, 13, 21}}, {{2, 8, 14, 20}}, {{3, 7, 15, 19}}}};
+// (residue_i, residue_j, oriented_site_i, oriented_site_j).  Every contact
+// contributes B3-B3 plus the listed antiparallel B2/B4 endpoint distance.
+inline constexpr std::array<std::array<int, 4>, 18> TEL22_TETRAD_CONTACTS = {{
+    {{1, 9, 2, 4}}, {{1, 13, 4, 2}}, {{1, 21, 4, 2}},
+    {{9, 13, 2, 4}}, {{9, 21, 2, 4}}, {{13, 21, 4, 2}},
+    {{2, 8, 4, 2}}, {{2, 14, 2, 4}}, {{2, 20, 2, 4}},
+    {{8, 14, 4, 2}}, {{8, 20, 4, 2}}, {{14, 20, 2, 4}},
+    {{3, 7, 2, 4}}, {{3, 15, 4, 2}}, {{3, 19, 4, 2}},
+    {{7, 15, 2, 4}}, {{7, 19, 2, 4}}, {{15, 19, 4, 2}}}};
+inline constexpr std::array<std::array<int, 2>, 8> TEL22_STACKING_PAIRS = {{
+    {{1, 2}}, {{2, 3}}, {{9, 8}}, {{8, 7}},
+    {{13, 14}}, {{14, 15}}, {{21, 20}}, {{20, 19}}}};
 
 // ============================================================================
 // 1. BLOCCO MESSAGGI (Message Passing)
@@ -97,6 +122,8 @@ struct PaiNNModelImpl : torch::nn::Module {
     int ordered_geometry_head_layers;
     int ordered_geometry_head_width;
     bool ordered_geometry_head_only;
+    int ordered_geometry_copies;
+    bool tel22_shared_geometry;
     torch::Tensor energy_scale;
     torch::Tensor ordered_geometry_energy_scale;
     torch::Tensor ordered_geometry_mean;
@@ -113,7 +140,9 @@ struct PaiNNModelImpl : torch::nn::Module {
         int ordered_head_layers = 5,
         int ordered_head_width = 160,
         double ordered_energy_scale_kj_mol = 0.0,
-        bool ordered_head_only = false)
+        bool ordered_head_only = false,
+        int ordered_copies = 1,
+        bool tel22_shared = false)
         : num_layers(layers),
           num_embeddings(num_embeddings),
           cutoff_radius(cutoff),
@@ -123,7 +152,9 @@ struct PaiNNModelImpl : torch::nn::Module {
           ordered_geometry_feature_count(0),
           ordered_geometry_head_layers(ordered_head_layers),
           ordered_geometry_head_width(ordered_head_width),
-          ordered_geometry_head_only(ordered_head_only) {
+          ordered_geometry_head_only(ordered_head_only),
+          ordered_geometry_copies(ordered_copies),
+          tel22_shared_geometry(tel22_shared) {
         
         energy_scale = register_buffer("energy_scale", torch::ones({1}));
         if (!ordered_geometry_head_only) {
@@ -145,9 +176,20 @@ struct PaiNNModelImpl : torch::nn::Module {
                     "Ordered geometry head requires at least four nodes, positive layer sizes, "
                     "and a positive finite energy scale");
             }
-            ordered_geometry_feature_count =
-                ordered_geometry_nodes * (ordered_geometry_nodes - 1) / 2 +
-                (ordered_geometry_nodes - 2) + 2 * (ordered_geometry_nodes - 3);
+            if (ordered_geometry_copies <= 0) {
+                throw std::invalid_argument("ordered_geometry_copies must be positive");
+            }
+            if (tel22_shared_geometry &&
+                (ordered_geometry_nodes != TEL22_SHARED_SITES_PER_COPY ||
+                 ordered_geometry_copies != TEL22_SHARED_COPIES ||
+                 !ordered_geometry_head_only)) {
+                throw std::invalid_argument(
+                    "TEL22 shared geometry requires 82 sites/copy, 10 copies, and head-only mode");
+            }
+            ordered_geometry_feature_count = tel22_shared_geometry
+                ? TEL22_SHARED_FEATURES
+                : ordered_geometry_nodes * (ordered_geometry_nodes - 1) / 2 +
+                      (ordered_geometry_nodes - 2) + 2 * (ordered_geometry_nodes - 3);
             ordered_geometry_mean = register_buffer(
                 "ordered_geometry_mean", torch::zeros({ordered_geometry_feature_count}));
             ordered_geometry_std = register_buffer(
@@ -216,21 +258,132 @@ struct PaiNNModelImpl : torch::nn::Module {
             throw std::runtime_error("Ordered geometry features requested for base PaiNN");
         }
         const int64_t num_frames = batch_indices.max().cpu().item<int64_t>() + 1;
-        const int64_t expected_nodes = num_frames * ordered_geometry_nodes;
-        const int64_t expected_edges =
-            num_frames * ordered_geometry_nodes * (ordered_geometry_nodes - 1);
-        if (batch_indices.size(0) != expected_nodes || edge_index.size(1) != expected_edges) {
-            throw std::runtime_error(
-                "Ordered geometry head requires contiguous fixed-size frames and a complete directed graph");
+        const int64_t nodes_per_frame =
+            static_cast<int64_t>(ordered_geometry_nodes) * ordered_geometry_copies;
+        const int64_t expected_nodes = num_frames * nodes_per_frame;
+        if (batch_indices.size(0) != expected_nodes) {
+            throw std::runtime_error("Ordered geometry frame/node count mismatch");
+        }
+        if (!tel22_shared_geometry) {
+            const int64_t expected_edges =
+                num_frames * ordered_geometry_nodes * (ordered_geometry_nodes - 1);
+            if (edge_index.size(1) != expected_edges) {
+                throw std::runtime_error(
+                    "Ordered geometry head requires a complete directed graph");
+            }
         }
 
         auto row = edge_index.index({0});
         auto col = edge_index.index({1});
         auto edge_batches = batch_indices.index_select(0, row);
-        auto local_row = row - edge_batches * ordered_geometry_nodes;
-        auto local_col = col - edge_batches * ordered_geometry_nodes;
+
+        if (tel22_shared_geometry) {
+            auto frame_row = row - edge_batches * nodes_per_frame;
+            auto frame_col = col - edge_batches * nodes_per_frame;
+            auto row_copy = torch::floor_divide(frame_row, ordered_geometry_nodes);
+            auto col_copy = torch::floor_divide(frame_col, ordered_geometry_nodes);
+            auto same_copy = row_copy == col_copy;
+            auto selected = torch::nonzero(same_copy).squeeze(1);
+            auto geometry_batch =
+                edge_batches.index_select(0, selected) * ordered_geometry_copies +
+                row_copy.index_select(0, selected);
+            auto local_row = torch::remainder(
+                frame_row.index_select(0, selected), ordered_geometry_nodes);
+            auto local_col = torch::remainder(
+                frame_col.index_select(0, selected), ordered_geometry_nodes);
+            auto selected_rij = r_ij.index_select(0, selected);
+            const int64_t geometry_samples = num_frames * ordered_geometry_copies;
+            auto dense = torch::zeros(
+                {geometry_samples, ordered_geometry_nodes, ordered_geometry_nodes, 3},
+                r_ij.options());
+            dense.index_put_({geometry_batch, local_row, local_col}, selected_rij);
+            auto present = torch::zeros(
+                {geometry_samples, ordered_geometry_nodes, ordered_geometry_nodes},
+                torch::TensorOptions().dtype(torch::kBool).device(r_ij.device()));
+            present.index_put_({geometry_batch, local_row, local_col}, true);
+
+            constexpr double eps = 1.0e-12;
+            std::vector<torch::Tensor> features;
+            std::vector<torch::Tensor> required_edges;
+            features.reserve(TEL22_SHARED_FEATURES);
+            required_edges.reserve(170);
+            const auto displacement = [&](int residue_i, int site_i,
+                                          int residue_j, int site_j) {
+                const int node_i = TEL22_SITE_OFFSETS[residue_i] + site_i;
+                const int node_j = TEL22_SITE_OFFSETS[residue_j] + site_j;
+                required_edges.push_back(
+                    present.index({torch::indexing::Slice(), node_i, node_j}).unsqueeze(1));
+                return dense.index({torch::indexing::Slice(), node_i, node_j});
+            };
+            const auto distance = [&](const torch::Tensor& value) {
+                return torch::sqrt(torch::sum(value * value, 1) + eps).unsqueeze(1);
+            };
+
+            for (int residue = 0; residue < 21; ++residue) {
+                features.push_back(distance(
+                    displacement(residue, 0, residue + 1, 0)));
+            }
+            for (int residue = 0; residue < 20; ++residue) {
+                    auto left = displacement(residue, 0, residue + 1, 0);
+                    auto right = displacement(residue + 2, 0, residue + 1, 0);
+                    auto denominator = torch::sqrt(
+                        torch::sum(left * left, 1) * torch::sum(right * right, 1) + eps);
+                    auto cosine = torch::sum(left * right, 1) / denominator;
+                    features.push_back(
+                        torch::acos(torch::clamp(cosine, -0.9999999, 0.9999999)).unsqueeze(1));
+            }
+            std::vector<torch::Tensor> dihedral_cosines;
+            std::vector<torch::Tensor> dihedral_sines;
+            for (int residue = 0; residue < 19; ++residue) {
+                    auto b0 = displacement(residue + 1, 0, residue, 0);
+                    auto b1 = displacement(residue + 2, 0, residue + 1, 0);
+                    auto b2 = displacement(residue + 3, 0, residue + 2, 0);
+                    auto normal_1 = torch::linalg_cross(b0, b1, 1);
+                    auto normal_2 = torch::linalg_cross(b1, b2, 1);
+                    auto normal_product = torch::sqrt(
+                        torch::sum(normal_1 * normal_1, 1) *
+                        torch::sum(normal_2 * normal_2, 1) + eps);
+                    auto cosine = torch::sum(normal_1 * normal_2, 1) / normal_product;
+                    auto b1_unit = b1 / torch::sqrt(
+                        torch::sum(b1 * b1, 1) + eps).unsqueeze(1);
+                    auto sine = torch::sum(
+                        torch::linalg_cross(normal_1, normal_2, 1) * b1_unit, 1) /
+                        normal_product;
+                    dihedral_cosines.push_back(
+                        torch::clamp(cosine, -1.0, 1.0).unsqueeze(1));
+                    dihedral_sines.push_back(
+                        torch::clamp(sine, -1.0, 1.0).unsqueeze(1));
+            }
+            features.insert(features.end(), dihedral_cosines.begin(), dihedral_cosines.end());
+            features.insert(features.end(), dihedral_sines.begin(), dihedral_sines.end());
+
+            for (const auto& contact : TEL22_TETRAD_CONTACTS) {
+                features.push_back(distance(
+                    displacement(contact[0], 3, contact[1], 3)));
+                features.push_back(distance(
+                    displacement(contact[0], contact[2], contact[1], contact[3])));
+            }
+            for (const auto& pair : TEL22_STACKING_PAIRS) {
+                features.push_back(distance(
+                    displacement(pair[0], 3, pair[1], 3)));
+                features.push_back(distance(
+                    displacement(pair[0], 5, pair[1], 5)));
+            }
+            if (features.size() != TEL22_SHARED_FEATURES) {
+                throw std::runtime_error("Internal TEL22 shared feature-count mismatch");
+            }
+            if (!torch::cat(required_edges, 1).all().cpu().item<bool>()) {
+                throw std::runtime_error(
+                    "TEL22 shared head is missing a mandatory topology edge; "
+                    "verify explicit edge policy and particle ordering/topology");
+            }
+            return torch::cat(features, 1);
+        }
+
+        auto local_row = row - edge_batches * nodes_per_frame;
+        auto local_col = col - edge_batches * nodes_per_frame;
         auto dense = torch::zeros(
-            {num_frames, ordered_geometry_nodes, ordered_geometry_nodes, 3}, r_ij.options());
+            {num_frames, nodes_per_frame, nodes_per_frame, 3}, r_ij.options());
         dense.index_put_({edge_batches, local_row, local_col}, r_ij);
 
         constexpr double eps = 1.0e-12;
@@ -292,7 +445,10 @@ struct PaiNNModelImpl : torch::nn::Module {
         auto normalized = (features - ordered_geometry_mean) / ordered_geometry_std;
         auto raw = ordered_geometry_head->forward(normalized);
         auto reference = ordered_geometry_head->forward(torch::zeros_like(normalized));
-        return (raw - reference) * ordered_geometry_energy_scale;
+        auto local_energy = (raw - reference) * ordered_geometry_energy_scale;
+        if (ordered_geometry_copies == 1) return local_energy;
+        const int64_t num_frames = local_energy.size(0) / ordered_geometry_copies;
+        return local_energy.reshape({num_frames, ordered_geometry_copies, 1}).sum(1);
     }
 
 
@@ -415,7 +571,7 @@ struct PaiNNModelImpl : torch::nn::Module {
             auto head_energy = ordered_geometry_energy(r_ij, edge_index, batch_indices);
             return torch::ones(
                 {atomic_numbers.size(0), 1}, head_energy.options()) *
-                head_energy.index({0, 0}) / static_cast<double>(ordered_geometry_nodes);
+                head_energy.index({0, 0}) / static_cast<double>(atomic_numbers.size(0));
         }
         
         auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
@@ -441,7 +597,7 @@ struct PaiNNModelImpl : torch::nn::Module {
                 {atomic_numbers.size(0)}, atomic_numbers.options());
             auto head_energy = ordered_geometry_energy(r_ij, edge_index, batch_indices);
             atom_energies = atom_energies +
-                head_energy.index({0, 0}) / static_cast<double>(ordered_geometry_nodes);
+                head_energy.index({0, 0}) / static_cast<double>(atomic_numbers.size(0));
         }
         return atom_energies;
     }

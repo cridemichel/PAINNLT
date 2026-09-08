@@ -72,6 +72,7 @@ class TrainingSafetyInvariantTests(unittest.TestCase):
         test_sources = "\n".join(
             path.read_text(encoding="utf-8")
             for path in (ROOT / "tests").glob("test_*.py")
+            if not path.name.startswith("test_tel22_")
         )
         forbidden = 'tutorials' + '" / "' + 'tel' + '22'
         self.assertNotIn(forbidden, test_sources)

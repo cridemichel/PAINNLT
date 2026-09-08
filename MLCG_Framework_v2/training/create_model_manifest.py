@@ -13,9 +13,11 @@ from pathlib import Path
 PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2"
 PAINN_ORDERED_GEOMETRY_VARIANT = "painn_ordered_geometry_tanh_v2"
 CGNET_ORDERED_GEOMETRY_VARIANT = "cgnet_ordered_geometry_tanh_v1"
+TEL22_SHARED_GEOMETRY_VARIANT = "tel22_shared_geometry_tanh_v1"
 ORDERED_GEOMETRY_VARIANTS = {
     PAINN_ORDERED_GEOMETRY_VARIANT,
     CGNET_ORDERED_GEOMETRY_VARIANT,
+    TEL22_SHARED_GEOMETRY_VARIANT,
 }
 
 
@@ -63,7 +65,9 @@ def main() -> None:
             "ordered_geometry_head_width": int(config["ordered_geometry_head_width"]),
             "ordered_geometry_energy_scale_kj_mol": ordered_energy_scale,
         })
-        if variant == CGNET_ORDERED_GEOMETRY_VARIANT:
+        if variant == TEL22_SHARED_GEOMETRY_VARIANT:
+            architecture["ordered_geometry_copies"] = int(config["ordered_geometry_copies"])
+        if variant in {CGNET_ORDERED_GEOMETRY_VARIANT, TEL22_SHARED_GEOMETRY_VARIANT}:
             architecture.update({
                 "ordered_geometry_head_only": bool(config["ordered_geometry_head_only"]),
                 "ordered_geometry_weight_initialization": str(
@@ -72,7 +76,7 @@ def main() -> None:
             })
             if not architecture["ordered_geometry_head_only"]:
                 raise ValueError(
-                    "CGnet-exact architecture requires ordered_geometry_head_only=true"
+                "Ordered head-only architecture requires ordered_geometry_head_only=true"
                 )
     manifest_path = Path(f"{args.model}.manifest.json")
     manifest = {}
@@ -89,10 +93,16 @@ def main() -> None:
             "ordered_geometry_dihedral_convention",
             "ordered_geometry_normalization",
         }
-        if variant == CGNET_ORDERED_GEOMETRY_VARIANT:
+        if variant in {CGNET_ORDERED_GEOMETRY_VARIANT, TEL22_SHARED_GEOMETRY_VARIANT}:
             required_statistics.update({
                 "ordered_geometry_head_only",
                 "ordered_geometry_weight_initialization",
+            })
+        if variant == TEL22_SHARED_GEOMETRY_VARIANT:
+            required_statistics.update({
+                "ordered_geometry_normalization_samples",
+                "ordered_geometry_energy_aggregation",
+                "ordered_geometry_site_contract",
             })
         missing_statistics = sorted(required_statistics - set(previous_effective))
         if missing_statistics:
@@ -104,6 +114,9 @@ def main() -> None:
         if key.startswith("ordered_geometry_feature_") or key in {
             "ordered_geometry_dihedral_convention",
             "ordered_geometry_normalization",
+            "ordered_geometry_normalization_samples",
+            "ordered_geometry_energy_aggregation",
+            "ordered_geometry_site_contract",
             "ordered_geometry_head_only",
             "ordered_geometry_weight_initialization",
         }:

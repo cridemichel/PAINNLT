@@ -81,9 +81,12 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
     int ordered_geometry_head_width,
     double ordered_geometry_energy_scale_kj_mol,
     bool ordered_geometry_head_only,
+    int ordered_geometry_copies,
+    bool tel22_shared_geometry,
     const std::string& device_str,
     const std::string& precision_str)
-    : m_cutoff(cutoff), m_num_species(num_species) {
+    : m_cutoff(cutoff), m_num_species(num_species),
+      m_tel22_shared_geometry(tel22_shared_geometry) {
     
     // Inizializza il modello C++ con i parametri di architettura
     model = PaiNNModel(
@@ -97,7 +100,9 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
         ordered_geometry_head_layers,
         ordered_geometry_head_width,
         ordered_geometry_energy_scale_kj_mol,
-        ordered_geometry_head_only);
+        ordered_geometry_head_only,
+        ordered_geometry_copies,
+        tel22_shared_geometry);
     
     // Carica i pesi dal file .pt salvato durante il training
     try {
@@ -352,6 +357,36 @@ void PaiNN_ML_Potential::calculate_forces_impl(
     }
 
     const int num_particles = static_cast<int>(idx_to_particle.size());
+    if (m_tel22_shared_geometry && !m_tel22_layout_validated) {
+        if (num_particles != TEL22_SHARED_COPIES * TEL22_SHARED_SITES_PER_COPY) {
+            throw std::runtime_error(
+                "TEL22 shared head requires exactly 820 ordered physical sites");
+        }
+        int node = 0;
+        for (int copy = 0; copy < TEL22_SHARED_COPIES; ++copy) {
+            for (int residue = 0; residue < 22; ++residue) {
+                const bool adenine =
+                    residue == 0 || residue == 6 || residue == 12 || residue == 18;
+                const bool thymine =
+                    residue == 4 || residue == 5 || residue == 10 || residue == 11 ||
+                    residue == 16 || residue == 17;
+                const int site_count = (adenine || thymine) ? 1 : 6;
+                for (int site = 0; site < site_count; ++site, ++node) {
+                    const int expected_type = site_count == 1
+                        ? (adenine ? 0 : 1)
+                        : 2 + site;
+                    const int expected_molecule = copy * 22 + residue;
+                    if (atomic_numbers.at(node) != expected_type ||
+                        idx_to_particle.at(node)->mol_id() != expected_molecule) {
+                        throw std::runtime_error(
+                            "TEL22 shared head particle order/type/molecule contract mismatch");
+                    }
+                }
+            }
+        }
+        m_tel22_layout_validated = true;
+        std::cout << "[PaiNN] TEL22 10x82 shared-head particle contract validated.\n";
+    }
     if (profile_this_call) {
         const auto now = ProfileClock::now();
         m_profile.node_index_ms += elapsed_ms(stage_start, now);

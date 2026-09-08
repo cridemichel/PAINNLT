@@ -28,6 +28,8 @@ public:
         int ordered_geometry_head_width = 0,
         double ordered_geometry_energy_scale_kj_mol = 0.0,
         bool ordered_geometry_head_only = false,
+        int ordered_geometry_copies = 1,
+        bool tel22_shared_geometry = false,
         const std::string& device_str = "auto",
         const std::string& precision_str = "float32");
 
@@ -52,6 +54,8 @@ private:
     PaiNNModel model{nullptr};
     double m_cutoff;
     int m_num_species;
+    bool m_tel22_shared_geometry = false;
+    bool m_tel22_layout_validated = false;
     double m_last_energy = 0.0;
     torch::Device m_device{torch::kCPU};
     torch::Dtype m_dtype{torch::kFloat32};

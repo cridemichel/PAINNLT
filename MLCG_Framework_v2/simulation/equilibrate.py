@@ -558,6 +558,10 @@ espressomd.painn.activate_painn_potential(
     ordered_geometry_head_only=bool(
         nn_config.get("ordered_geometry_head_only", False)
     ),
+    ordered_geometry_copies=int(nn_config.get("ordered_geometry_copies", 1)),
+    tel22_shared_geometry=bool(
+        nn_config.get("architecture_variant") == "tel22_shared_geometry_tanh_v1"
+    ),
     device=args.device,
 )
 
