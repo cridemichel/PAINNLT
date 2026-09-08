@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <cstdint>
 #include <limits>
+#include <cmath>     // std::isfinite, std::sqrt: metrica termodinamica
 #include <random>    // Aggiungi questo in cima al file per std::shuffle
 #include <algorithm> // Aggiungi questo in cima per std::shuffle
 
@@ -22,6 +23,18 @@ using json = nlohmann::json;
 
 // Assicurati di avere questo file nella stessa cartella
 #include "PaiNN_Architecture.hpp"
+
+// Metrica termodinamica di validazione: allineata a MLCG_Framework_v2.
+// Il target di force matching non e' una funzione dello stato CG: e'
+// F* = f(R) + eps con f la forza media (il gradiente dell'energia libera CG,
+// l'unica parte apprendibile) e eps le fluttuazioni dei gradi di liberta'
+// atomistici integrati fuori.  La MSE contiene quindi un floor irriducibile
+// <|eps|^2> indipendente dai pesi, che su questi sistemi lascia alla loss una
+// banda utile di pochi punti percentuali.  Mediando la proiezione della forza
+// sull'asse di coppia entro bin radiali, eps si cancella come n^-1/2 e resta
+// la parte sistematica.  Derivazione in MATHEMATICAL_REFERENCE.md §9.1-9.2.
+static constexpr int64_t kMeanForceBins = 24;
+static constexpr double kMeanForceMinPairsPerBin = 200.0;
 
 // =====================================================================
 // 1. STRUTTURE DATI (Siti, Molecole, Frame)
@@ -440,7 +453,9 @@ int main(int argc, char* argv[]) {
     
     std::ofstream csv_file("cg_training_log.csv");
     if (csv_file.is_open()) {
-        csv_file << "Epoch,Train_Loss,Val_Loss,Train_MAE_F,Train_MAE_T,Val_MAE_F,Val_MAE_T\n";
+        csv_file << "Epoch,Train_Loss,Val_Loss,Train_MAE_F,Train_MAE_T,Val_MAE_F,Val_MAE_T,"
+                    "Val_Loss_F,Val_Zero_F,Val_MeanForce_R2,Val_MeanForce_R2_Scaled,"
+                    "Val_MeanForce_Scale,Val_MeanForce_Pearson,Val_MeanForce_SNR,Val_MeanForce_Bins\n";
     }
 
     std::cout << "\n[INFO] Caricamento dataset binario in corso: " << dataset_path << "...\n";
@@ -487,6 +502,25 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
+    // Baseline esatto del predittore-zero sulla validazione: e' il riferimento
+    // corretto per decidere se la validazione impara qualcosa.  In v1 la loss
+    // non e' normalizzata, quindi il baseline e' la MSE del target stesso.
+    double val_zero_f_sum2 = 0.0;
+    long val_zero_f_count = 0;
+    for (const auto& frame : val_dataset) {
+        for (const auto& mol : frame.molecules) {
+            for (int k = 0; k < 3; ++k) {
+                const double fv = static_cast<double>(mol.target_force[k]);
+                val_zero_f_sum2 += fv * fv;
+                val_zero_f_count++;
+            }
+        }
+    }
+    const float val_zero_f = (val_zero_f_count > 0)
+        ? static_cast<float>(val_zero_f_sum2 / val_zero_f_count) : 0.0f;
+    std::cout << "[INFO] Baseline predittore-zero sulla validazione (MSE forze): "
+              << val_zero_f << "\n\n";
+
     for (int epoch = 1; epoch <= max_epochs; ++epoch) {
         model->train();
         float train_loss_tot = 0.0f;
@@ -623,6 +657,13 @@ int main(int argc, char* argv[]) {
         float val_mae_forces_tot = 0.0f;
         float val_mae_torques_tot = 0.0f;
         int val_torque_frames = 0;
+        float val_loss_f_tot = 0.0f;   // serve per la skill vs predittore-zero
+        // Accumulatori della curva di forza media di coppia (float64 su CPU:
+        // le somme per bin coprono ~10^5-10^6 contributi per epoca).
+        torch::Tensor mf_sum_target = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mf_sum_pred   = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mf_sum_tsq    = torch::zeros({kMeanForceBins}, torch::kFloat64);
+        torch::Tensor mf_count      = torch::zeros({kMeanForceBins}, torch::kFloat64);
 
         std::vector<CGFrame> val_batch_frames;
 
@@ -708,6 +749,39 @@ int main(int argc, char* argv[]) {
                     val_torque_frames   += val_batch_frames.size();
                 }
 
+                val_loss_f_tot += loss_f.item<float>() * current_batch_weight;
+
+                // Curva di forza media di coppia: per ogni arco entro cutoff si
+                // proietta la forza molecolare del corpo che possiede il sito
+                // "row" sull'asse dell'arco.  Stessa costruzione su target e
+                // predizione, quindi le due curve sono confrontabili.  La lista
+                // archi contiene ogni coppia in entrambe le direzioni, quindi la
+                // statistica si simmetrizza da se'.
+                {
+                    torch::NoGradGuard no_grad_thermo;
+                    torch::Tensor rij_d = r_ij.detach();
+                    torch::Tensor rlen = rij_d.norm(2, 1);
+                    torch::Tensor uij = rij_d / rlen.unsqueeze(-1).clamp_min(1e-12);
+                    torch::Tensor inter = (mol_of_row != mol_of_col).to(torch::kFloat32);
+                    torch::Tensor proj_t =
+                        (batch.target_mol_forces.index_select(0, mol_of_row) * uij)
+                            .sum(1) * inter;
+                    torch::Tensor proj_p =
+                        (pred_mol_forces.detach().index_select(0, mol_of_row) * uij)
+                            .sum(1) * inter;
+                    torch::Tensor bin_idx =
+                        (rlen / cutoff * static_cast<double>(kMeanForceBins))
+                            .to(torch::kLong).clamp(0, kMeanForceBins - 1);
+                    mf_sum_target += torch::bincount(bin_idx, proj_t, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                    mf_sum_pred   += torch::bincount(bin_idx, proj_p, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                    mf_sum_tsq    += torch::bincount(bin_idx, proj_t * proj_t, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                    mf_count      += torch::bincount(bin_idx, inter, kMeanForceBins)
+                                         .to(torch::kCPU).to(torch::kFloat64);
+                }
+
                 progress_bar(static_cast<double>(i + 1) / val_dataset.size());
                 val_batch_frames.clear();
             }
@@ -721,6 +795,73 @@ int main(int argc, char* argv[]) {
         float val_loss_avg = val_loss_tot / val_dataset.size(); 
         float val_mae_forces_avg = val_mae_forces_tot / val_dataset.size();
         float val_mae_torques_avg = (val_torque_frames > 0) ? (val_mae_torques_tot / val_torque_frames) : 0.0f;
+        float val_loss_f_avg = val_loss_f_tot / val_dataset.size();
+
+        // Riduzione della metrica termodinamica.  Statistiche pesate per il
+        // numero di coppie del bin: un bin meglio determinato conta di piu'.
+        double mf_r2 = std::numeric_limits<double>::quiet_NaN();
+        double mf_r2_scaled = std::numeric_limits<double>::quiet_NaN();
+        double mf_scale = std::numeric_limits<double>::quiet_NaN();
+        double mf_pearson = std::numeric_limits<double>::quiet_NaN();
+        double mf_snr = std::numeric_limits<double>::quiet_NaN();
+        int mf_bins_used = 0;
+        {
+            const auto* cnt = mf_count.data_ptr<double>();
+            const auto* st  = mf_sum_target.data_ptr<double>();
+            const auto* sp  = mf_sum_pred.data_ptr<double>();
+            const auto* sq  = mf_sum_tsq.data_ptr<double>();
+            std::vector<double> w, mt, mp, sem2;
+            double wsum = 0.0, wmt = 0.0;
+            for (int64_t b = 0; b < kMeanForceBins; ++b) {
+                if (cnt[b] < kMeanForceMinPairsPerBin) continue;
+                const double n = cnt[b];
+                const double mean_t = st[b] / n;
+                const double mean_p = sp[b] / n;
+                const double var_t = std::max(0.0, sq[b] / n - mean_t * mean_t);
+                w.push_back(n); mt.push_back(mean_t); mp.push_back(mean_p);
+                sem2.push_back(var_t / n);
+                wsum += n; wmt += n * mean_t;
+            }
+            mf_bins_used = static_cast<int>(w.size());
+            if (mf_bins_used >= 3 && wsum > 0.0) {
+                const double mt_bar = wmt / wsum;
+                double ss_res = 0.0, ss_tot = 0.0, sem2_bar = 0.0, wmp = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    ss_res += w[k] * (mp[k] - mt[k]) * (mp[k] - mt[k]);
+                    ss_tot += w[k] * (mt[k] - mt_bar) * (mt[k] - mt_bar);
+                    sem2_bar += w[k] * sem2[k];
+                    wmp += w[k] * mp[k];
+                }
+                sem2_bar /= wsum;
+                if (ss_tot > 0.0) {
+                    mf_r2 = 1.0 - ss_res / ss_tot;
+                    mf_snr = std::sqrt((ss_tot / wsum) / std::max(sem2_bar, 1e-30));
+                }
+                const double mp_bar = wmp / wsum;
+                double cov = 0.0, vt = 0.0, vp = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    const double dt = mt[k] - mt_bar, dp = mp[k] - mp_bar;
+                    cov += w[k] * dt * dp; vt += w[k] * dt * dt; vp += w[k] * dp * dp;
+                }
+                if (vt > 0.0 && vp > 0.0) mf_pearson = cov / std::sqrt(vt * vp);
+                // R^2 dopo un solo fattore di scala: separa errore di forma da
+                // errore di ampiezza.
+                double num = 0.0, den = 0.0;
+                for (size_t k = 0; k < w.size(); ++k) {
+                    num += w[k] * mp[k] * mt[k];
+                    den += w[k] * mp[k] * mp[k];
+                }
+                if (den > 0.0 && ss_tot > 0.0) {
+                    mf_scale = num / den;
+                    double ss_res_s = 0.0;
+                    for (size_t k = 0; k < w.size(); ++k) {
+                        const double e = mf_scale * mp[k] - mt[k];
+                        ss_res_s += w[k] * e * e;
+                    }
+                    mf_r2_scaled = 1.0 - ss_res_s / ss_tot;
+                }
+            }
+        }
 
         std::cout << "\nEpoca [" << epoch << "/" << max_epochs << "]\n"
                   << "  [LR]    " << current_lr << "\n"
@@ -729,13 +870,43 @@ int main(int argc, char* argv[]) {
                   << " | MAE Torques: " << train_mae_torques_avg << "\n"
                   << "  [VAL]   Loss: " << val_loss_avg 
                   << " | MAE Forze: " << val_mae_forces_avg 
-                  << " | MAE Torques: " << val_mae_torques_avg << "\n";
+                  << " | MAE Torques: " << val_mae_torques_avg
+                  << "   (dominata dal rumore: vedi [FORMA])\n";
+        if (mf_bins_used >= 3 && std::isfinite(mf_pearson)) {
+            std::cout << "  [FORMA]  forza media di coppia: Pearson=" << mf_pearson;
+            if (std::isfinite(mf_r2_scaled)) {
+                std::cout << " | R2 ricalibrato=" << mf_r2_scaled
+                          << " (scala " << mf_scale << "x)";
+            }
+            std::cout << " | R2 grezzo=" << mf_r2
+                      << " | SNR=" << mf_snr
+                      << " | bin=" << mf_bins_used << "/" << kMeanForceBins;
+            if (mf_snr < 3.0) {
+                std::cout << "  <- SNR basso: R2 non interpretabile";
+            } else if (std::isfinite(mf_scale) && mf_scale < 0.0) {
+                std::cout << "  <- SEGNO invertito, non solo ampiezza";
+            } else if (std::isfinite(mf_r2_scaled) && std::isfinite(mf_r2)
+                       && mf_r2_scaled - mf_r2 > 0.3) {
+                std::cout << "  <- forma ok, ampiezza mal calibrata";
+            }
+            std::cout << "\n";
+        }
+        if (val_zero_f > 0.0f) {
+            const double skill = 100.0 * (1.0 - val_loss_f_avg / val_zero_f);
+            std::cout << "  [SKILL]  forze istantanee vs predittore-zero: "
+                      << skill << "%";
+            if (skill < 0.0) std::cout << "  <- peggio del non avere rete";
+            std::cout << "\n";
+        }
 
         if (csv_file.is_open()) {
             csv_file << epoch << "," 
                      << train_loss_avg << "," << val_loss_avg << "," 
                      << train_mae_forces_avg << "," << train_mae_torques_avg << "," 
-                     << val_mae_forces_avg << "," << val_mae_torques_avg << "\n";
+                     << val_mae_forces_avg << "," << val_mae_torques_avg << ","
+                     << val_loss_f_avg << "," << val_zero_f << ","
+                     << mf_r2 << "," << mf_r2_scaled << "," << mf_scale << ","
+                     << mf_pearson << "," << mf_snr << "," << mf_bins_used << "\n";
             csv_file.flush();
         }
 
