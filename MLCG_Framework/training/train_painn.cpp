@@ -463,6 +463,7 @@ int main(int argc, char* argv[]) {
         }
     }
     int consecutive_negative_skill = 0;
+    bool skill_was_ever_positive = false;
     float best_val_loss = std::numeric_limits<float>::max();
     
     std::ofstream csv_file("cg_training_log.csv");
@@ -911,6 +912,7 @@ int main(int argc, char* argv[]) {
                       << skill << "%";
             if (skill < 0.0) std::cout << "  <- peggio del non avere rete";
             std::cout << "\n";
+            if (skill > 0.0) skill_was_ever_positive = true;
             consecutive_negative_skill = (skill < 0.0) ? consecutive_negative_skill + 1 : 0;
         }
         // Abort incondizionato su loss non finita.  Un training divergente non
@@ -927,8 +929,22 @@ int main(int argc, char* argv[]) {
         }
 
         if (stop_when_skill_negative && consecutive_negative_skill >= 2) {
-            std::cout << "[INFO] Addestramento interrotto: skill negativa per due "
-                         "epoche consecutive, la rete e' peggio del predittore-zero.\n";
+            if (skill_was_ever_positive) {
+                std::cout << "[INFO] Addestramento interrotto: la skill sulle forze e' "
+                             "negativa per due epoche consecutive dopo essere stata "
+                             "positiva.  E' sovra-allenamento: la rete e' ora peggio del "
+                             "predittore-zero.  Gli snapshot da qui in poi non sono "
+                             "utilizzabili; scegliere fra i precedenti su osservabili "
+                             "strutturali.\n";
+            } else {
+                std::cout << "[ERROR] Addestramento interrotto: la skill sulle forze non "
+                             "e' MAI stata positiva - la rete non ha mai battuto il "
+                             "predittore-zero.  Non e' sovra-allenamento ma un problema a "
+                             "monte: dataset troppo corto (con validation_fraction 0.2 "
+                             "servono alcune centinaia di frame), oppure target, unita' o "
+                             "allineamento forze/configurazioni sbagliati.  Nessuno "
+                             "snapshot di questa run e' utilizzabile.\n";
+            }
             break;
         }
 
