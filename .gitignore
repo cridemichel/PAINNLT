@@ -36,3 +36,15 @@ GROMACS
 **/*.vtf
 **/.DS_Store
 **/MLCG_framework_v2.zip
+
+# Output delle run diagnostiche: evidenza locale, non versionata.
+# thermo/ e smoke/ contengono solo prodotti di script 35 e 39 (dataset, prior,
+# samples, energie, log, checkpoint) piu' copie identiche del config di input.
+# Le sottodirectory nve/, full_pipeline/, memory/, profiling/, morse/ e fene/
+# NON sono qui: contengono report di certificazione che sono tracciati.
+**/diagnostics/thermo/
+**/diagnostics/smoke/
+
+# Stub di provenance lasciati al posto delle copie deduplicate del dataset.
+# Puntano a un master su disco, quindi in git sarebbero rumore.
+*.bin.sha256
