@@ -41,10 +41,16 @@ if [[ -d "${RUN_DIR}" ]] && find "${RUN_DIR}" -mindepth 1 -print -quit | grep -q
     exit 2
 fi
 
+shopt -s nullglob
 prior_samples=("${AB_RUN_DIR}"/replicas/replica_*/prior_only_samples.npz)
-ml_samples=("${AB_RUN_DIR}"/replicas/replica_*/prior_plus_painn_samples.npz)
+ml_samples=("${AB_RUN_DIR}"/replicas/replica_*/prior_plus_model_samples.npz)
+if [[ ${#ml_samples[@]} -eq 0 ]]; then
+    # Schema-v1 run directories used this architecture-specific filename.
+    ml_samples=("${AB_RUN_DIR}"/replicas/replica_*/prior_plus_painn_samples.npz)
+fi
+shopt -u nullglob
 if [[ ${#prior_samples[@]} -lt 2 || ${#prior_samples[@]} -ne ${#ml_samples[@]} ]]; then
-    printf '[ERROR] Expected at least two matched prior/PaiNN replica pairs in %s\n' "${AB_RUN_DIR}" >&2
+    printf '[ERROR] Expected at least two matched prior/model replica pairs in %s\n' "${AB_RUN_DIR}" >&2
     exit 2
 fi
 for path in "${prior_samples[@]}" "${ml_samples[@]}"; do
@@ -105,9 +111,9 @@ fi
     --cgnet-units angstrom \
     --training-report "${TRAINING_RUN_DIR}/ala2_benchmark_report.json" \
     --bins "${FES_BINS}" \
-    --report "${RUN_DIR}/ala2_painn_vs_official_cgnet_report.json" \
-    --plot "${RUN_DIR}/ala2_painn_vs_official_cgnet.png" \
+    --report "${RUN_DIR}/ala2_model_vs_official_cgnet_report.json" \
+    --plot "${RUN_DIR}/ala2_model_vs_official_cgnet.png" \
     2>&1 | tee "${RUN_DIR}/comparison_analysis_stdout.log"
 
 printf '[PASS] Official CGnet comparison completed in %s\n' "${RUN_DIR}"
-printf '[INFO] Send official_cgnet_training_report.json, ala2_painn_vs_official_cgnet_report.json and ala2_painn_vs_official_cgnet.png.\n'
+printf '[INFO] Send official_cgnet_training_report.json, ala2_model_vs_official_cgnet_report.json and ala2_model_vs_official_cgnet.png.\n'

@@ -164,18 +164,24 @@ The decisive outputs are:
 
 - `official_cgnet_training_report.json`, including force MSE relative to the
   harmonic-prior baseline;
-- `ala2_painn_vs_official_cgnet_report.json`, including aggregate and paired
-  replica bootstrap comparisons against both prior-only and PaiNN, plus the
+- `ala2_model_vs_official_cgnet_report.json`, including aggregate and paired
+  replica bootstrap comparisons against both prior-only and the model named
+  in `model_identity`, plus the
   matched Brownian prior-only/CGnet A/B result;
-- `ala2_painn_vs_official_cgnet.png`, containing all five FES surfaces.
+- `ala2_model_vs_official_cgnet.png`, containing all five FES surfaces.
 
 A positive
-`js_improvement_vs_painn_nats_positive_is_cgnet_better` means that official
-CGnet is closer to the atomistic reference. Treat the result as conclusive only
-if the corresponding paired 95% bootstrap interval also excludes zero. This
-public 10,000-frame subset still cannot reproduce the paper's one-million-frame
-production result, but it cleanly tests whether the current failure is specific
-to the PaiNN/framework path.
+`js_improvement_vs_model_nats_positive_is_cgnet_better` means that official
+CGnet is closer to the atomistic reference than that identified model. Treat
+the result as conclusive only if the corresponding paired 95% bootstrap
+interval also excludes zero. This public 10,000-frame subset still cannot
+reproduce the paper's one-million-frame production result, but it cleanly
+tests whether the current failure is specific to the selected framework model.
+
+Schema-v1 trajectories named `prior_plus_painn_samples.npz` remain accepted
+as legacy comparator input. New A/B runs and schema-v2 reports use the neutral
+`prior_plus_model` vocabulary because the learned branch may be PaiNN, an
+ordered hybrid or the isolated CGnet-exact head.
 
 For the architecture-specific conclusion, use
 `cgnet_external.matched_brownian_ab`. Its
@@ -307,3 +313,13 @@ examining that report. If the isolated head behaves consistently with the
 official CGnet comparator, rebuild ESPResSo and use the same script with
 `--fes-only`; its default FES screen is four replicas of 50,000 production
 steps.
+
+The completed controlled result is documented in
+[CGNET_EXACT_VALIDATION.md](CGNET_EXACT_VALIDATION.md). In force units, the
+framework exact head matched official CGnet within about 0.066% in validation
+MSE and 0.046% in validation MAE. In the short 48-bin FES screen it reduced JS
+divergence from 0.3425 for the ESPResSo harmonic prior to 0.3000; official
+CGnet obtained 0.2760 under its Brownian integrator. The document records why
+the remaining cross-engine FES gap is not a pure architecture measurement and
+defines the validation gate for transferring a shared per-copy ordered head to
+TEL22.

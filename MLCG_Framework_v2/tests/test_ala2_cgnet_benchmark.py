@@ -402,14 +402,43 @@ class Ala2CgnetBenchmarkTests(unittest.TestCase):
         self.assertGreater(wrong["js_divergence_nats"], identical["js_divergence_nats"])
         self.assertGreater(wrong["fes_mse_kbt2"], identical["fes_mse_kbt2"])
 
+    def test_fes_model_identity_detects_exact_head_without_painn(self):
+        diagnostic = {
+            "model_diagnostic": {
+                "architecture_variant": "cgnet_ordered_geometry_tanh_v1",
+                "ordered_geometry": {"painn_branch_enabled": False},
+            }
+        }
+        identity = fes_analyzer.infer_model_identity(diagnostic)
+        self.assertEqual(identity["key"], "cgnet_exact_head")
+        self.assertEqual(identity["label"], "CGnet-exact head")
+        self.assertFalse(identity["painn_branch_enabled"])
+        self.assertEqual(identity["identity_source"], "training_report")
+
+    def test_fes_model_identity_supports_explicit_generic_override(self):
+        identity = fes_analyzer.infer_model_identity(
+            None, key_override="tel22_shared_head", label_override="TEL22 shared head"
+        )
+        self.assertEqual(identity["key"], "tel22_shared_head")
+        self.assertEqual(identity["label"], "TEL22 shared head")
+        self.assertEqual(identity["identity_source"], "command_line_override")
+        with self.assertRaises(ValueError):
+            fes_analyzer.infer_model_identity(None, key_override="not-a-json-key")
+
     def test_ab_runner_uses_matched_checkpoint_and_paper_metric(self):
         runner = (SCRIPTS / "02_test_ala2_free_energy_ab.sh").read_text()
         self.assertIn("--disable_ml", runner)
         self.assertEqual(runner.count('--checkpoint "${common_checkpoint}"'), 2)
         self.assertIn("--thermostat_seed \"$((4200 + replica))\"", runner)
+        self.assertIn("prior_plus_model_samples.npz", runner)
+        self.assertNotIn("prior+PaiNN production", runner)
         analyzer_source = (SCRIPTS / "analyze_ala2_fes_ab.py").read_text()
         self.assertIn('"fes_mse_kbt2"', analyzer_source)
         self.assertIn("paper_simulation_protocol", analyzer_source)
+        self.assertIn('"prior_plus_model"', analyzer_source)
+        self.assertIn('"model_identity"', analyzer_source)
+        self.assertIn('"schema_version": 2', analyzer_source)
+        self.assertNotIn('(\"Prior + PaiNN\", ml_total)', analyzer_source)
 
     def test_official_cgnet_comparator_is_reference_not_cgnet_like(self):
         source = (SCRIPTS / "run_official_cgnet_comparator.py").read_text()
@@ -430,9 +459,14 @@ class Ala2CgnetBenchmarkTests(unittest.TestCase):
         self.assertIn("--cgnet-prior-samples", runner)
         self.assertIn("--cgnet-samples", runner)
         self.assertNotIn("PYRESSO=", runner)
+        self.assertIn("prior_plus_model_samples.npz", runner)
+        self.assertIn("prior_plus_painn_samples.npz", runner)
+        self.assertIn("ala2_model_vs_official_cgnet_report.json", runner)
         analyzer_source = (SCRIPTS / "analyze_ala2_fes_ab.py").read_text()
         self.assertIn('"matched_brownian_ab"', analyzer_source)
         self.assertIn('"cgnet_correction_improves_fes"', analyzer_source)
+        self.assertIn('"paired_replica_bootstrap_vs_model"', analyzer_source)
+        self.assertIn('"scientific_verdict_vs_model"', analyzer_source)
 
     def test_generic_paired_bootstrap_rewards_candidate(self):
         reference = np.asarray([[50.0, 1.0], [1.0, 25.0]])

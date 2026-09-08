@@ -110,7 +110,7 @@ for ((replica=0; replica<REPLICAS; replica++)); do
     )
 
     prior_sample="${replica_dir}/prior_only_samples.npz"
-    ml_sample="${replica_dir}/prior_plus_painn_samples.npz"
+    ml_sample="${replica_dir}/prior_plus_model_samples.npz"
     prior_samples+=("${prior_sample}")
     ml_samples+=("${ml_sample}")
 
@@ -138,7 +138,7 @@ for ((replica=0; replica<REPLICAS; replica++)); do
             2>&1 | tee prior_only_stdout.log
     )
 
-    printf '[INFO] Replica %s/%s: prior+PaiNN production (%s steps).\n' "$((replica + 1))" "${REPLICAS}" "${PRODUCTION_STEPS}"
+    printf '[INFO] Replica %s/%s: prior+model production (%s steps).\n' "$((replica + 1))" "${REPLICAS}" "${PRODUCTION_STEPS}"
     (
         cd "${replica_dir}"
         "${PYRESSO}" "${FRAMEWORK_ROOT}/simulation/run_cg_md.py" \
@@ -158,7 +158,7 @@ for ((replica=0; replica<REPLICAS; replica++)); do
             --device "${DEVICE}" \
             --neighbor_search nsquare \
             --no_log \
-            2>&1 | tee prior_plus_painn_stdout.log
+            2>&1 | tee prior_plus_model_stdout.log
     )
 done
 

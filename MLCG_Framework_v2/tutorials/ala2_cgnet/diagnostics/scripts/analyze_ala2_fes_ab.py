@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Compare matched Ala2 prior-only and prior+PaiNN free-energy surfaces."""
+"""Compare matched Ala2 prior-only and prior-plus-model free-energy surfaces."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 import matplotlib
@@ -15,6 +16,54 @@ import numpy as np
 
 
 KBT_KJ_MOL = 0.008314462618 * 300.0
+
+
+def infer_model_identity(
+    training_diagnostic: dict | None,
+    key_override: str | None = None,
+    label_override: str | None = None,
+) -> dict[str, str | bool | None]:
+    """Return a report/plot identity without assuming that every model is PaiNN."""
+    diagnostic = training_diagnostic or {}
+    model_diagnostic = diagnostic.get("model_diagnostic", {})
+    architecture_variant = str(
+        model_diagnostic.get("architecture_variant", "")
+    ).strip()
+    ordered = model_diagnostic.get("ordered_geometry", {})
+    painn_branch_enabled = ordered.get("painn_branch_enabled")
+
+    if architecture_variant == "cgnet_ordered_geometry_tanh_v1":
+        inferred_key = "cgnet_exact_head"
+        inferred_label = "CGnet-exact head"
+    elif architecture_variant.startswith("painn_ordered_geometry"):
+        inferred_key = "painn_ordered_geometry"
+        inferred_label = "PaiNN + ordered-geometry head"
+    elif "painn" in architecture_variant.lower():
+        inferred_key = "painn"
+        inferred_label = "PaiNN"
+    else:
+        inferred_key = "learned_model"
+        inferred_label = "learned model"
+
+    key = (key_override or inferred_key).strip()
+    label = (label_override or inferred_label).strip()
+    if not re.fullmatch(r"[a-z][a-z0-9_]*", key):
+        raise ValueError("Model key must match [a-z][a-z0-9_]*")
+    if not label:
+        raise ValueError("Model label must not be empty")
+    return {
+        "key": key,
+        "label": label,
+        "architecture_variant": architecture_variant or None,
+        "painn_branch_enabled": painn_branch_enabled,
+        "identity_source": (
+            "command_line_override"
+            if key_override is not None or label_override is not None
+            else "training_report"
+            if training_diagnostic is not None
+            else "generic_default"
+        ),
+    }
 
 
 def minimum_image(vector: np.ndarray, box: np.ndarray | None) -> np.ndarray:
@@ -194,6 +243,8 @@ def main() -> None:
     parser.add_argument("--cgnet-prior-samples", nargs="+", type=Path)
     parser.add_argument("--cgnet-units", choices=("angstrom", "nm"), default="angstrom")
     parser.add_argument("--training-report", type=Path)
+    parser.add_argument("--model-key")
+    parser.add_argument("--model-label")
     parser.add_argument("--bins", type=int, default=48)
     parser.add_argument("--pseudocount", type=float, default=0.5)
     parser.add_argument("--min-reference-count", type=int, default=3)
@@ -218,6 +269,16 @@ def main() -> None:
         or args.bootstrap_samples < 1
     ):
         raise ValueError("Invalid histogram settings")
+
+    training_diagnostic = None
+    if args.training_report is not None:
+        training_diagnostic = json.loads(args.training_report.read_text())
+    model_identity = infer_model_identity(
+        training_diagnostic,
+        key_override=args.model_key,
+        label_override=args.model_label,
+    )
+    model_label = str(model_identity["label"])
 
     with np.load(args.reference, allow_pickle=False) as data:
         reference_coordinates = np.asarray(data["coordinates_nm"], dtype=np.float64)
@@ -249,7 +310,7 @@ def main() -> None:
                 "prior_frames": int(len(prior_phi)),
                 "ml_frames": int(len(ml_phi)),
                 "prior": prior_metrics,
-                "prior_plus_painn": ml_metrics,
+                "prior_plus_model": ml_metrics,
                 "js_improvement_nats": float(
                     prior_metrics["js_divergence_nats"] - ml_metrics["js_divergence_nats"]
                 ),
@@ -278,16 +339,16 @@ def main() -> None:
         args.bootstrap_samples,
     )
     if js_improvement > 0.0 and bootstrap["ci95_low_nats"] > 0.0:
-        verdict = "painn_improves_fes"
+        verdict = "model_improves_fes"
     elif js_improvement < 0.0 and bootstrap["ci95_high_nats"] < 0.0:
-        verdict = "painn_worsens_fes"
+        verdict = "model_worsens_fes"
     else:
         verdict = "inconclusive_at_current_sampling"
 
     model_surfaces = [
         ("Reference atomistico", reference_counts),
         ("Solo prior", prior_total),
-        ("Prior + PaiNN", ml_total),
+        (f"Prior +\n{model_label}", ml_total),
     ]
     cgnet_prior_counts_per_replica = None
     cgnet_prior_per_replica = None
@@ -355,14 +416,14 @@ def main() -> None:
                     aggregate_prior["js_divergence_nats"]
                     - aggregate_cgnet["js_divergence_nats"]
                 ),
-                "js_improvement_vs_painn_nats_positive_is_cgnet_better": float(
+                "js_improvement_vs_model_nats_positive_is_cgnet_better": float(
                     aggregate_ml["js_divergence_nats"]
                     - aggregate_cgnet["js_divergence_nats"]
                 ),
                 "fes_mse_improvement_vs_prior_kbt2_positive_is_cgnet_better": float(
                     aggregate_prior["fes_mse_kbt2"] - aggregate_cgnet["fes_mse_kbt2"]
                 ),
-                "fes_mse_improvement_vs_painn_kbt2_positive_is_cgnet_better": float(
+                "fes_mse_improvement_vs_model_kbt2_positive_is_cgnet_better": float(
                     aggregate_ml["fes_mse_kbt2"] - aggregate_cgnet["fes_mse_kbt2"]
                 ),
             },
@@ -436,7 +497,7 @@ def main() -> None:
                 args.pseudocount,
                 args.bootstrap_samples,
             )
-            vs_painn = bootstrap_delta(
+            vs_model = bootstrap_delta(
                 reference_counts,
                 ml_counts,
                 cgnet_counts_per_replica,
@@ -444,27 +505,32 @@ def main() -> None:
                 args.bootstrap_samples,
             )
             cgnet_metrics["paired_replica_bootstrap_vs_prior"] = vs_prior
-            cgnet_metrics["paired_replica_bootstrap_vs_painn"] = vs_painn
-            cgnet_vs_painn = cgnet_metrics["comparison"][
-                "js_improvement_vs_painn_nats_positive_is_cgnet_better"
+            cgnet_metrics["paired_replica_bootstrap_vs_model"] = vs_model
+            cgnet_vs_model = cgnet_metrics["comparison"][
+                "js_improvement_vs_model_nats_positive_is_cgnet_better"
             ]
-            if cgnet_vs_painn > 0.0 and vs_painn["ci95_low_nats"] > 0.0:
-                cgnet_metrics["scientific_verdict_vs_painn"] = "cgnet_improves_fes_over_painn"
-            elif cgnet_vs_painn < 0.0 and vs_painn["ci95_high_nats"] < 0.0:
-                cgnet_metrics["scientific_verdict_vs_painn"] = "painn_improves_fes_over_cgnet"
+            if cgnet_vs_model > 0.0 and vs_model["ci95_low_nats"] > 0.0:
+                cgnet_metrics["scientific_verdict_vs_model"] = (
+                    "cgnet_improves_fes_over_model"
+                )
+            elif cgnet_vs_model < 0.0 and vs_model["ci95_high_nats"] < 0.0:
+                cgnet_metrics["scientific_verdict_vs_model"] = (
+                    "model_improves_fes_over_cgnet"
+                )
             else:
-                cgnet_metrics["scientific_verdict_vs_painn"] = (
+                cgnet_metrics["scientific_verdict_vs_model"] = (
                     "inconclusive_at_current_sampling"
                 )
         else:
             cgnet_metrics["bootstrap_note"] = (
-                "CGnet replica count differs from the matched prior/PaiNN count"
+                "CGnet replica count differs from the matched prior/model count"
             )
         model_surfaces.append(("CGnet ufficiale", cgnet_counts))
 
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "pass",
+        "model_identity": model_identity,
         "scientific_verdict": verdict,
         "reference_frames": int(len(reference_phi)),
         "matched_replicas": len(prior_counts),
@@ -476,13 +542,22 @@ def main() -> None:
         },
         "aggregate": {
             "prior_only": aggregate_prior,
-            "prior_plus_painn": aggregate_ml,
+            "prior_plus_model": aggregate_ml,
             "js_improvement_nats_positive_is_better": js_improvement,
             "fes_mse_improvement_kbt2_positive_is_better": fes_mse_improvement,
         },
         "paired_replica_bootstrap": bootstrap,
         "per_replica": per_replica,
         "cgnet_external": cgnet_metrics,
+        "schema_migration": {
+            "previous_schema_version": 1,
+            "aggregate.prior_plus_painn": "aggregate.prior_plus_model",
+            "per_replica[].prior_plus_painn": "per_replica[].prior_plus_model",
+            "note": (
+                "Schema-v1 reports remain valid historical evidence; schema v2 uses "
+                "model-neutral keys and records the concrete architecture in model_identity."
+            ),
+        },
         "literature_comparison": {
             "metric_alignment": (
                 "fes_mse_kbt2 uses the paper's shifted squared free-energy-surface "
@@ -502,8 +577,8 @@ def main() -> None:
             ),
         },
     }
-    if args.training_report is not None:
-        report["training_diagnostic"] = json.loads(args.training_report.read_text())
+    if training_diagnostic is not None:
+        report["training_diagnostic"] = training_diagnostic
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
