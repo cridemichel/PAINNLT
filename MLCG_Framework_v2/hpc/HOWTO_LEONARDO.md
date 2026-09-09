@@ -40,7 +40,7 @@ non è definito.
 ### 1. Verifica che si possa costruire
 
 ```bash
-ssh <utente>@login.leonardo.cineca.it
+ssh cristiano.demichele@login.leonardo.cineca.it
 module load apptainer
 apptainer build --fakeroot /tmp/prova.sif docker://alpine:latest && echo OK
 ```
@@ -71,8 +71,20 @@ Leonardo e analizzi i `samples.npz`, che sono numpy, la versione è indifferente
 ### 4. Personalizza lo SLURM
 
 In `leonardo_submit.slurm` c'è **una sola cosa obbligatoria**: sostituire
-`--account=CAMBIA_QUESTO` con il tuo account CINECA. I percorsi si ricavano da
-`$CINECA_SCRATCH` e si possono sovrascrivere con `PROJECT_ROOT` e `IMAGE`.
+`--account=CAMBIA_QUESTO` con il codice del progetto CINECA.
+
+Attenzione alla distinzione: `cristiano.demichele` è lo **username**, usato per
+l'ssh e per i percorsi. `--account` vuole invece il **codice di progetto**
+dell'allocazione (`IscrB_...`, `try..._...`), che è quello a cui vengono
+addebitate le ore. Per elencare i progetti a cui appartieni e le ore residue:
+
+```bash
+saldo -b
+```
+
+I percorsi non richiedono lo username: si ricavano da `$CINECA_SCRATCH` e
+`$HOME`, che sul cluster si risolvono da soli. Si possono comunque sovrascrivere
+con `PROJECT_ROOT` e `IMAGE`.
 
 ### 5. Esegui a stadi
 
