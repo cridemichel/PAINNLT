@@ -1,0 +1,68 @@
+Bootstrap: docker
+From: pytorch/pytorch:{{ TORCH_TAG }}
+
+%arguments
+    # Tag dell'immagine PyTorch di partenza.  Verifica quali esistono con:
+    #   curl -s 'https://hub.docker.com/v2/repositories/pytorch/pytorch/tags?page_size=100' \
+    #     | python3 -c 'import json,sys;[print(t["name"]) for t in json.load(sys.stdin)["results"] if "devel" in t["name"]]'
+    #
+    # Vincoli nella scelta:
+    #  - serve la variante "devel": contiene nvcc e gli header di LibTorch, che
+    #    servono per compilare il trainer C++ e il plugin ESPResSo.  La variante
+    #    "runtime" non basta.
+    #  - gli A100 di Leonardo sono compute capability 8.0: CUDA 11.8 e 12.x vanno
+    #    entrambe bene.
+    #  - i checkpoint sono archivi TorchScript.  Se vuoi caricare su Leonardo un
+    #    modello allenato sul Mac (torch 2.10) serve un torch >= quello, altrimenti
+    #    il caricamento fallisce.  Nella direzione opposta vale lo stesso.  Se
+    #    alleni da zero su Leonardo e analizzi i samples.npz (che sono numpy, non
+    #    torch) la versione e' indifferente.
+    TORCH_TAG=2.5.1-cuda12.4-cudnn9-devel
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update && apt-get install -y --no-install-recommends \
+        build-essential cmake git wget curl \
+        libopenmpi-dev openmpi-bin \
+        libfftw3-dev libboost-all-dev \
+        libhdf5-openmpi-dev \
+        pkg-config \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Cython serve a compilare painn.pyx dentro ESPResSo.  Va da pip e non da
+    # apt: la versione di sistema puo' essere piu' vecchia di quella che
+    # ESPResSo richiede, e nel container non c'e' ragione di usare quella.
+    pip install --no-cache-dir \
+        numpy scipy matplotlib MDAnalysis h5py Cython
+
+%environment
+    # Percorsi di LibTorch dentro l'immagine pytorch/pytorch.  Sono ricavati a
+    # runtime invece che cablati, perche' cambiano con la versione di Python
+    # dell'immagine base.
+    export TORCH_PREFIX="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))')"
+    export Torch_DIR="${TORCH_PREFIX}/share/cmake/Torch"
+    export CMAKE_PREFIX_PATH="${TORCH_PREFIX}:${CMAKE_PREFIX_PATH}"
+    export LD_LIBRARY_PATH="${TORCH_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
+%labels
+    Description Ambiente per MLCG_Framework_v2: trainer PaiNN C++ e plugin ESPResSo su CUDA
+    EspressoPinned 5.0.0-58-g84cc1d924
+
+%help
+    Immagine per il deploy di MLCG_Framework_v2 su Leonardo (CINECA).
+
+    Costruzione, sul NODO DI LOGIN di Leonardo:
+        module load apptainer
+        apptainer build --fakeroot painn.sif painn_leonardo.def
+
+    Non costruire questa immagine con Docker sul Mac: su Apple Silicon
+    produrrebbe un'immagine arm64, mentre Leonardo e' x86_64, e il
+    cross-build in emulazione QEMU dell'immagine PyTorch devel (~10 GB)
+    costa decine di minuti piu' un trasferimento da 10 GB.  Costruendola
+    qui, Apptainer scarica l'immagine base direttamente e nativamente.
+
+    Verifica preliminare che la costruzione sia permessa:
+        apptainer build --fakeroot /tmp/prova.sif docker://alpine:latest
+
+    Dopo la costruzione, il bootstrap del framework:
+        bash MLCG_Framework_v2/hpc/bootstrap_leonardo.sh
