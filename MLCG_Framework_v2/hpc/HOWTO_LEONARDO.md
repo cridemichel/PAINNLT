@@ -1,152 +1,156 @@
 # Deploy di MLCG_Framework_v2 su Leonardo (CINECA)
 
 Il caso d'uso: le traiettorie all-atom lunghe **sono già su Leonardo**, e va
-portato lì solo il framework. Questo cambia il piano rispetto alla versione
-precedente di questa guida, che trasferiva un tar da 10 GB.
+portato lì solo il framework. Niente da trasferire: il framework si clona, e
+l'immagine del container si costruisce sul cluster.
 
-## Perché non costruire l'immagine con Docker sul Mac
+## I quattro vincoli del sistema
 
-Su Apple Silicon `docker build` produce un'immagine **arm64**, e Leonardo è
-**x86_64**: quell'immagine non parte. Per ottenerne una giusta servirebbe
-`docker build --platform linux/amd64`, che gira in emulazione QEMU — su
-un'immagine PyTorch `devel` da ~10 GB sono decine di minuti, seguiti da un
-`docker save` e da un trasferimento da 10 GB.
+Sono quelli che decidono la forma della procedura. Vale la pena averli in
+mente prima di eseguire qualsiasi cosa.
 
-Apptainer su Leonardo scarica l'immagine base da Docker Hub da sé, nativamente.
-Quindi si costruisce là, e sul Mac Docker non serve affatto.
+1. **Sul nodo di login ogni processo muore dopo 10 minuti di CPU time**
+   (`ulimit -t` → 600). Costruire il `.sif` dell'immagine PyTorch *devel*
+   (~10 GB da scaricare, decomprimere e ricomprimere in squashfs) li supera.
+   Quindi la costruzione è un job, non un comando interattivo.
+2. **I nodi di calcolo non raggiungono internet, i nodi di login sì.** La
+   partizione `lrd_all_serial` gira *sui* nodi di login (`login08`, `login13`),
+   quindi è l'unico posto dove un job può scaricare l'immagine base da Docker
+   Hub. Per lo stesso motivo il clone di ESPResSo lo fa il wrapper sul nodo di
+   login, prima di sottomettere la compilazione: così quest'ultima può girare
+   su DCGP, che ha molti più core ma nessuna rete.
+3. **Il progetto ISCRA B ha due associazioni**: `IscrB_G4MES` sul Booster (le
+   ore GPU) e `IscrB_G4MES_0` su DCGP (le ore CPU). Compilare ESPResSo e
+   leggere una traiettoria con MDAnalysis non toccano la GPU: farli su
+   `boost_usr_prod` consuma ore A100 per lavoro interamente seriale o
+   multicore. Vanno su DCGP.
+4. **`$HOME` ha una quota piccola.** Immagine, cache di Apptainer, build di
+   ESPResSo e checkpoint stanno sotto l'area di progetto in `/leonardo_work`,
+   non in home. Lo scratch è un'alternativa ma viene ripulito periodicamente:
+   non è il posto dove tenere un'immagine e una build che si riusano per mesi.
 
-## Cosa va trasferito
-
-Niente, in pratica: si clona.
-
-- **Il framework** è su GitHub. Un `git clone` porta esattamente i file
-  versionati ed esclude dataset, build e traiettorie, che sono in `.gitignore`.
-- **ESPResSo non è tracciato** nel repo: è un clone separato di
-  `espressomd/espresso`. Il bootstrap lo clona al commit su cui il plugin è
-  stato validato, **`84cc1d924`** (`5.0.0-58-g84cc1d924`). La versione va
-  fissata: il plugin innesta file dentro `src/core/nonbonded_interactions` e
-  `src/python/espressomd`, e una versione diversa può averli spostati o
-  cambiato le firme.
-
-## Attenzione alle quote
-
-`$HOME` su Leonardo ha una quota piccola. L'immagine `.sif` pesa alcuni GB e la
-build di ESPResSo altrettanto: mettere entrambe sotto `$CINECA_SCRATCH` o
-`$WORK`. Gli script assumono `$CINECA_SCRATCH` e ricadono su `$HOME` solo se
-non è definito.
-
-## Passi
-
-### 1. Verifica che si possa costruire
+## Prerequisito: l'area di progetto deve essere accessibile
 
 ```bash
-ssh cristiano.demichele@login.leonardo.cineca.it
-module load apptainer
-apptainer build --fakeroot /tmp/prova.sif docker://alpine:latest && echo OK
+id                                  # devono comparire i gruppi IscrB_G4MES*
+ls -ld /leonardo_work/IscrB_G4MES
 ```
 
-Se questo non funziona — nodo di login senza accesso a Docker Hub, o
-`--fakeroot` non permesso — fermati qui e dimmelo: la strada diventa il
-cross-build con Docker, che è più lenta ma percorribile.
+Se questo dà *Permission denied* mentre `id` mostra i gruppi giusti, non è un
+problema di configurazione: è la mappa delle identità dei server Lustre non
+ancora allineata, cosa che capita nelle prime ore dopo l'attivazione di
+un'utenza. Si risolve da sola, o con una segnalazione a `superc@cineca.it`.
+Fino ad allora non c'è dove mettere l'immagine, e non si parte.
 
-### 2. Clona il framework
+## La procedura
 
 ```bash
-cd "$CINECA_SCRATCH"
+# 0. l'area di lavoro
+BASE=/leonardo_work/IscrB_G4MES/$USER
+mkdir -p "$BASE" && cd "$BASE"
+
+# 1. il framework
 git clone https://github.com/cridemichel/PAINNLT.git
+cd PAINNLT/MLCG_Framework_v2
+
+# 2. l'immagine del container  (job su lrd_all_serial, ~1 ora)
+bash hpc/submit_leonardo.sh image
+
+# 3. ESPResSo + plugin + trainer  (clone qui, compilazione su DCGP, ~1 ora)
+bash hpc/submit_leonardo.sh bootstrap
+
+# 4. il dataset CG dalla traiettoria all-atom  (DCGP)
+bash hpc/submit_leonardo.sh dataset \
+     AA_TRAJECTORY=/percorso/md.trr AA_TOPOLOGY=/percorso/md.gro
+
+# 5. il pavimento di rumore  (DCGP) — vedi sotto, è lo stadio che conta
+bash hpc/submit_leonardo.sh noisefloor
+
+# 6. training, selezione del checkpoint, produzione  (Booster, 1 GPU)
+bash hpc/submit_leonardo.sh train
+bash hpc/submit_leonardo.sh select
+bash hpc/submit_leonardo.sh production
 ```
 
-### 3. Costruisci l'immagine
+`submit_leonardo.sh` è l'unico posto dove compaiono account, partizioni e
+risorse: assegna a ogni stadio quelle giuste e sottomette
+`leonardo_submit.slurm`, che contiene solo il corpo dei job. Per forzare una
+QOS diversa: `QOS=boost_qos_dbg bash hpc/submit_leonardo.sh train`.
+
+Monitoraggio:
 
 ```bash
-cd "$CINECA_SCRATCH"
-apptainer build --fakeroot painn.sif PAINNLT/MLCG_Framework_v2/hpc/painn_leonardo.def
+squeue -u $USER
+tail -f slurm-mlcg_<stadio>-<JOBID>.out
 ```
 
-Il tag PyTorch è un argomento del file `.def`. Vale la pena scegliere una
-versione **non più vecchia** di quella del Mac (attualmente 2.10) se vuoi che i
-checkpoint TorchScript siano caricabili nei due sensi. Se alleni da zero su
-Leonardo e analizzi i `samples.npz`, che sono numpy, la versione è indifferente.
+## Le forze nella traiettoria
 
-### 4. Personalizza lo SLURM
-
-In `leonardo_submit.slurm` c'è **una sola cosa obbligatoria**: sostituire
-`--account=CAMBIA_QUESTO` con il codice del progetto CINECA.
-
-Attenzione alla distinzione: `cristiano.demichele` è lo **username**, usato per
-l'ssh e per i percorsi. `--account` vuole invece il **codice di progetto**
-dell'allocazione (`IscrB_...`, `try..._...`), che è quello a cui vengono
-addebitate le ore. Per elencare i progetti a cui appartieni e le ore residue:
+Il dataset è *force matching*: `build_cg_dataset.py` legge le forze frame per
+frame. Una produzione GROMACS scritta con `nstfout=0` contiene solo coordinate
+e non è utilizzabile. Da verificare **prima** di sottomettere lo stadio
+`dataset`:
 
 ```bash
-saldo -b
+gmx check -f /percorso/md.trr      # deve elencare i frame di forza
+grep -i nstfout /percorso/*.mdp
 ```
 
-I percorsi non richiedono lo username: si ricavano da `$CINECA_SCRATCH` e
-`$HOME`, che sul cluster si risolvono da soli. Si possono comunque sovrascrivere
-con `PROJECT_ROOT` e `IMAGE`.
+Se le forze non ci sono, si rigenerano con `gmx mdrun -rerun` sulla traiettoria
+esistente: è un job GPU, e va messo in conto perché diventa il primo consumo di
+ore del progetto.
 
-### 5. Esegui a stadi
+## A stadi, e non tutto insieme
+
+Deliberatamente. Ogni passo produce un numero che decide il successivo: quanti
+frame ha il dataset, quanto segnale c'è, dove cade il picco della skill, quale
+checkpoint tiene la struttura. Una pipeline che gira dritta fino in fondo
+restituisce un risultato che non si sa leggere.
+
+Lo stadio che conta più di tutti è **`noisefloor`, subito dopo `dataset`**.
+Sul dataset a 1001 frame usato finora il segnale di forza media è ~1% della
+varianza del target: in quel regime la validation loss non ordina i modelli — è
+per il 98% rumore irriducibile — e la selezione va fatta sulla struttura, con
+lo sweep dello stadio `select`. Con dati alla scala di CGnet (Wang et al. 2019:
+10^6 frame su 11 μs per un modello a 5 bead) la cross-validation sull'errore di
+forza torna a predire l'errore di energia libera, e la selezione diventa molto
+più economica. Quale dei due regimi vale, lo dice lo script 33 sul dataset
+nuovo — non si può assumere.
+
+## Varianti di training
+
+`03_train_model.sh` legge `tel22_training_config.json` e basta. Per allenare
+una variante si copia il config scelto su quel nome, così il file che ha
+prodotto il modello resta accanto al modello:
 
 ```bash
-cd "$CINECA_SCRATCH/PAINNLT"
-sbatch --export=ALL,STAGE=bootstrap MLCG_Framework_v2/hpc/leonardo_submit.slurm
+cd tutorials/tel22
+cp diagnostics/configs/tel22_training_config_C3_spectral4_snapshots.json \
+   tel22_training_config.json
+bash ../../hpc/submit_leonardo.sh train
 ```
 
-`bootstrap` clona ESPResSo, innesta il plugin e compila ESPResSo e il trainer.
-Verifica alla fine che `pypresso`, `painn.so` e `train_painn` esistano, e
-segnala se `painn.so` non include il supporto ordered-geometry.
+C3 (`spectral_projection_strength 4.0`) è la variante indicata dalla diagnosi
+su TEL22: il fallimento osservato oltre il minimo della val loss è *forze non
+limitate*, e la proiezione spettrale limita direttamente la costante di
+Lipschitz per layer.
 
-Poi, uno stadio alla volta:
+## Versione di ESPResSo e di PyTorch
 
-```bash
-sbatch --export=ALL,STAGE=dataset,AA_TRAJECTORY=/percorso/md_whole.trr,AA_TOPOLOGY=/percorso/md.gro \
-       MLCG_Framework_v2/hpc/leonardo_submit.slurm
-sbatch --export=ALL,STAGE=noisefloor  MLCG_Framework_v2/hpc/leonardo_submit.slurm
-sbatch --export=ALL,STAGE=train       MLCG_Framework_v2/hpc/leonardo_submit.slurm
-sbatch --export=ALL,STAGE=production  MLCG_Framework_v2/hpc/leonardo_submit.slurm
-sbatch --export=ALL,STAGE=select      MLCG_Framework_v2/hpc/leonardo_submit.slurm
-```
+ESPResSo è fissato al commit **`84cc1d924`** (`5.0.0-58-g84cc1d924`): il plugin
+innesta file dentro `src/core/nonbonded_interactions` e `src/python/espressomd`
+e tocca le liste di CMake, e una versione diversa può averli spostati o
+cambiato le firme.
 
-**A stadi e non tutto insieme, deliberatamente.** Ogni passo produce un numero
-che decide il successivo: quanti frame ha il dataset, quanto segnale c'è, dove
-cade il picco, quale checkpoint tiene la struttura. Una pipeline che gira dritta
-fino in fondo restituisce un risultato che non si sa leggere.
-
-### 6. Lo stadio che conta più di tutti
-
-**`noisefloor`, subito dopo `dataset`.** È il criterio guida che determina tutto
-il resto, e va misurato prima di allenare.
-
-Sul dataset a 1001 frame usato finora, il segnale di forza media è ~1% della
-varianza del target. In quel regime la validation loss non ordina i modelli — è
-per il 98% rumore irriducibile — e la selezione va fatta sulla struttura, con lo
-sweep dello stadio `select`.
-
-Con dati alla scala di CGnet la situazione cambia: Wang et al. 2019 usano
-**1 000 000 di frame** su 11 μs per un modello a 5 bead, e verificano che la
-cross-validation sull'errore di forza predice l'errore di energia libera — «i
-minimi nella differenza di energia libera corrispondono ai minimi nelle curve di
-cross-validation». Nello stesso articolo avvertono che il CG force matching
-richiede molti più dati del force matching ordinario, perché la forza media va
-appresa vicino a ogni configurazione.
-
-Quindi: se sulle traiettorie lunghe il segnale sale, torni nel regime dove il
-criterio della letteratura funziona, e la selezione diventa molto più economica.
-Se resta all'1%, valgono le conclusioni raccolte sul dataset corto — inclusa
-quella che la capacità ha un optimum e che la skill sulle forze può ordinare al
-contrario.
+Il tag PyTorch è un argomento di `painn_leonardo.def`
+(`TORCH_TAG=2.5.1-cuda12.4-cudnn9-devel`). I checkpoint sono archivi
+TorchScript: per caricare su Leonardo un modello allenato sul Mac (torch 2.10)
+serve un torch non più vecchio, e viceversa. Allenando da zero qui e analizzando
+i `samples.npz` (che sono numpy) la versione è indifferente.
 
 ## Note su CUDA
 
 Il codice non va toccato. Il trainer preferisce già CUDA e cade su MPS solo se
-CUDA manca (`train_painn.cpp`), e il driver di simulazione accetta
+CUDA manca (`train_painn.cpp`); il driver di simulazione accetta
 `--device cuda`, che lo stadio `production` passa. Il parametro
 `mps_empty_cache_every_batches` resta nelle config ed è inerte su CUDA.
-
-## Monitoraggio
-
-```bash
-squeue -u $USER
-tail -f slurm-mlcg_tel22-<JOBID>.out
-```
