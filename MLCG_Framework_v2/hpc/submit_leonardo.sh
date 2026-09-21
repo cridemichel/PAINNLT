@@ -45,6 +45,11 @@ PROJECT_ROOT="${PROJECT_ROOT:-$(cd -- "$FRAMEWORK/.." && pwd)}"
 # vanno sulla seconda, che non consuma il budget di acceleratori.
 ACCOUNT_GPU="${ACCOUNT_GPU:-IscrB_G4MES}"
 ACCOUNT_CPU="${ACCOUNT_CPU:-IscrB_G4MES_0}"
+# lrd_all_serial non accetta necessariamente le stesse associazioni delle
+# partizioni di calcolo: l'account _0 e' legato a DCGP e viene rifiutato con
+# "Invalid account or account/partition combination".  Lasciato vuoto, nessun
+# --account viene passato e vale quello di default dell'utente.
+ACCOUNT_SERIAL="${ACCOUNT_SERIAL-}"
 IMAGE="${IMAGE:-${PROJECT_ROOT}/painn.sif}"
 DEFFILE="${FRAMEWORK}/hpc/painn_leonardo.def"
 ESPRESSO_SRC="${ESPRESSO_SRC:-${FRAMEWORK}/espresso}"
@@ -71,7 +76,8 @@ image)
     # Docker Hub e la converte in SIF.  Deve girare su lrd_all_serial.
     if [[ -e "$IMAGE" ]]; then echo "[INFO] immagine gia' presente: $IMAGE"; exit 0; fi
     res=(--partition=lrd_all_serial --time=04:00:00
-         --cpus-per-task=4 --mem=30G --account="$ACCOUNT_CPU")
+         --cpus-per-task=4 --mem=30G)
+    if [[ -n "$ACCOUNT_SERIAL" ]]; then res+=(--account="$ACCOUNT_SERIAL"); fi
     ;;
 
 bootstrap)
