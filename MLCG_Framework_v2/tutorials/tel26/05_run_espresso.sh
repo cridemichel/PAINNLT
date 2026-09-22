@@ -62,11 +62,18 @@ echo
 echo "[DONE] Produzione completata."
 if [ -s "${SAMPLE_NPZ}" ]; then
     echo "[INFO] Traiettoria per l'analisi: ${SAMPLE_NPZ}"
-    echo "[NOTA] Il confronto strutturale col riferimento all-atom non e' ancora"
-    echo "       disponibile per TEL26: 44_tel22_rdf.py e 42_paired_copy_compare.py"
-    echo "       importano _tel22_cv, che codifica i 22 nucleotidi del 143D e le"
-    echo "       loro coordinate collettive.  Vanno riscritti per 26 residui e la"
-    echo "       piega ibrida prima di poterli usare qui."
+    echo "[INFO] Confronto strutturale col riferimento all-atom mappato:"
+    echo "  python3 ../tel22/diagnostics/scripts/44_tel22_rdf.py \\"
+    echo "      tel26_dataset.bin run=${SAMPLE_NPZ} --nuc 26"
+    echo "       Il canale B3-B3 porta i legami di Hoogsteen: e' li' che si vede"
+    echo "       se le tetradi reggono.  Serve la terza curva per attribuire un"
+    echo "       accordo al residuo ML invece che ai prior -- rilancia con"
+    echo "       CLASSICAL=1 DISABLE_ML=1 SAMPLE_NPZ=samples_priors.npz."
+    echo
+    echo "[NOTA] Restano indisponibili per TEL26 le coordinate collettive dello"
+    echo "       stadio select (Q sul ciclo delle tetradi, RMSD): passano da"
+    echo "       _hb_common e vogliono il registro delle tetradi del sistema,"
+    echo "       non il solo numero di residui."
 else
     echo "[ERROR] ${SAMPLE_NPZ} non prodotto: l'analisi strutturale non e' possibile." >&2
     exit 2
