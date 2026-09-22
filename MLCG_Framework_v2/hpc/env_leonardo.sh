@@ -16,8 +16,15 @@ MLCG_ENV_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 FRAMEWORK="${FRAMEWORK:-$(cd -- "$MLCG_ENV_DIR/.." && pwd)}"
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd -- "$FRAMEWORK/.." && pwd)}"
 
-LIBTORCH_ROOT="${LIBTORCH_ROOT:-${PROJECT_ROOT}/libtorch}"
 MLCG_VENV="${MLCG_VENV:-${PROJECT_ROOT}/venv}"
+
+# DOVE STA LIBTORCH
+#   Su Leonardo viene dal wheel di PyTorch installato nel venv: RHEL 8 ha
+#   glibc 2.28, mentre la distribuzione LibTorch ufficiale e' costruita contro
+#   una glibc piu' recente e il link fallisce con "undefined reference to
+#   log2@GLIBC_2.29" -- quei simboli versionati non esistono nella libm del
+#   sistema.  I wheel sono manylinux_2_28, fatti apposta per questi sistemi.
+#   La directory libtorch/ (zip) resta supportata se presente.
 
 # Il gcc di sistema (RHEL8) e' il 8.5.0, mentre ESPResSo richiede
 # >= 12.2.0.  Va caricato il modulo, che e' anche l'unica scelta coerente con
@@ -33,6 +40,25 @@ for m in "${MODULE_GCC:-gcc}" \
         echo "[env] ATTENZIONE: modulo non caricato: $m" >&2
     fi
 done
+
+if [[ -f "${MLCG_VENV}/bin/activate" ]]; then
+    # shellcheck disable=SC1091
+    source "${MLCG_VENV}/bin/activate"
+fi
+
+if [[ -z "${LIBTORCH_ROOT:-}" ]]; then
+    if _torch_prefix="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))' 2>/dev/null)" \
+       && [[ -f "${_torch_prefix}/share/cmake/Torch/TorchConfig.cmake" ]]; then
+        LIBTORCH_ROOT="$_torch_prefix"
+    elif [[ -f "${PROJECT_ROOT}/libtorch/share/cmake/Torch/TorchConfig.cmake" ]]; then
+        LIBTORCH_ROOT="${PROJECT_ROOT}/libtorch"
+    else
+        echo "[env] ATTENZIONE: nessuna LibTorch trovata; esegui hpc/submit_leonardo.sh setup" >&2
+        LIBTORCH_ROOT="${PROJECT_ROOT}/libtorch"
+    fi
+fi
+
+export PYTHON_BIN="${PYTHON_BIN:-$(command -v python3)}"
 
 # CMake sceglie il compilatore da CC/CXX o dal PATH: senza questi, sui nodi di
 # calcolo trova /usr/bin/gcc (8.5.0) e la configurazione di ESPResSo si ferma
@@ -77,10 +103,3 @@ if [[ -n "${CUDA_TOOLKIT_ROOT_DIR:-}" ]]; then
 else
     echo "[env] ATTENZIONE: toolkit CUDA non trovato; il trainer non si configurera'." >&2
 fi
-
-if [[ -f "${MLCG_VENV}/bin/activate" ]]; then
-    # shellcheck disable=SC1091
-    source "${MLCG_VENV}/bin/activate"
-fi
-
-export PYTHON_BIN="${PYTHON_BIN:-$(command -v python3)}"

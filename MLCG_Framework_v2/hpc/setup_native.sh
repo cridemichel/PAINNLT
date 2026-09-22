@@ -28,6 +28,16 @@ LIBTORCH_VERSION="${LIBTORCH_VERSION:-2.5.1}"
 LIBTORCH_CUDA="${LIBTORCH_CUDA:-cu121}"
 LIBTORCH_URL="${LIBTORCH_URL:-https://download.pytorch.org/libtorch/${LIBTORCH_CUDA}/libtorch-cxx11-abi-shared-with-deps-${LIBTORCH_VERSION}%2B${LIBTORCH_CUDA}.zip}"
 
+# DA DOVE VIENE LIBTORCH
+#   pip  (default su Leonardo): il wheel di PyTorch, che e' manylinux_2_28 e
+#        quindi compatibile con la glibc 2.28 di RHEL 8.  Porta la stessa
+#        LibTorch C++ con i suoi share/cmake dentro site-packages/torch.
+#   zip: la distribuzione LibTorch ufficiale.  E' costruita contro una glibc
+#        piu' recente e su RHEL 8 il link fallisce con
+#        "undefined reference to log2@GLIBC_2.29": quei simboli versionati non
+#        esistono nella libm del sistema.
+LIBTORCH_SOURCE="${LIBTORCH_SOURCE:-pip}"
+
 say() { printf '\n[setup] %s\n' "$*"; }
 
 say "ambiente"
@@ -37,29 +47,9 @@ echo "  python   $(command -v python3) ($(python3 --version 2>&1))"
 echo "  cmake    $(command -v cmake) ($(cmake --version 2>/dev/null | head -1))"
 echo "  progetto ${PROJECT_ROOT}"
 
-# ── 1. LibTorch ─────────────────────────────────────────────────────────────
-if [[ -f "${LIBTORCH_ROOT}/share/cmake/Torch/TorchConfig.cmake" ]]; then
-    say "LibTorch gia' presente in ${LIBTORCH_ROOT}"
-else
-    say "scarico LibTorch ${LIBTORCH_VERSION} ${LIBTORCH_CUDA} (~2.5 GB)"
-    tmpzip="${PROJECT_ROOT}/.libtorch.zip"
-    curl -L --fail --retry 3 -o "$tmpzip" "$LIBTORCH_URL"
-    say "estraggo"
-    rm -rf "${PROJECT_ROOT}/libtorch.new"
-    mkdir -p "${PROJECT_ROOT}/libtorch.new"
-    unzip -q "$tmpzip" -d "${PROJECT_ROOT}/libtorch.new"
-    # lo zip contiene una directory libtorch/ di primo livello
-    mv "${PROJECT_ROOT}/libtorch.new/libtorch" "${LIBTORCH_ROOT}"
-    rmdir "${PROJECT_ROOT}/libtorch.new" 2>/dev/null || true
-    rm -f "$tmpzip"
-    [[ -f "${LIBTORCH_ROOT}/share/cmake/Torch/TorchConfig.cmake" ]] \
-        || { echo "[ERROR] TorchConfig.cmake assente dopo l'estrazione" >&2; exit 1; }
-fi
-
-# ── 2. virtualenv ───────────────────────────────────────────────────────────
+# ── 1. virtualenv ───────────────────────────────────────────────────────────
 # Il framework in Python usa MDAnalysis, numpy, scipy; ESPResSo vuole anche
-# Cython per compilare i suoi moduli e numpy agli header.  Torch NON serve:
-# l'inferenza passa dal plugin C++.
+# Cython per compilare i suoi moduli e numpy agli header.
 if [[ -f "${MLCG_VENV}/bin/activate" ]]; then
     say "venv gia' presente in ${MLCG_VENV}"
 else
@@ -73,6 +63,37 @@ pip install --upgrade pip setuptools wheel >/dev/null
 pip install numpy scipy matplotlib MDAnalysis h5py "cython<3.1" packaging
 echo "  numpy       $(python3 -c 'import numpy;print(numpy.__version__)')"
 echo "  MDAnalysis  $(python3 -c 'import MDAnalysis;print(MDAnalysis.__version__)')"
+
+# ── 2. LibTorch ─────────────────────────────────────────────────────────────
+if [[ "$LIBTORCH_SOURCE" == "pip" ]]; then
+    if python3 -c 'import torch' 2>/dev/null; then
+        say "torch gia' installato nel venv ($(python3 -c 'import torch;print(torch.__version__)'))"
+    else
+        say "installo torch ${LIBTORCH_VERSION}+${LIBTORCH_CUDA} dal wheel"
+        pip install "torch==${LIBTORCH_VERSION}" \
+            --index-url "https://download.pytorch.org/whl/${LIBTORCH_CUDA}"
+    fi
+    TORCH_PREFIX="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))')"
+    echo "  torch       $(python3 -c 'import torch;print(torch.__version__)')"
+    echo "  LibTorch    ${TORCH_PREFIX}"
+    [[ -f "${TORCH_PREFIX}/share/cmake/Torch/TorchConfig.cmake" ]] \
+        || { echo "[ERROR] TorchConfig.cmake assente in ${TORCH_PREFIX}" >&2; exit 1; }
+elif [[ -f "${LIBTORCH_ROOT}/share/cmake/Torch/TorchConfig.cmake" ]]; then
+    say "LibTorch gia' presente in ${LIBTORCH_ROOT}"
+else
+    say "scarico LibTorch ${LIBTORCH_VERSION} ${LIBTORCH_CUDA} (~2.5 GB)"
+    tmpzip="${PROJECT_ROOT}/.libtorch.zip"
+    curl -L --fail --retry 3 -o "$tmpzip" "$LIBTORCH_URL"
+    say "estraggo"
+    rm -rf "${PROJECT_ROOT}/libtorch.new"
+    mkdir -p "${PROJECT_ROOT}/libtorch.new"
+    unzip -q "$tmpzip" -d "${PROJECT_ROOT}/libtorch.new"
+    mv "${PROJECT_ROOT}/libtorch.new/libtorch" "${LIBTORCH_ROOT}"
+    rmdir "${PROJECT_ROOT}/libtorch.new" 2>/dev/null || true
+    rm -f "$tmpzip"
+    [[ -f "${LIBTORCH_ROOT}/share/cmake/Torch/TorchConfig.cmake" ]] \
+        || { echo "[ERROR] TorchConfig.cmake assente dopo l'estrazione" >&2; exit 1; }
+fi
 
 # ── 3. ESPResSo ─────────────────────────────────────────────────────────────
 # Il plugin innesta file dentro src/core/nonbonded_interactions e
