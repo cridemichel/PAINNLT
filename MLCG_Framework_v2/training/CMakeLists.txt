@@ -80,6 +80,15 @@ add_executable(train_painn train_painn.cpp)
 target_link_libraries(train_painn PRIVATE ${TORCH_LIBRARIES})
 set_property(TARGET train_painn PROPERTY CXX_STANDARD 17)
 
+# Su Linux LibTorch referenzia log2@GLIBC_2.29, exp, pow e simili, che da
+# glibc 2.29 stanno in libm con versione esplicita: senza -lm il link fallisce
+# con "undefined reference to log2@GLIBC_2.29" pur essendo libtorch_cpu.so
+# perfettamente valida.  ESPResSo non ne soffre perche' libm gli arriva da
+# altre dipendenze.
+if(UNIX AND NOT APPLE)
+    target_link_libraries(train_painn PRIVATE m)
+endif()
+
 if(APPLE)
     find_library(MLCG_OBJC_LIBRARY NAMES objc)
     if(NOT MLCG_OBJC_LIBRARY)
@@ -90,4 +99,7 @@ endif()
 
 add_executable(eval_parity eval_parity.cpp)
 target_link_libraries(eval_parity PRIVATE ${TORCH_LIBRARIES})
+if(UNIX AND NOT APPLE)
+    target_link_libraries(eval_parity PRIVATE m)
+endif()
 set_property(TARGET eval_parity PROPERTY CXX_STANDARD 17)
