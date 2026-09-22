@@ -50,9 +50,21 @@ setup)
     bash "${FRAMEWORK}/hpc/setup_native.sh"
     ;;
 
+configure)
+    # Configurazione di ESPResSo e innesto del plugin.  Serve la RETE: la
+    # configurazione scarica heFFTe, Kokkos e Cabana con FetchContent.
+    run "STEP=configure bash '${FRAMEWORK}/hpc/bootstrap_leonardo.sh'"
+    ;;
+
+build)
+    # Compilazione di ESPResSo e del trainer.  Nessuna rete, molti core.
+    run "STEP=build JOBS=${JOBS:-8} bash '${FRAMEWORK}/hpc/bootstrap_leonardo.sh'"
+    ;;
+
 bootstrap)
-    # Innesta il plugin e compila ESPResSo e il trainer.  Nessuna rete.
-    run "JOBS=${JOBS:-8} bash '${FRAMEWORK}/hpc/bootstrap_leonardo.sh'"
+    # Retrocompatibilita': configure e build insieme, utile solo dove ci sono
+    # sia la rete sia i core.
+    run "STEP=all JOBS=${JOBS:-8} bash '${FRAMEWORK}/hpc/bootstrap_leonardo.sh'"
     ;;
 
 dataset)
@@ -106,7 +118,7 @@ analysis)
 
 *)
     echo "[ERROR] STAGE non indicato o non riconosciuto: '${STAGE}'" >&2
-    echo "        Attesi: setup | bootstrap | dataset | noisefloor | train | select | production | analysis" >&2
+    echo "        Attesi: setup | configure | build | dataset | noisefloor | train | select | production | analysis" >&2
     echo "        Sottometti con: bash hpc/submit_leonardo.sh <stadio>" >&2
     exit 2
     ;;

@@ -2,11 +2,16 @@
 # Bootstrap del framework su Leonardo: innesta il plugin PaiNN nell'albero di
 # ESPResSo, compila ESPResSo e il trainer.
 #
-#   bash hpc/submit_leonardo.sh bootstrap        (normalmente cosi')
+#   bash hpc/submit_leonardo.sh configure     (dove c'e' la rete)
+#   bash hpc/submit_leonardo.sh build          (dove ci sono i core)
 #
-# Non scarica nulla: LibTorch, il venv e il clone di ESPResSo li prepara
-# setup_native.sh, che gira dove c'e' la rete.  Questo passo compila e basta,
-# quindi puo' stare su DCGP con molti core.
+# DUE STADI, E NON UNO
+#   La configurazione di ESPResSo 5 scarica heFFTe, Kokkos e Cabana con
+#   FetchContent -- Kokkos e Cabana incondizionatamente -- quindi vuole la
+#   rete, che i nodi di calcolo non hanno.  Il configure va percio' su
+#   lrd_all_serial (nodi di login), la compilazione su DCGP con 32 core.
+#   STEP=configure|build|all sceglie cosa fare; all serve solo dove ci sono
+#   entrambe le cose, cioe' su una macchina normale.
 #
 # PERCHE' ESPRESSO SENZA CUDA
 #   La GPU qui serve a LibTorch, non a ESPResSo: l'inferenza del modello e la
@@ -20,6 +25,10 @@ FRAMEWORK_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 ESPRESSO_SRC="${ESPRESSO_SRC:-$FRAMEWORK_ROOT/espresso}"
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 8)}"
 ESPRESSO_CUDA="${ESPRESSO_CUDA:-OFF}"
+STEP="${STEP:-all}"
+# waLBerla implementa il lattice Boltzmann, che questo framework non usa: e'
+# il download e la compilazione piu' pesanti di tutto l'albero.
+ESPRESSO_WALBERLA="${ESPRESSO_WALBERLA:-OFF}"
 
 say() { printf '\n[bootstrap] %s\n' "$*"; }
 
@@ -78,10 +87,13 @@ configure_espresso() {
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_PREFIX_PATH="$TORCH_PREFIX" \
           -DESPRESSO_BUILD_WITH_CUDA="$ESPRESSO_CUDA" \
+          -DESPRESSO_BUILD_WITH_WALBERLA="$ESPRESSO_WALBERLA" \
+          -DESPRESSO_BUILD_TESTS=OFF \
           -DPython_EXECUTABLE="$(command -v python3)"
 }
 
-say "configuro ESPResSo (CUDA=${ESPRESSO_CUDA})"
+if [[ "$STEP" == "configure" || "$STEP" == "all" ]]; then
+say "configuro ESPResSo (CUDA=${ESPRESSO_CUDA}, waLBerla=${ESPRESSO_WALBERLA})"
 configure_espresso
 
 # ── 2. innesto del plugin PaiNN ─────────────────────────────────────────────
@@ -94,6 +106,20 @@ ESPRESSO_SRC="$ESPRESSO_SRC" PYTHON_BIN="$(command -v python3)" \
 # e il file di configurazione delle feature.
 say "riconfiguro dopo l'innesto"
 configure_espresso
+fi
+
+if [[ "$STEP" == "configure" ]]; then
+    say "configurazione completata.  Ora:  bash hpc/submit_leonardo.sh build"
+    exit 0
+fi
+
+if [[ ! -f "$ESPRESSO_SRC/build/CMakeCache.txt" ]]; then
+    echo "[ERROR] ESPResSo non e' configurato: la configurazione scarica heFFTe," >&2
+    echo "        Kokkos e Cabana e vuole la rete.  Esegui prima:" >&2
+    echo "          bash hpc/submit_leonardo.sh configure" >&2
+    exit 2
+fi
+
 say "compilo ESPResSo (${JOBS} core)"
 cmake --build "$ESPRESSO_SRC/build" -j "$JOBS"
 

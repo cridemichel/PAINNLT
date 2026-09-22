@@ -3,7 +3,8 @@
 # per ciascuno.
 #
 #   bash hpc/submit_leonardo.sh setup
-#   bash hpc/submit_leonardo.sh bootstrap
+#   bash hpc/submit_leonardo.sh configure
+#   bash hpc/submit_leonardo.sh build
 #   bash hpc/submit_leonardo.sh dataset AA_TRAJECTORY=/percorso/md.trr AA_TOPOLOGY=/percorso/md.gro
 #   bash hpc/submit_leonardo.sh noisefloor
 #   bash hpc/submit_leonardo.sh train
@@ -31,7 +32,7 @@
 set -euo pipefail
 
 STAGE="${1:-}"
-[[ -n "$STAGE" ]] || { echo "uso: $0 <setup|bootstrap|dataset|noisefloor|train|select|production|analysis> [VAR=valore ...]" >&2; exit 2; }
+[[ -n "$STAGE" ]] || { echo "uso: $0 <setup|configure|build|dataset|noisefloor|train|select|production|analysis> [VAR=valore ...]" >&2; exit 2; }
 shift
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -77,7 +78,20 @@ setup)
     if [[ -n "$ACCOUNT_SERIAL" ]]; then res+=(--account="$ACCOUNT_SERIAL"); fi
     ;;
 
-bootstrap)
+configure)
+    # La configurazione di ESPResSo scarica heFFTe, Kokkos e Cabana con
+    # FetchContent, quindi vuole la rete: lrd_all_serial, come il setup.
+    if [[ ! -d "$ESPRESSO_SRC/.git" ]]; then
+        echo "[ERROR] ESPResSo non e' stato clonato: esegui prima" >&2
+        echo "          bash hpc/submit_leonardo.sh setup" >&2
+        exit 2
+    fi
+    res=(--partition=lrd_all_serial --time=04:00:00
+         --cpus-per-task=4 --mem=30G)
+    if [[ -n "$ACCOUNT_SERIAL" ]]; then res+=(--account="$ACCOUNT_SERIAL"); fi
+    ;;
+
+build|bootstrap)
     # Compilazione: molti core, nessuna GPU, nessuna rete -- ESPResSo e
     # LibTorch sono gia' stati scaricati dallo stadio setup.
     if [[ ! -d "$ESPRESSO_SRC/.git" ]]; then
@@ -109,7 +123,7 @@ train|select|production)
 
 *)
     echo "[ERROR] stadio non riconosciuto: $STAGE" >&2
-    echo "        Attesi: setup | bootstrap | dataset | noisefloor | train | select | production | analysis" >&2
+    echo "        Attesi: setup | configure | build | dataset | noisefloor | train | select | production | analysis" >&2
     exit 2
     ;;
 esac
