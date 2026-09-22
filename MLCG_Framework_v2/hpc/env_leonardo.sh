@@ -44,12 +44,25 @@ for m in "${MODULE_GCC:-gcc}" \
          "${MODULE_OPENMPI:-openmpi}" \
          "${MODULE_BOOST:-boost}" \
          "${MODULE_FFTW:-fftw}" \
-         "${MODULE_PYTHON:-python}" \
-         "${MODULE_CUDA:-cuda/12.6}"; do
+         "${MODULE_PYTHON:-python}"; do
     if ! module load "$m" 2>/dev/null; then
         echo "[env] ATTENZIONE: modulo non caricato: $m" >&2
     fi
 done
+
+# CUDA: serve uno SWAP, non un load.  Il modulo openmpi dipende da cuda/12.2 e
+# la carica lui; un "module load cuda/12.6" successivo non la sostituisce --
+# resta la 12.2, CMake la trova ("-- Found CUDA: ... version 12.2") e il link
+# del trainer fallisce sui simboli introdotti in CUDA 12.5.
+_cuda_wanted="${MODULE_CUDA:-cuda/12.6}"
+module swap cuda "$_cuda_wanted" 2>/dev/null \
+  || module switch cuda "$_cuda_wanted" 2>/dev/null \
+  || module load "$_cuda_wanted" 2>/dev/null \
+  || echo "[env] ATTENZIONE: non sono riuscito ad attivare ${_cuda_wanted}" >&2
+if command -v nvcc >/dev/null 2>&1; then
+    _cuda_active="$(nvcc --version 2>/dev/null | sed -n 's/.*release \([0-9.]*\).*/\1/p')"
+    echo "[env] CUDA attiva: ${_cuda_active:-?}  (richiesta: ${_cuda_wanted})"
+fi
 
 if [[ -f "${MLCG_VENV}/bin/activate" ]]; then
     # shellcheck disable=SC1091
