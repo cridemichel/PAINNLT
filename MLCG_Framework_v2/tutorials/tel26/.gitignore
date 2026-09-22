@@ -1,0 +1,36 @@
+# Local/editor junk
+.DS_Store
+*~
+#*#
+*.bak
+*.orig
+*.rej
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+# Prodotti dello stadio 01: derivano dal .tpr e dall'.xtc della produzione,
+# che vivono su Leonardo e non nel repository.
+tel26_solute.gro
+tel26_topology.json
+
+# Prodotti dello stadio 02
+tel26_dataset.bin
+cg_priors.json
+rigid_bodies_info.json
+
+# Modelli e checkpoint (03)
+tel26_model.pt
+tel26_model.ep*.pt
+*.manifest.json
+cg_training_log.csv
+
+# Equilibrazione e produzione (04-05)
+equilibrated.npz
+samples.npz
+cg_trajectory.vtf
+energy.csv
+
+# Log di Slurm, se si lancia da qui
+slurm-*.out
+slurm-*.err

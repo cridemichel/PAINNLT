@@ -11,6 +11,13 @@
 #   bash hpc/submit_leonardo.sh select
 #   bash hpc/submit_leonardo.sh production
 #
+# IL SISTEMA
+#   Di default si lavora su TEL22.  Per un altro G-quadruplex basta indicare
+#   la sua tutorial directory, che da' anche i nomi dei file prodotti:
+#
+#   bash hpc/submit_leonardo.sh dataset SYSTEM=tel26 AA_TRAJECTORY=... AA_TOPOLOGY=...
+#   bash hpc/submit_leonardo.sh train   SYSTEM=tel26
+#
 # PERCHE' UN WRAPPER E NON LE DIRETTIVE #SBATCH
 #   Gli stadi hanno bisogni opposti.  Il setup vuole rete e nessuna GPU;
 #   compilare vuole molti core e nessuna GPU;
@@ -149,7 +156,19 @@ if [[ -n "${AFTER:-}" ]]; then
     echo "[submit] parte dopo il job ${AFTER}"
 fi
 
+SYSTEM="${SYSTEM:-tel22}"
+for kv in ${extra_exports[@]+"${extra_exports[@]}"}; do
+    [[ "$kv" == SYSTEM=* ]] && SYSTEM="${kv#SYSTEM=}"
+done
+if [[ ! -d "${FRAMEWORK}/tutorials/${SYSTEM}" ]]; then
+    echo "[ERROR] non esiste tutorials/${SYSTEM} sotto ${FRAMEWORK}" >&2
+    echo "        sistemi disponibili: $(ls "${FRAMEWORK}/tutorials" | tr '\n' ' ')" >&2
+    exit 2
+fi
+export_list+=",SYSTEM=${SYSTEM}"
+
 echo "[submit] stadio   ${STAGE}"
+echo "[submit] sistema  ${SYSTEM}"
 echo "[submit] risorse  ${res[*]}"
 echo "[submit] progetto ${PROJECT_ROOT}"
-sbatch "${res[@]}" --job-name="mlcg_${STAGE}" --export="${export_list}" "$SUBMIT"
+sbatch "${res[@]}" --job-name="${SYSTEM}_${STAGE}" --export="${export_list}" "$SUBMIT"

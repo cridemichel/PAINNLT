@@ -24,7 +24,23 @@ USO
 import argparse
 import sys
 
+import numpy as np
 import MDAnalysis as mda
+from MDAnalysis.coordinates.core import reader as coordinate_reader
+
+
+def first_frame(path):
+    """Posizioni e box del primo frame, senza costruire un Universe.
+
+    Serve proprio perche' il .tpr e l'.xtc hanno conteggi di atomi diversi:
+    `mda.Universe(tpr, xtc)` rifiuterebbe la coppia, che e' il caso d'uso
+    per cui questo script esiste.  Il reader, da solo, non fa quel controllo.
+    """
+    with coordinate_reader(path) as trj:
+        ts = trj[0]
+        return ts.n_atoms, np.array(ts.positions, dtype=np.float32), (
+            None if ts.dimensions is None else np.array(ts.dimensions, dtype=np.float32)
+        )
 
 
 def main():
@@ -51,31 +67,37 @@ def main():
     resnames = sorted({str(r) for r in sel.residues.resnames})
     print(f"[INFO] residui selezionati: {', '.join(resnames)}")
 
-    if args.check_xtc:
-        # Un .gro/.pdb ha bisogno di coordinate: si prendono dal primo frame
-        # della traiettoria compressa, che e' anche il modo di verificare che
-        # il numero di atomi coincida.
-        probe = mda.Universe(args.tpr, args.check_xtc)
-        n_xtc = probe.trajectory.n_atoms
-        print(f"[INFO] atomi nella traiettoria compressa: {n_xtc}")
-        if n_xtc != len(sel):
+    src_coords = args.coordinates or args.check_xtc
+    positions = None
+    box = None
+
+    if src_coords:
+        n_src, positions, box = first_frame(src_coords)
+        print(f"[INFO] atomi nel file di coordinate ({src_coords}): {n_src}")
+        if n_src != len(sel):
             sys.exit(
-                f"[ERROR] la selezione da' {len(sel)} atomi ma l'.xtc ne contiene "
-                f"{n_xtc}.\n"
+                f"[ERROR] la selezione da' {len(sel)} atomi ma il file di coordinate "
+                f"ne contiene {n_src}.\n"
                 f"        Aggiusta --selection: deve riprodurre esattamente il gruppo "
                 f"usato in compressed-x-grps."
             )
         print("[OK] il conteggio corrisponde")
 
-    src = args.coordinates or args.check_xtc
-    if src:
-        # Le posizioni del primo frame, per avere un file di topologia valido.
-        u_xtc = mda.Universe(args.tpr, src)
-        u_xtc.trajectory[0]
-        sel_xtc = u_xtc.select_atoms(args.selection)
-        sel_xtc.write(args.out)
+    if positions is not None:
+        # Il .tpr non porta coordinate: si allega un frame in memoria al sistema
+        # completo e vi si scrivono le posizioni del sottoinsieme selezionato,
+        # che l'.xtc elenca nello stesso ordine del .tpr.
+        u.load_new(np.zeros((len(u.atoms), 3), dtype=np.float32))
+        sel = u.select_atoms(args.selection)
+        sel.positions = positions
+        if box is not None:
+            u.dimensions = box
     else:
-        sel.write(args.out)
+        print("[WARN] nessuna coordinata fornita: il file scritto avra' posizioni nulle")
+        u.load_new(np.zeros((len(u.atoms), 3), dtype=np.float32))
+        sel = u.select_atoms(args.selection)
+
+    sel.write(args.out)
 
     print(f"[DONE] scritto {args.out}")
     print()

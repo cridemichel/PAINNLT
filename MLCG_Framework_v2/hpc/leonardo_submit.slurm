@@ -21,19 +21,43 @@ set -euo pipefail
 
 PROJECT_ROOT="${PROJECT_ROOT:-${CINECA_SCRATCH:-$HOME}/PAINNLT}"
 FRAMEWORK="${FRAMEWORK:-${PROJECT_ROOT}/MLCG_Framework_v2}"
-TEL22="${FRAMEWORK}/tutorials/tel22"
+# Il sistema da trattare.  Una tutorial directory per sistema: tutti i nomi
+# dei file che gli stadi producono derivano da SYSTEM, quindi cambiarlo basta
+# a spostare l'intera pipeline su un altro G-quadruplex senza toccare altro.
+#
+#   bash hpc/submit_leonardo.sh dataset SYSTEM=tel26 AA_TRAJECTORY=... AA_TOPOLOGY=...
+#
+SYSTEM="${SYSTEM:-tel22}"
+TUTORIAL="${TUTORIAL:-${FRAMEWORK}/tutorials/${SYSTEM}}"
+DATASET="${DATASET:-${SYSTEM}_dataset.bin}"
+# Gli script di diagnostica vivono sotto tutorials/tel22 perche' sono nati
+# li', ma 32 e 33 prendono il dataset come argomento e non sanno nulla del
+# sistema: si riusano cosi' come sono.  44 e 45, invece, importano _tel22_cv,
+# che codifica i 22 nucleotidi e le loro coordinate collettive -- restano
+# legati a TEL22 finche' non se ne scrive la controparte.
+DIAGNOSTICS="${DIAGNOSTICS:-${FRAMEWORK}/tutorials/tel22/diagnostics}"
 STAGE="${STAGE:-}"
+
+[[ -d "$TUTORIAL" ]] || { echo "[ERROR] directory di tutorial inesistente: ${TUTORIAL}" >&2; exit 2; }
 
 # La traiettoria all-atom: e' GIA' su Leonardo, va solo indicata.
 AA_TRAJECTORY="${AA_TRAJECTORY:-}"
 AA_TOPOLOGY="${AA_TOPOLOGY:-}"
 
-echo "[job] stadio ${STAGE} su $(hostname) — $(date)"
+echo "[job] stadio ${STAGE} sul sistema ${SYSTEM} su $(hostname) — $(date)"
 
 # shellcheck disable=SC1091
 source "${FRAMEWORK}/hpc/env_leonardo.sh"
 
 run() { srun bash -lc "source '${FRAMEWORK}/hpc/env_leonardo.sh'; $*"; }
+
+only_tel22() {
+    [[ "$SYSTEM" == "tel22" ]] && return 0
+    echo "[ERROR] lo stadio '$1' usa le coordinate collettive di _tel22_cv, che" >&2
+    echo "        descrivono i 22 nucleotidi di TEL22: non valgono per ${SYSTEM}." >&2
+    echo "        Per ora su ${SYSTEM} si fermano a: dataset, noisefloor, train, production." >&2
+    exit 2
+}
 
 need_env() {
     [[ -x "${FRAMEWORK}/training/build/train_painn" ]] && return 0
@@ -71,7 +95,7 @@ dataset)
     # Costruisce il dataset CG dalla traiettoria all-atom.
     [[ -n "$AA_TRAJECTORY" ]] || { echo "[ERROR] indica AA_TRAJECTORY=/percorso/della/traiettoria" >&2; exit 2; }
     [[ -n "$AA_TOPOLOGY"   ]] || { echo "[ERROR] indica AA_TOPOLOGY=/percorso/della/topologia" >&2; exit 2; }
-    run "cd '${TEL22}' && AA_TRAJECTORY='${AA_TRAJECTORY}' AA_TOPOLOGY='${AA_TOPOLOGY}' \
+    run "cd '${TUTORIAL}' && AA_TRAJECTORY='${AA_TRAJECTORY}' AA_TOPOLOGY='${AA_TOPOLOGY}' \
          ${AA_FORCES_TRAJECTORY:+AA_FORCES_TRAJECTORY='${AA_FORCES_TRAJECTORY}'} \
          PYTHON_BIN=python3 bash 02_build_dataset.sh"
     echo
@@ -83,23 +107,23 @@ noisefloor)
     # Il criterio guida che decide TUTTO il resto: con segnale scarso la
     # selezione va fatta sulla struttura, con segnale abbondante la
     # cross-validation sull'errore di forza torna valida (come in CGnet).
-    run "cd '${TEL22}' && python3 diagnostics/scripts/33_check_mean_force_signal.py tel22_dataset.bin"
-    run "cd '${TEL22}' && python3 diagnostics/scripts/32_measure_noise_floor_local.py tel22_dataset.bin"
+    run "cd '${TUTORIAL}' && python3 '${DIAGNOSTICS}/scripts/33_check_mean_force_signal.py' '${DATASET}'"
+    run "cd '${TUTORIAL}' && python3 '${DIAGNOSTICS}/scripts/32_measure_noise_floor_local.py' '${DATASET}'"
     ;;
 
 train)
-    # 03_train_model.sh legge tel22_training_config.json e basta: per allenare
+    # 03_train_model.sh legge <sistema>_training_config.json e basta: per allenare
     # una variante (C3 spectral, C2 weight decay) si copia il config scelto su
     # quel nome prima di sottomettere, cosi' il file che ha prodotto il modello
     # resta accanto al modello.
     need_env
-    run "cd '${TEL22}' && TRAINER='${FRAMEWORK}/training/build/train_painn' bash 03_train_model.sh"
+    run "cd '${TUTORIAL}' && TRAINER='${FRAMEWORK}/training/build/train_painn' bash 03_train_model.sh"
     ;;
 
 production)
     need_env
-    run "cd '${TEL22}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda bash 04_equilibrate.sh"
-    run "cd '${TEL22}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
+    run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda bash 04_equilibrate.sh"
+    run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          CG_STEPS=${CG_STEPS:-10000} bash 05_run_espresso.sh"
     ;;
 
@@ -107,13 +131,15 @@ select)
     # Sweep strutturale sugli snapshot: 1 ps per checkpoint riproduce
     # l'ordinamento di 10 ps, quindi costa ~90 s ciascuno.
     need_env
-    run "cd '${TEL22}' && MODEL_DIR='${TEL22}' PYTHON_BIN=python3 \
+    only_tel22 "select"
+    run "cd '${TUTORIAL}' && MODEL_DIR='${TUTORIAL}' PYTHON_BIN=python3 \
          PYRESSO='${FRAMEWORK}/espresso/build/pypresso' \
          bash diagnostics/scripts/45_select_checkpoint.sh"
     ;;
 
 analysis)
-    run "cd '${TEL22}' && python3 diagnostics/scripts/44_tel22_rdf.py tel22_dataset.bin run=samples.npz"
+    only_tel22 "analysis"
+    run "cd '${TUTORIAL}' && python3 diagnostics/scripts/44_tel22_rdf.py '${DATASET}' run=samples.npz"
     ;;
 
 *)
@@ -124,4 +150,4 @@ analysis)
     ;;
 esac
 
-echo "[job] stadio ${STAGE} concluso — $(date)"
+echo "[job] stadio ${STAGE} (${SYSTEM}) concluso — $(date)"
