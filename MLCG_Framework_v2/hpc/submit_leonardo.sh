@@ -132,6 +132,23 @@ esac
 # si usa quella di default dell'account.  Per forzarla:  QOS=boost_qos_dbg ...
 if [[ -n "${QOS:-}" ]]; then res+=(--qos="$QOS"); fi
 
+# Gli stadi sono in sequenza: ognuno ha bisogno del precedente.  Sottometterli
+# tutti insieme non funziona -- il configure partirebbe mentre il setup sta
+# ancora installando, e il build prima che la configurazione esista.  AFTER
+# incatena il job al precedente, che e' il modo giusto di metterli in coda
+# tutti e tre senza stare a guardare:
+#
+#   S=$(bash hpc/submit_leonardo.sh setup     | awk "/Submitted/{print \$4}")
+#   C=$(AFTER=$S bash hpc/submit_leonardo.sh configure | awk "/Submitted/{print \$4}")
+#   AFTER=$C bash hpc/submit_leonardo.sh build
+#
+# afterok e non after: se uno stadio fallisce, i successivi non partono e
+# restano in coda come DependencyNeverSatisfied, da cancellare con scancel.
+if [[ -n "${AFTER:-}" ]]; then
+    res+=(--dependency="afterok:${AFTER}")
+    echo "[submit] parte dopo il job ${AFTER}"
+fi
+
 echo "[submit] stadio   ${STAGE}"
 echo "[submit] risorse  ${res[*]}"
 echo "[submit] progetto ${PROJECT_ROOT}"
