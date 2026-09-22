@@ -1,30 +1,63 @@
 #!/usr/bin/env python3
-"""Aggiunge PaiNN_ML_Potential.cpp ai sorgenti del core di ESPResSo.
+"""Innesta il potenziale PaiNN nel core di ESPResSo.
 
-PERCHE' SERVE
-    copy_plugin_files.sh copia PaiNN_ML_Potential.{hpp,cpp} dentro
-    src/core/nonbonded_interactions/, ma ESPResSo elenca i propri sorgenti
-    esplicitamente in target_sources(): un file copiato nella directory non
-    viene compilato se non compare in quella lista.
+COSA FA, E PERCHE' NON BASTA COPIARE I FILE
 
-    Senza questo passo il core non contiene global_painn_potential e il modulo
-    Python muore all'import:
+copy_plugin_files.sh copia PaiNN_ML_Potential.{hpp,cpp} dentro
+src/core/nonbonded_interactions/, ma un file copiato non e' un file
+compilato, e un file compilato non e' un potenziale attivo.  Servono tre
+innesti nell'albero di ESPResSo, che questo script applica in modo
+idempotente:
 
-        ImportError: painn.so: undefined symbol: global_painn_potential
+  1. src/core/nonbonded_interactions/CMakeLists.txt
+     ESPResSo elenca i sorgenti esplicitamente in target_sources(): senza
+     questa riga PaiNN_ML_Potential.cpp non viene compilato e il modulo
+     Python muore all'import con
+         undefined symbol: global_painn_potential
 
-    Su macOS il sintomo non si vede in fase di build, perche' ESPResSo linka i
-    moduli Cython con -undefined dynamic_lookup e la risoluzione slitta al
-    runtime; su Linux il link e' stretto e l'errore arriva all'import.
+  2. src/core/CMakeLists.txt
+     find_package(Torch), il link a ${TORCH_LIBRARIES} e la define
+     ESPRESSO_PAINN.  Senza il link, espresso_core.so resta con i simboli di
+     LibTorch irrisolti:
+         undefined symbol: _ZTIN3c105ErrorE   (typeinfo for c10::Error)
 
-E' idempotente: se il sorgente e' gia' elencato non tocca nulla.
+  3. src/core/forces.cpp
+     La chiamata a global_painn_potential->calculate_forces() dentro
+     System::calculate_forces().  E' il punto in cui il modello entra
+     davvero nella dinamica: senza, ESPResSo compila, linka, importa e gira
+     -- con i soli prior, senza dire nulla.  E' l'innesto che si nota di
+     meno e conta di piu'.
+
+Su macOS il primo e il secondo difetto non si manifestano in fase di build,
+perche' i moduli Cython vengono linkati con -undefined dynamic_lookup e la
+risoluzione slitta al runtime; il terzo non si manifesta affatto, se non nei
+risultati.
 """
 import argparse
 import pathlib
-import re
 import sys
 
 SOURCE = "PaiNN_ML_Potential.cpp"
-ANCHOR = "wca.cpp"
+
+
+def patch(path, marker, anchor, insertion, what):
+    """Inserisce `insertion` prima di `anchor`, se `marker` non c'e' gia'."""
+    if not path.is_file():
+        sys.exit(f"[ERROR] non trovo {path}: l'albero di ESPResSo non ha il layout atteso")
+    text = path.read_text()
+    if marker in text:
+        print(f"[SKIP] {what}: gia' presente")
+        return False
+    if anchor not in text:
+        sys.exit(
+            f"[ERROR] {what}: non trovo il punto di innesto in {path}.\n"
+            f"        Atteso:\n{anchor}\n"
+            f"        L'albero di ESPResSo e' diverso da quello su cui il plugin e' validato "
+            f"(commit 84cc1d924)."
+        )
+    path.write_text(text.replace(anchor, insertion + anchor, 1))
+    print(f"[PASS] {what}: innestato in {path}")
+    return True
 
 
 def main():
@@ -32,33 +65,69 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--espresso-root", required=True)
     args = ap.parse_args()
+    root = pathlib.Path(args.espresso_root)
+    core = root / "src" / "core"
 
-    cmake = (pathlib.Path(args.espresso_root)
-             / "src" / "core" / "nonbonded_interactions" / "CMakeLists.txt")
-    if not cmake.is_file():
-        sys.exit(f"[ERROR] non trovo {cmake}: l'albero di ESPResSo non ha il layout atteso")
+    # ── 1. il sorgente entra nella compilazione del core ────────────────────
+    patch(
+        core / "nonbonded_interactions" / "CMakeLists.txt",
+        marker=SOURCE,
+        anchor="          ${CMAKE_CURRENT_SOURCE_DIR}/wca.cpp)",
+        insertion=f"          ${{CMAKE_CURRENT_SOURCE_DIR}}/{SOURCE}\n",
+        what="sorgente del potenziale",
+    )
 
-    text = cmake.read_text()
-    if SOURCE in text:
-        print(f"[SKIP] {SOURCE} e' gia' fra i sorgenti del core")
-        return
+    # ── 2. il core linka LibTorch e definisce ESPRESSO_PAINN ────────────────
+    cmake_core = core / "CMakeLists.txt"
+    patch(
+        cmake_core,
+        marker="find_package(Torch",
+        anchor="target_link_libraries(\n  espresso_core",
+        insertion="find_package(Torch REQUIRED)\n\n",
+        what="find_package(Torch)",
+    )
+    text = cmake_core.read_text()
+    if '"${TORCH_LIBRARIES}"' not in text:
+        anchor = "         $<$<BOOL:${ESPRESSO_BUILD_WITH_CUDA}>:OpenMP::OpenMP_CUDA>\n"
+        if anchor not in text:
+            sys.exit(f"[ERROR] non trovo dove aggiungere TORCH_LIBRARIES in {cmake_core}")
+        text = text.replace(anchor, anchor + '         "${TORCH_LIBRARIES}"\n', 1)
+        cmake_core.write_text(text)
+        print(f"[PASS] link a TORCH_LIBRARIES: innestato in {cmake_core}")
+    else:
+        print("[SKIP] link a TORCH_LIBRARIES: gia' presente")
+    patch(
+        cmake_core,
+        marker="ESPRESSO_PAINN",
+        anchor="target_include_directories(espresso_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})",
+        insertion="target_compile_definitions(espresso_core PUBLIC ESPRESSO_PAINN)\n\n",
+        what="define ESPRESSO_PAINN",
+    )
 
-    # Si inserisce prima di wca.cpp, che chiude la lista: cosi' l'ultima riga
-    # mantiene la parentesi di chiusura e il file resta valido.
-    pattern = re.compile(r"^(\s*)(\$\{CMAKE_CURRENT_SOURCE_DIR\}/" + re.escape(ANCHOR) + r")",
-                         re.MULTILINE)
-    match = pattern.search(text)
-    if not match:
-        sys.exit(
-            f"[ERROR] non trovo il riferimento a {ANCHOR} in {cmake}.\n"
-            f"        Aggiungi a mano ${{CMAKE_CURRENT_SOURCE_DIR}}/{SOURCE} "
-            f"alla lista target_sources() del core."
-        )
-    indent = match.group(1)
-    insertion = f"{indent}${{CMAKE_CURRENT_SOURCE_DIR}}/{SOURCE}\n"
-    text = text[:match.start()] + insertion + text[match.start():]
-    cmake.write_text(text)
-    print(f"[PASS] {SOURCE} aggiunto ai sorgenti del core in {cmake}")
+    # ── 3. la chiamata dentro System::calculate_forces() ────────────────────
+    forces = core / "forces.cpp"
+    patch(
+        forces,
+        marker="PaiNN_ML_Potential.hpp",
+        anchor='#include <utils/Vector.hpp>',
+        insertion=('#ifdef ESPRESSO_PAINN\n'
+                   '#include "nonbonded_interactions/PaiNN_ML_Potential.hpp"\n'
+                   '#endif\n\n'),
+        what="include in forces.cpp",
+    )
+    patch(
+        forces,
+        marker="global_painn_potential->calculate_forces",
+        anchor="  constraints->add_forces(particles, get_sim_time());",
+        insertion=('#ifdef ESPRESSO_PAINN\n'
+                   '  if (global_painn_potential) {\n'
+                   '    global_painn_potential->calculate_forces(*cell_structure, verlet_criterion);\n'
+                   '  }\n'
+                   '#endif\n\n'),
+        what="chiamata a calculate_forces",
+    )
+
+    print("\n[DONE] innesto del core completato.")
 
 
 if __name__ == "__main__":

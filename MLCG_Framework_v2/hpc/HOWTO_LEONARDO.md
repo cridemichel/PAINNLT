@@ -162,6 +162,37 @@ Cosa fa ciascuno:
 - **`build`**: compila ESPResSo (senza CUDA e senza waLBerla, vedi sotto) e i
   due eseguibili del trainer.
 
+#### Cosa significa "innestare il plugin"
+
+Copiare i file non basta, e nemmeno compilarli. `copy_plugin_files.sh` copia i
+sorgenti e poi chiama tre installer idempotenti; quello del core
+(`install_painn_core_sources.py`) fa tre cose distinte:
+
+1. aggiunge `PaiNN_ML_Potential.cpp` a `target_sources()` — ESPResSo elenca i
+   sorgenti esplicitamente, e un file copiato nella directory non viene
+   compilato;
+2. aggiunge `find_package(Torch)`, il link a `${TORCH_LIBRARIES}` e la define
+   `ESPRESSO_PAINN` nel `CMakeLists.txt` del core;
+3. inserisce in `forces.cpp`, dentro `System::calculate_forces()`, la chiamata
+
+   ```cpp
+   #ifdef ESPRESSO_PAINN
+     if (global_painn_potential) {
+       global_painn_potential->calculate_forces(*cell_structure, verlet_criterion);
+     }
+   #endif
+   ```
+
+I primi due, se mancano, danno errori espliciti (`undefined symbol`). **Il
+terzo no**: senza quella chiamata ESPResSo compila, linka, importa e simula
+senza dire nulla — con i soli prior, come se il modello non ci fosse. È
+l'innesto che si nota di meno e conta di più, e per questo va verificato che
+una simulazione produca una `E_ML` diversa da zero.
+
+Tutte e tre queste modifiche erano state fatte a mano nell'albero locale e non
+erano mai state automatizzate: un albero ricostruito da zero — un altro
+cluster, un collega, o lo stesso repo fra sei mesi — non le avrebbe avute.
+
 ### 3.3 Verifica
 
 Il log del `build` si chiude con:
@@ -232,7 +263,8 @@ Ogni riga è un errore realmente incontrato durante l'installazione.
 | `undefined reference to log2@GLIBC_2.29` | zip LibTorch contro glibc più recente della 2.28 di RHEL 8 | torch dal wheel (`LIBTORCH_SOURCE=pip`) |
 | `No rule to make target .../libkineto.a` | cache del trainer che punta a un'altra LibTorch | il bootstrap rigenera `training/build` quando `MLCG_TORCH_ROOT` cambia |
 | `libboost_mpi.so.1.85.0: cannot open shared object file` | `pypresso` lanciato senza ambiente | `source hpc/env_leonardo.sh` |
-| `painn.so: undefined symbol: global_painn_potential` | `PaiNN_ML_Potential.cpp` copiato nella directory ma non elencato in `target_sources()`, quindi non compilato nel core. Su macOS non si vedeva: i moduli Cython sono linkati con `-undefined dynamic_lookup` e la risoluzione slitta al runtime | `install_painn_core_sources.py`, chiamato da `copy_plugin_files.sh` |
+| `painn.so: undefined symbol: global_painn_potential` | `PaiNN_ML_Potential.cpp` copiato nella directory ma non elencato in `target_sources()`, quindi non compilato nel core | `install_painn_core_sources.py`, chiamato da `copy_plugin_files.sh` |
+| `espresso_core.so: undefined symbol: _ZTIN3c105ErrorE` | il core non linkava LibTorch: `find_package(Torch)` e `${TORCH_LIBRARIES}` erano modifiche a mano nell'albero del Mac | idem |
 | `painn.so senza ordered-geometry` (falso allarme) | `strings` non attraversa le tabelle di stringhe di Cython | il controllo usa `grep -a` |
 
 ---
