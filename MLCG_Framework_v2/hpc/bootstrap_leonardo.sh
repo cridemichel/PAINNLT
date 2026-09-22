@@ -1,79 +1,75 @@
 #!/usr/bin/env bash
-# Bootstrap del framework su Leonardo: clona ESPResSo alla versione fissata,
-# innesta il plugin PaiNN, compila ESPResSo e il trainer.
+# Bootstrap del framework su Leonardo: innesta il plugin PaiNN nell'albero di
+# ESPResSo, compila ESPResSo e il trainer.
 #
-# Va eseguito DENTRO il container, perche' serve LibTorch:
-#   apptainer exec --nv --bind "$PWD:$PWD" painn.sif \
-#       bash MLCG_Framework_v2/hpc/bootstrap_leonardo.sh
+#   bash hpc/submit_leonardo.sh bootstrap        (normalmente cosi')
 #
-# PERCHE' ESPRESSO SI CLONA E NON SI TRASFERISCE
-#   ESPResSo non e' tracciato nel repo PAINNLT: e' un clone separato di
-#   espressomd/espresso, con zero file sotto controllo di versione qui.  Quindi
-#   sul cluster si clona dal suo repository e si applica il plugin, invece di
-#   trasferire 900 MB di albero sorgente piu' build.
+# Non scarica nulla: LibTorch, il venv e il clone di ESPResSo li prepara
+# setup_native.sh, che gira dove c'e' la rete.  Questo passo compila e basta,
+# quindi puo' stare su DCGP con molti core.
 #
-# LA VERSIONE VA FISSATA
-#   Il plugin innesta file dentro src/core/nonbonded_interactions e
-#   src/python/espressomd, e tocca le liste di CMake di ESPResSo.  Una versione
-#   diversa di ESPResSo puo' aver spostato quei file o cambiato le firme, e
-#   l'innesto fallirebbe in modi non ovvi.  Questo e' il commit su cui il
-#   plugin e' stato sviluppato e validato.
+# PERCHE' ESPRESSO SENZA CUDA
+#   La GPU qui serve a LibTorch, non a ESPResSo: l'inferenza del modello e la
+#   sua backward stanno nel plugin.  Compilare ESPResSo senza CUDA toglie una
+#   dipendenza dal toolkit senza togliere nulla alla simulazione.  Per
+#   riattivarla:  ESPRESSO_CUDA=ON bash hpc/bootstrap_leonardo.sh
 set -euo pipefail
-
-ESPRESSO_COMMIT="${ESPRESSO_COMMIT:-84cc1d924}"   # 5.0.0-58-g84cc1d924
-ESPRESSO_REPO="${ESPRESSO_REPO:-https://github.com/espressomd/espresso.git}"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 FRAMEWORK_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 ESPRESSO_SRC="${ESPRESSO_SRC:-$FRAMEWORK_ROOT/espresso}"
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 8)}"
+ESPRESSO_CUDA="${ESPRESSO_CUDA:-OFF}"
 
 say() { printf '\n[bootstrap] %s\n' "$*"; }
 
-# ── 0. controlli preliminari ────────────────────────────────────────────────
-say "verifica dell'ambiente"
-command -v cmake >/dev/null || { echo "[ERROR] cmake assente: sei dentro il container?" >&2; exit 2; }
-python3 -c 'import torch' 2>/dev/null || { echo "[ERROR] torch non importabile: sei dentro il container?" >&2; exit 2; }
-TORCH_PREFIX="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))')"
-echo "  torch      $(python3 -c 'import torch;print(torch.__version__)')  in ${TORCH_PREFIX}"
-echo "  CUDA vista $(python3 -c 'import torch;print(torch.cuda.is_available())')"
-echo "  core       ${JOBS}"
-
-# La disponibilita' di CUDA e' informativa: sul nodo di login puo' essere false
-# anche quando sui nodi di calcolo funziona, perche' i login non hanno GPU.
-# Compilare non la richiede; eseguire si'.
-
-# ── 1. ESPResSo alla versione fissata ──────────────────────────────────────
-if [[ -d "$ESPRESSO_SRC/.git" ]]; then
-    say "ESPResSo gia' presente in $ESPRESSO_SRC"
-    have="$(git -C "$ESPRESSO_SRC" rev-parse --short HEAD)"
-    if [[ "$have" != "${ESPRESSO_COMMIT:0:${#have}}" ]]; then
-        echo "  [ATTENZIONE] commit presente ${have}, atteso ${ESPRESSO_COMMIT}."
-        echo "               Il plugin e' validato sul secondo.  Per allinearlo:"
-        echo "                 git -C $ESPRESSO_SRC fetch && git -C $ESPRESSO_SRC checkout ${ESPRESSO_COMMIT}"
-    else
-        echo "  commit ${have}: corretto"
-    fi
-else
-    say "clono ESPResSo al commit ${ESPRESSO_COMMIT}"
-    git clone "$ESPRESSO_REPO" "$ESPRESSO_SRC"
-    git -C "$ESPRESSO_SRC" checkout "$ESPRESSO_COMMIT"
+# ── 0. ambiente ─────────────────────────────────────────────────────────────
+if [[ -z "${LIBTORCH_ROOT:-}" && -f "${SCRIPT_DIR}/env_leonardo.sh" ]]; then
+    # shellcheck disable=SC1091
+    source "${SCRIPT_DIR}/env_leonardo.sh"
 fi
 
-# ── 2. innesto del plugin PaiNN ────────────────────────────────────────────
+say "verifica dell'ambiente"
+command -v cmake >/dev/null || { echo "[ERROR] cmake assente: carica i moduli (hpc/env_leonardo.sh)" >&2; exit 2; }
+
+# LibTorch: da LIBTORCH_ROOT se c'e', altrimenti dal torch di Python (il caso
+# del Mac, dove torch viene da pip).
+if [[ -n "${LIBTORCH_ROOT:-}" && -f "${LIBTORCH_ROOT}/share/cmake/Torch/TorchConfig.cmake" ]]; then
+    TORCH_PREFIX="$LIBTORCH_ROOT"
+    echo "  LibTorch   ${TORCH_PREFIX}"
+elif python3 -c 'import torch' 2>/dev/null; then
+    TORCH_PREFIX="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))')"
+    echo "  torch      $(python3 -c 'import torch;print(torch.__version__)') in ${TORCH_PREFIX}"
+else
+    echo "[ERROR] nessuna distribuzione LibTorch trovata." >&2
+    echo "        Esegui prima:  bash hpc/submit_leonardo.sh setup" >&2
+    exit 2
+fi
+echo "  python     $(command -v python3) ($(python3 --version 2>&1))"
+echo "  core       ${JOBS}"
+
+[[ -d "${ESPRESSO_SRC}/.git" ]] || {
+    echo "[ERROR] ESPResSo non clonato in ${ESPRESSO_SRC}." >&2
+    echo "        Il clone ha bisogno di rete: bash hpc/submit_leonardo.sh setup" >&2
+    exit 2
+}
+echo "  ESPResSo   $(git -C "$ESPRESSO_SRC" rev-parse --short HEAD)"
+
+# ── 1. innesto del plugin PaiNN ─────────────────────────────────────────────
 say "innesto del plugin PaiNN nell'albero ESPResSo"
-ESPRESSO_SRC="$ESPRESSO_SRC" PYTHON_BIN=python3 \
+ESPRESSO_SRC="$ESPRESSO_SRC" PYTHON_BIN="$(command -v python3)" \
     bash "$FRAMEWORK_ROOT/simulation/espresso_plugin/copy_plugin_files.sh"
 
-# ── 3. build di ESPResSo ───────────────────────────────────────────────────
-say "compilo ESPResSo (${JOBS} core)"
+# ── 2. build di ESPResSo ────────────────────────────────────────────────────
+say "compilo ESPResSo (${JOBS} core, CUDA=${ESPRESSO_CUDA})"
 cmake -S "$ESPRESSO_SRC" -B "$ESPRESSO_SRC/build" \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_PREFIX_PATH="$TORCH_PREFIX" \
+      -DESPRESSO_BUILD_WITH_CUDA="$ESPRESSO_CUDA" \
       -DPython_EXECUTABLE="$(command -v python3)"
 cmake --build "$ESPRESSO_SRC/build" -j "$JOBS"
 
-# ── 4. build del trainer ───────────────────────────────────────────────────
+# ── 3. build del trainer ────────────────────────────────────────────────────
 # MLCG_TORCH_ROOT e' il meccanismo del CMakeLists della v2 per selezionare UNA
 # distribuzione LibTorch: passarlo evita che CMake ne trovi due e linki header
 # e librerie di versioni diverse.
@@ -83,7 +79,7 @@ cmake -S "$FRAMEWORK_ROOT/training" -B "$FRAMEWORK_ROOT/training/build" \
       -DMLCG_TORCH_ROOT="$TORCH_PREFIX"
 cmake --build "$FRAMEWORK_ROOT/training/build" -j "$JOBS"
 
-# ── 5. verifica ────────────────────────────────────────────────────────────
+# ── 4. verifica ─────────────────────────────────────────────────────────────
 say "verifica"
 ok=1
 for f in "$ESPRESSO_SRC/build/pypresso" \

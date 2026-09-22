@@ -2,7 +2,7 @@
 # Sottomissione degli stadi della pipeline su Leonardo con le risorse giuste
 # per ciascuno.
 #
-#   bash hpc/submit_leonardo.sh image
+#   bash hpc/submit_leonardo.sh setup
 #   bash hpc/submit_leonardo.sh bootstrap
 #   bash hpc/submit_leonardo.sh dataset AA_TRAJECTORY=/percorso/md.trr AA_TOPOLOGY=/percorso/md.gro
 #   bash hpc/submit_leonardo.sh noisefloor
@@ -11,8 +11,8 @@
 #   bash hpc/submit_leonardo.sh production
 #
 # PERCHE' UN WRAPPER E NON LE DIRETTIVE #SBATCH
-#   Gli stadi hanno bisogni opposti.  Costruire l'immagine vuole rete verso
-#   Docker Hub e nessuna GPU; compilare vuole molti core e nessuna GPU;
+#   Gli stadi hanno bisogni opposti.  Il setup vuole rete e nessuna GPU;
+#   compilare vuole molti core e nessuna GPU;
 #   allenare vuole una A100 e pochi core.  Un header unico con --gres=gpu:1 fa
 #   pagare ore GPU per una compilazione e per ore di MDAnalysis, che sono la
 #   parte piu' lunga e piu' inutile da mettere su un acceleratore.
@@ -20,10 +20,9 @@
 # LA RETE
 #   I nodi di calcolo di Leonardo non raggiungono internet; i nodi di login si.
 #   La partizione lrd_all_serial gira SUI nodi di login (login08, login13),
-#   quindi e' l'unico posto dove un job puo' scaricare l'immagine base.  Per lo
-#   stesso motivo il clone di ESPResSo lo fa questo script, qui sul nodo di
-#   login, prima di sottomettere il bootstrap: cosi' il job di compilazione puo'
-#   girare su DCGP, che ha molti piu' core ma nessuna rete.
+#   quindi e' l'unico posto dove un job puo' scaricare LibTorch, i pacchetti
+#   Python e il sorgente di ESPResSo: e' lo stadio setup.  Il bootstrap, che
+#   solo compila, puo' andare su DCGP, che ha molti piu' core ma nessuna rete.
 #
 # IL LIMITE DEI 600 SECONDI
 #   Sul nodo di login ogni processo viene ucciso dopo 10 minuti di CPU time
@@ -32,7 +31,7 @@
 set -euo pipefail
 
 STAGE="${1:-}"
-[[ -n "$STAGE" ]] || { echo "uso: $0 <image|bootstrap|dataset|noisefloor|train|select|production|analysis> [VAR=valore ...]" >&2; exit 2; }
+[[ -n "$STAGE" ]] || { echo "uso: $0 <setup|bootstrap|dataset|noisefloor|train|select|production|analysis> [VAR=valore ...]" >&2; exit 2; }
 shift
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,8 +49,6 @@ ACCOUNT_CPU="${ACCOUNT_CPU:-IscrB_G4MES_0}"
 # "Invalid account or account/partition combination".  Lasciato vuoto, nessun
 # --account viene passato e vale quello di default dell'utente.
 ACCOUNT_SERIAL="${ACCOUNT_SERIAL-}"
-IMAGE="${IMAGE:-${PROJECT_ROOT}/painn.sif}"
-DEFFILE="${FRAMEWORK}/hpc/painn_leonardo.def"
 ESPRESSO_SRC="${ESPRESSO_SRC:-${FRAMEWORK}/espresso}"
 ESPRESSO_COMMIT="${ESPRESSO_COMMIT:-84cc1d924}"
 SUBMIT="${FRAMEWORK}/hpc/leonardo_submit.slurm"
@@ -64,32 +61,29 @@ for kv in "$@"; do
     extra_exports+=("$kv")
 done
 
-export_list="ALL,STAGE=${STAGE},PROJECT_ROOT=${PROJECT_ROOT},IMAGE=${IMAGE},FRAMEWORK=${FRAMEWORK}"
+export_list="ALL,STAGE=${STAGE},PROJECT_ROOT=${PROJECT_ROOT},FRAMEWORK=${FRAMEWORK}"
 for kv in ${extra_exports[@]+"${extra_exports[@]}"}; do
     export_list+=",${kv}"
 done
 
 case "$STAGE" in
 
-image)
-    # L'unico stadio che ha bisogno di internet: scarica l'immagine PyTorch da
-    # Docker Hub e la converte in SIF.  Deve girare su lrd_all_serial.
-    if [[ -e "$IMAGE" ]]; then echo "[INFO] immagine gia' presente: $IMAGE"; exit 0; fi
+setup)
+    # L'unico stadio che ha bisogno di internet: scarica LibTorch, i pacchetti
+    # Python e il sorgente di ESPResSo.  Deve girare su lrd_all_serial, che sta
+    # sui nodi di login: i nodi di calcolo non hanno rete.
     res=(--partition=lrd_all_serial --time=04:00:00
          --cpus-per-task=4 --mem=30G)
     if [[ -n "$ACCOUNT_SERIAL" ]]; then res+=(--account="$ACCOUNT_SERIAL"); fi
     ;;
 
 bootstrap)
-    # Compilazione: molti core, nessuna GPU, nessuna rete richiesta -- a patto
-    # che ESPResSo sia gia' stato clonato.  Lo facciamo adesso, sul nodo di
-    # login, perche' il job girera' dove la rete non c'e'.
+    # Compilazione: molti core, nessuna GPU, nessuna rete -- ESPResSo e
+    # LibTorch sono gia' stati scaricati dallo stadio setup.
     if [[ ! -d "$ESPRESSO_SRC/.git" ]]; then
-        echo "[pre] clono ESPResSo al commit ${ESPRESSO_COMMIT} (serve la rete del nodo di login)"
-        git clone https://github.com/espressomd/espresso.git "$ESPRESSO_SRC"
-        git -C "$ESPRESSO_SRC" checkout "$ESPRESSO_COMMIT"
-    else
-        echo "[pre] ESPResSo gia' presente in $ESPRESSO_SRC ($(git -C "$ESPRESSO_SRC" rev-parse --short HEAD))"
+        echo "[ERROR] ESPResSo non e' stato clonato: esegui prima" >&2
+        echo "          bash hpc/submit_leonardo.sh setup" >&2
+        exit 2
     fi
     res=(--partition=dcgp_usr_prod --time=02:00:00
          --nodes=1 --ntasks-per-node=1 --cpus-per-task=32 --mem=100G
@@ -115,6 +109,7 @@ train|select|production)
 
 *)
     echo "[ERROR] stadio non riconosciuto: $STAGE" >&2
+    echo "        Attesi: setup | bootstrap | dataset | noisefloor | train | select | production | analysis" >&2
     exit 2
     ;;
 esac
@@ -126,5 +121,4 @@ if [[ -n "${QOS:-}" ]]; then res+=(--qos="$QOS"); fi
 echo "[submit] stadio   ${STAGE}"
 echo "[submit] risorse  ${res[*]}"
 echo "[submit] progetto ${PROJECT_ROOT}"
-echo "[submit] immagine ${IMAGE}"
 sbatch "${res[@]}" --job-name="mlcg_${STAGE}" --export="${export_list}" "$SUBMIT"
