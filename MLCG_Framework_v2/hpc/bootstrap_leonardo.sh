@@ -13,6 +13,17 @@
 #   STEP=configure|build|all sceglie cosa fare; all serve solo dove ci sono
 #   entrambe le cose, cioe' su una macchina normale.
 #
+# PERCHE' VISIBILITA' DI DEFAULT
+#   Kokkos viene costruito come libreria condivisa e ESPResSo usa, dai suoi
+#   header, metodi inline di template istanziati dentro la libreria (per
+#   esempio Kokkos::Impl::SharedAllocationRecordCommon<HostSpace>::get_label).
+#   Compilando con le inline nascoste quei simboli non finiscono nella tabella
+#   dinamica, e il core resta con riferimenti irrisolti che non danno errore in
+#   fase di link -- una shared library non pretende di risolvere tutto -- ma
+#   fanno fallire l'import:
+#       undefined symbol: _ZNK6Kokkos4Impl28SharedAllocationRecordCommon...
+#   Su macOS non succede perche' Mach-O tratta la visibilita' diversamente.
+#
 # PERCHE' ESPRESSO SENZA CUDA
 #   La GPU qui serve a LibTorch, non a ESPResSo: l'inferenza del modello e la
 #   sua backward stanno nel plugin.  Compilare ESPResSo senza CUDA toglie una
@@ -89,6 +100,8 @@ configure_espresso() {
           -DESPRESSO_BUILD_WITH_CUDA="$ESPRESSO_CUDA" \
           -DESPRESSO_BUILD_WITH_WALBERLA="$ESPRESSO_WALBERLA" \
           -DESPRESSO_BUILD_TESTS=OFF \
+          -DCMAKE_CXX_VISIBILITY_PRESET=default \
+          -DCMAKE_VISIBILITY_INLINES_HIDDEN=OFF \
           -DPython_EXECUTABLE="$(command -v python3)"
 }
 
