@@ -57,5 +57,24 @@ copy_if_different "$SCRIPT_DIR/painn.pyx" \
 "$PYTHON_BIN" "$SCRIPT_DIR/install_switched_morse_nonbonded.py" \
     --espresso-root "$ESPRESSO_ROOT"
 
-printf '[PASS] PaiNN plugin, analytic MorseBond diagnostic, and switched non-bonded Morse synchronized with ESPResSo: %s\n' "$ESPRESSO_ROOT"
+# myconfig.hpp: ESPResSo decide a COMPILAZIONE quali interazioni esistono, e il
+# suo default non include MORSE -- su cui la pipeline CG fonda i contatti fra
+# guanine di una tetrade.  Senza, tutto il codice Morse (estensione switched
+# compresa, che sta dentro #ifdef MORSE) viene compilato via e la produzione
+# muore molto piu' tardi, dopo dataset e training.
+#
+# Va nella radice dei sorgenti e non nella build directory: bootstrap_leonardo
+# rigenera la build quando cambia il compilatore, e li' il file sparirebbe.
+copy_if_different "$SCRIPT_DIR/myconfig.hpp" "$ESPRESSO_ROOT/myconfig.hpp"
+if [[ -f "$ESPRESSO_ROOT/build/myconfig.hpp" ]] && \
+   ! cmp -s "$SCRIPT_DIR/myconfig.hpp" "$ESPRESSO_ROOT/build/myconfig.hpp"; then
+    # Una copia nella build directory ha la precedenza su quella dei sorgenti:
+    # se e' rimasta da prima e differisce, vince lei e il file appena
+    # installato non ha alcun effetto.
+    echo "[WARN] $ESPRESSO_ROOT/build/myconfig.hpp differisce e ha la precedenza:" >&2
+    echo "       lo allineo a quello del framework." >&2
+    cp -f "$SCRIPT_DIR/myconfig.hpp" "$ESPRESSO_ROOT/build/myconfig.hpp"
+fi
+
+printf '[PASS] PaiNN plugin, analytic MorseBond diagnostic, switched non-bonded Morse e myconfig synchronized with ESPResSo: %s\n' "$ESPRESSO_ROOT"
 printf '[INFO] Reconfigure before rebuilding so changes to build/myconfig.hpp are picked up: cmake -S %s -B %s/build\n' "$ESPRESSO_ROOT" "$ESPRESSO_ROOT"

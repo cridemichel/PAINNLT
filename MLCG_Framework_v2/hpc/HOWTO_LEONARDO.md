@@ -182,6 +182,28 @@ Se stampa l'elenco dei parametri, l'installazione è completa.
 
 ---
 
+### Le feature di ESPResSo si decidono a compilazione
+
+ESPResSo compila solo le interazioni dichiarate in `myconfig.hpp`; le altre non
+esistono nel binario. Il suo default **non include `MORSE`**, su cui la
+pipeline CG fonda i contatti fra guanine di una tetrade — e l'estensione
+switched-Morse del framework vive dentro `#ifdef MORSE`, quindi sparisce
+insieme a lei anche quando l'innesto e' andato a buon fine.
+
+Il file sta in `simulation/espresso_plugin/myconfig.hpp` e lo installa
+`copy_plugin_files.sh`. E' l'ennesimo caso di configurazione che viveva solo
+nell'albero locale: `espresso/` e' in `.gitignore`, quindi la build su un'altra
+macchina partiva senza, e il difetto emergeva solo alla **prima produzione** —
+dopo dataset e training, ore di calcolo piu' tardi, con l'errore
+
+```text
+RuntimeError: The ESPResSo build does not expose the non-bonded Morse interaction.
+```
+
+La verifica del bootstrap ora controlla le feature e prova un `set_params` con
+`switch_start`, cosi' il difetto si vede in fondo alla build e non alla prima
+produzione.
+
 ## 5. Cosa significa "innestare il plugin"
 
 Copiare i file non basta, e nemmeno compilarli.
@@ -366,6 +388,7 @@ altrove se lo si vuole tenere (e' utile per il `noisefloor` preliminare).
 | `hpc/setup_native.sh` | torch, venv, clone di ESPResSo — l'unico passo che scarica |
 | `hpc/bootstrap_leonardo.sh` | configure, innesto, build (`STEP=configure\|build\|all`) |
 | `simulation/espresso_plugin/install_painn_core_sources.py` | l'innesto nel core, idempotente |
+| `simulation/espresso_plugin/myconfig.hpp` | le feature di ESPResSo da compilare: il default piu' `MORSE` |
 | `preprocessing/extract_solute_topology.py` | topologia ridotta per un `.xtc` di soli `non-Water` |
 | `preprocessing/build_g4_topology.py` | topologia CG di un G-quadruplex: mapping ereditato, registro delle tetradi dalla geometria |
 | `tutorials/<sistema>/` | un sistema per directory; `SYSTEM=` sceglie quale |

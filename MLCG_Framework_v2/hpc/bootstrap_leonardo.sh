@@ -186,5 +186,43 @@ if [[ -e "$ESPRESSO_SRC/build/src/python/espressomd/painn.so" ]]; then
     fi
 fi
 
+# Le feature di ESPResSo si decidono a compilazione: quelle non dichiarate in
+# myconfig.hpp non esistono nel binario.  MORSE regge i contatti fra guanine di
+# una tetrade, e senza di essa la produzione muore -- ma solo dopo dataset e
+# training, cioe' ore di calcolo piu' tardi.  Si controlla qui, dove costa
+# secondi.  Il secondo controllo e' sull'estensione switched-Morse del
+# framework, che vive dentro #ifdef MORSE e sparisce insieme a lei.
+if [[ -x "$ESPRESSO_SRC/build/pypresso" ]]; then
+    feature_check=$("$ESPRESSO_SRC/build/pypresso" -c '
+import sys
+import espressomd
+missing = [f for f in ("MORSE", "WCA", "ROTATION", "ROTATIONAL_INERTIA",
+                       "MASS", "EXTERNAL_FORCES", "EXCLUSIONS", "TABULATED")
+           if not espressomd.has_features(f)]
+if missing:
+    print("MANCANTI " + " ".join(missing)); sys.exit(0)
+s = espressomd.System(box_l=[10, 10, 10])
+try:
+    s.non_bonded_inter[0, 0].morse.set_params(eps=1.0, alpha=1.0, rmin=1.0,
+                                              cutoff=2.0, switch_start=1.5)
+except TypeError as exc:
+    print("NO_SWITCH_START " + str(exc)); sys.exit(0)
+except Exception as exc:
+    print("MORSE_RUNTIME " + str(exc)); sys.exit(0)
+print("OK")
+' 2>/dev/null | tail -1)
+    case "$feature_check" in
+        OK) echo "  ok        feature ESPResSo complete (MORSE + switched-Morse)" ;;
+        MANCANTI*) echo "  ASSENTE   feature ESPResSo: ${feature_check#MANCANTI }"
+                   echo "            myconfig.hpp non e' stato applicato: ricontrolla"
+                   echo "            simulation/espresso_plugin/copy_plugin_files.sh"
+                   ok=0 ;;
+        NO_SWITCH_START*) echo "  ASSENTE   estensione switched-Morse del framework"
+                          echo "            ${feature_check#NO_SWITCH_START }"
+                          ok=0 ;;
+        *) echo "  [NOTA]    controllo feature non conclusivo: ${feature_check:-nessun output}" ;;
+    esac
+fi
+
 (( ok )) || { echo "[ERROR] bootstrap incompleto" >&2; exit 1; }
 say "bootstrap completato"
