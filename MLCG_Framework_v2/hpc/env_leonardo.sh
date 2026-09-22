@@ -44,6 +44,15 @@ export LIBTORCH_ROOT
 export CMAKE_PREFIX_PATH="${LIBTORCH_ROOT}:${CMAKE_PREFIX_PATH:-}"
 export LD_LIBRARY_PATH="${LIBTORCH_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 
+# Gli header di LibTorch anche per i target che non li ereditano da CMake.
+# Il CMakeLists del core di ESPResSo linka "${TORCH_LIBRARIES}", che e' una
+# lista di percorsi di librerie e non un target: non porta con se' le include
+# directory, e il modulo Cython painn fallisce con
+#   fatal error: torch/torch.h: No such file or directory
+# CPATH e' la stessa soluzione che usava il Dockerfile dell'immagine.
+export CPATH="${LIBTORCH_ROOT}/include:${LIBTORCH_ROOT}/include/torch/csrc/api/include:${CPATH:-}"
+export LIBRARY_PATH="${LIBTORCH_ROOT}/lib:${LIBRARY_PATH:-}"
+
 if [[ -f "${MLCG_VENV}/bin/activate" ]]; then
     # shellcheck disable=SC1091
     source "${MLCG_VENV}/bin/activate"
