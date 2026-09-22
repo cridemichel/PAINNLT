@@ -36,6 +36,17 @@ DATASET="${DATASET:-${SYSTEM}_dataset.bin}"
 # che codifica i 22 nucleotidi e le loro coordinate collettive -- restano
 # legati a TEL22 finche' non se ne scrive la controparte.
 DIAGNOSTICS="${DIAGNOSTICS:-${FRAMEWORK}/tutorials/tel22/diagnostics}"
+# Residui per copia: lo script 44 ne ha bisogno per spezzare le molecole in
+# copie, ed e' l'unica cosa che nella g(r) dipendeva dal sistema.  Si legge
+# dalla topologia generata invece di farselo dire, cosi' non puo' divergere.
+if [[ -z "${NUC:-}" && -f "${TUTORIAL}/${SYSTEM}_topology.json" ]]; then
+    NUC=$(python3 -c "
+import json, sys
+try:
+    print(json.load(open(sys.argv[1]))['g4_topology']['residues_per_copy'])
+except Exception:
+    pass" "${TUTORIAL}/${SYSTEM}_topology.json" 2>/dev/null)
+fi
 STAGE="${STAGE:-}"
 
 [[ -d "$TUTORIAL" ]] || { echo "[ERROR] directory di tutorial inesistente: ${TUTORIAL}" >&2; exit 2; }
@@ -145,8 +156,14 @@ select)
     ;;
 
 analysis)
-    only_tel22 "analysis"
-    run "cd '${TUTORIAL}' && python3 diagnostics/scripts/44_tel22_rdf.py '${DATASET}' run=samples.npz"
+    # La g(r) vale per qualunque G-quadruplex da 1c84f30: serve solo --nuc.
+    # Gira qui e non sul nodo di login perche' load_reference legge il dataset
+    # con un ciclo Python per molecola -- 1.76 milioni di iterazioni sui 6788
+    # frame del TEL26 -- e sfonderebbe il limite di 600 s di CPU del login.
+    [[ -n "${NUC:-}" ]] || { echo "[ERROR] indica NUC=<residui per copia>" >&2; exit 2; }
+    runs="${RUNS:-run=samples.npz}"
+    run "cd '${TUTORIAL}' && python3 '${DIAGNOSTICS}/scripts/44_tel22_rdf.py' \
+         '${DATASET}' ${runs} --nuc ${NUC} ${RDF_ARGS:-}"
     ;;
 
 *)

@@ -327,12 +327,17 @@ canali di tipo (S, B1–B5) valgono per qualunque sistema, perché sono chimica
 del nucleotide e non della piega.
 
 ```bash
-python3 ../tel22/diagnostics/scripts/44_tel22_rdf.py \
-    tel26_dataset.bin run=samples.npz --nuc 26
+bash hpc/submit_leonardo.sh analysis SYSTEM=tel26 RUNS="priors=samples_priors.npz ml=samples.npz"
 ```
 
-Con un `--nuc` sbagliato lo script si ferma invece di produrre intra e inter
-mescolati, cioè numeri plausibili e falsi.
+`NUC` lo ricava da `tel26_topology.json`, così non può divergere dalla
+topologia usata. Con un `--nuc` sbagliato lo script si ferma invece di produrre
+intra e inter mescolati, cioè numeri plausibili e falsi.
+
+**Non lanciarlo sul nodo di login**: `load_reference` legge il dataset con un
+ciclo Python per molecola — 1,76 milioni di iterazioni sui 6 788 frame del
+TEL26 — e supera i 600 s di CPU del login. Lo `--stride` non aiuta, perché
+agisce sull'accumulo delle distanze e non sul caricamento.
 
 Lo stadio `01` non passa dallo scheduler: gira in pochi secondi su un nodo di
 login, dentro l'ambiente del framework.
