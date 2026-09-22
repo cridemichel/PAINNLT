@@ -29,8 +29,14 @@ MLCG_VENV="${MLCG_VENV:-${PROJECT_ROOT}/venv}"
 # Il gcc di sistema (RHEL8) e' il 8.5.0, mentre ESPResSo richiede
 # >= 12.2.0.  Va caricato il modulo, che e' anche l'unica scelta coerente con
 # boost, fftw e openmpi, compilati tutti con gcc 12.2.0.
+# Il modulo CUDA deve essere ALMENO pari alla CUDA con cui e' costruito il
+# wheel di torch: il link del trainer passa dalle librerie del toolkit, e
+# torch 2.10+cu126 usa simboli introdotti in CUDA 12.5 --
+#     undefined reference to cudaGetDriverEntryPointByVersion@libcudart.so.12
+# che nel modulo di default (cuda/12.2) non esistono.  Su Leonardo sono
+# disponibili 12.2, 12.3 e 12.6.
 for m in "${MODULE_GCC:-gcc}" \
-         "${MODULE_CUDA:-cuda}" \
+         "${MODULE_CUDA:-cuda/12.6}" \
          "${MODULE_CMAKE:-cmake}" \
          "${MODULE_OPENMPI:-openmpi}" \
          "${MODULE_BOOST:-boost}" \

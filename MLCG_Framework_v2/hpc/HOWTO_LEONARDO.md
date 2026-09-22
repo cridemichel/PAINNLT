@@ -269,6 +269,7 @@ Ogni riga è un errore realmente incontrato durante l'installazione.
 | `Failed to connect to github.com port 443` | `FetchContent` su un nodo di calcolo | `configure` su `lrd_all_serial` |
 | `fatal error: torch/torch.h` | include non propagati al modulo Cython | `CPATH` |
 | `Caffe2: CUDA cannot be found` | `TorchConfig` vuole il toolkit | modulo `cuda` in `env_leonardo.sh` |
+| `undefined reference to cudaGetDriverEntryPointByVersion@libcudart.so.12` | modulo CUDA più vecchio della CUDA del wheel torch: quella API esiste da 12.5, il default di Leonardo è 12.2 | `MODULE_CUDA=cuda/12.6`, allineato a `LIBTORCH_CUDA=cu126` |
 | `undefined reference to log2@GLIBC_2.29` | zip LibTorch contro glibc più recente della 2.28 di RHEL 8 | torch dal wheel (`LIBTORCH_SOURCE=pip`) |
 | `No rule to make target .../libkineto.a` | cache del trainer che punta a un'altra LibTorch | il bootstrap rigenera `training/build` quando `MLCG_TORCH_ROOT` cambia |
 | `libboost_mpi.so.1.85.0: cannot open shared object file` | `pypresso` lanciato senza ambiente | `source hpc/env_leonardo.sh` |
