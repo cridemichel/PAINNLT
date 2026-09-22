@@ -167,8 +167,18 @@ if [[ ! -d "${FRAMEWORK}/tutorials/${SYSTEM}" ]]; then
 fi
 export_list+=",SYSTEM=${SYSTEM}"
 
+# I log in un posto solo.  Le direttive #SBATCH --output dentro il file di job
+# sono relative alla directory da cui si lancia sbatch, quindi i log finivano
+# sparsi fra la radice del progetto e le tutorial directory a seconda di dove
+# ci si trovava.  Qui si passano espliciti e assoluti, e vincono sulle
+# direttive del file.
+LOGDIR="${LOGDIR:-${PROJECT_ROOT}/logs}"
+mkdir -p "$LOGDIR"
+res+=(--output="${LOGDIR}/slurm-%x-%j.out" --error="${LOGDIR}/slurm-%x-%j.err")
+
 echo "[submit] stadio   ${STAGE}"
 echo "[submit] sistema  ${SYSTEM}"
 echo "[submit] risorse  ${res[*]}"
 echo "[submit] progetto ${PROJECT_ROOT}"
+echo "[submit] log      ${LOGDIR}/slurm-${SYSTEM}_${STAGE}-<jobid>.out"
 sbatch "${res[@]}" --job-name="${SYSTEM}_${STAGE}" --export="${export_list}" "$SUBMIT"

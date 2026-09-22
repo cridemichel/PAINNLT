@@ -372,5 +372,10 @@ altrove se lo si vuole tenere (e' utile per il `noisefloor` preliminare).
 | `hpc/painn_leonardo.def` | ricetta Apptainer, inutilizzabile qui, tenuta per sistemi con `--fakeroot` |
 
 Monitoraggio: `squeue -u $USER`, poi
-`tail -n 20 $(ls -t slurm-<sistema>_<stadio>-*.out | head -1)`.
+`tail -n 20 $(ls -t $PROJECT_ROOT/logs/slurm-<sistema>_<stadio>-*.out | head -1)`.
+
+I log stanno **sempre** in `logs/` sotto la radice del progetto: il wrapper
+passa `--output` assoluto, che vince sulla direttiva `#SBATCH` del file di job.
+Quest'ultima e' relativa alla directory da cui si lancia `sbatch`, e prima i
+log finivano sparsi a seconda di dove ci si trovava. Per cambiarlo: `LOGDIR=`.
 Il tempo effettivo di un job finito: `sacct -X -o JobID,Elapsed,MaxRSS,State -j <jobid>`.
