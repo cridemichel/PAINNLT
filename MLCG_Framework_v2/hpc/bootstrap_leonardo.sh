@@ -55,21 +55,36 @@ echo "  core       ${JOBS}"
 }
 echo "  ESPResSo   $(git -C "$ESPRESSO_SRC" rev-parse --short HEAD)"
 
-# ── 1. innesto del plugin PaiNN ─────────────────────────────────────────────
+# ── 1. configurazione di ESPResSo, PRIMA del plugin ─────────────────────────
+# install_switched_morse_nonbonded.py attiva la feature Morse scrivendo nel
+# file di configurazione dentro espresso/build, quindi quella directory deve
+# gia' esistere quando il plugin viene innestato.  Su un albero appena clonato
+# non esiste: va configurato adesso.
+configure_espresso() {
+    cmake -S "$ESPRESSO_SRC" -B "$ESPRESSO_SRC/build" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_PREFIX_PATH="$TORCH_PREFIX" \
+          -DESPRESSO_BUILD_WITH_CUDA="$ESPRESSO_CUDA" \
+          -DPython_EXECUTABLE="$(command -v python3)"
+}
+
+say "configuro ESPResSo (CUDA=${ESPRESSO_CUDA})"
+configure_espresso
+
+# ── 2. innesto del plugin PaiNN ─────────────────────────────────────────────
 say "innesto del plugin PaiNN nell'albero ESPResSo"
 ESPRESSO_SRC="$ESPRESSO_SRC" PYTHON_BIN="$(command -v python3)" \
     bash "$FRAMEWORK_ROOT/simulation/espresso_plugin/copy_plugin_files.sh"
 
-# ── 2. build di ESPResSo ────────────────────────────────────────────────────
-say "compilo ESPResSo (${JOBS} core, CUDA=${ESPRESSO_CUDA})"
-cmake -S "$ESPRESSO_SRC" -B "$ESPRESSO_SRC/build" \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_PREFIX_PATH="$TORCH_PREFIX" \
-      -DESPRESSO_BUILD_WITH_CUDA="$ESPRESSO_CUDA" \
-      -DPython_EXECUTABLE="$(command -v python3)"
+# ── 3. build di ESPResSo ────────────────────────────────────────────────────
+# Riconfigurazione: l'innesto ha aggiunto sorgenti e toccato le liste di CMake
+# e il file di configurazione delle feature.
+say "riconfiguro dopo l'innesto"
+configure_espresso
+say "compilo ESPResSo (${JOBS} core)"
 cmake --build "$ESPRESSO_SRC/build" -j "$JOBS"
 
-# ── 3. build del trainer ────────────────────────────────────────────────────
+# ── 4. build del trainer ────────────────────────────────────────────────────
 # MLCG_TORCH_ROOT e' il meccanismo del CMakeLists della v2 per selezionare UNA
 # distribuzione LibTorch: passarlo evita che CMake ne trovi due e linki header
 # e librerie di versioni diverse.
@@ -79,7 +94,7 @@ cmake -S "$FRAMEWORK_ROOT/training" -B "$FRAMEWORK_ROOT/training/build" \
       -DMLCG_TORCH_ROOT="$TORCH_PREFIX"
 cmake --build "$FRAMEWORK_ROOT/training/build" -j "$JOBS"
 
-# ── 4. verifica ─────────────────────────────────────────────────────────────
+# ── 5. verifica ─────────────────────────────────────────────────────────────
 say "verifica"
 ok=1
 for f in "$ESPRESSO_SRC/build/pypresso" \

@@ -100,6 +100,21 @@ parser.add_argument("-p", "--priors", type=str, default=None, help="File JSON co
 parser.add_argument("-o", "--output", type=str, default="cg_dataset.bin", help="Nome del file binario di output")
 parser.add_argument("--priors-output", type=str, default=None, help="Output JSON dei prior; default: cg_priors.json accanto al dataset")
 parser.add_argument("--rb-info-output", type=str, default=None, help="Output JSON dei rigid body; default: rigid_bodies_info.json accanto al dataset")
+# Forze e posizioni in file separati.
+#
+# Una produzione GROMACS con nstxout=0 e nstfout>0 scrive nel .trr le SOLE
+# forze, mentre le posizioni finiscono nell'.xtc (spesso ristretto al soluto
+# con compressed-x-grps).  Al coarse-graining servono posizioni e forze degli
+# stessi atomi allo stesso istante: si leggono da due traiettorie e si
+# appaiano per tempo.  --topology/--trajectory restano quelle delle POSIZIONI.
+parser.add_argument("--forces-trajectory", type=str, default=None,
+                    help="Traiettoria separata da cui leggere le forze (es. il .trr di una run con nstxout=0)")
+parser.add_argument("--forces-topology", type=str, default=None,
+                    help="Topologia della traiettoria delle forze (default: --topology)")
+parser.add_argument("--forces-selection", type=str, default="not resname SOL WAT HOH TIP3 T3P",
+                    help="Selezione MDAnalysis che, nella traiettoria delle forze, corrisponde agli atomi della traiettoria delle posizioni")
+parser.add_argument("--forces-time-tolerance", type=float, default=1.0,
+                    help="Tolleranza in ps nell'appaiamento temporale fra le due traiettorie")
 parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
 args = parser.parse_args()
 
@@ -232,6 +247,71 @@ RIGID_BODIES_CONFIG = config_data.get("rigid_bodies", {})
 
 print(f"[INFO] Caricamento MDAnalysis: {args.topology}, {args.trajectory}...")
 u = mda.Universe(args.topology, args.trajectory)
+
+# ── traiettoria separata per le forze ───────────────────────────────────────
+FORCES_UNIVERSE = None
+FORCES_ATOMS = None
+EXTERNAL_FORCES = None          # forze del frame corrente, in unita' MDAnalysis
+_FORCES_T0 = _FORCES_DT = None
+_forces_skipped = 0
+
+if args.forces_trajectory:
+    ftop = args.forces_topology or args.topology
+    print(f"[INFO] Forze da una traiettoria separata: {ftop}, {args.forces_trajectory}")
+    FORCES_UNIVERSE = mda.Universe(ftop, args.forces_trajectory)
+    FORCES_ATOMS = FORCES_UNIVERSE.select_atoms(args.forces_selection)
+    if len(FORCES_ATOMS) != len(u.atoms):
+        raise SystemExit(
+            f"[ERROR] la selezione '{args.forces_selection}' sulla traiettoria delle forze "
+            f"da' {len(FORCES_ATOMS)} atomi, ma la traiettoria delle posizioni ne ha "
+            f"{len(u.atoms)}. Correggi --forces-selection: deve isolare esattamente gli "
+            f"stessi atomi, nello stesso ordine."
+        )
+    # Controllo di identita': stessi nomi, stesso ordine.  Un disallineamento
+    # qui produrrebbe forze attribuite agli atomi sbagliati senza alcun errore
+    # visibile a valle.
+    try:
+        n_check = min(200, len(u.atoms))
+        lhs = [str(x) for x in u.atoms.names[:n_check]]
+        rhs = [str(x) for x in FORCES_ATOMS.names[:n_check]]
+        if lhs != rhs:
+            first = next(i for i in range(n_check) if lhs[i] != rhs[i])
+            raise SystemExit(
+                f"[ERROR] gli atomi non corrispondono: alla posizione {first} la traiettoria "
+                f"delle posizioni ha '{lhs[first]}' e quella delle forze '{rhs[first]}'."
+            )
+    except AttributeError:
+        print("[WARNING] nomi degli atomi non disponibili: impossibile verificare la corrispondenza.")
+
+    _n_fr = len(FORCES_UNIVERSE.trajectory)
+    _FORCES_T0 = float(FORCES_UNIVERSE.trajectory[0].time)
+    if _n_fr > 1:
+        _FORCES_DT = float(FORCES_UNIVERSE.trajectory[1].time) - _FORCES_T0
+    else:
+        _FORCES_DT = 0.0
+    print(f"[INFO] Traiettoria delle forze: {_n_fr} frame, t0={_FORCES_T0:.1f} ps, dt={_FORCES_DT:.1f} ps")
+
+
+def _sync_external_forces(time_ps):
+    """Porta la traiettoria delle forze sul frame che ha questo tempo.
+
+    Ritorna False se non c'e' corrispondenza entro la tolleranza: il frame va
+    allora saltato, perche' senza forze non c'e' target da apprendere.
+    """
+    global EXTERNAL_FORCES
+    n = len(FORCES_UNIVERSE.trajectory)
+    if _FORCES_DT and _FORCES_DT > 0:
+        k = int(round((time_ps - _FORCES_T0) / _FORCES_DT))
+    else:
+        k = 0
+    for cand in (k, k - 1, k + 1, k - 2, k + 2):
+        if 0 <= cand < n:
+            ts_f = FORCES_UNIVERSE.trajectory[cand]
+            if abs(float(ts_f.time) - time_ps) <= args.forces_time_tolerance:
+                EXTERNAL_FORCES = np.asarray(FORCES_ATOMS.forces, dtype=np.float64)
+                return True
+    EXTERNAL_FORCES = None
+    return False
 
 # Mapping dictionary for atomic masses
 ATOMIC_MASSES = {'H': 1.008, 'C': 12.011, 'N': 14.007, 'O': 15.999, 'P': 30.974, 'S': 32.065, 'K': 39.098}
@@ -584,6 +664,13 @@ def dihedral_forces(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0):
 
 def get_atom_forces_kjmol_nm(atoms, ts):
     """Return atom forces in kJ mol^-1 nm^-1 or fail loudly."""
+    # Con --forces-trajectory le forze del frame corrente sono gia' state
+    # lette dall'altra traiettoria e indicizzate come gli atomi di questa.
+    if EXTERNAL_FORCES is not None:
+        return np.asarray(
+            EXTERNAL_FORCES[np.asarray(atoms.indices, dtype=np.int64)],
+            dtype=np.float64,
+        ) * 10.0
     if getattr(ts, "has_forces", None) is False:
         print("[WARNING] The trajectory frame does not contain forces. Setting forces to zero for this snapshot.")
         return np.zeros((len(atoms), 3), dtype=np.float64)
@@ -643,7 +730,15 @@ wca_one_three_mol_pairs = set()
 wca_direct_mol_matrix = None
 wca_one_three_mol_matrix = None
 
-for ts_idx, ts in enumerate(u.trajectory):
+ts_idx = -1
+for _raw_frame_idx, ts in enumerate(u.trajectory):
+    # I frame senza forze corrispondenti non entrano nel dataset: ts_idx conta
+    # solo quelli usati, cosi' le inizializzazioni "al primo frame" restano
+    # valide anche se il primo frame della traiettoria viene saltato.
+    if FORCES_UNIVERSE is not None and not _sync_external_forces(float(ts.time)):
+        _forces_skipped += 1
+        continue
+    ts_idx += 1
     if ts_idx % 100 == 0:
         print(f"\r[INFO] Inversione Boltzmann: Frame {ts_idx}/{len(u.trajectory)}", end="")
     
@@ -803,6 +898,19 @@ for _resname, _info in rigid_bodies_info.items():
                 "rotational DOF at runtime. Map the site to the residue COM "
                 "(for COM mapping, use ['*']) or generalize the runtime DOFs."
             )
+
+if FORCES_UNIVERSE is not None:
+    print(
+        f"\n[INFO] Forze lette da {args.forces_trajectory}: "
+        f"{len(sites_data_history)} frame appaiati, {_forces_skipped} saltati "
+        f"(nessuna forza entro {args.forces_time_tolerance} ps)."
+    )
+    if len(sites_data_history) == 0:
+        raise SystemExit(
+            "[ERROR] nessun frame appaiato: le due traiettorie non condividono alcun tempo. "
+            "Verifica che siano la stessa produzione e alza --forces-time-tolerance se i "
+            "tempi sono scritti con arrotondamenti diversi."
+        )
 
 print("\n[INFO] Esecuzione allineamento Kabsch per mediare le geometrie dei corpi rigidi...")
 

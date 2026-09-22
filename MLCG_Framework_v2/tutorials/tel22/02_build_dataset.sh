@@ -94,9 +94,22 @@ if [[ -f 143D.pdb ]]; then
 fi
 "${PYTHON_BIN}" "${TOPOLOGY_VALIDATOR}" "${validator_args[@]}"
 
+# Forze in un file separato: una produzione con nstxout=0 e nstfout>0 mette
+# nel .trr le sole forze e le posizioni nell'.xtc.  AA_FORCES_TRAJECTORY le
+# tiene insieme; AA_FORCES_TOPOLOGY serve quando il file delle forze ha piu'
+# atomi (tipicamente il .tpr completo, solvente incluso).
+forces_args=()
+if [ -n "${AA_FORCES_TRAJECTORY:-}" ]; then
+    forces_args+=(--forces-trajectory "${AA_FORCES_TRAJECTORY}")
+    [ -n "${AA_FORCES_TOPOLOGY:-}" ] && forces_args+=(--forces-topology "${AA_FORCES_TOPOLOGY}")
+    [ -n "${AA_FORCES_SELECTION:-}" ] && forces_args+=(--forces-selection "${AA_FORCES_SELECTION}")
+    echo "[INFO] Forze da: ${AA_FORCES_TRAJECTORY}"
+fi
+
 "${PYTHON_BIN}" "${BUILDER}" \
     --topology "${AA_TOPOLOGY}" \
     --trajectory "${AA_TRAJECTORY}" \
+    ${forces_args[@]+"${forces_args[@]}"} \
     --config tel22_topology.json \
     --output tel22_dataset.bin \
     --priors-output cg_priors.json \
