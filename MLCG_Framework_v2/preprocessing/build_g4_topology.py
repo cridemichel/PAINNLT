@@ -368,7 +368,16 @@ def main():
     # il mapping esteso ai terminali deve finire nella topologia prodotta,
     # altrimenti build_cg_dataset.py scartera' gli stessi residui
     out["mapping"] = dict(template["mapping"])
-    out["mapping"]["residues"] = mapping
+    # I terminali NON vanno duplicati come voci autonome del mapping.  A valle,
+    # rigid_bodies_info.json e' indicizzato per nome di residuo ma interrogato
+    # per FIRMA dei tipi di sito, e in simulazione una molecola e' solo una
+    # lista di tipi: tre voci DT5/DT/DT3 con la stessa firma [1] rendono la
+    # ricerca ambigua e la produzione si ferma.  Si esportano invece i soli
+    # nomi canonici piu' una tabella di alias, che build_cg_dataset applica
+    # prima di usare il nome del residuo.
+    out["mapping"]["residues"] = {k: v for k, v in mapping.items() if k not in aliases}
+    if aliases:
+        out["mapping"]["residue_aliases"] = dict(sorted(aliases.items()))
     out["bonds"] = bonds
     out["angles"] = angles
     out["dihedrals"] = []

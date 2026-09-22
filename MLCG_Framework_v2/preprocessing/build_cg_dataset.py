@@ -152,6 +152,31 @@ BETA = 1.0 / (R_KJ_MOL_K * TEMPERATURE)
 MAPPING_DATA = config_data.get("mapping", {})
 MAPPING_METHOD = MAPPING_DATA.get("mapping_method", "COM")
 mapping_by_resname = MAPPING_DATA.get("residues", {})
+# Alias dei terminali: DT5 -> DT, DA3 -> DA...  Vanno risolti PRIMA di usare il
+# nome del residuo, non aggiunti come voci proprie del mapping.  Il motivo sta
+# a valle: rigid_bodies_info.json e' indicizzato per nome ma interrogato per
+# firma dei tipi di sito, e in simulazione una molecola e' solo una lista di
+# tipi, quindi DT5, DT e DT3 -- tutti [1] -- sarebbero indistinguibili e la
+# ricerca del template si ferma per ambiguita'.
+#
+# Fonderli e' un'approssimazione consapevole: una timina 5'-terminale pesa
+# ~62 amu meno (le manca il fosfato) e nel CG prende la massa canonica.  Non
+# tocca l'ensemble di equilibrio, che dalle masse non dipende: cambierebbe
+# solo la cinetica.
+RESIDUE_ALIASES = MAPPING_DATA.get("residue_aliases", {})
+
+def canonical_resname(name):
+    return RESIDUE_ALIASES.get(name, name)
+
+if RESIDUE_ALIASES:
+    print("[INFO] alias dei terminali: "
+          + ", ".join(f"{k}->{v}" for k, v in sorted(RESIDUE_ALIASES.items())))
+    print("[INFO] i terminali usano il template del residuo canonico: massa e "
+          "inerzia\n"
+          "       sono quelle del residuo interno (per un 5' la differenza e' "
+          "~62 amu,\n"
+          "       il fosfato mancante).  Non tocca l'ensemble di equilibrio.")
+
 site_types = MAPPING_DATA.get("site_types", {})
 
 BONDS = copy.deepcopy(config_data.get("bonds", []))
@@ -731,6 +756,7 @@ cg_torques_history = []
 box_dim_history = []
 sites_data_history = []
 mol_site_indices = {}
+rb_template_from_alias = {}
 wca_direct_mol_pairs = set()
 wca_direct_site_pairs = set()
 wca_one_three_mol_pairs = set()
@@ -773,7 +799,8 @@ for _raw_frame_idx, ts in enumerate(u.trajectory):
     frame_torques = []
     frame_sites = []
     
-    valid_residues = [res for res in u.residues if res.resname in mapping_by_resname]
+    valid_residues = [res for res in u.residues
+                      if canonical_resname(res.resname) in mapping_by_resname]
     if ts_idx == 0:
         mol_resnames = [res.resname for res in valid_residues]
         wca_direct_mol_pairs, wca_one_three_mol_pairs = build_wca_topology_exclusions(
@@ -799,7 +826,8 @@ for _raw_frame_idx, ts in enumerate(u.trajectory):
         )
         
     for mol_id, residue in enumerate(valid_residues):
-        resname = residue.resname
+        resname = canonical_resname(residue.resname)
+        residue_is_alias = (residue.resname != resname)
         current_mapping = mapping_by_resname[resname]
         
         atoms = residue.atoms
@@ -818,7 +846,17 @@ for _raw_frame_idx, ts in enumerate(u.trajectory):
         r_vec = unwrapped_pos - center
         total_torque = np.sum(np.cross(r_vec, forces_nm), axis=0)
         
-        if ts_idx == 0 and resname not in rigid_bodies_info:
+        # Il template va preso da un residuo CANONICO, non dal primo che capita:
+        # se la catena comincia con un terminale (TEL26 inizia con DT5), il
+        # primo incontrato sarebbe quello, e tutte le timine erediterebbero la
+        # massa senza fosfato.  Un template gia' costruito da un alias viene
+        # quindi rifatto appena si incontra il residuo vero; le sue sites
+        # tornano vuote e si riempiono con le posizioni di questo stesso
+        # residuo, poche righe piu' sotto.
+        rebuild_rb = (resname not in rigid_bodies_info) or \
+                     (rb_template_from_alias.get(resname, False) and not residue_is_alias)
+        if ts_idx == 0 and rebuild_rb:
+            rb_template_from_alias[resname] = residue_is_alias
             total_mass = float(np.sum(masses))
             I_tensor = compute_inertia_tensor(unwrapped_pos, masses, center)
             eigvals, principal_axes = diagonalize_inertia_tensor(I_tensor)
