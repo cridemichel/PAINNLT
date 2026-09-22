@@ -23,6 +23,7 @@ MLCG_VENV="${MLCG_VENV:-${PROJECT_ROOT}/venv}"
 # >= 12.2.0.  Va caricato il modulo, che e' anche l'unica scelta coerente con
 # boost, fftw e openmpi, compilati tutti con gcc 12.2.0.
 for m in "${MODULE_GCC:-gcc}" \
+         "${MODULE_CUDA:-cuda}" \
          "${MODULE_CMAKE:-cmake}" \
          "${MODULE_OPENMPI:-openmpi}" \
          "${MODULE_BOOST:-boost}" \
@@ -52,6 +53,30 @@ export LD_LIBRARY_PATH="${LIBTORCH_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 # CPATH e' la stessa soluzione che usava il Dockerfile dell'immagine.
 export CPATH="${LIBTORCH_ROOT}/include:${LIBTORCH_ROOT}/include/torch/csrc/api/include:${CPATH:-}"
 export LIBRARY_PATH="${LIBTORCH_ROOT}/lib:${LIBRARY_PATH:-}"
+
+# Il toolkit CUDA serve anche dove non si compila codice CUDA: LibTorch e' una
+# build CUDA, e TorchConfig.cmake include Caffe2Config, che pretende di
+# risolvere le librerie del toolkit.  Senza, la configurazione del trainer si
+# ferma con "Your installed Caffe2 version uses CUDA but I cannot find the
+# CUDA libraries".  I nodi DCGP non hanno GPU, ma il toolkit c'e' lo stesso.
+if [[ -z "${CUDA_TOOLKIT_ROOT_DIR:-}" ]]; then
+    for _cuda_var in "${CUDA_HOME:-}" "${CUDA_ROOT:-}" "${CUDA_PATH:-}"; do
+        if [[ -n "$_cuda_var" && -d "$_cuda_var" ]]; then
+            CUDA_TOOLKIT_ROOT_DIR="$_cuda_var"
+            break
+        fi
+    done
+fi
+if [[ -z "${CUDA_TOOLKIT_ROOT_DIR:-}" ]] && command -v nvcc >/dev/null 2>&1; then
+    CUDA_TOOLKIT_ROOT_DIR="$(dirname "$(dirname "$(readlink -f "$(command -v nvcc)")")")"
+fi
+if [[ -n "${CUDA_TOOLKIT_ROOT_DIR:-}" ]]; then
+    export CUDA_TOOLKIT_ROOT_DIR
+    export CUDAToolkit_ROOT="$CUDA_TOOLKIT_ROOT_DIR"
+    export CMAKE_PREFIX_PATH="${CUDA_TOOLKIT_ROOT_DIR}:${CMAKE_PREFIX_PATH}"
+else
+    echo "[env] ATTENZIONE: toolkit CUDA non trovato; il trainer non si configurera'." >&2
+fi
 
 if [[ -f "${MLCG_VENV}/bin/activate" ]]; then
     # shellcheck disable=SC1091
