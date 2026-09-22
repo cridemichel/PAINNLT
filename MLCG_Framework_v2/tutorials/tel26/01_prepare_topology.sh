@@ -46,8 +46,12 @@ TOPOLOGY="${TOPOLOGY:-tel26_topology.json}"
 
 cd "${SCRIPT_DIR}"
 
+# Niente apostrofi nei messaggi di ${VAR:?...}: bash interpreta le virgolette
+# dentro la parte "word" di una parameter expansion anche quando tutto sta fra
+# doppi apici, e un apostrofo isolato apre una stringa che non si chiude mai --
+# errore di sintassi sull'INTERO file, non su questa riga.
 : "${AA_TPR:?indica AA_TPR (il .tpr della produzione, con TUTTI gli atomi)}"
-: "${AA_XTC:?indica AA_XTC (l'.xtc ristretto dai compressed-x-grps)}"
+: "${AA_XTC:?indica AA_XTC, la traiettoria compressa ristretta dai compressed-x-grps}"
 
 for path in "${AA_TPR}" "${AA_XTC}" "${TEMPLATE}"; do
     [ -f "${path}" ] || { echo "[ERROR] manca: ${path}" >&2; exit 1; }

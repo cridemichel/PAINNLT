@@ -22,7 +22,7 @@ BUILDER="${FRAMEWORK_ROOT}/preprocessing/build_cg_dataset.py"
 cd "${SCRIPT_DIR}"
 
 : "${AA_TOPOLOGY:?indica AA_TOPOLOGY (la topologia ridotta ai non-Water, vedi extract_solute_topology.py)}"
-: "${AA_TRAJECTORY:?indica AA_TRAJECTORY (l'.xtc con le posizioni)}"
+: "${AA_TRAJECTORY:?indica AA_TRAJECTORY, la traiettoria compressa con le posizioni}"
 
 for path in "${AA_TOPOLOGY}" "${AA_TRAJECTORY}" tel26_topology.json; do
     [ -f "${path}" ] || { echo "[ERROR] manca: ${path}" >&2; exit 1; }
