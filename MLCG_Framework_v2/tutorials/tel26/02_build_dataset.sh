@@ -56,10 +56,18 @@ if [ -n "${n_frames}" ]; then
     echo "[INFO] Frame: $1 | dt: $2 ps"
 fi
 
+# MAX_FRAMES e STRIDE servono a misurare il costo prima di impegnare otto ore
+# di nodo: la lettura e' lineare nei frame, quindi il tempo su 500 si
+# estrapola.  Un dataset troncato NON si usa per allenare.
+limit_args=()
+[ -n "${MAX_FRAMES:-}" ] && limit_args+=(--max-frames "${MAX_FRAMES}")
+[ -n "${STRIDE:-}" ]     && limit_args+=(--stride "${STRIDE}")
+
 "${PYTHON_BIN}" "${BUILDER}" \
     --topology "${AA_TOPOLOGY}" \
     --trajectory "${AA_TRAJECTORY}" \
     ${forces_args[@]+"${forces_args[@]}"} \
+    ${limit_args[@]+"${limit_args[@]}"} \
     --config tel26_topology.json \
     --output tel26_dataset.bin \
     --priors-output cg_priors.json \

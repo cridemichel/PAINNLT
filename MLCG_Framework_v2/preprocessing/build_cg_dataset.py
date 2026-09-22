@@ -115,6 +115,13 @@ parser.add_argument("--forces-selection", type=str, default="not resname SOL WAT
                     help="Selezione MDAnalysis che, nella traiettoria delle forze, corrisponde agli atomi della traiettoria delle posizioni")
 parser.add_argument("--forces-time-tolerance", type=float, default=1.0,
                     help="Tolleranza in ps nell'appaiamento temporale fra le due traiettorie")
+parser.add_argument("--stride", type=int, default=1,
+                    help="Usa un frame ogni STRIDE (default 1: tutti)")
+parser.add_argument("--max-frames", type=int, default=None,
+                    help="Fermati dopo MAX_FRAMES frame usati. Serve a misurare il "
+                         "costo dello stadio su un sottoinsieme prima di lanciarlo "
+                         "intero: la lettura e' lineare nei frame, quindi il tempo "
+                         "su 500 si estrapola.")
 parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
 args = parser.parse_args()
 
@@ -731,7 +738,23 @@ wca_direct_mol_matrix = None
 wca_one_three_mol_matrix = None
 
 ts_idx = -1
+_STRIDE = max(1, int(args.stride))
+_MAX_FRAMES = args.max_frames
+if _STRIDE > 1:
+    print(f"[INFO] stride {_STRIDE}: si usa un frame ogni {_STRIDE}")
+if _MAX_FRAMES:
+    print(f"[INFO] ci si ferma dopo {_MAX_FRAMES} frame usati")
+
 for _raw_frame_idx, ts in enumerate(u.trajectory):
+    # Lo stride si applica PRIMA di cercare le forze: saltare un frame non
+    # deve costare la ricerca del suo istante nell'altra traiettoria.
+    if _raw_frame_idx % _STRIDE:
+        continue
+    # ts_idx e' l'indice dell'ultimo frame USATO e parte da -1: dopo N frame
+    # vale N-1, quindi qui si esce esattamente quando N ha raggiunto il tetto.
+    if _MAX_FRAMES is not None and ts_idx + 1 >= _MAX_FRAMES:
+        print(f"\n[INFO] raggiunto il tetto di {_MAX_FRAMES} frame: mi fermo.")
+        break
     # I frame senza forze corrispondenti non entrano nel dataset: ts_idx conta
     # solo quelli usati, cosi' le inizializzazioni "al primo frame" restano
     # valide anche se il primo frame della traiettoria viene saltato.
