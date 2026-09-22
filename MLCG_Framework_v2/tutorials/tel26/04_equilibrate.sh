@@ -20,6 +20,14 @@ MODEL="${MODEL:-tel26_model.pt}"
 # e' il modello a scaldare il sistema quello stato sarebbe gia' compromesso.
 phase_args=()
 [ -n "${CLASSICAL:-}" ] && phase_args+=(--steps_ml_capped 0 --steps_ml_uncapped 0)
+# EQ_DT: il passo dell'equilibrazione.  equilibrate.py usa 0.002 ps di default
+# mentre 05_run_espresso.sh produce a 0.001: lo stato viene cosi' generato con
+# un passo DOPPIO rispetto a quello che poi deve accettarlo.  Se l'equilibrato
+# arriva caldo -- E_kin molto sopra ~(3 N_mol + 3 N_rigidi)/2 * kT -- questa e'
+# la prima cosa da stringere, perche' la fase 4 gira senza force cap e con un
+# termostato debole (gamma = 1 ps^-1), che non dissipa quanto un integratore
+# instabile inietta.
+[ -n "${EQ_DT:-}" ] && phase_args+=(--dt "${EQ_DT}")
 NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
 
 cd "${SCRIPT_DIR}"

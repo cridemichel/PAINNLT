@@ -126,7 +126,8 @@ production)
     #   bash hpc/submit_leonardo.sh production SYSTEM=tel26 MODEL=tel26_model.ep20.pt
     #   bash hpc/submit_leonardo.sh production SYSTEM=tel26 CLASSICAL=1 DISABLE_ML=1
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
-         ${MODEL:+MODEL='${MODEL}'} ${CLASSICAL:+CLASSICAL='${CLASSICAL}'} bash 04_equilibrate.sh"
+         ${MODEL:+MODEL='${MODEL}'} ${CLASSICAL:+CLASSICAL='${CLASSICAL}'} \
+         ${EQ_DT:+EQ_DT='${EQ_DT}'} bash 04_equilibrate.sh"
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          ${MODEL:+MODEL='${MODEL}'} ${DISABLE_ML:+DISABLE_ML='${DISABLE_ML}'} \
          ${SAMPLE_NPZ:+SAMPLE_NPZ='${SAMPLE_NPZ}'} \
