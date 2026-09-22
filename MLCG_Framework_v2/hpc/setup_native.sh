@@ -65,16 +65,33 @@ echo "  numpy       $(python3 -c 'import numpy;print(numpy.__version__)')"
 echo "  MDAnalysis  $(python3 -c 'import MDAnalysis;print(MDAnalysis.__version__)')"
 
 # ── 2. LibTorch ─────────────────────────────────────────────────────────────
+# L'ABI di libstdc++ conta: i wheel di PyTorch costruiti con
+# _GLIBCXX_USE_CXX11_ABI=0 propagano quel flag, via TORCH_CXX_FLAGS, a tutto
+# cio' che linka Torch.  Il core di ESPResSo verrebbe allora compilato con una
+# std::string diversa da quella di Kokkos, Cabana e Boost, e l'import muore su
+# simboli senza il tag [abi:cxx11]:
+#     undefined symbol: ...SharedAllocationRecordCommon<HostSpace>::get_labelEv
+# mentre la libreria definisce ...get_label[abi:cxx11]().  Serve un wheel con
+# la ABI nuova.
 if [[ "$LIBTORCH_SOURCE" == "pip" ]]; then
-    if python3 -c 'import torch' 2>/dev/null; then
-        say "torch gia' installato nel venv ($(python3 -c 'import torch;print(torch.__version__)'))"
+    have_torch="$(python3 -c 'import torch;print(torch.__version__)' 2>/dev/null || true)"
+    if [[ "$have_torch" == "${LIBTORCH_VERSION}"* ]]; then
+        say "torch gia' installato nel venv (${have_torch})"
     else
+        [[ -n "$have_torch" ]] && say "torch installato: ${have_torch}; ne serve ${LIBTORCH_VERSION}: reinstallo"
         say "installo torch ${LIBTORCH_VERSION}+${LIBTORCH_CUDA} dal wheel"
-        pip install "torch==${LIBTORCH_VERSION}" \
+        pip install --force-reinstall "torch==${LIBTORCH_VERSION}" \
             --index-url "https://download.pytorch.org/whl/${LIBTORCH_CUDA}"
     fi
     TORCH_PREFIX="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))')"
     echo "  torch       $(python3 -c 'import torch;print(torch.__version__)')"
+    torch_abi="$(python3 -c 'import torch;print(torch._C._GLIBCXX_USE_CXX11_ABI)' 2>/dev/null || echo '?')"
+    echo "  cxx11 ABI   ${torch_abi}"
+    if [[ "$torch_abi" == "False" ]]; then
+        echo "  [ATTENZIONE] wheel con ABI pre-C++11: il core di ESPResSo ereditera'"
+        echo "               -D_GLIBCXX_USE_CXX11_ABI=0 e non linkera' con Kokkos/Boost."
+        echo "               Prova una versione piu' recente:  LIBTORCH_VERSION=... "
+    fi
     echo "  LibTorch    ${TORCH_PREFIX}"
     [[ -f "${TORCH_PREFIX}/share/cmake/Torch/TorchConfig.cmake" ]] \
         || { echo "[ERROR] TorchConfig.cmake assente in ${TORCH_PREFIX}" >&2; exit 1; }

@@ -53,7 +53,7 @@ Che anche la **configurazione** di ESPResSo richieda rete è la cosa meno
 ovvia: ESPResSo 5 tira giù heFFTe, Kokkos e Cabana con `FetchContent`, gli
 ultimi due incondizionatamente.
 
-### 1.4 glibc 2.28
+### 1.4 glibc 2.28, e l'ABI di libstdc++
 
 Leonardo è RHEL 8. La distribuzione LibTorch ufficiale è costruita contro una
 glibc più recente e il link fallisce così:
@@ -66,6 +66,15 @@ Quei simboli versionati non esistono nella libm del sistema, e `-lm` non
 cambia nulla. **Si usano i wheel di PyTorch**, che sono `manylinux_2_28` e
 portano la stessa LibTorch C++ con i suoi `share/cmake` dentro
 `site-packages/torch`.
+
+Attenzione però a *quale* wheel: se è costruito con
+`_GLIBCXX_USE_CXX11_ABI=0`, `TorchConfig.cmake` propaga quel flag via
+`TORCH_CXX_FLAGS` a tutto ciò che linka Torch, e il core di ESPResSo si
+ritrova con una `std::string` diversa da quella di Kokkos, Cabana e Boost.
+Il sintomo è un `undefined symbol` su un nome **senza** il tag `[abi:cxx11]`
+mentre la libreria lo definisce **con** quel tag. Il setup stampa
+`cxx11 ABI` e deve dire `True`; altrimenti va scelta una versione di torch
+più recente con `LIBTORCH_VERSION`.
 
 ---
 
@@ -265,6 +274,7 @@ Ogni riga è un errore realmente incontrato durante l'installazione.
 | `libboost_mpi.so.1.85.0: cannot open shared object file` | `pypresso` lanciato senza ambiente | `source hpc/env_leonardo.sh` |
 | `painn.so: undefined symbol: global_painn_potential` | `PaiNN_ML_Potential.cpp` copiato nella directory ma non elencato in `target_sources()`, quindi non compilato nel core | `install_painn_core_sources.py`, chiamato da `copy_plugin_files.sh` |
 | `espresso_core.so: undefined symbol: _ZTIN3c105ErrorE` | il core non linkava LibTorch: `find_package(Torch)` e `${TORCH_LIBRARIES}` erano modifiche a mano nell'albero del Mac | idem |
+| `undefined symbol: ...SharedAllocationRecordCommon<HostSpace>::get_labelEv` mentre la libreria definisce `get_label[abi:cxx11]()` | mismatch di ABI di libstdc++: un wheel PyTorch con `_GLIBCXX_USE_CXX11_ABI=0` propaga quel flag via `TORCH_CXX_FLAGS` a tutto ciò che linka Torch, e il core finisce con una `std::string` diversa da quella di Kokkos, Cabana e Boost | usare un wheel con la ABI nuova (`torch._C._GLIBCXX_USE_CXX11_ABI` deve essere `True`); lo zip `cxx11-abi` lo sarebbe, ma non parte per via della glibc |
 | `painn.so senza ordered-geometry` (falso allarme) | `strings` non attraversa le tabelle di stringhe di Cython | il controllo usa `grep -a` |
 
 ---
