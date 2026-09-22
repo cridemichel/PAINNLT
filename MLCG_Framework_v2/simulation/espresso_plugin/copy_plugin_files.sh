@@ -36,6 +36,15 @@ copy_if_different "$SCRIPT_DIR/PaiNN_ML_Potential.cpp" \
 
 copy_if_different "$SCRIPT_DIR/painn.pyx" \
     "$PYTHON_DIR/painn.pyx"
+# ESPResSo elenca i sorgenti del core esplicitamente in target_sources(): un
+# file copiato nella directory non viene compilato se non compare in quella
+# lista.  Senza questo passo il core non contiene global_painn_potential e
+# l'import del modulo muore con "undefined symbol" -- su Linux, dove il link
+# e' stretto; su macOS il sintomo slitta al runtime per via di
+# -undefined dynamic_lookup.
+"$PYTHON_BIN" "$SCRIPT_DIR/install_painn_core_sources.py" \
+    --espresso-root "$ESPRESSO_ROOT"
+
 #
 # Install the conservative pairwise Morse bond in the core, ScriptInterface,
 # and Python interface. The installer is idempotent and fails closed if the

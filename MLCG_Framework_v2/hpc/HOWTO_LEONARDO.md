@@ -232,6 +232,7 @@ Ogni riga è un errore realmente incontrato durante l'installazione.
 | `undefined reference to log2@GLIBC_2.29` | zip LibTorch contro glibc più recente della 2.28 di RHEL 8 | torch dal wheel (`LIBTORCH_SOURCE=pip`) |
 | `No rule to make target .../libkineto.a` | cache del trainer che punta a un'altra LibTorch | il bootstrap rigenera `training/build` quando `MLCG_TORCH_ROOT` cambia |
 | `libboost_mpi.so.1.85.0: cannot open shared object file` | `pypresso` lanciato senza ambiente | `source hpc/env_leonardo.sh` |
+| `painn.so: undefined symbol: global_painn_potential` | `PaiNN_ML_Potential.cpp` copiato nella directory ma non elencato in `target_sources()`, quindi non compilato nel core. Su macOS non si vedeva: i moduli Cython sono linkati con `-undefined dynamic_lookup` e la risoluzione slitta al runtime | `install_painn_core_sources.py`, chiamato da `copy_plugin_files.sh` |
 | `painn.so senza ordered-geometry` (falso allarme) | `strings` non attraversa le tabelle di stringhe di Cython | il controllo usa `grep -a` |
 
 ---
