@@ -127,6 +127,38 @@ def main():
         what="chiamata a calculate_forces",
     )
 
+    # ── 4. visibilita' dei simboli di Kokkos ────────────────────────────────
+    # Kokkos e' costruito come libreria condivisa e imposta sui PROPRI target
+    # CXX_VISIBILITY_PRESET=hidden e VISIBILITY_INLINES_HIDDEN=ON: i metodi dei
+    # template istanziati esplicitamente nella libreria (per esempio
+    # SharedAllocationRecordCommon<HostSpace>::get_label) restano fuori dalla
+    # tabella dinamica.  ESPResSo li usa dai suoi header, quindi espresso_core
+    # resta con riferimenti irrisolti -- che non fanno fallire il link, perche'
+    # una shared library non pretende di risolvere tutto, e si manifestano solo
+    # all'import:
+    #     undefined symbol: _ZNK6Kokkos4Impl28SharedAllocationRecordCommon...
+    # Passare le variabili CMAKE_* al configure non basta: le property sul
+    # target vincono, e vanno sovrascritte dopo FetchContent_MakeAvailable.
+    # Su macOS non si presenta: Mach-O tratta la visibilita' diversamente.
+    patch(
+        root / "CMakeLists.txt",
+        marker="MLCG: visibilita' dei simboli Kokkos",
+        anchor="  # mark kokkos headers as system headers to disable compiler diagnostics",
+        insertion=(
+            "  # MLCG: visibilita' dei simboli Kokkos.  Le istanziazioni esplicite dei\n"
+            "  # template restano fuori dalla tabella dinamica se le inline sono\n"
+            "  # nascoste, e il core che le usa dagli header non le trova all'import.\n"
+            "  foreach(kokkos_target IN ITEMS kokkoscore kokkoscontainers kokkossimd\n"
+            "                                 kokkosalgorithms)\n"
+            "    if(TARGET ${kokkos_target})\n"
+            "      set_property(TARGET ${kokkos_target} PROPERTY CXX_VISIBILITY_PRESET default)\n"
+            "      set_property(TARGET ${kokkos_target} PROPERTY VISIBILITY_INLINES_HIDDEN OFF)\n"
+            "    endif()\n"
+            "  endforeach()\n\n"
+        ),
+        what="visibilita' dei target Kokkos",
+    )
+
     print("\n[DONE] innesto del core completato.")
 
 
