@@ -161,8 +161,11 @@ done
 # equilibrate.py e run_cg_md.py li scarteranno con un WARN e un modello
 # shared-geometry non sarebbe simulabile.
 if [[ -e "$ESPRESSO_SRC/build/src/python/espressomd/painn.so" ]]; then
-    if strings "$ESPRESSO_SRC/build/src/python/espressomd/painn.so" \
-       | grep -q ordered_geometry_copies; then
+    # grep -a e non "strings": i nomi dei parametri di un modulo Cython
+    # finiscono in tabelle di stringhe che strings non attraversa, e il
+    # controllo dava un falso allarme su un plugin perfettamente completo.
+    if grep -aq ordered_geometry_copies \
+       "$ESPRESSO_SRC/build/src/python/espressomd/painn.so"; then
         echo "  ok        painn.so include il supporto ordered-geometry"
     else
         echo "  [NOTA]    painn.so senza ordered-geometry: PaiNN puro funziona,"

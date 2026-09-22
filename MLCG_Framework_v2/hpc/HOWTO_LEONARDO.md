@@ -1,155 +1,321 @@
-# Deploy di MLCG_Framework_v2 su Leonardo (CINECA)
+# Portare MLCG_Framework_v2 su Leonardo (CINECA)
 
-Il caso d'uso: le traiettorie all-atom lunghe **sono già su Leonardo**, e va
-portato lì solo il framework. Niente da trasferire: il framework si clona, le
-dipendenze si scaricano sul cluster.
+Guida completa: dall'utenza nuova al framework compilato e funzionante.
+Scritta ripercorrendo un'installazione reale, quindi ogni vincolo qui elencato
+è stato incontrato davvero, non previsto in astratto.
 
-## Niente container
+**Il risultato**: `pypresso` con il plugin PaiNN, il trainer `train_painn` e
+un ambiente Python con MDAnalysis, tutto nativo, senza container.
 
-Leonardo ha SingularityPRO 4.3, ma **non** le mappe subuid/subgid:
+---
+
+## 1. Il quadro: perché l'ambiente è fatto così
+
+Quattro vincoli di Leonardo determinano l'intera procedura. Conviene averli
+chiari prima di eseguire qualsiasi cosa, perché ogni scelta strana della
+guida discende da uno di questi.
+
+### 1.1 Niente container
+
+Leonardo ha SingularityPRO 4.3 in `/usr/bin/singularity` (nessun modulo
+`apptainer`), ma **non ha le mappe subuid/subgid**:
 
 ```
 $ singularity build --fakeroot prova.sif docker://alpine:latest
 FATAL: could not use fakeroot: no valid mapping entry found for cdemiche (26638)
 ```
 
-Senza `--fakeroot` un `.def` con `%post` non è costruibile sul cluster, e con
-esso cade l'idea di costruire l'immagine in loco. L'ambiente è quindi
-**nativo**: i moduli del sistema per le dipendenze di ESPResSo, una
-distribuzione LibTorch C++ scaricata, un virtualenv per il Python.
+Senza `--fakeroot` un file `.def` con `%post` non è costruibile sul cluster.
+Resterebbe la via di costruire l'immagine altrove e trasferirla (la
+conversione da `docker-archive` non richiede privilegi), ma l'ambiente nativo
+è più semplice e più veloce, e usa MPI e Boost ottimizzati del cluster.
 
-Conviene anche per un'altra ragione: il Python del framework **non ha bisogno
-di torch**. Gli servono MDAnalysis, numpy e scipy; l'inferenza del modello sta
-nel plugin C++ di ESPResSo e nel trainer. Quindi al posto di un'immagine da
-10 GB basta uno zip da ~2,5 GB, e si usano MPI e Boost ottimizzati del cluster.
+### 1.2 Il login node uccide i processi lunghi
 
-`painn_leonardo.def` resta nel repo per chi avesse `--fakeroot` altrove.
+`ulimit -t` vale **600 secondi di CPU**. Qualsiasi download corposo,
+estrazione o compilazione va in un job, non lanciato a mano.
 
-## I tre vincoli del sistema
+### 1.3 La rete c'è solo sui nodi di login
 
-1. **Sul nodo di login ogni processo muore dopo 10 minuti di CPU time**
-   (`ulimit -t` → 600). Scaricare ed estrarre LibTorch li supera: è un job.
-2. **I nodi di calcolo non raggiungono internet, i nodi di login sì.** La
-   partizione `lrd_all_serial` gira *sui* nodi di login (`login08`, `login13`):
-   è l'unico posto dove un job può scaricare. Da qui la separazione fra lo
-   stadio `setup` (scarica, niente compilazione) e `bootstrap` (compila,
-   niente rete), che può così usare i 32 core di DCGP.
-3. **Il progetto ISCRA B ha due associazioni**: `IscrB_G4MES` sul Booster (ore
-   GPU) e `IscrB_G4MES_0` su DCGP (ore CPU). Compilare e leggere traiettorie
-   con MDAnalysis non toccano la GPU: farli su `boost_usr_prod` consuma ore
-   A100 per lavoro multicore. Vanno su DCGP.
+I nodi di calcolo (DCGP, Booster) non raggiungono internet. La partizione
+`lrd_all_serial` gira **sui nodi di login** (`login08`, `login13`), quindi è
+l'unico posto dove un job può scaricare qualcosa. Questo divide la procedura
+in stadi "con rete" e stadi "con core":
 
-Nota: `lrd_all_serial` rifiuta l'associazione DCGP con *Invalid account or
-account/partition combination*. Lo stadio `setup` non passa quindi alcun
-`--account`, salvo che si definisca `ACCOUNT_SERIAL`.
+| serve | stadio | dove |
+|---|---|---|
+| rete | `setup` (torch, pacchetti, clone ESPResSo) | `lrd_all_serial` |
+| rete | `configure` (ESPResSo scarica heFFTe, Kokkos, Cabana) | `lrd_all_serial` |
+| core | `build` (compilazione) | `dcgp_usr_prod`, 32 core |
+| GPU | `train`, `select`, `production` | `boost_usr_prod`, 1 GPU |
 
-## La procedura
+Che anche la **configurazione** di ESPResSo richieda rete è la cosa meno
+ovvia: ESPResSo 5 tira giù heFFTe, Kokkos e Cabana con `FetchContent`, gli
+ultimi due incondizionatamente.
+
+### 1.4 glibc 2.28
+
+Leonardo è RHEL 8. La distribuzione LibTorch ufficiale è costruita contro una
+glibc più recente e il link fallisce così:
+
+```
+undefined reference to `log2@GLIBC_2.29'
+```
+
+Quei simboli versionati non esistono nella libm del sistema, e `-lm` non
+cambia nulla. **Si usano i wheel di PyTorch**, che sono `manylinux_2_28` e
+portano la stessa LibTorch C++ con i suoi `share/cmake` dentro
+`site-packages/torch`.
+
+---
+
+## 2. Prerequisiti
+
+### 2.1 L'utenza deve essere abilitata
+
+Un'utenza appena creata può risultare incompleta: aree di lavoro non
+accessibili e job rifiutati. Verifica:
 
 ```bash
-# 0. l'area di lavoro (NON la home: quota piccola)
-BASE=/leonardo_work/IscrB_G4MES/$USER
-mkdir -p "$BASE" && cd "$BASE"
+id                                     # devono comparire i gruppi del progetto
+ls -ld /leonardo_work/<PROGETTO>
+sbatch --test-only -p lrd_all_serial -t 00:10:00 --wrap=hostname
+```
 
-# 1. il framework
+Se `/leonardo_work/<PROGETTO>` dà *Permission denied* mentre le aree di altri
+progetti si vedono, o se ogni `sbatch` risponde *Invalid account or
+account/partition combination* benché `sacctmgr show assoc user=$USER`
+elenchi associazioni valide, l'abilitazione non è completa: scrivi a
+`superc@cineca.it`. **Prima però prova da un altro nodo di login**: in un caso
+reale il blocco si presentava solo su `login01` e non su `login05`.
+
+### 2.2 I due account
+
+Un progetto ISCRA B ne ha due: `<PROGETTO>` sul Booster (ore GPU) e
+`<PROGETTO>_0` su DCGP (ore CPU). Compilare e leggere traiettorie con
+MDAnalysis non toccano la GPU: farli sul Booster brucia ore A100 per lavoro
+multicore.
+
+`lrd_all_serial` non accetta l'associazione DCGP (*Invalid account or
+account/partition combination*), quindi gli stadi che ci girano non passano
+`--account` e usano il default dell'utente.
+
+### 2.3 Dove mettere le cose
+
+`$HOME` ha quota piccola. Tutto sotto l'area di progetto:
+
+```bash
+BASE=/leonardo_work/<PROGETTO>/$USER
+mkdir -p "$BASE"
+```
+
+Lo scratch (`$CINECA_SCRATCH`) viene ripulito periodicamente: non è il posto
+per un ambiente che si riusa per mesi.
+
+---
+
+## 3. Installazione
+
+### 3.1 Clonare il framework
+
+```bash
+cd "$BASE"
 git clone https://github.com/cridemichel/PAINNLT.git
 cd PAINNLT/MLCG_Framework_v2
+```
 
-# 2. LibTorch + venv + sorgente di ESPResSo   (lrd_all_serial, ha la rete)
-bash hpc/submit_leonardo.sh setup
+Non c'è nulla da trasferire dal portatile: dataset, build e traiettorie sono
+in `.gitignore`, e tutto il resto si scarica.
 
-# 3. plugin + build di ESPResSo e del trainer  (DCGP, 32 core)
-bash hpc/submit_leonardo.sh bootstrap
+### 3.2 I tre stadi
 
-# 4. il dataset CG dalla traiettoria all-atom  (DCGP)
+```bash
+bash hpc/submit_leonardo.sh setup        # ~5 min:  torch, pacchetti, ESPResSo
+bash hpc/submit_leonardo.sh configure    # ~2 min:  CMake + innesto del plugin
+bash hpc/submit_leonardo.sh build        # ~15 min: ESPResSo e trainer
+```
+
+**Vanno in sequenza**: ognuno ha bisogno del precedente. Per metterli in coda
+tutti insieme si usa la dipendenza SLURM:
+
+```bash
+S=$(bash hpc/submit_leonardo.sh setup     | awk '/Submitted/{print $4}')
+C=$(AFTER=$S bash hpc/submit_leonardo.sh configure | awk '/Submitted/{print $4}')
+AFTER=$C bash hpc/submit_leonardo.sh build
+```
+
+`AFTER` aggiunge `--dependency=afterok`: se uno stadio fallisce i successivi
+non partono e restano in coda come `DependencyNeverSatisfied`, da cancellare
+con `scancel`.
+
+Cosa fa ciascuno:
+
+- **`setup`** (`hpc/setup_native.sh`): crea il virtualenv, installa numpy,
+  scipy, matplotlib, MDAnalysis, h5py, Cython; installa `torch` dal wheel
+  (~780 MB più le librerie CUDA); clona ESPResSo al commit fissato
+  `84cc1d924`.
+- **`configure`**: configura CMake per ESPResSo (che scarica heFFTe, Kokkos,
+  Cabana), **poi** innesta il plugin PaiNN, **poi** riconfigura. L'ordine non
+  è arbitrario: `install_switched_morse_nonbonded.py` attiva la feature Morse
+  scrivendo nel file di configurazione dentro `espresso/build`, che quindi
+  deve già esistere; e l'innesto aggiunge sorgenti che CMake deve raccogliere.
+- **`build`**: compila ESPResSo (senza CUDA e senza waLBerla, vedi sotto) e i
+  due eseguibili del trainer.
+
+### 3.3 Verifica
+
+Il log del `build` si chiude con:
+
+```
+[bootstrap] verifica
+  ok        .../espresso/build/pypresso
+  ok        .../espresso/build/src/python/espressomd/painn.so
+  ok        .../training/build/train_painn
+  ok        painn.so include il supporto ordered-geometry
+[bootstrap] bootstrap completato
+```
+
+Prova diretta del plugin (l'ambiente va **sempre** caricato prima, altrimenti
+`pypresso` non trova `libboost_mpi`):
+
+```bash
+source hpc/env_leonardo.sh
+espresso/build/pypresso -c "
+import espressomd.painn as p, inspect
+print(sorted(inspect.signature(p.activate_painn_potential).parameters))"
+```
+
+---
+
+## 4. L'ambiente
+
+`hpc/env_leonardo.sh` si carica con `source` e definisce tutto. Serve nei job
+(lo fanno da sé) e in ogni comando lanciato a mano.
+
+Cosa imposta, e perché:
+
+| cosa | perché |
+|---|---|
+| moduli `gcc`, `cuda`, `cmake`, `openmpi`, `boost`, `fftw`, `python` | il gcc di sistema è 8.5.0 e ESPResSo richiede ≥ 12.2; boost/fftw/openmpi sono compilati con gcc 12.2.0 |
+| `CC`, `CXX`, `FC` | senza, CMake trova `/usr/bin/gcc` e si ferma con *Unsupported compiler GNU 8.5.0* |
+| `LIBTORCH_ROOT` | preferisce il torch del venv, ricade su `libtorch/` se presente |
+| `CPATH`, `LIBRARY_PATH` | il CMakeLists del core linka `"${TORCH_LIBRARIES}"`, una lista di percorsi e non un target: non propaga le include directory, e il modulo Cython fallisce con *fatal error: torch/torch.h* |
+| `CUDA_TOOLKIT_ROOT_DIR` | `TorchConfig.cmake` include `Caffe2Config`, che per una LibTorch CUDA pretende il toolkit — **anche sui nodi DCGP, che GPU non ne hanno** |
+| venv attivo | MDAnalysis e il Python di ESPResSo |
+
+Scelte di compilazione, entrambe reversibili:
+
+- **ESPResSo senza CUDA** (`ESPRESSO_CUDA=ON` per riattivarla): la GPU serve a
+  LibTorch, non al motore MD — inferenza e backward stanno nel plugin.
+- **waLBerla spento** (`ESPRESSO_WALBERLA=ON` per riattivarlo): è il lattice
+  Boltzmann, che questo framework non usa, ed è la parte più pesante
+  dell'albero sia da scaricare sia da compilare. Riattivandolo va rifatto il
+  `configure`.
+
+---
+
+## 5. Diario degli errori, con i rimedi
+
+Ogni riga è un errore realmente incontrato durante l'installazione.
+
+| errore | causa | rimedio |
+|---|---|---|
+| `Unable to locate a modulefile for 'apptainer'` | su Leonardo il runtime è `singularity`, di sistema | gli script cercano il runtime invece di assumerlo — ma vedi la riga dopo |
+| `could not use fakeroot: no valid mapping entry` | niente subuid/subgid | ambiente nativo, non container |
+| `Invalid account or account/partition combination` | associazione DCGP su `lrd_all_serial`, oppure utenza non abilitata | non passare `--account` su `lrd_all_serial`; se persiste su tutte le partizioni, è l'utenza |
+| `Unsupported compiler GNU 8.5.0` | modulo `gcc` non caricato | `env_leonardo.sh` lo carica e fissa `CC`/`CXX` |
+| `CXX compiler changed` | cache di CMake di un tentativo precedente | il bootstrap rigenera la build directory da sé |
+| `ESPResSo build directory not found` | plugin innestato prima di configurare | `configure` fa CMake → plugin → CMake |
+| `Failed to connect to github.com port 443` | `FetchContent` su un nodo di calcolo | `configure` su `lrd_all_serial` |
+| `fatal error: torch/torch.h` | include non propagati al modulo Cython | `CPATH` |
+| `Caffe2: CUDA cannot be found` | `TorchConfig` vuole il toolkit | modulo `cuda` in `env_leonardo.sh` |
+| `undefined reference to log2@GLIBC_2.29` | zip LibTorch contro glibc più recente della 2.28 di RHEL 8 | torch dal wheel (`LIBTORCH_SOURCE=pip`) |
+| `No rule to make target .../libkineto.a` | cache del trainer che punta a un'altra LibTorch | il bootstrap rigenera `training/build` quando `MLCG_TORCH_ROOT` cambia |
+| `libboost_mpi.so.1.85.0: cannot open shared object file` | `pypresso` lanciato senza ambiente | `source hpc/env_leonardo.sh` |
+| `painn.so senza ordered-geometry` (falso allarme) | `strings` non attraversa le tabelle di stringhe di Cython | il controllo usa `grep -a` |
+
+---
+
+## 6. Dopo l'installazione: la pipeline
+
+```bash
 bash hpc/submit_leonardo.sh dataset \
-     AA_TRAJECTORY=/percorso/traiettoria AA_TOPOLOGY=/percorso/topologia
-
-# 5. il pavimento di rumore  (DCGP) — lo stadio che decide come si sceglie il modello
+     AA_TOPOLOGY=<topologia> AA_TRAJECTORY=<traiettoria> \
+     [AA_FORCES_TRAJECTORY=<traiettoria delle forze>]
 bash hpc/submit_leonardo.sh noisefloor
-
-# 6. training, selezione del checkpoint, produzione  (Booster, 1 GPU)
 bash hpc/submit_leonardo.sh train
 bash hpc/submit_leonardo.sh select
 bash hpc/submit_leonardo.sh production
 ```
 
-`submit_leonardo.sh` è l'unico posto dove compaiono account, partizioni e
-risorse. Per forzare una QOS: `QOS=boost_qos_dbg bash hpc/submit_leonardo.sh train`.
-
-Monitoraggio: `squeue -u $USER`, poi `tail -f slurm-mlcg_<stadio>-<JOBID>.out`.
-
-## L'ambiente nativo
-
-`hpc/env_leonardo.sh` si carica con `source` e definisce tutto: moduli
-(`cmake`, `openmpi`, `boost`, `fftw`, `python` — i nomi corti, cioè i default
-del sistema), `LIBTORCH_ROOT`, `LD_LIBRARY_PATH` e il virtualenv. Ogni stadio
-lo carica da sé, quindi vale anche per i comandi lanciati a mano.
-
-`hpc/setup_native.sh` scarica LibTorch **cxx11-ABI, build cu121**. La scelta
-della build CUDA non è libera: una `cu124` richiede driver NVIDIA ≥ 550 mentre
-il runtime di sistema qui è CUDA 12.2. Per cambiarla: `LIBTORCH_CUDA=cu124` o
-`LIBTORCH_URL=...`.
-
-ESPResSo si compila **senza CUDA** (`ESPRESSO_CUDA=OFF`, il default): la GPU
-serve a LibTorch, non al motore MD, perché l'inferenza del modello e la sua
-backward stanno nel plugin. Per riattivarla, `ESPRESSO_CUDA=ON`.
-
-ESPResSo è fissato al commit **`84cc1d924`** (`5.0.0-58-g84cc1d924`): il plugin
-innesta file dentro `src/core/nonbonded_interactions` e `src/python/espressomd`
-e tocca le liste di CMake, e una versione diversa può averli spostati.
-
-## Le forze nella traiettoria
-
-Il dataset è *force matching*: `build_cg_dataset.py` legge le forze frame per
-frame. Prima di sottomettere `dataset`:
-
-```bash
-grep -iE 'nstfout|nstxout|^dt|compressed-x-grps' /percorso/MD.mdp
-```
-
-Se `nstfout = 0` non c'è target e le forze vanno rigenerate con
-`gmx mdrun -rerun`, che però richiede le coordinate **di tutto il sistema**:
-se la produzione ha salvato solo il soluto (`compressed-x-grps`), il rerun non
-è possibile e serve una nuova produzione.
-
-Attenzione anche al caso opposto: con `nstxout = 0` il `.trr` contiene le sole
-forze e le coordinate stanno nell'`.xtc`. Le due cose vanno lette da file
-diversi e appaiate per tempo.
-
-## A stadi, e non tutto insieme
-
-Deliberatamente. Ogni passo produce un numero che decide il successivo: quanti
-frame ha il dataset, quanto segnale c'è, dove cade il picco della skill, quale
-checkpoint tiene la struttura.
+**A stadi e non tutto insieme, deliberatamente**: ogni passo produce il numero
+che decide il successivo — quanti frame ha il dataset, quanto segnale c'è,
+dove cade il picco della skill, quale checkpoint tiene la struttura. Una
+pipeline che gira dritta fino in fondo restituisce un risultato che non si sa
+leggere.
 
 Lo stadio che conta più di tutti è **`noisefloor`, subito dopo `dataset`**.
-Sul dataset a 1001 frame usato finora il segnale di forza media era ~1% della
+Sul dataset TEL22 a 1001 frame il segnale di forza media era ~1% della
 varianza del target: in quel regime la validation loss non ordina i modelli e
-la selezione va fatta sulla struttura, con lo sweep dello stadio `select`. Con
-dati alla scala di CGnet (Wang et al. 2019: 10^6 frame su 11 μs per un modello
-a 5 bead) la cross-validation sull'errore di forza torna a predire l'errore di
-energia libera. Quale regime valga lo dice lo script 33 sul dataset nuovo.
+la selezione va fatta sulla struttura, con lo sweep di `select`. Con dati alla
+scala di CGnet (Wang et al. 2019: 10⁶ frame su 11 μs per un modello a 5 bead)
+la cross-validation sull'errore di forza torna a predire l'errore di energia
+libera. Quale regime valga lo dice lo script 33 sul dataset nuovo: non si
+assume.
 
-## Varianti di training
+### Le forze nella traiettoria
 
-`03_train_model.sh` legge `tel22_training_config.json` e basta. Per una
-variante si copia il config scelto su quel nome, così il file che ha prodotto
-il modello resta accanto al modello:
+Il dataset è *force matching*. Prima di sottomettere `dataset`:
 
 ```bash
-cd tutorials/tel22
-cp diagnostics/configs/tel22_training_config_C3_spectral4_snapshots.json \
-   tel22_training_config.json
-bash ../../hpc/submit_leonardo.sh train
+grep -iE 'nstfout|nstxout|^dt|compressed-x-grps' <run>/MD.mdp
 ```
 
-C3 (`spectral_projection_strength 4.0`) è la variante indicata dalla diagnosi:
-il fallimento oltre il minimo della val loss era *forze non limitate*, e la
-proiezione spettrale limita la costante di Lipschitz per layer.
+- `nstfout = 0`: non ci sono forze, non c'è target. Si rigenerano con
+  `gmx mdrun -rerun`, che però richiede le coordinate **di tutto il sistema**:
+  se la produzione ha salvato solo il soluto, serve una nuova produzione.
+- `nstxout = 0` con `nstfout > 0`: il `.trr` contiene le sole forze e le
+  posizioni stanno nell'`.xtc`, spesso ristretto ai `non-Water`. Le due cose
+  si leggono da file diversi: `AA_TRAJECTORY` è l'`.xtc`,
+  `AA_FORCES_TRAJECTORY` il `.trr`, e `AA_FORCES_TOPOLOGY` il `.tpr`
+  completo. La topologia ridotta per l'`.xtc` si ricava con
+  `preprocessing/extract_solute_topology.py`.
+- `nstfout` grande (es. 10000 passi = 20 ps): un solo campione per frame, il
+  target resta la forza istantanea. Per abbassare il pavimento di rumore
+  servirebbe `nstfout` dell'ordine di 10 passi, da cui mediare su finestre di
+  ~1 ps.
 
-## Note su CUDA
+---
 
-Il codice non va toccato. Il trainer preferisce già CUDA e cade su MPS solo su
-Apple (`#ifdef __APPLE__`); il driver di simulazione accetta `--device cuda`,
-che lo stadio `production` passa. `mps_empty_cache_every_batches` resta nelle
-config ed è inerte su CUDA.
+## 7. Costi indicativi su A100
+
+Dai tempi misurati su M3 Max/MPS (training 64/2: 0,64 s/step, 128 s/epoca;
+CG MD: 82 ms/step) e da un fattore A100/MPS stimato 3-5× — il rapporto di
+banda di memoria, perché il message passing è scatter/gather-bound —
+**da verificare sul primo job reale**:
+
+- training C3, 40 epoche, dataset a 801 frame: ~21 min (~0,09 nodo-ore)
+- ciclo completo train + select + produzione 10 ps: ~30 min (~0,13 nodo-ore)
+- regola di scala: **~0,04 s per frame per epoca**
+
+Oltre ~50 000 frame si sfora il limite di 24 h del Booster: il trainer ha
+`--resume` con validazione del manifest. `batch_size: 4` lascia l'A100 quasi
+ferma e su dataset grandi alzarlo vale un altro 2-3×, ma cambia la traiettoria
+di ottimizzazione. Il rischio di sforamento non è la GPU ma lo stadio
+`dataset`, che è CPU e lineare nei frame: misuralo su 500 frame e moltiplica.
+
+---
+
+## 8. I file
+
+| file | ruolo |
+|---|---|
+| `hpc/submit_leonardo.sh` | wrapper: l'unico posto con account, partizioni, risorse. `AFTER`, `QOS`, `ACCOUNT_*`, `PROJECT_ROOT` |
+| `hpc/leonardo_submit.slurm` | corpo dei job, uno `case` per stadio; shell di login (`-l`) perché serve `module` |
+| `hpc/env_leonardo.sh` | l'ambiente, da caricare con `source` |
+| `hpc/setup_native.sh` | torch, venv, clone di ESPResSo (l'unico passo che scarica) |
+| `hpc/bootstrap_leonardo.sh` | configure, innesto del plugin, build (`STEP=configure\|build\|all`) |
+| `hpc/painn_leonardo.def` | ricetta Apptainer, inutilizzabile qui, tenuta per sistemi con `--fakeroot` |
+
+Monitoraggio: `squeue -u $USER`, poi
+`tail -n 20 $(ls -t slurm-mlcg_<stadio>-*.out | head -1)`.
