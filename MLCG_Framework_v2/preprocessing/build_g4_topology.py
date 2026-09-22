@@ -52,10 +52,11 @@ def base_centers(universe, residues, mapping):
     """Centro geometrico degli atomi di base di ogni guanina, in nm."""
     centers = {}
     for local_index, residue in enumerate(residues, start=1):
-        if residue.resname != "DG":
+        resname = residue.resname.rstrip("53") if residue.resname not in mapping else residue.resname
+        if resname.rstrip("53") != "DG":
             continue
         base_atoms = []
-        for site_name, atom_names in mapping.get("DG", {}).items():
+        for site_name, atom_names in mapping.get(residue.resname, mapping.get("DG", {})).items():
             if site_name == "CG_DG_S":      # zucchero-fosfato: non e' la base
                 continue
             if atom_names == ["*"]:
@@ -152,21 +153,57 @@ def main():
     args = ap.parse_args()
 
     template = json.load(open(args.template))
-    mapping = template["mapping"]["residues"]
+    mapping = dict(template["mapping"]["residues"])
 
     universe = mda.Universe(args.structure, args.trajectory) if args.trajectory \
         else mda.Universe(args.structure)
+
+    # Le coordinate servono: il registro delle tetradi si ricava dalla
+    # geometria.  Un .tpr da solo porta la topologia ma non le posizioni, e il
+    # risultato sarebbero tetradi con lati di pochi centesimi di nm.
+    if not args.tetrads:
+        try:
+            positions = universe.atoms.positions
+        except Exception:
+            positions = None
+        if positions is None or float(np.abs(positions).max()) < 1e-6:
+            sys.exit("[ERROR] la struttura non contiene coordinate: passa --trajectory "
+                     "(un .xtc o .gro), oppure fornisci il registro con --tetrads")
+
+    # Terminali: in convenzione AMBER si chiamano DA5, DT3, DG3...  Il mapping
+    # del template conosce solo DA, DT, DG, quindi senza alias il primo e
+    # l'ultimo nucleotide di ogni copia verrebbero scartati -- e le copie
+    # risulterebbero piu' corte, sfalsando tutto quello che segue.
+    canonical = set(mapping)
+    observed = {str(r) for r in universe.residues.resnames}
+    aliases = {}
+    for name in sorted(observed):
+        if name in canonical:
+            continue
+        stripped = name.rstrip("53")
+        if stripped in canonical and stripped != name:
+            aliases[name] = stripped
+    if aliases:
+        print("[INFO] terminali riconosciuti: "
+              + ", ".join(f"{k}->{v}" for k, v in sorted(aliases.items())))
+        for name, base in aliases.items():
+            mapping[name] = mapping[base]
+
     known = set(mapping)
     residues = [r for r in universe.residues if r.resname in known]
     n = args.residues_per_copy
     copies = args.copies if args.copies else len(residues) // n
     print(f"[INFO] residui mappabili: {len(residues)}  -> {copies} copie da {n}")
     if copies * n != len(residues):
-        print(f"[ATTENZIONE] {len(residues)} non e' un multiplo di {n}: "
-              f"ne restano {len(residues) - copies * n} fuori dalle copie.")
+        sys.exit(
+            f"[ERROR] {len(residues)} residui mappabili non sono {copies}x{n}.\n"
+            f"        O --residues-per-copy e' sbagliato, o alcuni residui non sono\n"
+            f"        riconosciuti dal mapping: residui presenti nella struttura = "
+            f"{sorted({str(r) for r in universe.residues.resnames})}"
+        )
 
     first = residues[:n]
-    sequence = [r.resname for r in first]
+    sequence = [aliases.get(r.resname, r.resname) for r in first]
     print(f"[INFO] sequenza prima copia: {' '.join(s[-1] for s in sequence)}")
 
     # ── registro delle tetradi ──────────────────────────────────────────────
@@ -231,6 +268,10 @@ def main():
     # ── assemblaggio ────────────────────────────────────────────────────────
     out = {k: v for k, v in template.items()
            if k not in ("bonds", "angles", "tel22_g4_topology")}
+    # il mapping esteso ai terminali deve finire nella topologia prodotta,
+    # altrimenti build_cg_dataset.py scartera' gli stessi residui
+    out["mapping"] = dict(template["mapping"])
+    out["mapping"]["residues"] = mapping
     out["bonds"] = bonds
     out["angles"] = angles
     out["dihedrals"] = []
