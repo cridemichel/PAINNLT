@@ -7,6 +7,10 @@ incontrato davvero.
 **Il risultato**: `pypresso` con il plugin PaiNN, il trainer `train_painn` e un
 ambiente Python con MDAnalysis. Tutto nativo, senza container.
 
+Procedura verificata il 22/09/2026 su un'installazione completa: l'import di
+`espressomd.painn` riesce e la firma di `activate_painn_potential` elenca tutti
+i parametri, ordered-geometry compresi.
+
 ---
 
 ## 0. La combinazione di versioni (leggere prima di tutto)
@@ -225,6 +229,8 @@ Ogni riga è un errore realmente incontrato.
 | `espresso_core.so: undefined symbol: _ZTIN3c105ErrorE` | il core non linkava LibTorch | idem |
 | `undefined symbol: ...get_labelEv` mentre la libreria definisce `get_label[abi:cxx11]()` | mismatch di ABI libstdc++: wheel torch con `_GLIBCXX_USE_CXX11_ABI=0` | torch ≥ 2.7 (qui 2.10.0+cu126), `cxx11 ABI True` |
 | `undefined reference to cudaGetDriverEntryPointByVersion@libcudart.so.12` | modulo CUDA più vecchio della CUDA del wheel (API da 12.5) | `MODULE_CUDA=cuda/12.6`, allineato a `cu126` |
+| lo stesso errore **nonostante** `cuda/12.6` nei moduli | `module load cuda/12.6` non sostituisce la `cuda/12.2` che `openmpi` carica come dipendenza | serve `module swap`, e CUDA va caricata **per ultima** |
+| `-- Found CUDA: ... version 12.2` con `CUDA attiva: 12.6` nello stesso log | `CUDA_HOME` / `CUDA_TOOLKIT_ROOT_DIR` rimaste quelle del modulo sostituito | il toolkit si ricava **sempre** da `nvcc`, mai dalle variabili d'ambiente |
 | `libboost_mpi.so...: cannot open shared object file` | `pypresso` senza ambiente | `source hpc/env_leonardo.sh` |
 | `painn.so senza ordered-geometry` (falso allarme) | `strings` non attraversa le tabelle di stringhe di Cython | il controllo usa `grep -a` |
 | `Job dependency problem` | `AFTER` su un job già uscito dalla coda | sottomettere senza dipendenza |
