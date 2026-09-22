@@ -29,7 +29,28 @@ STAGE="${STAGE:-}"
 AA_TRAJECTORY="${AA_TRAJECTORY:-}"
 AA_TOPOLOGY="${AA_TOPOLOGY:-}"
 
-module load apptainer
+# Il runtime dei container: su Leonardo puo' essere un modulo (apptainer o
+# singularity) oppure gia' installato di sistema.  "module load apptainer" da
+# solo fa fallire il job in pochi secondi se quel modulefile non esiste, come
+# e' successo al primo tentativo.  Qui si prova nell'ordine e si verifica che
+# il comando ci sia davvero.
+find_container_runtime() {
+    local m
+    for m in apptainer singularity; do
+        if ! command -v apptainer >/dev/null 2>&1 && ! command -v singularity >/dev/null 2>&1; then
+            module load "$m" >/dev/null 2>&1 || true
+        fi
+    done
+    APPTAINER="$(command -v apptainer || command -v singularity || true)"
+    if [[ -z "$APPTAINER" ]]; then
+        echo "[ERROR] nessun runtime di container trovato (ne' apptainer ne' singularity)." >&2
+        echo "        Moduli disponibili:" >&2
+        module av 2>&1 | grep -i -E 'apptainer|singularity' >&2 || echo "        (nessuno)" >&2
+        exit 2
+    fi
+    echo "[job] runtime container: $APPTAINER ($("$APPTAINER" --version 2>&1 | head -1))"
+}
+find_container_runtime
 
 echo "[job] stadio ${STAGE} su $(hostname) — $(date)"
 
@@ -38,7 +59,7 @@ echo "[job] stadio ${STAGE} su $(hostname) — $(date)"
 # path assoluti nei log, nei manifest e negli errori restano validi da
 # entrambi i lati, cosa che un bind su /app rende falsa e che complica ogni
 # diagnosi a posteriori.
-run() { srun apptainer exec --nv --bind "${PROJECT_ROOT}:${PROJECT_ROOT}" "$IMAGE" bash -lc "$*"; }
+run() { srun "$APPTAINER" exec --nv --bind "${PROJECT_ROOT}:${PROJECT_ROOT}" "$IMAGE" bash -lc "$*"; }
 
 need_image() {
     [[ -e "$IMAGE" ]] && return 0
@@ -58,7 +79,7 @@ image)
     export APPTAINER_TMPDIR="${APPTAINER_TMPDIR:-${PROJECT_ROOT}/.apptainer_tmp}"
     mkdir -p "$APPTAINER_CACHEDIR" "$APPTAINER_TMPDIR"
     echo "[image] cache in $APPTAINER_CACHEDIR"
-    apptainer build --fakeroot "$IMAGE" "${FRAMEWORK}/hpc/painn_leonardo.def"
+    "$APPTAINER" build --fakeroot "$IMAGE" "${FRAMEWORK}/hpc/painn_leonardo.def"
     ls -lh "$IMAGE"
     ;;
 
@@ -82,7 +103,7 @@ dataset)
         d="$(cd "$(dirname "$p")" && pwd)"
         [[ "$d" == "${PROJECT_ROOT}"* ]] || extra_bind="${extra_bind} --bind ${d}:${d}"
     done
-    srun apptainer exec --nv --bind "${PROJECT_ROOT}:${PROJECT_ROOT}" ${extra_bind} "$IMAGE" \
+    srun "$APPTAINER" exec --nv --bind "${PROJECT_ROOT}:${PROJECT_ROOT}" ${extra_bind} "$IMAGE" \
         bash -lc "cd '${TEL22}' && AA_TRAJECTORY='${AA_TRAJECTORY}' AA_TOPOLOGY='${AA_TOPOLOGY}' \
                   PYTHON_BIN=python3 bash 02_build_dataset.sh"
     echo
