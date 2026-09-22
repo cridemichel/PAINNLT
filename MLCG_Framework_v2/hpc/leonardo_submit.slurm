@@ -79,7 +79,23 @@ image)
     export APPTAINER_TMPDIR="${APPTAINER_TMPDIR:-${PROJECT_ROOT}/.apptainer_tmp}"
     mkdir -p "$APPTAINER_CACHEDIR" "$APPTAINER_TMPDIR"
     echo "[image] cache in $APPTAINER_CACHEDIR"
-    "$APPTAINER" build --fakeroot "$IMAGE" "${FRAMEWORK}/hpc/painn_leonardo.def"
+    # Su Leonardo il runtime e' SingularityCE, non Apptainer, e la sezione
+    # %arguments con {{ TORCH_TAG }} e' un'estensione di Apptainer che
+    # SingularityCE puo' non riconoscere.  Il .def effettivo si genera qui,
+    # con il tag gia' sostituito e la sezione %arguments rimossa: cosi' il
+    # file versionato resta leggibile e parametrico, e il build non dipende
+    # da quale dei due runtime c'e'.
+    TORCH_TAG="${TORCH_TAG:-2.5.1-cuda12.4-cudnn9-devel}"
+    DEF_GEN="${PROJECT_ROOT}/.painn_leonardo.generated.def"
+    awk -v tag="$TORCH_TAG" '
+        /^%arguments/ { skip = 1; next }
+        /^%/          { skip = 0 }
+        skip          { next }
+        { gsub(/\{\{[[:space:]]*TORCH_TAG[[:space:]]*\}\}/, tag); print }
+    ' "${FRAMEWORK}/hpc/painn_leonardo.def" > "$DEF_GEN"
+    echo "[image] tag PyTorch: ${TORCH_TAG}"
+    grep -m1 '^From:' "$DEF_GEN"
+    "$APPTAINER" build --fakeroot "$IMAGE" "$DEF_GEN"
     ls -lh "$IMAGE"
     ;;
 
