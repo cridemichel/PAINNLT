@@ -127,6 +127,20 @@ cmake --build "$ESPRESSO_SRC/build" -j "$JOBS"
 # MLCG_TORCH_ROOT e' il meccanismo del CMakeLists della v2 per selezionare UNA
 # distribuzione LibTorch: passarlo evita che CMake ne trovi due e linki header
 # e librerie di versioni diverse.
+# Come per il compilatore, una cache che punta a un'altra distribuzione
+# LibTorch non e' riutilizzabile: TorchConfig scrive nei target percorsi
+# assoluti (libkineto.a, libc10_cuda.so...), e dopo un cambio di LibTorch il
+# link fallisce con "No rule to make target .../libkineto.a" anche se il
+# find_package ha trovato correttamente quella nuova.
+trainer_cache="$FRAMEWORK_ROOT/training/build/CMakeCache.txt"
+if [[ -f "$trainer_cache" ]]; then
+    cached_torch="$(sed -n 's/^MLCG_TORCH_ROOT:[^=]*=//p' "$trainer_cache" | head -1)"
+    if [[ -n "$cached_torch" && "$cached_torch" != "$TORCH_PREFIX" ]]; then
+        say "la cache del trainer punta a ${cached_torch}, ora si usa ${TORCH_PREFIX}: la rigenero"
+        rm -rf "$FRAMEWORK_ROOT/training/build"
+    fi
+fi
+
 say "compilo il trainer PaiNN"
 cmake -S "$FRAMEWORK_ROOT/training" -B "$FRAMEWORK_ROOT/training/build" \
       -DCMAKE_BUILD_TYPE=Release \
