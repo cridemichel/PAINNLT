@@ -142,7 +142,11 @@ nodo per ore. Misura reale: **200 frame in 3 min 23 s su DCGP**, avvio
 compreso — e siccome l'avvio (gli indici delle due traiettorie, che
 MDAnalysis non mette in cache perché la directory non è scrivibile) sta
 dentro quei 203 s, il totale diviso i frame è un *limite superiore* al costo
-per frame. Da lì: 6 790 frame in meno di due ore, contro le otto di coda.
+per frame, e l'estrapolazione sbaglia solo per eccesso.
+
+Verifica a posteriori: il limite dava ≤ 115 minuti per 6 790 frame, il lancio
+completo ne ha impiegati **27 min 41 s** per 6 788 frame, cioè ~0,22 s a
+frame. Quasi tutti i 203 secondi del campione erano avvio.
 
 Il lancio completo sovrascrive lo stesso nome, quindi il campione va copiato
 altrove se lo si vuole tenere — è utile per il pavimento di rumore
@@ -165,15 +169,31 @@ argomento e basta. È il criterio che decide tutto il resto. Con segnale
 scarso la selezione del checkpoint va fatta sulla struttura; con segnale
 abbondante la cross-validation sull'errore di forza torna valida.
 
-#### Misura su TEL26, 200 frame, a confronto col TEL22
+#### Misura su TEL26 a confronto col TEL22
 
-| | TEL22 | TEL26 |
+Lo script sottocampiona a ~300 frame **distribuiti su tutta la traiettoria**
+(`step = T // NFRAMES`), non ne prende 300 di fila: le due colonne sono quindi
+confrontabili, e una misura su un dataset troncato guarda solo l'inizio della
+produzione.
+
+| | TEL22 | TEL26 (6 788 frame) |
 |---|---|---|
-| RMS forza residua istantanea (kJ/mol/nm) | 887,1 | 725,6 |
-| ampiezza del segnale di forza media | 51,1 | 57,9 |
-| tetto teorico R² | 0,0033 | **0,0064** |
-| \|z\| massimo dati reali | 11,0 | **18,7** |
-| \|z\| massimo controllo shuffled | 2,4 | 2,7 |
+| RMS forza residua istantanea (kJ/mol/nm) | 887,1 | 721,2 |
+| ampiezza del segnale di forza media | 51,1 | 50,9 |
+| tetto teorico R² | 0,0033 | **0,0050** |
+| \|z\| massimo dati reali | 11,0 | **21,9** |
+| \|z\| massimo controllo shuffled | 2,4 | 2,1 |
+
+La stessa misura sul campione da 200 frame dava R² 0,0064 e |z| 18,7: **la
+stima su pochi frame è ottimistica**, perché l'ampiezza si prende come massimo
+su quindici bin e un massimo su pochi campioni è distorto verso l'alto. Il
+numero da usare è quello del dataset intero.
+
+Due verifiche di coerenza fra le due misure: il numero di coppie per bin
+cresce di 1,54×, esattamente 309/200; e il |z| massimo passa da 18,7 a 21,9,
+contro i 23 attesi da 18,7 × √(309/200). Il segnale cresce come √N, che è
+quello che fa una media vera e non fa il rumore — mentre il controllo shuffled
+resta inchiodato a 2.
 
 Il controllo shuffled è la verifica che conta per questa pipeline: resta
 piatto mentre i dati veri arrivano a |z| = 18,7. Se l'appaiamento per tempo
@@ -189,7 +209,7 @@ dell'acqua integrata via, e da qui discendono tre cose:
 - **la validation loss non ordina i checkpoint.** Le differenze fra epoche
   sono quasi tutte fluttuazione. La selezione va fatta sulla struttura.
 - la *skill* stampata dal trainer è `1 − ‖err‖/‖zero‖`, il cui massimo vale
-  circa R²/2, cioè **~0,3%**: un numero piccolo e positivo, non un bug.
+  circa R²/2, cioè **~0,25%**: un numero piccolo e positivo, non un bug.
 - `stop_when_skill_negative` chiede due epoche negative consecutive. Con
   6 790 frame la validazione al 20% ne conta ~1 360 contro i ~160 del TEL22,
   quindi la stima è ~3× meno rumorosa e il tripwire molto meno incline a
