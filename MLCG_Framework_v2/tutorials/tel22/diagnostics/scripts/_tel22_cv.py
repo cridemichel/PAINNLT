@@ -23,11 +23,52 @@ Unita': nm, come tutto il resto di TEL22.
 """
 from __future__ import annotations
 
+import os
 import struct
 import numpy as np
 
-NUC = 22          # residui per copia
+# Residui per copia.  E' l'UNICA cosa specifica del TEL22 in tutto cio' che
+# serve alla g(r) dello script 44: la usa solo per spezzare la lista delle
+# molecole in copie.  SITE_NAME invece vale per qualunque sistema, perche' e'
+# chimica del nucleotide (A e T un sito, G sei) e non dipende dalla piega.
+#
+#   MLCG_NUC=26 python3 44_tel22_rdf.py ...      oppure  --nuc 26
+#
+# Le coordinate collettive piu' sotto -- Q sul ciclo delle tetradi, RMSD --
+# restano invece legate al 143D attraverso _hb_common: per quelle non basta
+# cambiare NUC, serve il registro delle tetradi del sistema nuovo.
+NUC = int(os.environ.get("MLCG_NUC", "22"))
 MAX_SITES = 6     # guanina: S, B1..B5; A e T hanno un solo sito
+
+
+def _copies(n_molecules, source):
+    """Numero di copie, con il controllo che la divisione torni.
+
+    Un NUC sbagliato non fa fallire nulla: spezza le molecole in copie
+    sfalsate e produce intra/inter mescolati, cioe' risultati plausibili e
+    falsi.  Meglio fermarsi.
+    """
+    if n_molecules % NUC:
+        raise SystemExit(
+            f"[ERROR] {source}: {n_molecules} molecole non sono un multiplo di "
+            f"{NUC} residui per copia.\n"
+            f"        Indica il sistema giusto con --nuc (26 per il TEL26) o "
+            f"MLCG_NUC."
+        )
+    return n_molecules // NUC
+
+
+def set_nuc(value):
+    """Cambia i residui per copia a runtime.
+
+    Le funzioni di questo modulo leggono NUC come globale al momento della
+    chiamata, quindi riassegnarla qui basta.  Chi l'ha importata per nome --
+    "from _tel22_cv import NUC" -- conserva pero' il vecchio valore: negli
+    script va usata come attributo del modulo dopo la chiamata.
+    """
+    global NUC
+    NUC = int(value)
+    return NUC
 
 # Riuso il grafo di contatti validato invece di ridefinirlo qui.
 from _hb_common import CONTACTS, TETRAD_OF, mi
@@ -70,7 +111,8 @@ def load_reference(path):
             off[0] += ns * 16
             row[m, :ns] = blk[:, 1:].copy().view(np.float32).astype(np.float64)
         frames.append(row)
-    return np.asarray(frames), np.asarray(box, np.float64), nm // NUC
+    return (np.asarray(frames), np.asarray(box, np.float64),
+            _copies(nm, "dataset di riferimento"))
 
 
 def load_samples(path):
@@ -86,7 +128,7 @@ def load_samples(path):
             continue
         order = np.argsort(sidx[sel])
         S[:, m, :sel.size] = sites[:, sel[order], :]
-    return S, L, M // NUC, z["time_ps"]
+    return S, L, _copies(M, f"traiettoria {path}"), z["time_ps"]
 
 
 def _box_at(L, t):

@@ -35,7 +35,19 @@ IL RIFERIMENTO
 
 USO
   python3 44_tel22_rdf.py <dataset.bin> A=<run>/samples.npz [B=...] \
-      [--rmax 2.0] [--bins 200] [--types] [--json out.json]
+      [--rmax 2.0] [--bins 200] [--types] [--json out.json] [--nuc 26]
+
+NON E' SOLO TEL22
+  Di specifico al TEL22 c'e' solo il numero di residui per copia, che serve a
+  spezzare la lista delle molecole in copie: --nuc lo cambia.  I canali di
+  tipo (S, B1..B5) valgono per qualunque sistema, perche' sono chimica del
+  nucleotide e non della piega.  Per il TEL26 ibrido:
+
+      python3 44_tel22_rdf.py tel26_dataset.bin run=samples.npz --nuc 26
+
+  Restano legate al 143D le coordinate collettive dello script 43 -- Q sul
+  ciclo delle tetradi, RMSD -- che passano da _hb_common e richiedono il
+  registro delle tetradi del sistema, non solo il suo numero di residui.
 """
 from __future__ import annotations
 
@@ -48,14 +60,17 @@ import numpy as np
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from _tel22_cv import (NUC, SITE_NAME, load_reference, load_samples,
+import _tel22_cv as cv
+from _tel22_cv import (SITE_NAME, load_reference, load_samples,
                        load_site_types, _box_at)
+# NUC si legge come cv.NUC e non per nome: --nuc la cambia a runtime, e un
+# "from ... import NUC" congelerebbe il valore all'importazione.
 from _hb_common import mi
 
 
 def _copy_of_site(nmol_total: int, ncopy: int) -> np.ndarray:
     """Indice di copia per ciascuna molecola."""
-    return np.repeat(np.arange(ncopy), NUC)
+    return np.repeat(np.arange(ncopy), cv.NUC)
 
 
 # Canali di tipo: la g(r) totale mescola S-S, B3-B3, zucchero-base e
@@ -74,7 +89,7 @@ def accumulate_channels(S, L, ncopy, types, rmax, nbins, stride=1):
     -> dict canale -> (h_intra, h_inter), piu' (nframes, volume, edges, n_inter)
     """
     T, M = S.shape[0], S.shape[1]
-    cop = np.repeat(np.arange(ncopy), NUC)
+    cop = np.repeat(np.arange(ncopy), cv.NUC)
     edges = np.linspace(0.0, rmax, nbins + 1)
     acc = {name: [np.zeros(nbins), np.zeros(nbins)] for name, _ in CHANNELS}
     n_inter = {name: 0 for name, _ in CHANNELS}
@@ -245,7 +260,14 @@ def main() -> None:
     ap.add_argument("--stride", type=int, default=2,
                     help="stride sui frame del riferimento (default 2)")
     ap.add_argument("--json", default=None)
+    ap.add_argument("--nuc", type=int, default=None,
+                    help="residui per copia (default 22, cioe' TEL22; 26 per il "
+                         "TEL26).  Serve solo a spezzare le molecole in copie, "
+                         "quindi la g(r) vale per qualunque G-quadruplex")
     args = ap.parse_args()
+    if args.nuc:
+        cv.set_nuc(args.nuc)
+    print(f"[INFO] {cv.NUC} residui per copia")
 
     runs = {}
     for spec in args.runs:

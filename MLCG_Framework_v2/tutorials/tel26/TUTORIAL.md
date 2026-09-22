@@ -316,9 +316,23 @@ bash hpc/submit_leonardo.sh dataset SYSTEM=tel26 MAX_FRAMES=200 AA_...
 sacct -X -o JobID,Elapsed,State -j <jobid>
 ```
 
-Gli stadi `select` e `analysis` si fermano con un errore esplicito su TEL26:
-usano `_tel22_cv`, che codifica i 22 nucleotidi e le loro coordinate
-collettive. Vanno riscritti per 26 prima di poterli usare qui.
+Lo stadio `select` si ferma con un errore esplicito su TEL26: usa le coordinate
+collettive di `_tel22_cv` — `Q` sul ciclo delle tetradi del 143D, l'RMSD — che
+passano da `_hb_common` e richiedono il registro delle tetradi del sistema, non
+solo il suo numero di residui.
+
+La **g(r)** invece si può già fare: di specifico al TEL22 c'era solo `NUC`, il
+numero di residui per copia, che serve a spezzare le molecole in copie. I
+canali di tipo (S, B1–B5) valgono per qualunque sistema, perché sono chimica
+del nucleotide e non della piega.
+
+```bash
+python3 ../tel22/diagnostics/scripts/44_tel22_rdf.py \
+    tel26_dataset.bin run=samples.npz --nuc 26
+```
+
+Con un `--nuc` sbagliato lo script si ferma invece di produrre intra e inter
+mescolati, cioè numeri plausibili e falsi.
 
 Lo stadio `01` non passa dallo scheduler: gira in pochi secondi su un nodo di
 login, dentro l'ambiente del framework.
