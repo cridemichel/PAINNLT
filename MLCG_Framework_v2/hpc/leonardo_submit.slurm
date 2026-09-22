@@ -122,8 +122,14 @@ train)
 
 production)
     need_env
-    run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda bash 04_equilibrate.sh"
+    # MODEL sceglie il checkpoint, CLASSICAL/DISABLE_ML il controllo solo-prior:
+    #   bash hpc/submit_leonardo.sh production SYSTEM=tel26 MODEL=tel26_model.ep20.pt
+    #   bash hpc/submit_leonardo.sh production SYSTEM=tel26 CLASSICAL=1 DISABLE_ML=1
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
+         ${MODEL:+MODEL='${MODEL}'} ${CLASSICAL:+CLASSICAL='${CLASSICAL}'} bash 04_equilibrate.sh"
+    run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
+         ${MODEL:+MODEL='${MODEL}'} ${DISABLE_ML:+DISABLE_ML='${DISABLE_ML}'} \
+         ${SAMPLE_NPZ:+SAMPLE_NPZ='${SAMPLE_NPZ}'} \
          CG_STEPS=${CG_STEPS:-10000} bash 05_run_espresso.sh"
     ;;
 
