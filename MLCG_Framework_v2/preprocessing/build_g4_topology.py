@@ -48,7 +48,40 @@ except ImportError:
     sys.exit("[ERROR] serve MDAnalysis: attiva il venv (source hpc/env_leonardo.sh)")
 
 
-def base_centers(universe, residues, mapping):
+def unwrap(points, box_nm, reference=None):
+    """Immagine minima rispetto a un riferimento, in nm.
+
+    Un frame GROMACS e' ripiegato nella scatola: una molecola a cavallo di una
+    faccia esce da un lato e rientra dall'altro.  Chi fa medie di posizioni --
+    il centro di una base, il centro di massa di un residuo -- ottiene un punto
+    che non sta da nessuna parte, e le distanze fra i centri diventano
+    insensate: in un caso reale sono uscite tetradi con lati fra 0.26 e 2.01 nm
+    invece dei 0.7-1.1 nm di una tetrade vera.
+
+    Vale finche' l'oggetto e' piu' piccolo di meta' scatola, che per un
+    quadruplex (~3 nm) in una scatola da 12 nm e' sempre vero.
+    """
+    points = np.asarray(points, dtype=float)
+    if box_nm is None:
+        return points
+    ref = points[0] if reference is None else np.asarray(reference, dtype=float)
+    delta = points - ref
+    delta -= box_nm * np.round(delta / box_nm)
+    return ref + delta
+
+
+def box_from(universe):
+    """Lati della scatola in nm, o None se la struttura non li porta."""
+    dims = getattr(universe, "dimensions", None)
+    if dims is None:
+        return None
+    box = np.asarray(dims[:3], dtype=float) / 10.0
+    if not np.all(np.isfinite(box)) or float(box.min()) <= 0.0:
+        return None
+    return box
+
+
+def base_centers(universe, residues, mapping, box_nm=None):
     """Centro geometrico degli atomi di base di ogni guanina, in nm."""
     centers = {}
     for local_index, residue in enumerate(residues, start=1):
@@ -64,7 +97,16 @@ def base_centers(universe, residues, mapping):
             sel = residue.atoms.select_atoms("name " + " ".join(atom_names))
             base_atoms.extend(sel.positions)
         if base_atoms:
-            centers[local_index] = np.mean(base_atoms, axis=0) / 10.0
+            # Due ricuciture, non una.  La prima rende intera la singola base,
+            # che puo' essere tagliata in mezzo dal bordo della scatola.
+            atoms_nm = unwrap(np.array(base_atoms) / 10.0, box_nm)
+            centers[local_index] = atoms_nm.mean(axis=0)
+    if centers and box_nm is not None:
+        # La seconda rende contigua la copia: basi intere ma ciascuna
+        # ripiegata per conto suo darebbero comunque distanze sbagliate.
+        labels = sorted(centers)
+        stitched = unwrap([centers[l] for l in labels], box_nm)
+        centers = {l: stitched[i] for i, l in enumerate(labels)}
     return centers
 
 
@@ -212,7 +254,14 @@ def main():
                    for group in args.tetrads.split()]
         print(f"[INFO] registro fornito a mano: {tetrads}")
     else:
-        centers = base_centers(universe, first, mapping)
+        box_nm = box_from(universe)
+        if box_nm is None:
+            print("[ATTENZIONE] la struttura non porta la scatola: se il frame e' "
+                  "ripiegato ai bordi le tetradi saranno sbagliate.")
+        else:
+            print(f"[INFO] scatola: {box_nm[0]:.2f} x {box_nm[1]:.2f} x {box_nm[2]:.2f} nm "
+                  f"(le basi vengono ricucite all'immagine minima)")
+        centers = base_centers(universe, first, mapping, box_nm)
         print(f"[INFO] guanine nella prima copia: {sorted(centers)}")
         if not centers:
             sys.exit("[ERROR] nessuna guanina trovata: controlla --structure e il mapping")

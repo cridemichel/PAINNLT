@@ -101,7 +101,13 @@ Tre controlli, in ordine di gravità:
 2. **Lati fra 0.6 e 1.1 nm, scarto dal piano sotto ~0.15 nm.** Lati di
    0.03–0.20 nm vogliono dire che la struttura non aveva coordinate.
    Guanine complanari stanno a ~0.6 nm, quelle impilate a ~0.34 nm: se i lati
-   sono corti lo script ha trovato le pile invece dei piani.
+   sono corti lo script ha trovato le pile invece dei piani. Lati *lunghi*,
+   oltre 1.5 nm, insieme a piani mal separati, sono invece la firma delle
+   condizioni periodiche: un frame GROMACS e' ripiegato nella scatola e una
+   molecola a cavallo di una faccia esce da un lato e rientra dall'altro.
+   Lo script ricuce all'immagine minima — prima ogni base, poi la copia —
+   quindi il sintomo puo' tornare solo se la struttura non porta la scatola,
+   e in quel caso lo dice.
 3. **Un tratto controcorrente.** Lo script conta i versi dei quattro tratti di
    guanine: `min(su, giù)` vale 0 per una piega parallela, **1 per l'ibrida
    3+1**, 2 per l'antiparallela. Per il 2JPZ deve dare 1. Un valore diverso
