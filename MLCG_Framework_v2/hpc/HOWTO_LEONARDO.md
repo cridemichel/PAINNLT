@@ -395,7 +395,11 @@ altrove se lo si vuole tenere (e' utile per il `noisefloor` preliminare).
 | `hpc/painn_leonardo.def` | ricetta Apptainer, inutilizzabile qui, tenuta per sistemi con `--fakeroot` |
 
 Monitoraggio: `squeue -u $USER`, poi
-`tail -n 20 $(ls -t $PROJECT_ROOT/logs/slurm-<sistema>_<stadio>-*.out | head -1)`.
+`tail -n 20 $(ls -t $PROJECT_ROOT/logs/slurm-*<stadio>-*.out | head -1)`.
+
+I nomi dei job: `mlcg_<stadio>` per `setup`, `configure` e `build`, che
+compilano il framework e non guardano il sistema; `<sistema>_<stadio>` per
+tutti gli altri.
 
 I log stanno **sempre** in `logs/` sotto la radice del progetto: il wrapper
 passa `--output` assoluto, che vince sulla direttiva `#SBATCH` del file di job.

@@ -177,8 +177,19 @@ mkdir -p "$LOGDIR"
 res+=(--output="${LOGDIR}/slurm-%x-%j.out" --error="${LOGDIR}/slurm-%x-%j.err")
 
 echo "[submit] stadio   ${STAGE}"
-echo "[submit] sistema  ${SYSTEM}"
+case "$STAGE" in
+    setup|configure|build|bootstrap) ;;
+    *) echo "[submit] sistema  ${SYSTEM}" ;;
+esac
 echo "[submit] risorse  ${res[*]}"
 echo "[submit] progetto ${PROJECT_ROOT}"
-echo "[submit] log      ${LOGDIR}/slurm-${SYSTEM}_${STAGE}-<jobid>.out"
-sbatch "${res[@]}" --job-name="${SYSTEM}_${STAGE}" --export="${export_list}" "$SUBMIT"
+echo "[submit] log      ${LOGDIR}/slurm-<job-name>-<jobid>.out"
+# setup, configure e build compilano il framework e non guardano il sistema:
+# etichettarli con SYSTEM fa cercare i loro log sotto il nome sbagliato.
+case "$STAGE" in
+    setup|configure|build|bootstrap) job_name="mlcg_${STAGE}" ;;
+    *)                               job_name="${SYSTEM}_${STAGE}" ;;
+esac
+
+echo "[submit] job-name ${job_name}"
+sbatch "${res[@]}" --job-name="${job_name}" --export="${export_list}" "$SUBMIT"
