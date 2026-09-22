@@ -234,6 +234,54 @@ def main():
     if len(set(used)) != len(used):
         sys.exit("[ERROR] una guanina compare in piu' tetradi: registro incoerente")
 
+    # ── controllo indipendente dalla geometria ──────────────────────────────
+    # In un quadruplex intramolecolare ogni tetrade prende UNA guanina da
+    # ciascun tratto di G consecutive.  E' un criterio strutturale, non
+    # geometrico, e vale anche quando i piani non si separano bene lungo un
+    # asse -- cosa che capita nelle pieghe ibride, dove le tetradi non sono
+    # equidistanti ne' perpendicolari a un asse unico.
+    tracts, current = [], []
+    for index, resname in enumerate(sequence, start=1):
+        if resname.rstrip("53") == "DG":
+            current.append(index)
+        elif current:
+            tracts.append(current)
+            current = []
+    if current:
+        tracts.append(current)
+    print(f"[INFO] tratti di guanine: {tracts}")
+
+    if len(tracts) == 4:
+        coherent = True
+        for quartet in tetrads:
+            origin = [next((t_i for t_i, tract in enumerate(tracts) if g in tract), None)
+                      for g in quartet]
+            if sorted(x for x in origin if x is not None) != [0, 1, 2, 3]:
+                print(f"[ATTENZIONE] la tetrade {quartet} non prende una guanina "
+                      f"da ciascun tratto (provenienza: {origin})")
+                coherent = False
+        if coherent:
+            print("[OK] ogni tetrade prende una guanina da ciascuno dei quattro tratti.")
+            versi = []
+            for tract in tracts:
+                positions = [next((k for k, q in enumerate(tetrads) if g in q), None)
+                             for g in tract]
+                positions = [p for p in positions if p is not None]
+                versi.append("+" if positions == sorted(positions) else "-")
+            # il verso e' relativo all'ordine in cui elenchiamo le tetradi: conta
+            # quanti filamenti sono discordi dalla maggioranza, non quanti sono "-"
+            opposti = min(versi.count("+"), versi.count("-"))
+            print(f"[INFO] versi dei quattro tratti: {' '.join(versi)}")
+            if opposti == 1:
+                print("       -> tre filamenti concordi e uno opposto: piega IBRIDA (3+1)")
+            elif opposti == 2:
+                print("       -> due e due: piega ANTIPARALLELA")
+            elif opposti == 0:
+                print("       -> tutti concordi: piega PARALLELA")
+    else:
+        print(f"[ATTENZIONE] trovati {len(tracts)} tratti di guanine invece di 4: "
+              f"il controllo di coerenza non si applica.")
+
     # ── bond di backbone e angoli ───────────────────────────────────────────
     bonds, angles = [], []
     for copy in range(copies):
