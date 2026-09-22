@@ -246,6 +246,12 @@ def overlap_metrics(ref, mod, r):
     l1 = float(np.sum(np.abs(a - b)) / max(np.sum(np.abs(a)), 1e-300))
     sup = a > 0.05 * a.max()
     rmse = float(np.sqrt(np.mean((a[sup] - b[sup]) ** 2))) if np.any(sup) else float("nan")
+    # ATTENZIONE: e' l'argmax GLOBALE, non il primo picco, malgrado il nome
+    # della chiave.  Su una P(r) intra larga e multimodale -- tutte le coppie
+    # di siti dentro una copia -- basta un piccolo spostamento di peso perche'
+    # salti da un modo all'altro e riporti frazioni di nanometro senza che la
+    # struttura sia cambiata di molto.  Gli indicatori robusti sono la
+    # sovrapposizione e la L1.
     shift = float(rr[np.argmax(b)] - rr[np.argmax(a)])
     return {"integral_overlap": ov, "l1_relative": l1, "rmse": rmse,
             "first_peak_shift_nm": shift}
@@ -260,6 +266,13 @@ def main() -> None:
     ap.add_argument("--stride", type=int, default=2,
                     help="stride sui frame del riferimento (default 2)")
     ap.add_argument("--json", default=None)
+    ap.add_argument("--types", action="store_true",
+                    help="scomponi per canale di tipo (tutti, B3-B3 legami H, "
+                         "B5-B5 stacking, S-S backbone).  La curva totale li "
+                         "mescola, quindi errori di segno opposto in canali "
+                         "diversi possono cancellarsi e farla sembrare giusta")
+    ap.add_argument("--plot", default=None,
+                    help="prefisso dei PNG per canale (richiede --types)")
     ap.add_argument("--nuc", type=int, default=None,
                     help="residui per copia (default 22, cioe' TEL22; 26 per il "
                          "TEL26).  Serve solo a spezzare le molecole in copie, "
@@ -320,6 +333,62 @@ def main() -> None:
         print(f"  {e['run']:<16}{m['integral_overlap']:>10.4f}"
               f"{m['l1_relative']:>10.4f}{m['rmse']:>10.4f}"
               f"{m['first_peak_shift_nm']:>13.3f} nm")
+
+    if args.types:
+        # I tipi si leggono dal dataset di riferimento: le traiettorie prodotte
+        # portano gli stessi siti nello stesso ordine, per costruzione.
+        types = load_site_types(args.dataset)
+        acc_r, nint_r, nf_r, vol_r, _ = accumulate_channels(
+            Sr, Lr, ncr, types, args.rmax, args.bins, args.stride)
+        ref_curves = {"intra": {}, "inter": {}}
+        for name, _ in CHANNELS:
+            _, p_c, g_c = normalize(acc_r[name][0], acc_r[name][1],
+                                    nint_r[name], nf_r, vol_r, edges, nsites)
+            ref_curves["intra"][name] = p_c
+            ref_curves["inter"][name] = g_c
+
+        run_curves = {"intra": [], "inter": []}
+        per_channel = {}
+        for label, path in runs.items():
+            S, L, nc, _t = load_samples(path)
+            acc_m, nint_m, nf_m, vol_m, _ = accumulate_channels(
+                S, L, nc, types, args.rmax, args.bins, 1)
+            ci, ce = {}, {}
+            per_channel[label] = {}
+            for name, _ in CHANNELS:
+                _, p_c, g_c = normalize(acc_m[name][0], acc_m[name][1],
+                                        nint_m[name], nf_m, vol_m, edges, nsites)
+                ci[name], ce[name] = p_c, g_c
+                per_channel[label][name] = {
+                    "intra": overlap_metrics(ref_curves["intra"][name], p_c, r),
+                    "inter": overlap_metrics(ref_curves["inter"][name], g_c, r),
+                }
+            run_curves["intra"].append((label, ci))
+            run_curves["inter"].append((label, ce))
+
+        for kind, titolo in (("intra", "INTRA-copia P(r)"),
+                             ("inter", "INTER-copia g(r)")):
+            print(f"\n  Per canale, {titolo}   [sovrapposizione]")
+            header = f"  {'canale':<20}" + "".join(f"{lab:>12}" for lab in runs)
+            print(header)
+            print("  " + "-" * (len(header) - 2))
+            for name, _ in CHANNELS:
+                row = f"  {name:<20}"
+                for lab in runs:
+                    row += f"{per_channel[lab][name][kind]['integral_overlap']:>12.4f}"
+                print(row)
+
+        print("\n  B3-B3 sono i legami di Hoogsteen dentro le tetradi, B5-B5")
+        print("  l'impilamento fra tetradi adiacenti, S-S il backbone.  Uno")
+        print("  scarto concentrato su un canale dice quale termine sbaglia;")
+        print("  uno scarto distribuito e' il coarse-graining in se'.")
+        report["per_channel"] = per_channel
+
+        if args.plot:
+            for kind in ("intra", "inter"):
+                out = f"{args.plot}_{kind}.png"
+                plot_channels(out, edges, ref_curves[kind], run_curves[kind], kind)
+                print(f"  grafico -> {out}")
 
     print("\n  g(r) sovrapposta e' NECESSARIA, non sufficiente: Henderson vale")
     print("  per un potenziale di coppia puro, qui c'e' anche un residuo ML a")
