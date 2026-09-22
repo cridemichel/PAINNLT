@@ -137,6 +137,17 @@ Produce `tel26_dataset.bin`, `cg_priors.json`, `rigid_bodies_info.json`.
 `AA_FORCES_TOPOLOGY` resta il `.tpr` **completo**: il `.trr` ha tutti gli
 atomi, ed è da lì che la selezione estrae le forze del soluto.
 
+`MAX_FRAMES` e `STRIDE` servono a misurare il costo prima di impegnare un
+nodo per ore. Misura reale: **200 frame in 3 min 23 s su DCGP**, avvio
+compreso — e siccome l'avvio (gli indici delle due traiettorie, che
+MDAnalysis non mette in cache perché la directory non è scrivibile) sta
+dentro quei 203 s, il totale diviso i frame è un *limite superiore* al costo
+per frame. Da lì: 6 790 frame in meno di due ore, contro le otto di coda.
+
+Il lancio completo sovrascrive lo stesso nome, quindi il campione va copiato
+altrove se lo si vuole tenere — è utile per il pavimento di rumore
+preliminare, che conviene guardare prima di impegnare le due ore.
+
 I frame senza corrispondenza temporale nel file delle forze vengono saltati:
 il conteggio finale stampato è quello dei frame effettivamente usati, non
 quello dell'`.xtc`.
@@ -153,6 +164,41 @@ Questi due sono agnostici rispetto al sistema: prendono il dataset come
 argomento e basta. È il criterio che decide tutto il resto. Con segnale
 scarso la selezione del checkpoint va fatta sulla struttura; con segnale
 abbondante la cross-validation sull'errore di forza torna valida.
+
+#### Misura su TEL26, 200 frame, a confronto col TEL22
+
+| | TEL22 | TEL26 |
+|---|---|---|
+| RMS forza residua istantanea (kJ/mol/nm) | 887,1 | 725,6 |
+| ampiezza del segnale di forza media | 51,1 | 57,9 |
+| tetto teorico R² | 0,0033 | **0,0064** |
+| \|z\| massimo dati reali | 11,0 | **18,7** |
+| \|z\| massimo controllo shuffled | 2,4 | 2,7 |
+
+Il controllo shuffled è la verifica che conta per questa pipeline: resta
+piatto mentre i dati veri arrivano a |z| = 18,7. Se l'appaiamento per tempo
+fra `.xtc` e `.trr` fosse sbagliato anche di un solo frame le due tabelle
+sarebbero indistinguibili, quindi questo è il collaudo di
+`--forces-trajectory`.
+
+Il TEL26 ha circa il doppio del segnale del TEL22, che si è allenato e ha
+superato la certificazione NVE: stesso regime, dalla parte buona. Ma il
+99,4% della varianza delle forze istantanee resta rumore termico
+dell'acqua integrata via, e da qui discendono tre cose:
+
+- **la validation loss non ordina i checkpoint.** Le differenze fra epoche
+  sono quasi tutte fluttuazione. La selezione va fatta sulla struttura.
+- la *skill* stampata dal trainer è `1 − ‖err‖/‖zero‖`, il cui massimo vale
+  circa R²/2, cioè **~0,3%**: un numero piccolo e positivo, non un bug.
+- `stop_when_skill_negative` chiede due epoche negative consecutive. Con
+  6 790 frame la validazione al 20% ne conta ~1 360 contro i ~160 del TEL22,
+  quindi la stima è ~3× meno rumorosa e il tripwire molto meno incline a
+  scattare per caso. Da guardare comunque nelle prime epoche.
+
+Dettaglio fisico: il TEL26 ha un nucleo repulsivo vero fra 0,32 e 0,45 nm
+(z = −5,5 e −6,0) che nel TEL22 non compare. I prior Morse e WCA ereditati
+dal template TEL22 assorbono meno bene il corto raggio su questa piega, ed è
+da lì che viene il segnale in più da imparare.
 
 ### 03 — training
 
@@ -194,6 +240,14 @@ bash hpc/submit_leonardo.sh train      SYSTEM=tel26
 bash hpc/submit_leonardo.sh production SYSTEM=tel26
 ```
 
+Prima del dataset intero, il campione per misurare il costo — stesso comando
+con `MAX_FRAMES=200` in più:
+
+```bash
+bash hpc/submit_leonardo.sh dataset SYSTEM=tel26 MAX_FRAMES=200 AA_...
+sacct -X -o JobID,Elapsed,State -j <jobid>
+```
+
 Gli stadi `select` e `analysis` si fermano con un errore esplicito su TEL26:
 usano `_tel22_cv`, che codifica i 22 nucleotidi e le loro coordinate
 collettive. Vanno riscritti per 26 prima di poterli usare qui.
@@ -221,4 +275,5 @@ Per l'installazione del framework su Leonardo, vedi
 | 01 | lati tetrade 0.6–1.1 nm | la struttura non ha coordinate |
 | 01 | un tratto controcorrente | registro sbagliato, passa `TETRADS` |
 | 02 | frame usati ≈ frame dell'`.xtc` | tolleranza temporale troppo stretta |
-| pre-03 | segnale di forza sopra il pavimento | scegli il checkpoint sulla struttura |
+| pre-03 | controllo shuffled piatto, dati reali no | forze e posizioni disallineate |
+| pre-03 | tetto R² e ampiezza del segnale | se basso, checkpoint scelto sulla struttura |

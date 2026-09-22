@@ -272,6 +272,21 @@ bash hpc/submit_leonardo.sh select
 bash hpc/submit_leonardo.sh production
 ```
 
+### Scegliere il sistema
+
+Di default si lavora su TEL22. `SYSTEM=` sposta l'intera pipeline su un'altra
+tutorial directory, da cui derivano anche i nomi dei file prodotti
+(`<sistema>_dataset.bin`, `<sistema>_model.pt`, ...):
+
+```bash
+bash hpc/submit_leonardo.sh train SYSTEM=tel26
+```
+
+Il wrapper rifiuta un `SYSTEM` senza `tutorials/<nome>` ed elenca quelli che
+ci sono. Gli stadi `select` e `analysis` si fermano con un errore esplicito
+fuori dal TEL22: importano `_tel22_cv`, che codifica 22 nucleotidi e le loro
+coordinate collettive, e vanno riscritti per un sistema di taglia diversa.
+
 **A stadi e non tutto insieme, deliberatamente**: ogni passo produce il numero
 che decide il successivo. Lo stadio che conta più di tutti è **`noisefloor`,
 subito dopo `dataset`**: sul dataset TEL22 a 1001 frame il segnale di forza
@@ -306,7 +321,25 @@ training C3 40 epoche sul dataset a 801 frame ~21 min (~0,09 nodo-ore); ciclo
 completo ~30 min; regola di scala **~0,04 s per frame per epoca**. Oltre
 ~50 000 frame si sfora il limite di 24 h del Booster: il trainer ha `--resume`.
 Il rischio di sforamento non è la GPU ma lo stadio `dataset`, che è CPU e
-lineare nei frame: misurarlo su 500 frame e moltiplicare.
+lineare nei frame: misurarlo su un campione e moltiplicare.
+
+Per misurarlo ci sono `MAX_FRAMES` e `STRIDE`, che `02_build_dataset.sh` passa
+a `build_cg_dataset.py`:
+
+```bash
+bash hpc/submit_leonardo.sh dataset SYSTEM=<sistema> MAX_FRAMES=200 AA_...
+```
+
+Il totale di quel job e' gia' un **limite superiore** utile: l'avvio -- gli
+indici delle due traiettorie, che MDAnalysis non mette in cache se la
+directory non e' scrivibile -- e' compreso nel tempo misurato, quindi il costo
+per frame e' al piu' il totale diviso i frame, e l'estrapolazione sbaglia solo
+per eccesso.  Misura reale sul TEL26: 200 frame in 3 min 23 s su DCGP, da cui
+6 790 frame in meno di due ore contro le otto di coda.
+
+Un dataset troncato serve alla misura, non al training: il lancio vero
+riparte da zero e sovrascrive lo stesso nome, quindi il campione va copiato
+altrove se lo si vuole tenere (e' utile per il `noisefloor` preliminare).
 
 ---
 
@@ -321,7 +354,10 @@ lineare nei frame: misurarlo su 500 frame e moltiplicare.
 | `hpc/bootstrap_leonardo.sh` | configure, innesto, build (`STEP=configure\|build\|all`) |
 | `simulation/espresso_plugin/install_painn_core_sources.py` | l'innesto nel core, idempotente |
 | `preprocessing/extract_solute_topology.py` | topologia ridotta per un `.xtc` di soli `non-Water` |
+| `preprocessing/build_g4_topology.py` | topologia CG di un G-quadruplex: mapping ereditato, registro delle tetradi dalla geometria |
+| `tutorials/<sistema>/` | un sistema per directory; `SYSTEM=` sceglie quale |
 | `hpc/painn_leonardo.def` | ricetta Apptainer, inutilizzabile qui, tenuta per sistemi con `--fakeroot` |
 
 Monitoraggio: `squeue -u $USER`, poi
-`tail -n 20 $(ls -t slurm-mlcg_<stadio>-*.out | head -1)`.
+`tail -n 20 $(ls -t slurm-<sistema>_<stadio>-*.out | head -1)`.
+Il tempo effettivo di un job finito: `sacct -X -o JobID,Elapsed,MaxRSS,State -j <jobid>`.
