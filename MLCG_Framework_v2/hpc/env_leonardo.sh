@@ -35,13 +35,17 @@ MLCG_VENV="${MLCG_VENV:-${PROJECT_ROOT}/venv}"
 #     undefined reference to cudaGetDriverEntryPointByVersion@libcudart.so.12
 # che nel modulo di default (cuda/12.2) non esistono.  Su Leonardo sono
 # disponibili 12.2, 12.3 e 12.6.
+# CUDA va caricata PER ULTIMA: il modulo openmpi di Leonardo dipende da
+# cuda/12.2 e la ricaricherebbe sopra la 12.6, con il risultato che CMake
+# trova il toolkit 12.2 ("-- Found CUDA: ... found version 12.2") e il link
+# del trainer fallisce sui simboli introdotti in 12.5.
 for m in "${MODULE_GCC:-gcc}" \
-         "${MODULE_CUDA:-cuda/12.6}" \
          "${MODULE_CMAKE:-cmake}" \
          "${MODULE_OPENMPI:-openmpi}" \
          "${MODULE_BOOST:-boost}" \
          "${MODULE_FFTW:-fftw}" \
-         "${MODULE_PYTHON:-python}"; do
+         "${MODULE_PYTHON:-python}" \
+         "${MODULE_CUDA:-cuda/12.6}"; do
     if ! module load "$m" 2>/dev/null; then
         echo "[env] ATTENZIONE: modulo non caricato: $m" >&2
     fi
@@ -108,6 +112,12 @@ fi
 # risolvere le librerie del toolkit.  Senza, la configurazione del trainer si
 # ferma con "Your installed Caffe2 version uses CUDA but I cannot find the
 # CUDA libraries".  I nodi DCGP non hanno GPU, ma il toolkit c'e' lo stesso.
+# nvcc nel PATH per primo: e' il toolkit effettivamente attivo dopo gli
+# eventuali switch fra moduli, mentre CUDA_HOME puo' essere rimasto quello di
+# un modulo sostituito.
+if [[ -z "${CUDA_TOOLKIT_ROOT_DIR:-}" ]] && command -v nvcc >/dev/null 2>&1; then
+    CUDA_TOOLKIT_ROOT_DIR="$(dirname "$(dirname "$(readlink -f "$(command -v nvcc)")")")"
+fi
 if [[ -z "${CUDA_TOOLKIT_ROOT_DIR:-}" ]]; then
     for _cuda_var in "${CUDA_HOME:-}" "${CUDA_ROOT:-}" "${CUDA_PATH:-}"; do
         if [[ -n "$_cuda_var" && -d "$_cuda_var" ]]; then
