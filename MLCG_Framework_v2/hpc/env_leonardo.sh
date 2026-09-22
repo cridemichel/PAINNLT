@@ -125,27 +125,24 @@ fi
 # risolvere le librerie del toolkit.  Senza, la configurazione del trainer si
 # ferma con "Your installed Caffe2 version uses CUDA but I cannot find the
 # CUDA libraries".  I nodi DCGP non hanno GPU, ma il toolkit c'e' lo stesso.
-# nvcc nel PATH per primo: e' il toolkit effettivamente attivo dopo gli
-# eventuali switch fra moduli, mentre CUDA_HOME puo' essere rimasto quello di
-# un modulo sostituito.
-if [[ -z "${CUDA_TOOLKIT_ROOT_DIR:-}" ]] && command -v nvcc >/dev/null 2>&1; then
+# Il toolkit CUDA per CMake si ricava SEMPRE da nvcc, non dalle variabili
+# d'ambiente: dopo lo swap fra moduli, CUDA_HOME e CUDA_TOOLKIT_ROOT_DIR
+# possono essere rimaste quelle del modulo sostituito, e CMake finirebbe per
+# usare il toolkit vecchio ("-- Found CUDA: ... version 12.2") anche con la
+# 12.6 attiva.  Serve comunque: TorchConfig include Caffe2Config, che per una
+# LibTorch CUDA pretende di risolvere le librerie del toolkit -- anche sui
+# nodi DCGP, che GPU non ne hanno.
+if command -v nvcc >/dev/null 2>&1; then
     CUDA_TOOLKIT_ROOT_DIR="$(dirname "$(dirname "$(readlink -f "$(command -v nvcc)")")")"
-fi
-if [[ -z "${CUDA_TOOLKIT_ROOT_DIR:-}" ]]; then
-    for _cuda_var in "${CUDA_HOME:-}" "${CUDA_ROOT:-}" "${CUDA_PATH:-}"; do
-        if [[ -n "$_cuda_var" && -d "$_cuda_var" ]]; then
-            CUDA_TOOLKIT_ROOT_DIR="$_cuda_var"
-            break
-        fi
-    done
-fi
-if [[ -z "${CUDA_TOOLKIT_ROOT_DIR:-}" ]] && command -v nvcc >/dev/null 2>&1; then
-    CUDA_TOOLKIT_ROOT_DIR="$(dirname "$(dirname "$(readlink -f "$(command -v nvcc)")")")"
+elif [[ -n "${CUDA_HOME:-}" && -d "${CUDA_HOME}" ]]; then
+    CUDA_TOOLKIT_ROOT_DIR="${CUDA_HOME}"
 fi
 if [[ -n "${CUDA_TOOLKIT_ROOT_DIR:-}" ]]; then
     export CUDA_TOOLKIT_ROOT_DIR
     export CUDAToolkit_ROOT="$CUDA_TOOLKIT_ROOT_DIR"
+    export CUDACXX="${CUDA_TOOLKIT_ROOT_DIR}/bin/nvcc"
     export CMAKE_PREFIX_PATH="${CUDA_TOOLKIT_ROOT_DIR}:${CMAKE_PREFIX_PATH}"
+    echo "[env] toolkit CUDA: ${CUDA_TOOLKIT_ROOT_DIR}"
 else
     echo "[env] ATTENZIONE: toolkit CUDA non trovato; il trainer non si configurera'." >&2
 fi
