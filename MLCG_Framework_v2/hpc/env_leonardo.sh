@@ -86,6 +86,23 @@ export LD_LIBRARY_PATH="${LIBTORCH_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 export CPATH="${LIBTORCH_ROOT}/include:${LIBTORCH_ROOT}/include/torch/csrc/api/include:${CPATH:-}"
 export LIBRARY_PATH="${LIBTORCH_ROOT}/lib:${LIBRARY_PATH:-}"
 
+# Le librerie CUDA che torch usa davvero sono quelle dei pacchetti nvidia-*
+# installati accanto a lui nel venv, non quelle del modulo di sistema.  Vanno
+# davanti nel percorso di ricerca, altrimenti il linker risolve
+# libcudart.so.12 e libcupti.so.12 con le versioni del toolkit e i simboli
+# nuovi mancano:
+#     undefined reference to cudaGetDriverEntryPointByVersion@libcudart.so.12
+# (quella API esiste da CUDA 12.5; il default di Leonardo e' 12.2).
+_nvidia_root="$(dirname "${LIBTORCH_ROOT}")/nvidia"
+if [[ -d "$_nvidia_root" ]]; then
+    for _nv_lib in "$_nvidia_root"/*/lib; do
+        [[ -d "$_nv_lib" ]] || continue
+        LIBRARY_PATH="${_nv_lib}:${LIBRARY_PATH}"
+        LD_LIBRARY_PATH="${_nv_lib}:${LD_LIBRARY_PATH}"
+    done
+    export LIBRARY_PATH LD_LIBRARY_PATH
+fi
+
 # Il toolkit CUDA serve anche dove non si compila codice CUDA: LibTorch e' una
 # build CUDA, e TorchConfig.cmake include Caffe2Config, che pretende di
 # risolvere le librerie del toolkit.  Senza, la configurazione del trainer si
