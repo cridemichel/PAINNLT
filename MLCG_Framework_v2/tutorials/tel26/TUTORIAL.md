@@ -180,7 +180,7 @@ produzione.
 |---|---|---|
 | RMS forza residua istantanea (kJ/mol/nm) | 887,1 | 721,2 |
 | ampiezza del segnale di forza media | 51,1 | 50,9 |
-| tetto teorico R² | 0,0033 | **0,0050** |
+| R² del canale radiale di coppia | 0,0033 | **0,0050** |
 | \|z\| massimo dati reali | 11,0 | **21,9** |
 | \|z\| massimo controllo shuffled | 2,4 | 2,1 |
 
@@ -188,6 +188,33 @@ La stessa misura sul campione da 200 frame dava R² 0,0064 e |z| 18,7: **la
 stima su pochi frame è ottimistica**, perché l'ampiezza si prende come massimo
 su quindici bin e un massimo su pochi campioni è distorto verso l'alto. Il
 numero da usare è quello del dataset intero.
+
+#### Quel R² è un pavimento, non un tetto
+
+Lo script ha stampato a lungo la dicitura "tetto teorico R2", ed era
+sbagliata. Misura `E[F·u | r]`: la frazione di varianza spiegabile da una
+funzione **puramente radiale, additiva a coppie e isotropa** della distanza
+intermolecolare. PaiNN non è vincolato a quella forma — vede l'intorno locale
+completo, gli orientamenti dei corpi rigidi, l'identità dei siti, la geometria
+a molti corpi. Per la legge della varianza totale, condizionare su più
+informazione spiega almeno altrettanto: `E[F | configurazione]` non può fare
+peggio di `E[F·u | r]`.
+
+Misura reale sul TEL26: **0,0050 qui, 0,087 al trainer alla seconda epoca**.
+La *skill* che il trainer stampa è esattamente `100 × R²` — `val_zero_f_norm`
+e `val_loss_f_norm_avg` sono entrambe medie di quadrati, quindi il loro
+rapporto è `MSE_modello / MSE_zero`.
+
+Il rapporto fra i due numeri è informativo: dice quanto del segnale **non**
+sta nel canale radiale di coppia, cioè quanto è struttura intramolecolare e
+orientazionale che i prior non catturano. Ma come previsione della skill il
+numero di questo script è fuori di un fattore venti.
+
+Allora a cosa serve lo script: a verificare l'**allineamento** fra forze e
+configurazioni — su una pipeline che appaia `.xtc` e `.trr` per tempo è
+l'unico modo di accorgersi di uno sfasamento di un frame — e a vedere **dove**
+il segnale residuo è significativo, cioè quali distanze i prior non
+descrivono. Non serve a decidere se allenare.
 
 Due verifiche di coerenza fra le due misure: il numero di coppie per bin
 cresce di 1,54×, esattamente 309/200; e il |z| massimo passa da 18,7 a 21,9,
@@ -203,17 +230,38 @@ sarebbero indistinguibili, quindi questo è il collaudo di
 
 Il TEL26 ha circa il doppio del segnale del TEL22, che si è allenato e ha
 superato la certificazione NVE: stesso regime, dalla parte buona. Ma il
-99,4% della varianza delle forze istantanee resta rumore termico
-dell'acqua integrata via, e da qui discendono tre cose:
+99,5% della varianza delle forze **istantanee** resta rumore termico
+dell'acqua integrata via. Questo dice che la MSE istantanea è una misura
+rumorosa, non che il modello possa imparare poco: la parte sistematica che
+PaiNN estrae vale l'8,7% della varianza già alla seconda epoca.
 
-- **la validation loss non ordina i checkpoint.** Le differenze fra epoche
-  sono quasi tutte fluttuazione. La selezione va fatta sulla struttura.
-- la *skill* stampata dal trainer è `1 − ‖err‖/‖zero‖`, il cui massimo vale
-  circa R²/2, cioè **~0,25%**: un numero piccolo e positivo, non un bug.
-- `stop_when_skill_negative` chiede due epoche negative consecutive. Con
-  6 790 frame la validazione al 20% ne conta ~1 360 contro i ~160 del TEL22,
-  quindi la stima è ~3× meno rumorosa e il tripwire molto meno incline a
-  scattare per caso. Da guardare comunque nelle prime epoche.
+### La selezione del checkpoint
+
+**La validation loss non ordina i checkpoint**, e il motivo non è il rumore.
+Il commento in `training/train_painn.cpp`, sopra al calcolo della skill,
+riporta una verifica su quattro modelli con g(r) misurata:
+
+| modello | g(r) B3–B3 misurata | accordo dalle forze | dalla g(r) su riferimento |
+|---|---|---|---|
+| D=32 | 0,587 | 0,000 | 0,035 |
+| D=64 | **0,746** (migliore) | 0,357 | 0,358 |
+| D=128 | **0,286** (peggiore) | **0,480** (max) | **0,568** (max) |
+
+Le metriche valutate sull'ensemble di riferimento **ordinano al contrario**:
+premiano il modello che rompe di più il quadruplex. La ragione è strutturale e
+non aggirabile — nessuna metrica calcolata sulle configurazioni di riferimento
+può vedere una deriva dell'*ensemble del modello*. Per quella bisogna
+campionare il modello, con uno sweep di MD brevi.
+
+Conseguenza pratica: la riga `[Early Stopping] Miglioramento! Modello salvato.`
+sceglie `tel26_model.pt` con quel criterio, quindi **quel file non è il modello
+da usare**. I candidati sono i checkpoint ogni 5 epoche (`tel26_model.ep*.pt`),
+e la scelta si fa dopo.
+
+`stop_when_skill_negative` chiede due epoche negative consecutive. Con 6 788
+frame la validazione al 20% ne conta ~1 360 contro i ~160 del TEL22, quindi la
+stima della skill è ~3× meno rumorosa e il tripwire molto meno incline a
+scattare per caso.
 
 Dettaglio fisico: il TEL26 ha un nucleo repulsivo vero fra 0,32 e 0,45 nm
 (z = −5,5 e −6,0) che nel TEL22 non compare. I prior Morse e WCA ereditati

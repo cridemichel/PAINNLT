@@ -288,12 +288,25 @@ fuori dal TEL22: importano `_tel22_cv`, che codifica 22 nucleotidi e le loro
 coordinate collettive, e vanno riscritti per un sistema di taglia diversa.
 
 **A stadi e non tutto insieme, deliberatamente**: ogni passo produce il numero
-che decide il successivo. Lo stadio che conta più di tutti è **`noisefloor`,
-subito dopo `dataset`**: sul dataset TEL22 a 1001 frame il segnale di forza
-media era ~1% della varianza del target, e in quel regime la validation loss
-non ordina i modelli — la selezione va fatta sulla struttura, con lo sweep di
-`select`. Con dati alla scala di CGnet la cross-validation sull'errore di forza
-torna valida. Quale regime valga lo dice lo script 33 sul dataset nuovo.
+che decide il successivo. Lo stadio `noisefloor`, subito dopo `dataset`, serve
+a due cose: verificare che forze e configurazioni siano **allineate** — il
+confronto col controllo shuffled è decisivo, e su una pipeline che appaia
+`.xtc` e `.trr` per tempo è l'unico modo di accorgersi di uno sfasamento di un
+frame — e vedere a quali distanze i prior lasciano segnale residuo.
+
+L'R² che stampa **non è un tetto per la rete**, malgrado la dicitura che lo
+script ha portato a lungo. Misura `E[F·u | r]`, cioè la sola parte radiale,
+additiva a coppie e isotropa del segnale; PaiNN vede l'intorno completo e
+arriva molto più in alto. Sul TEL26: 0,0050 dallo script, 0,087 di skill al
+trainer alla seconda epoca (la *skill* del trainer è esattamente `100 × R²`).
+
+**La selezione del checkpoint non si fa comunque sulla validation loss**, e non
+per il rumore: nessuna metrica calcolata sull'ensemble di RIFERIMENTO può
+vedere una deriva dell'ensemble del MODELLO. Su quattro modelli con g(r)
+misurata le metriche da riferimento li hanno ordinati al contrario — la tabella
+è nel commento sopra al calcolo della skill in `training/train_painn.cpp`. La
+scelta si fa campionando la dinamica di ogni checkpoint, con lo sweep di
+`select`, e il file salvato dall'early stopping non è il candidato migliore.
 
 ### Le forze nella traiettoria
 

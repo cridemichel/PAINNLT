@@ -10,6 +10,38 @@ sopravvive e il rumore si media via.
     chiaramente negativa (repulsione: m spinto via da n)
   - se piatta a zero come il controllo shuffled: o i prior hanno catturato
     tutto, o forze e configurazioni sono disallineate (bug)
+
+QUELLO CHE QUESTO NUMERO NON E'
+    L'R2 stampato in fondo NON e' un tetto per la rete: e' un PAVIMENTO, e
+    per un canale solo.  Misura E[F.u | r], cioe' la frazione di varianza
+    spiegabile da una funzione puramente radiale, additiva a coppie e
+    isotropa della distanza intermolecolare.
+
+    PaiNN non e' vincolato a quella forma: vede l'intorno locale completo,
+    gli orientamenti dei corpi rigidi, l'identita' dei siti, la geometria a
+    molti corpi.  Per la legge della varianza totale, condizionare su piu'
+    informazione spiega almeno altrettanto, quindi E[F | configurazione] non
+    puo' fare peggio di E[F.u | r].
+
+    Misura reale sul TEL26: questo script da' 0.0050, il trainer arriva a
+    0.087 di R2 (la sua "skill" e' esattamente 100*R2) gia' alla seconda
+    epoca.  Il rapporto fra i due numeri dice quanto del segnale NON sta nel
+    canale radiale di coppia, ed e' un'informazione utile -- ma chiamarlo
+    tetto era sbagliato e ha prodotto previsioni fuori di un fattore venti.
+
+A COSA SERVE DAVVERO
+    1. Verificare l'ALLINEAMENTO fra forze e configurazioni.  E' l'uso
+       principale: il confronto col controllo shuffled e' decisivo, e su una
+       pipeline che appaia .xtc e .trr per tempo e' l'unico modo di accorgersi
+       di uno sfasamento di un frame.
+    2. Vedere la FORMA del segnale rimasto dopo i prior: dove sono i bin
+       significativi dice quali distanze i prior non descrivono.
+
+    NON serve a decidere se allenare, e non dice nulla su quale checkpoint
+    tenere: quella scelta si fa campionando la dinamica del modello, perche'
+    nessuna metrica calcolata sull'ensemble di RIFERIMENTO vede una deriva
+    dell'ensemble del modello (vedi il commento in training/train_painn.cpp,
+    con la tabella dei quattro modelli che le metriche ordinano al contrario).
 """
 import struct, sys
 import numpy as np
@@ -83,7 +115,13 @@ if zr > 5 and zr > 3*zs:
     print("     non lo misura perche' sommersa dal rumore.")
     i = np.nanargmax(np.abs(m1/np.where(s1>0,s1,np.nan)))
     print(f"     Ampiezza segnale ~{abs(m1[i]):.1f} vs RMS istantaneo {rms:.1f}"
-          f"  -> tetto teorico R2 ~ {(m1[i]/rms)**2:.4f}")
+          f"  -> R2 del canale radiale di coppia ~ {(m1[i]/rms)**2:.4f}")
+    print()
+    print("     ATTENZIONE: questo R2 e' un PAVIMENTO, non un tetto.  Vale per")
+    print("     la sola parte radiale e additiva a coppie del segnale; la rete")
+    print("     vede l'intorno completo e arriva molto piu' in alto (sul TEL26")
+    print("     0.0050 qui contro 0.087 di skill al trainer).  Non usarlo per")
+    print("     prevedere la skill ne' per decidere se allenare.")
 else:
     print("  -> ATTENZIONE: nessun segnale distinguibile dal controllo shuffled.")
     print("     Sospetto disallineamento indici forze/configurazioni, oppure")
