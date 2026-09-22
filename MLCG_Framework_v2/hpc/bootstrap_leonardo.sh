@@ -46,6 +46,7 @@ else
     exit 2
 fi
 echo "  python     $(command -v python3) ($(python3 --version 2>&1))"
+echo "  compilatore $(command -v g++) ($(g++ --version 2>/dev/null | head -1))"
 echo "  core       ${JOBS}"
 
 [[ -d "${ESPRESSO_SRC}/.git" ]] || {
@@ -61,6 +62,18 @@ echo "  ESPResSo   $(git -C "$ESPRESSO_SRC" rev-parse --short HEAD)"
 # gia' esistere quando il plugin viene innestato.  Su un albero appena clonato
 # non esiste: va configurato adesso.
 configure_espresso() {
+    # Una cache di CMake che punta a un compilatore diverso da quello corrente
+    # non e' riutilizzabile: CMake rifiuta il cambio con "CXX compiler changed".
+    # Capita dopo un tentativo fallito col gcc di sistema.
+    local cache="$ESPRESSO_SRC/build/CMakeCache.txt"
+    if [[ -f "$cache" && -n "${CXX:-}" ]]; then
+        local cached
+        cached="$(sed -n 's/^CMAKE_CXX_COMPILER:[^=]*=//p' "$cache" | head -1)"
+        if [[ -n "$cached" && "$cached" != "$CXX" ]]; then
+            say "la cache di CMake punta a ${cached}, ora si usa ${CXX}: la rigenero"
+            rm -rf "$ESPRESSO_SRC/build"
+        fi
+    fi
     cmake -S "$ESPRESSO_SRC" -B "$ESPRESSO_SRC/build" \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_PREFIX_PATH="$TORCH_PREFIX" \
