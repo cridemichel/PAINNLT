@@ -190,19 +190,31 @@ pipeline CG fonda i contatti fra guanine di una tetrade — e l'estensione
 switched-Morse del framework vive dentro `#ifdef MORSE`, quindi sparisce
 insieme a lei anche quando l'innesto e' andato a buon fine.
 
-Il file sta in `simulation/espresso_plugin/myconfig.hpp` e lo installa
-`copy_plugin_files.sh`. E' l'ennesimo caso di configurazione che viveva solo
-nell'albero locale: `espresso/` e' in `.gitignore`, quindi la build su un'altra
-macchina partiva senza, e il difetto emergeva solo alla **prima produzione** —
-dopo dataset e training, ore di calcolo piu' tardi, con l'errore
+`MORSE` veniva gia' abilitata da `install_switched_morse_nonbonded.py`, che
+pero' scriveva il suo `myconfig.hpp` in `espresso/build/`. La build directory
+viene **cancellata e rigenerata** quando cambiano compilatore o
+`MLCG_TORCH_ROOT`, e il file se ne va con lei; `copy_plugin_files.sh`, che lo
+riscriverebbe, gira solo nello stadio `configure`. Una ricompilazione senza
+riconfigurare lasciava quindi il binario senza `MORSE`, e il difetto emergeva
+solo alla **prima produzione** — dopo dataset e training, ore di calcolo piu'
+tardi, con l'errore
 
 ```text
 RuntimeError: The ESPResSo build does not expose the non-bonded Morse interaction.
 ```
 
-La verifica del bootstrap ora controlla le feature e prova un `set_params` con
+Il file sta ora in `simulation/espresso_plugin/myconfig.hpp`, cioe' sotto
+controllo di versione, e `copy_plugin_files.sh` lo installa nella **radice dei
+sorgenti**, che nessuno cancella; se una copia nella build directory esiste e
+differisce, ha la precedenza e viene riallineata con un avviso.
+
+La verifica del bootstrap controlla otto feature e prova un `set_params` con
 `switch_start`, cosi' il difetto si vede in fondo alla build e non alla prima
-produzione.
+produzione. La riga da cercare:
+
+```text
+  ok        feature ESPResSo complete (MORSE + switched-Morse)
+```
 
 ## 5. Cosa significa "innestare il plugin"
 

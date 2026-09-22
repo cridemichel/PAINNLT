@@ -14,10 +14,17 @@
  *   install_switched_morse_nonbonded.py, per quanto correttamente innestata,
  *   sparisce insieme al resto perche' e' dentro #ifdef MORSE.
  *
- *   Questo file viveva solo nell'albero locale: espresso/ e' in .gitignore,
- *   quindi la build su un'altra macchina partiva senza e il difetto emergeva
- *   solo alla prima produzione, dopo dataset e training.  copy_plugin_files.sh
- *   ora lo installa insieme al resto del plugin.
+ *   MORSE veniva gia' abilitata da install_switched_morse_nonbonded.py, che
+ *   pero' scriveva il suo myconfig in espresso/build/ -- e bootstrap_leonardo
+ *   cancella e rigenera la build directory quando cambiano compilatore o
+ *   MLCG_TORCH_ROOT, cosa successa piu' volte mentre si sistemava la catena
+ *   CUDA.  Il file spariva con la directory, e copy_plugin_files.sh, che lo
+ *   riscriverebbe, gira solo nello stadio configure: una ricompilazione senza
+ *   riconfigurare lasciava il binario senza MORSE.
+ *
+ *   Da qui la scelta della posizione: la radice dei sorgenti, che nessuno
+ *   cancella.  Una copia nella build directory ha la precedenza, quindi
+ *   copy_plugin_files.sh la riallinea a questa.
  *
  * CONTENUTO
  *   Il default di ESPResSo al commit fissato (84cc1d924), piu' MORSE in fondo.
