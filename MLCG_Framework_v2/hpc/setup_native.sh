@@ -24,8 +24,17 @@ ESPRESSO_REPO="${ESPRESSO_REPO:-https://github.com/espressomd/espresso.git}"
 # la scelta prudente, e va bene per le A100 (compute capability 8.0).  Se il
 # driver dei nodi boost risulta piu' recente, si puo' passare a cu124
 # sovrascrivendo LIBTORCH_URL.
-LIBTORCH_VERSION="${LIBTORCH_VERSION:-2.5.1}"
-LIBTORCH_CUDA="${LIBTORCH_CUDA:-cu121}"
+# VERSIONE DI TORCH: non e' libera.
+#   - deve avere i wheel con la ABI nuova di libstdc++
+#     (torch._C._GLIBCXX_USE_CXX11_ABI == True), altrimenti TorchConfig
+#     propaga -D_GLIBCXX_USE_CXX11_ABI=0 al core di ESPResSo e il link con
+#     Kokkos e Boost si rompe sui simboli [abi:cxx11].  La 2.5.1 ha ABI 0;
+#     la 2.10.0 ha ABI 1.
+#   - l'indice cu121 si ferma alla 2.5.1: per le versioni recenti serve cu126.
+#   - 2.10.0 e' anche la versione usata sul Mac, quindi i checkpoint
+#     TorchScript restano caricabili nei due sensi.
+LIBTORCH_VERSION="${LIBTORCH_VERSION:-2.10.0}"
+LIBTORCH_CUDA="${LIBTORCH_CUDA:-cu126}"
 LIBTORCH_URL="${LIBTORCH_URL:-https://download.pytorch.org/libtorch/${LIBTORCH_CUDA}/libtorch-cxx11-abi-shared-with-deps-${LIBTORCH_VERSION}%2B${LIBTORCH_CUDA}.zip}"
 
 # DA DOVE VIENE LIBTORCH
@@ -35,7 +44,8 @@ LIBTORCH_URL="${LIBTORCH_URL:-https://download.pytorch.org/libtorch/${LIBTORCH_C
 #   zip: la distribuzione LibTorch ufficiale.  E' costruita contro una glibc
 #        piu' recente e su RHEL 8 il link fallisce con
 #        "undefined reference to log2@GLIBC_2.29": quei simboli versionati non
-#        esistono nella libm del sistema.
+#        esistono nella libm del sistema.  (Avrebbe la ABI giusta, ma non
+#        parte affatto.)
 LIBTORCH_SOURCE="${LIBTORCH_SOURCE:-pip}"
 
 say() { printf '\n[setup] %s\n' "$*"; }
