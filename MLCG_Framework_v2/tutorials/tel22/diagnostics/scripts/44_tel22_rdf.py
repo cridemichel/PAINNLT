@@ -127,10 +127,13 @@ def accumulate_channels(S, L, ncopy, types, rmax, nbins, stride=1):
     return acc, n_inter, nf, vol / max(nf, 1), edges
 
 
-def plot_channels(path, edges, ref, runs, kind="intra"):
+def plot_channels(path, edges, ref, runs, kind="intra", title="", scores=None):
     """Curve per canale, riferimento in continuo e modelli tratteggiati.
 
     ref/runs: dict canale -> curva.  runs e' [(etichetta, dict)].
+    scores:   opzionale, etichetta -> canale -> sovrapposizione; se c'e',
+              ogni pannello riporta in legenda il valore della sua curva,
+              cosi' il grafico si legge senza la tabella accanto.
     """
     import matplotlib
     matplotlib.use("Agg")
@@ -141,9 +144,13 @@ def plot_channels(path, edges, ref, runs, kind="intra"):
     fig, axes = plt.subplots(2, 2, figsize=(11.0, 7.4))
     ylab = "P(r)   (nm$^{-1}$)" if kind == "intra" else "g(r)"
     for ax, name in zip(axes.ravel(), names):
-        ax.plot(r, ref[name], color="k", lw=2.2, label="riferimento all-atom")
+        ax.plot(r, ref[name], color="k", lw=2.2, label="all-atom (mappato su CG)")
         for lab, cur in runs:
-            ax.plot(r, cur[name], lw=1.6, ls="--", label=lab)
+            shown = lab
+            if scores and lab in scores and name in scores[lab]:
+                shown = f"{lab}  (sovr. {scores[lab][name]:.3f})"
+            ax.plot(r, cur[name], lw=1.6, ls="--", label=shown)
+        ax.legend(frameon=False, fontsize=8)
         ax.set_title(name, fontsize=11)
         ax.set_xlabel("r  (nm)")
         ax.set_ylabel(ylab)
@@ -151,8 +158,7 @@ def plot_channels(path, edges, ref, runs, kind="intra"):
         ax.grid(alpha=0.25, lw=0.5)
         if kind == "inter":
             ax.axhline(1.0, color="0.6", lw=0.8, ls=":")
-    axes.ravel()[0].legend(frameon=False, fontsize=9)
-    fig.suptitle("TEL22  -  "
+    fig.suptitle(f"{title}  -  "
                  + ("distanze intra-copia  P(r):  struttura del ripiegamento"
                     if kind == "intra"
                     else "g(r) inter-copia:  struttura di soluzione"),
@@ -273,6 +279,9 @@ def main() -> None:
                          "diversi possono cancellarsi e farla sembrare giusta")
     ap.add_argument("--plot", default=None,
                     help="prefisso dei PNG per canale (richiede --types)")
+    ap.add_argument("--title", default=None,
+                    help="titolo dei grafici; default: dal nome del dataset "
+                         "(tel26_dataset.bin -> TEL26)")
     ap.add_argument("--nuc", type=int, default=None,
                     help="residui per copia (default 22, cioe' TEL22; 26 per il "
                          "TEL26).  Serve solo a spezzare le molecole in copie, "
@@ -387,7 +396,11 @@ def main() -> None:
         if args.plot:
             for kind in ("intra", "inter"):
                 out = f"{args.plot}_{kind}.png"
-                plot_channels(out, edges, ref_curves[kind], run_curves[kind], kind)
+                title = args.title or pathlib.Path(args.dataset).name.split("_")[0].upper()
+                scores = {lab: {name: per_channel[lab][name][kind]["integral_overlap"]
+                                for name, _ in CHANNELS} for lab in runs}
+                plot_channels(out, edges, ref_curves[kind], run_curves[kind], kind,
+                              title=title, scores=scores)
                 print(f"  grafico -> {out}")
 
     print("\n  g(r) sovrapposta e' NECESSARIA, non sufficiente: Henderson vale")
