@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Morse sito-sito per le tetradi, con parametri stimati dal riferimento all-atom.
+"""Morse sito-sito per le tetradi (e per l'impilamento), stimati dal riferimento.
 
 PERCHE'
     I contatti delle tetradi ereditati dal template TEL22 sono Morse COM-COM
@@ -15,14 +15,29 @@ PERCHE'
     larghezza della sua distribuzione.  I Morse restano pair-specific e
     reversibili: una tetrade puo' ancora aprirsi.
 
+L'IMPILAMENTO (--stacking SITO)
+    Con i soli Morse di Hoogsteen le tetradi si formano ma non restano
+    impilate: sul TEL26 il picco B5-B5 a 0.42 nm (guanine sovrapposte di
+    tetradi adiacenti) sparisce, e il B3-B3 intra acquista una coda fino a
+    2 nm.  Fra due guanine consecutive dello stesso tratto non c'e' nulla che
+    ne orienti le basi: il legame di backbone agisce sui siti S, e la WCA fra
+    molecole legate e' esclusa proprio sulla coppia legata.
+    --stacking aggiunge un Morse sito-sito fra le guanine sovrapposte, cioe'
+    fra le coppie (g, h) con g e h in tetradi diverse e |g - h| = 1: stesso
+    tratto, residui consecutivi.  Sono 8 per copia con tre tetradi.  I
+    parametri si stimano come per i contatti di Hoogsteen.
+    Con --keep-tetrads i Morse delle tetradi gia' presenti restano come sono:
+    serve per aggiungere l'impilamento a una topologia gia' adattata.
+
 LE TETRADI
-    Si ricavano dagli stessi Morse della topologia: in ogni copia i contatti
-    formano grafi K4, uno per tetrade.  Nessun registro da fornire a parte, e
-    lo script vale per qualunque G-quadruplex che usi quella rappresentazione.
+    Si ricavano dai Morse della topologia che non sono di impilamento: in ogni
+    copia formano grafi K4, uno per tetrade.  Nessun registro da fornire a
+    parte, e lo script vale per qualunque G-quadruplex che usi quella
+    rappresentazione.
 
 I PARAMETRI
-    Ogni classe (tetrade, coppia di posizioni) e' mediata sulle copie.  Per la
-    distribuzione della distanza r della coppia:
+    Ogni classe (coppia di posizioni nella copia) e' mediata sulle copie.  Per
+    la distribuzione della distanza r della coppia:
         r0 = mediana di r
         a  = sqrt(kT / (2 D sigma^2))
     cioe' la larghezza di un Morse la cui curvatura al minimo, da sola,
@@ -31,15 +46,20 @@ I PARAMETRI
     distanze B3-B3 hanno code lunghe verso le grandi r (aperture transitorie,
     p99 fino a 1.3 nm con mediana 0.6), che con la deviazione standard
     allargherebbero la buca fino a 3-4 volte.  --width std usa la deviazione
-    standard.  E' un'approssimazione: la larghezza osservata
-    risente anche degli altri cinque contatti e di tutto il resto del campo.
-    Il residuo ML serve anche a questo.
+    standard.  E' un'approssimazione: la larghezza osservata risente anche
+    degli altri contatti e di tutto il resto del campo, e sommando piu' Morse
+    stimati cosi' la struttura esce piu' rigida del riferimento.  Il residuo
+    ML serve anche a questo.
         r_cut = r0 + CUT/a   (a CUT = 7 la buca e' scesa a e^-7 ~ 0.1%)
 
 USO
     python3 fit_tetrad_site_morse.py --dataset tel26_dataset.bin \\
         --topology tel26_topology.json --out tel26_topology.b3morse.json \\
         [--site CG_DG_B3] [--D 50] [--stride 5] [--width mad|std]
+
+    python3 fit_tetrad_site_morse.py --dataset tel26_dataset.bin \\
+        --topology tel26_topology.b3morse.json --keep-tetrads \\
+        --stacking CG_DG_B5 --out tel26_topology.b3stack.json
 """
 from __future__ import annotations
 
@@ -77,6 +97,67 @@ def frame_layout(words_i, n_frames):
     return start, length, mols
 
 
+class Reference:
+    """Coordinate dei siti dal dataset, lette in blocco con numpy."""
+
+    def __init__(self, path, stride):
+        buf = Path(path).read_bytes()
+        self.words_i = np.frombuffer(buf, dtype=np.int32)
+        self.words_f = np.frombuffer(buf, dtype=np.float32)
+        self.n_frames = int(self.words_i[0])
+        self.start, self.length, self.mols = frame_layout(self.words_i, self.n_frames)
+        self.frames = np.arange(0, self.n_frames, max(1, stride))
+        self.box = np.stack(
+            [self.words_f[self.start + self.frames * self.length + 2 + k] for k in range(3)],
+            axis=-1).astype(np.float64)
+
+    def site(self, molecules, site_type, label):
+        """(xyz[frame, colonna, 3], colonna per molecola, indice del sito)."""
+        words, index = [], {}
+        for m in molecules:
+            w, ns = self.mols[m]
+            types = [int(self.words_i[w + 4 * s]) for s in range(ns)]
+            if site_type not in types:
+                sys.exit(f"[ERROR] la molecola {m} non ha un sito di tipo {site_type} ({label})")
+            s = types.index(site_type)
+            words.append(w + 4 * s + 1)
+            index[m] = s
+        idx = np.array(words)
+        # idx sono indici assoluti nel frame 0 (gia' comprendono start)
+        base = self.frames[:, None] * self.length
+        xyz = np.stack([self.words_f[base + idx + k] for k in range(3)], axis=-1).astype(np.float64)
+        return xyz, {m: c for c, m in enumerate(molecules)}, index
+
+    def distances(self, xyz, col, i, j):
+        d = xyz[:, col[i]] - xyz[:, col[j]]
+        d -= self.box * np.round(d / self.box)
+        return np.linalg.norm(d, axis=1)
+
+
+def fit_class(r, args):
+    med, std = float(np.median(r)), float(np.std(r))
+    mad = 1.4826 * float(np.median(np.abs(r - med)))
+    sig = mad if args.width == "mad" else std
+    a = math.sqrt(args.kT / (2.0 * args.D * sig * sig))
+    return {"r0": med, "sigma": sig, "sigma_std": std, "sigma_mad": mad, "a": a,
+            "r_cut": med + args.cut / a,
+            "p01": float(np.percentile(r, 1)), "p99": float(np.percentile(r, 99)),
+            "n": int(r.size)}
+
+
+def site_type_of(topo, name):
+    site_types = topo["mapping"]["site_types"]
+    if name not in site_types:
+        sys.exit(f"[ERROR] sito {name} assente: {sorted(site_types)}")
+    return int(site_types[name])
+
+
+def morse_entry(i, j, si, sj, c, args, role):
+    return {"mol_i": int(i), "mol_j": int(j), "site_i": int(si), "site_j": int(sj),
+            "type": "morse", "D": args.D, "a": c["a"], "r0": c["r0"],
+            "r_cut": c["r_cut"], "exclude_wca": False, "role": role}
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -84,7 +165,11 @@ def main():
     ap.add_argument("--topology", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--report", default=None)
-    ap.add_argument("--site", default="CG_DG_B3")
+    ap.add_argument("--site", default="CG_DG_B3", help="sito dei contatti di Hoogsteen")
+    ap.add_argument("--keep-tetrads", action="store_true",
+                    help="lascia invariati i Morse delle tetradi gia' presenti")
+    ap.add_argument("--stacking", default=None, metavar="SITO",
+                    help="aggiungi Morse di impilamento fra guanine sovrapposte su SITO (es. CG_DG_B5)")
     ap.add_argument("--D", type=float, default=50.0, help="profondita' in kJ/mol")
     ap.add_argument("--kT", type=float, default=2.49)
     ap.add_argument("--cut", type=float, default=7.0, help="r_cut = r0 + cut/a")
@@ -93,19 +178,20 @@ def main():
     ap.add_argument("--width", choices=("mad", "std"), default="mad",
                     help="stima della larghezza: 1.4826*MAD (robusta) o deviazione standard")
     args = ap.parse_args()
+    if args.keep_tetrads and not args.stacking:
+        sys.exit("[ERROR] --keep-tetrads senza --stacking non cambierebbe nulla")
 
     topo = json.loads(Path(args.topology).read_text())
-    site_types = topo["mapping"]["site_types"]
-    if args.site not in site_types:
-        sys.exit(f"[ERROR] sito {args.site} assente: {sorted(site_types)}")
-    site_type = int(site_types[args.site])
     nuc = args.nuc or topo.get("g4_topology", {}).get("residues_per_copy")
     if not nuc:
         sys.exit("[ERROR] residui per copia ignoti: passa --nuc")
 
-    morse = [(k, b) for k, b in enumerate(topo["bonds"]) if b.get("type") == "morse"]
+    all_morse = [(k, b) for k, b in enumerate(topo["bonds"]) if b.get("type") == "morse"]
+    morse = [(k, b) for k, b in all_morse if b.get("role", "tetrad") != "stacking"]
     if not morse:
-        sys.exit("[ERROR] nessun Morse nella topologia: niente tetradi da cui partire")
+        sys.exit("[ERROR] nessun Morse di tetrade nella topologia: niente tetradi da cui partire")
+    if args.stacking and len(morse) != len(all_morse):
+        sys.exit("[ERROR] la topologia ha gia' Morse di impilamento: parti da quella senza")
 
     # ── tetradi: componenti connesse dei Morse in ogni copia ───────────────
     adj = defaultdict(set)
@@ -134,98 +220,118 @@ def main():
         key = tuple(m % nuc + 1 for m in g)
         for m in g:
             tetrad_of[m] = local.index(key)
-    print(f"[INFO] {len(groups)} tetradi in {len(groups) // len(local)} copie; "
-          f"registro {local}")
+    n_copies = len(groups) // len(local)
+    print(f"[INFO] {len(groups)} tetradi in {n_copies} copie; registro {local}")
 
-    # ── dataset: coordinate del sito scelto, tutti i frame in un colpo ─────
-    buf = Path(args.dataset).read_bytes()
-    words_i = np.frombuffer(buf, dtype=np.int32)
-    words_f = np.frombuffer(buf, dtype=np.float32)
-    n_frames = int(words_i[0])
-    start, length, mols = frame_layout(words_i, n_frames)
-    frames = np.arange(0, n_frames, max(1, args.stride))
-
+    ref = Reference(args.dataset, args.stride)
     involved = sorted(tetrad_of)
-    site_word, site_index = {}, {}
-    for m in involved:
-        w, ns = mols[m]
-        types = [int(words_i[w + 4 * s]) for s in range(ns)]
-        if site_type not in types:
-            sys.exit(f"[ERROR] la molecola {m} non ha un sito di tipo {site_type} ({args.site})")
-        s = types.index(site_type)
-        site_word[m], site_index[m] = w + 4 * s + 1, s
-    idx = np.array([site_word[m] for m in involved])
-    # idx sono indici assoluti nel frame 0 (gia' comprendono start)
-    base = frames[:, None] * length
-    xyz = np.stack([words_f[base + idx + k] for k in range(3)], axis=-1).astype(np.float64)
-    box = np.stack([words_f[start + frames * length + 2 + k] for k in range(3)], axis=-1).astype(np.float64)
-    col = {m: c for c, m in enumerate(involved)}
-    print(f"[INFO] {frames.size} frame su {n_frames} (stride {args.stride}), "
-          f"sito {args.site} = indice {sorted(set(site_index.values()))} nella guanina")
+    print(f"[INFO] {ref.frames.size} frame su {ref.n_frames} (stride {args.stride})")
 
-    # ── distribuzioni per classe (tetrade, coppia locale) ──────────────────
-    samples = defaultdict(list)
-    for k, b in morse:
-        i, j = int(b["mol_i"]), int(b["mol_j"])
-        d = xyz[:, col[i]] - xyz[:, col[j]]
-        d -= box * np.round(d / box)
-        r = np.linalg.norm(d, axis=1)
-        key = (tetrad_of[i], tuple(sorted((i % nuc + 1, j % nuc + 1))))
-        samples[key].append(r)
-
-    classes = {}
-    for key, rs in sorted(samples.items()):
-        r = np.concatenate(rs)
-        med, std = float(np.median(r)), float(np.std(r))
-        mad = 1.4826 * float(np.median(np.abs(r - med)))
-        sig = mad if args.width == "mad" else std
-        a = math.sqrt(args.kT / (2.0 * args.D * sig * sig))
-        classes[key] = {"r0": med, "sigma": sig, "sigma_std": std, "sigma_mad": mad, "a": a,
-                        "r_cut": med + args.cut / a,
-                        "p01": float(np.percentile(r, 1)), "p99": float(np.percentile(r, 99)),
-                        "copies": len(rs), "n": int(r.size)}
-
-    # lati e diagonali: in una tetrade quadrata le due coppie piu' lontane
-    # sono le diagonali (rapporto atteso ~ sqrt(2))
-    print(f"\n  {'tetrade':>7} {'coppia':>9} {'r0 (nm)':>8} {'sigma':>7} {'a (1/nm)':>9} "
-          f"{'r_cut':>6}  ruolo")
-    for t in range(len(local)):
-        keys = sorted((k for k in classes if k[0] == t), key=lambda k: classes[k]["r0"])
-        for rank, key in enumerate(keys):
-            c = classes[key]
-            c["role"] = "diagonale" if rank >= 4 else "lato"
-            print(f"  {t + 1:>7} {str(key[1]):>9} {c['r0']:8.3f} {c['sigma']:7.3f} "
-                  f"{c['a']:9.2f} {c['r_cut']:6.2f}  {c['role']}")
-        lati = [classes[k]["r0"] for k in keys[:4]]
-        diag = [classes[k]["r0"] for k in keys[4:]]
-        if lati and diag:
-            print(f"          diagonale / lato = {np.mean(diag) / np.mean(lati):.3f}"
-                  f"   (quadrato: {math.sqrt(2):.3f})")
-
-    # ── topologia nuova ────────────────────────────────────────────────────
     out = json.loads(json.dumps(topo))
-    for k, b in morse:
-        i, j = int(b["mol_i"]), int(b["mol_j"])
-        c = classes[(tetrad_of[i], tuple(sorted((i % nuc + 1, j % nuc + 1))))]
-        e = out["bonds"][k]
-        e.update({"site_i": site_index[i], "site_j": site_index[j],
-                  "D": args.D, "a": c["a"], "r0": c["r0"], "r_cut": c["r_cut"],
-                  "exclude_wca": False})
-        e.pop("r_switch", None)
-    out.setdefault("g4_topology", {})["morse_representation"] = (
-        f"complete K4 per tetrad, site-site {args.site}, r0/a fitted from the "
-        f"mapped all-atom reference (fit_tetrad_site_morse.py, D={args.D}, width={args.width})")
-    Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
-    print(f"\n[DONE] {args.out}: {len(morse)} Morse sito-sito")
+    report = {"dataset": args.dataset, "topology": args.topology, "D": args.D,
+              "kT": args.kT, "cut": args.cut, "stride": args.stride, "width": args.width}
 
-    report = args.report or str(Path(args.out).with_suffix(".report.json"))
-    Path(report).write_text(json.dumps({
-        "dataset": args.dataset, "topology": args.topology, "site": args.site,
-        "D": args.D, "kT": args.kT, "cut": args.cut, "stride": args.stride,
-        "width": args.width,
-        "classes": [{"tetrad": k[0] + 1, "pair": list(k[1]), **v} for k, v in classes.items()],
-    }, indent=2) + "\n")
-    print(f"[DONE] {report}")
+    # ── contatti di Hoogsteen ──────────────────────────────────────────────
+    if not args.keep_tetrads:
+        site_type = site_type_of(topo, args.site)
+        xyz, col, site_index = ref.site(involved, site_type, args.site)
+        print(f"[INFO] tetradi: sito {args.site} = indice "
+              f"{sorted(set(site_index.values()))} nella guanina")
+        samples = defaultdict(list)
+        for k, b in morse:
+            i, j = int(b["mol_i"]), int(b["mol_j"])
+            key = (tetrad_of[i], tuple(sorted((i % nuc + 1, j % nuc + 1))))
+            samples[key].append(ref.distances(xyz, col, i, j))
+        classes = {key: {**fit_class(np.concatenate(rs), args), "copies": len(rs)}
+                   for key, rs in sorted(samples.items())}
+
+        print(f"\n  {'tetrade':>7} {'coppia':>9} {'r0 (nm)':>8} {'sigma':>7} {'a (1/nm)':>9} "
+              f"{'r_cut':>6}  ruolo")
+        for t in range(len(local)):
+            keys = sorted((k for k in classes if k[0] == t), key=lambda k: classes[k]["r0"])
+            for rank, key in enumerate(keys):
+                c = classes[key]
+                # in una tetrade quadrata le due coppie piu' lontane sono le
+                # diagonali (rapporto atteso ~ sqrt(2))
+                c["role"] = "diagonale" if rank >= 4 else "lato"
+                print(f"  {t + 1:>7} {str(key[1]):>9} {c['r0']:8.3f} {c['sigma']:7.3f} "
+                      f"{c['a']:9.2f} {c['r_cut']:6.2f}  {c['role']}")
+            lati = [classes[k]["r0"] for k in keys[:4]]
+            diag = [classes[k]["r0"] for k in keys[4:]]
+            if lati and diag:
+                print(f"          diagonale / lato = {np.mean(diag) / np.mean(lati):.3f}"
+                      f"   (quadrato: {math.sqrt(2):.3f})")
+
+        for k, b in morse:
+            i, j = int(b["mol_i"]), int(b["mol_j"])
+            c = classes[(tetrad_of[i], tuple(sorted((i % nuc + 1, j % nuc + 1))))]
+            e = out["bonds"][k]
+            e.update(morse_entry(i, j, site_index[i], site_index[j], c, args, "tetrad"))
+            e.pop("r_switch", None)
+        out.setdefault("g4_topology", {})["morse_representation"] = (
+            f"complete K4 per tetrad, site-site {args.site}, r0/a fitted from the "
+            f"mapped all-atom reference (fit_tetrad_site_morse.py, D={args.D}, width={args.width})")
+        print(f"[INFO] {len(morse)} Morse di tetrade sito-sito")
+        report["tetrad_site"] = args.site
+        report["tetrad_classes"] = [{"tetrad": k[0] + 1, "pair": list(k[1]), **v}
+                                    for k, v in classes.items()]
+    else:
+        print(f"[INFO] {len(morse)} Morse di tetrade lasciati come sono (--keep-tetrads)")
+
+    # ── impilamento fra guanine sovrapposte ────────────────────────────────
+    if args.stacking:
+        site_type = site_type_of(topo, args.stacking)
+        xyz, col, site_index = ref.site(involved, site_type, args.stacking)
+        per_copy = defaultdict(list)
+        for m in involved:
+            per_copy[m // nuc].append(m)
+        pairs = []
+        for copy_mols in per_copy.values():
+            for a_ in copy_mols:
+                for b_ in copy_mols:
+                    if b_ == a_ + 1 and tetrad_of[a_] != tetrad_of[b_]:
+                        pairs.append((a_, b_))
+        per_class = len(pairs) // n_copies
+        print(f"\n[INFO] impilamento: sito {args.stacking} = indice "
+              f"{sorted(set(site_index.values()))}; {len(pairs)} coppie, {per_class} per copia")
+        if per_class != 4 * (len(local) - 1):
+            print(f"[WARNING] attese {4 * (len(local) - 1)} coppie sovrapposte per copia "
+                  f"({len(local)} tetradi, 4 tratti): controlla il registro")
+        existing = {tuple(sorted(((int(b["mol_i"]), int(b.get("site_i", -1))),
+                                  (int(b["mol_j"]), int(b.get("site_j", -1))))))
+                    for _, b in all_morse}
+        samples = defaultdict(list)
+        for i, j in pairs:
+            samples[(i % nuc + 1, j % nuc + 1)].append(ref.distances(xyz, col, i, j))
+        sclasses = {key: {**fit_class(np.concatenate(rs), args), "copies": len(rs)}
+                    for key, rs in sorted(samples.items())}
+        print(f"\n  {'coppia':>9} {'tetradi':>8} {'r0 (nm)':>8} {'sigma':>7} {'a (1/nm)':>9} {'r_cut':>6}")
+        for key, c in sclasses.items():
+            ti = local.index(next(t for t in local if key[0] in t)) + 1
+            tj = local.index(next(t for t in local if key[1] in t)) + 1
+            print(f"  {str(key):>9} {f'{ti}-{tj}':>8} {c['r0']:8.3f} {c['sigma']:7.3f} "
+                  f"{c['a']:9.2f} {c['r_cut']:6.2f}")
+        added = 0
+        for i, j in pairs:
+            endpoint = tuple(sorted(((i, site_index[i]), (j, site_index[j]))))
+            if endpoint in existing:
+                sys.exit(f"[ERROR] esiste gia' un Morse fra {endpoint}")
+            c = sclasses[(i % nuc + 1, j % nuc + 1)]
+            out["bonds"].append(morse_entry(i, j, site_index[i], site_index[j], c, args, "stacking"))
+            added += 1
+        out.setdefault("g4_topology", {})["stacking_representation"] = (
+            f"site-site {args.stacking} Morse between stacked guanines (same G-tract, "
+            f"adjacent tetrads), r0/a fitted from the mapped all-atom reference "
+            f"(fit_tetrad_site_morse.py, D={args.D}, width={args.width})")
+        print(f"[INFO] {added} Morse di impilamento aggiunti")
+        report["stacking_site"] = args.stacking
+        report["stacking_classes"] = [{"pair": list(k), **v} for k, v in sclasses.items()]
+
+    Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
+    print(f"\n[DONE] {args.out}")
+    report_path = args.report or str(Path(args.out).with_suffix(".report.json"))
+    Path(report_path).write_text(json.dumps(report, indent=2) + "\n")
+    print(f"[DONE] {report_path}")
 
 
 if __name__ == "__main__":

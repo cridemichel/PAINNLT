@@ -482,6 +482,33 @@ partenza sensato; se non li riproducono, il problema è nei prior e allenare
 non serve. Il pavimento di rumore va rimisurato: con prior più vicini al
 riferimento il residuo si restringe, e il rapporto segnale/rumore cambia.
 
+### Passo 1b — impilamento fra tetradi
+
+Risultato del passo 1 sul TEL26 (seconda metà di 100 ps, soli prior): B3–B3
+intra 0,585 contro 0,131 dei prior canonici e 0,493 del canonico + ML; B5–B5
+0,720; S–S 0,806; nessun eccesso di contatti fra copie. Le tetradi si formano,
+ma **non restano impilate**: nel B5–B5 manca il picco a 0,42 nm delle guanine
+sovrapposte, e il B3–B3 intra ha una coda fino a 2 nm dove il riferimento è
+nullo oltre 1 nm. Fra due guanine consecutive dello stesso tratto non c'è
+nulla che ne orienti le basi: il backbone agisce sui siti S, e la WCA fra
+molecole legate è esclusa proprio sulla coppia legata.
+
+```bash
+python3 fit_tetrad_site_morse.py --dataset tel26_dataset.bin \
+    --topology tel26_topology.b3morse.json --keep-tetrads \
+    --stacking CG_DG_B5 --out tel26_topology.b3stack.json
+```
+
+Aggiunge un Morse B5–B5 fra le guanine sovrapposte — stesso tratto, residui
+consecutivi, tetradi adiacenti: 8 per copia — stimato come i contatti di
+Hoogsteen. I nuovi Morse portano `"role": "stacking"`, così lo script continua
+a riconoscere le tetradi dai soli contatti di Hoogsteen. Sul TEL22 alcune
+coppie hanno r0 ≈ 0,9 nm invece di ~0,5: nell'antiparallela le guanine
+alternano syn e anti e i siti B5 non sono sovrapposti. Il Morse resta un
+vincolo reversibile alla geometria del riferimento, non un contatto fisico.
+
+Poi lo stesso protocollo con `PRIOR_SET=b3stack`.
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:
