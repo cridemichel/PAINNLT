@@ -123,12 +123,14 @@ noisefloor)
     ;;
 
 train)
-    # 03_train_model.sh legge <sistema>_training_config.json e basta: per allenare
-    # una variante (C3 spectral, C2 weight decay) si copia il config scelto su
-    # quel nome prima di sottomettere, cosi' il file che ha prodotto il modello
-    # resta accanto al modello.
+    # Una variante si allena con RUN=<nome>: legge <sistema>_training_config.<nome>.json
+    # e scrive <sistema>_<nome>_model.pt piu' i suoi snapshot.  NON si
+    # sovrascrive la config canonica: la produzione valida l'architettura contro
+    # la config, e i modelli gia' allenati diventerebbero inutilizzabili.
+    #   bash hpc/submit_leonardo.sh train SYSTEM=tel26 RUN=d64
     need_env
-    run "cd '${TUTORIAL}' && TRAINER='${FRAMEWORK}/training/build/train_painn' bash 03_train_model.sh"
+    run "cd '${TUTORIAL}' && TRAINER='${FRAMEWORK}/training/build/train_painn' \
+         ${RUN:+RUN='${RUN}'} bash 03_train_model.sh"
     ;;
 
 production)

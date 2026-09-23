@@ -280,6 +280,47 @@ trainer legge quel nome e basta: per allenare una variante si copia il config
 scelto su `tel26_training_config.json` prima di lanciare, così il file che ha
 prodotto il modello resta accanto al modello.
 
+### Il primo training, D=128: cosa ha insegnato
+
+La prima config TEL26 era partita da quella del TEL22, con `hidden_channels:
+128` e 40 epoche. Lo sweep sugli otto checkpoint periodici, `E_kin` allo stato
+iniziale della produzione in unità di equipartizione (1419 kJ/mol):
+
+| checkpoint | `E_kin` / equip. | `max_f` | esito |
+|---|---|---|---|
+| solo prior | 1,00 | 299 | ok |
+| ep5 | 1,62 | 600 | completato, ma deriva |
+| ep10 | 6,4 | 34 318 | abort |
+| ep15 | 16,6 | 280 035 | abort |
+| ep20–ep40 | 9–39 | 13 000–630 000 | abort |
+
+**L'instabilità cresce con le epoche**, mentre la skill sulle forze resta
+piatta all'8%: la metrica sul riferimento non vede nulla di tutto questo.
+Anche ep5 non è sano — in 2 ps la coppia più vicina diventa B3–B3 a ~0,22 nm
+con forze crescenti, la stessa firma dei checkpoint abortiti.
+
+La larghezza 128 era proprio quella che sul TEL22 era risultata la **peggiore**
+strutturalmente (commento sopra al calcolo della skill in
+`training/train_painn.cpp`), ma la config canonica non lo rifletteva.
+
+### Varianti di training: RUN
+
+```bash
+bash hpc/submit_leonardo.sh train SYSTEM=tel26 RUN=d64
+```
+
+legge `tel26_training_config.d64.json` e scrive `tel26_d64_model.pt` più i suoi
+snapshot. La config canonica **non si sovrascrive**: la produzione valida
+l'architettura del modello contro la config, e i modelli già allenati
+diventerebbero inutilizzabili. `04` e `05` leggono la config giusta dal
+manifest del modello (`config_path`), quindi per simulare una variante basta
+passare `MODEL`. Il log del trainer, che ha nome fisso, viene copiato in
+`<modello>.training_log.csv`.
+
+La variante `d64` cambia tre cose rispetto alla D=128: `hidden_channels: 64`,
+`epochs: 15`, `checkpoint_every_epochs: 1` — la finestra buona, se c'è, sta
+nelle prime epoche.
+
 ### 04–05 — equilibrazione e produzione
 
 ```bash

@@ -32,12 +32,21 @@ LOG_INTERVAL="${LOG_INTERVAL:-20}"
 MODEL="${MODEL:-tel26_model.pt}"
 # Deve combaciare con quello scritto da 04: vedi li' il perche'.
 CHECKPOINT="${CHECKPOINT:-equilibrated.npz}"
+# CONFIG: la config con cui il modello e' stato allenato.  Si legge dal suo
+# manifest (config_path), perche' la validazione confronta l'architettura del
+# modello con questa config: una variante D=64 simulata con la config D=128
+# verrebbe rifiutata, e viceversa.
+if [ -z "${CONFIG:-}" ]; then
+    CONFIG="$(python3 -c 'import json,sys,os;print(os.path.basename(json.load(open(sys.argv[1]))["config_path"]))' "${MODEL}.manifest.json" 2>/dev/null || true)"
+    CONFIG="${CONFIG:-tel26_training_config.json}"
+fi
+echo "[INFO] modello ${MODEL}, config ${CONFIG}"
 ml_args=()
 [ -n "${DISABLE_ML:-}" ] && ml_args+=(--disable_ml)
 
 cd "${SCRIPT_DIR}"
 
-for path in "${MODEL}" tel26_training_config.json cg_priors.json rigid_bodies_info.json tel26_dataset.bin "${CHECKPOINT}"; do
+for path in "${MODEL}" "${CONFIG}" cg_priors.json rigid_bodies_info.json tel26_dataset.bin "${CHECKPOINT}"; do
     if [ ! -f "${path}" ]; then
         echo "[ERROR] Missing required input: ${path}" >&2
         exit 1
@@ -47,7 +56,7 @@ done
 "${PYRESSO}" "${FRAMEWORK_ROOT}/simulation/run_cg_md.py" \
     --model "${MODEL}" \
     ${ml_args[@]+"${ml_args[@]}"} \
-    --config tel26_training_config.json \
+    --config "${CONFIG}" \
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel26_dataset.bin \

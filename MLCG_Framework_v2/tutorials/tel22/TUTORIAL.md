@@ -26,7 +26,15 @@ PYRESSO=/path/to/pypresso DEVICE=auto bash 05_run_espresso.sh
 Inputs kept under version control:
 
 - `tel22_topology.json`: TEL22-specific mapping and priors configuration;
-- `tel22_training_config.json`: one TEL22 training profile;
+- `tel22_training_config.json`: one TEL22 training profile. **Note:** it uses
+  `hidden_channels: 128`, which the structural comparison documented in
+  `training/train_painn.cpp` (above the skill computation) found to be the
+  *worst* width — B3–B3 g(r) overlap 0.286 against 0.746 for D=64 — while
+  reference-ensemble metrics ranked it first. The file is left unchanged
+  because `tel22_model.pt` was trained with it and its manifest records that
+  architecture; new trainings should start from D=64. On TEL26 the same width
+  produced checkpoints whose instability grew with the epoch (see
+  `../tel26/TUTORIAL.md`);
 - scripts `02`-`05`: thin wrappers around the generic framework commands.
 
 Generated files such as `tel22_dataset.bin`, `cg_priors.json`,
