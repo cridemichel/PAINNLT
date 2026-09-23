@@ -70,7 +70,11 @@ if [[ -f "${MLCG_VENV}/bin/activate" ]]; then
 fi
 
 if [[ -z "${LIBTORCH_ROOT:-}" ]]; then
-    if _torch_prefix="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))' 2>/dev/null)" \
+    # find_spec LOCALIZZA il pacchetto senza eseguirlo.  Prima qui c'era
+    # "import torch", che per leggere un percorso caricava le librerie CUDA --
+    # oltre un gigabyte di .so da Lustre -- e inizializzava il runtime: decine
+    # di secondi a ogni "source", cioe' a ogni job e a ogni srun.
+    if _torch_prefix="$(python3 -c 'import importlib.util as u,os;s=u.find_spec("torch");print(os.path.dirname(s.origin))' 2>/dev/null)" \
        && [[ -f "${_torch_prefix}/share/cmake/Torch/TorchConfig.cmake" ]]; then
         LIBTORCH_ROOT="$_torch_prefix"
     elif [[ -f "${PROJECT_ROOT}/libtorch/share/cmake/Torch/TorchConfig.cmake" ]]; then
