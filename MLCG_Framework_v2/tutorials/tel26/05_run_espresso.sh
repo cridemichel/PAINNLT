@@ -43,6 +43,9 @@ fi
 echo "[INFO] modello ${MODEL}, config ${CONFIG}"
 ml_args=()
 [ -n "${DISABLE_ML:-}" ] && ml_args+=(--disable_ml)
+# GAMMA: attrito del termostato di produzione (default 1.0, cioe' ~300 ps di
+# rilassamento: produzione in pratica microcanonica).  Vedi 04_equilibrate.sh.
+[ -n "${GAMMA:-}" ] && ml_args+=(--gamma "${GAMMA}")
 
 cd "${SCRIPT_DIR}"
 

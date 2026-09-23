@@ -48,6 +48,13 @@ parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps 
 parser.add_argument("--steps_md", type=int, default=2000, help="Number of steps for Phase 2 classical MD warmup")
 parser.add_argument("--steps_ml_capped", type=int, default=2000, help="ML warmup steps with an ESPResSo force cap")
 parser.add_argument("--steps_ml_uncapped", type=int, default=2000, help="Final NVT steps with the production Hamiltonian and no force cap")
+# Attrito della fase 4, l'ultima e l'unica senza force cap.  Era fisso a 1.0,
+# cioe' -- con gamma coefficiente d'attrito e masse di ~300 amu -- un tempo di
+# rilassamento di ~300 ps su una fase di pochi ps: l'energia potenziale che il
+# sistema rilascia scivolando nel paesaggio ML restava come calore.  Sul TEL26
+# gli stati equilibrati uscivano a 1.7-2.2 volte l'equipartizione.
+parser.add_argument("--gamma_final", type=float, default=1.0,
+                    help="Langevin friction in Phase 4 (mass/time). Default 1.0")
 parser.add_argument("--warmup_chunk", type=int, default=100, help="Progress-reporting chunk size")
 parser.add_argument(
     "--velocity_seed",
@@ -632,9 +639,11 @@ else:
     print("[INFO] Phase 3 skipped (--steps_ml_capped 0).")
 
 system.force_cap = 0
-system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=42)
+system.thermostat.set_langevin(kT=args.kT, gamma=args.gamma_final,
+                               gamma_rot=args.gamma_final, seed=42)
 
 if args.steps_ml_uncapped > 0:
+    print(f"[INFO] Phase 4: gamma={args.gamma_final} (rilassamento ~m/gamma)", flush=True)
     print("[INFO] Phase 4: Final uncapped ML NVT equilibration...", flush=True)
     run_chunks(args.steps_ml_uncapped, args.warmup_chunk, "Phase 4")
 else:

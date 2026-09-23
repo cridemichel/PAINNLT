@@ -321,6 +321,38 @@ La variante `d64` cambia tre cose rispetto alla D=128: `hidden_channels: 64`,
 `epochs: 15`, `checkpoint_every_epochs: 1` — la finestra buona, se c'è, sta
 nelle prime epoche.
 
+### Il termostato: gamma è un attrito, non un tasso
+
+In ESPResSo il Langevin è `m v̇ = F − γ v + rumore`: `gamma` è un coefficiente
+d'attrito, e il tempo di rilassamento della velocità è **m/γ**. Con masse di
+250–330 amu nelle unità amu–nm–ps, il valore storico `γ = 1` dà **~300 ps**. Su
+corse di pochi picosecondi il termostato non agisce e la dinamica è in pratica
+microcanonica.
+
+Sul TEL26 D=64 lo si vede dai numeri: in produzione `E_tot` resta quasi
+costante mentre `E_ML` cala di 300–500 kJ/mol in 2 ps e `E_kin` sale. Accendendo
+il potenziale ML, la configurazione rilassata sotto i soli prior non è un
+minimo della nuova Hamiltoniana; il sistema ci scivola, e l'energia rilasciata
+resta come calore — gli stati equilibrati uscivano a 1,7–2,2 volte
+l'equipartizione, contro l'1,00 dell'equilibrazione classica. Per la stessa
+ragione `EQ_DT=0.001` peggiorava le cose: a passi fissi dimezza la durata della
+fase 3, l'unica con un termostato efficace (`γ = 50`, τ ≈ 6 ps).
+
+Il corollario conta più del calore: **se il sistema sta ancora migrando verso il
+minimo del modello, 2 ps di produzione fotografano un transiente**, non
+l'ensemble del modello, e la sovrapposizione della P(r) misura in parte quanto
+il sistema si è allontanato dalla struttura di partenza.
+
+Le leve: `EQ_GAMMA` (attrito della fase 4), `EQ_ML_STEPS` (sua durata),
+`GAMMA` (produzione), e `RUN_TAG` per non sovrascrivere i file di un'altra corsa
+dello stesso modello. L'ensemble di equilibrio non dipende da `γ`, la cinetica
+sì: per la validazione strutturale un attrito forte va bene.
+
+```bash
+bash hpc/submit_leonardo.sh production SYSTEM=tel26 MODEL=tel26_d64_model.ep1.pt \
+     EQ_GAMMA=20 EQ_ML_STEPS=5000 GAMMA=20 CG_STEPS=20000 RUN_TAG=g20
+```
+
 ### TF32: solo nel training
 
 `"allow_tf32": true` nella config fa usare al trainer i tensor core per le

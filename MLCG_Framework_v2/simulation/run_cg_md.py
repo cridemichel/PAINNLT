@@ -84,6 +84,17 @@ parser.add_argument("--init_kT", type=float, default=None, help="Initialize velo
 parser.add_argument("--velocity_seed", type=int, default=314159, help="Seed used by --init_kT")
 parser.add_argument("--thermostat_seed", type=int, default=42, help="Langevin thermostat seed")
 parser.add_argument("--nve", action="store_true", help="Run NVE simulation (no thermostat)")
+# In ESPResSo gamma e' un coefficiente d'ATTRITO (m dv/dt = F - gamma v + rumore),
+# non un tasso: il tempo di rilassamento della velocita' e' m/gamma.  Con masse
+# di 250-330 amu nelle unita' amu-nm-ps, gamma = 1 da' ~300 ps -- su corse di
+# pochi ps il termostato non agisce e la dinamica e' di fatto microcanonica.
+# Per termalizzare davvero (per esempio dopo aver acceso il potenziale ML, che
+# rilascia energia potenziale) servono valori dell'ordine di 10-50.  L'ensemble
+# di equilibrio non dipende da gamma; la cinetica si'.
+parser.add_argument("--gamma", type=float, default=1.0,
+                    help="Langevin friction (mass/time; relaxation time = m/gamma). Default 1.0")
+parser.add_argument("--gamma_rot", type=float, default=None,
+                    help="Rotational Langevin friction; default: same as --gamma")
 parser.add_argument("--toxvaerd_alpha", type=float, default=None, help="Override the value stored in the model config")
 parser.add_argument("--allow_missing_model_manifest", action="store_true", help="Allow legacy .pt files without the patched training manifest")
 parser.add_argument("--allow_legacy_checkpoint", action="store_true", help="Allow checkpoints without provenance metadata")
@@ -196,7 +207,11 @@ system.integrator.set_vv()
 if args.nve:
     system.thermostat.turn_off()
 else:
-    system.thermostat.set_langevin(kT=args.kT, gamma=1.0, gamma_rot=1.0, seed=args.thermostat_seed)
+    _gamma_rot = args.gamma if args.gamma_rot is None else args.gamma_rot
+    system.thermostat.set_langevin(kT=args.kT, gamma=args.gamma, gamma_rot=_gamma_rot,
+                                   seed=args.thermostat_seed)
+    print(f"[INFO] Langevin: gamma={args.gamma}, gamma_rot={_gamma_rot} "
+          f"(rilassamento ~m/gamma)")
 
 
 print(f"[INFO] Running {args.steps} integration steps...")

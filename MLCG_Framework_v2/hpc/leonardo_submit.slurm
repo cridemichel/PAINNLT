@@ -146,22 +146,27 @@ production)
     # invece basta passare MODEL e la collisione non e' possibile.
     if [[ -n "${MODEL:-}" ]]; then
         _tag="${MODEL##*/}"; _tag="${_tag%.pt}"
+        # RUN_TAG distingue piu' corse dello stesso modello (protocolli diversi)
+        # senza sovrascriverne i file.
+        [[ -n "${RUN_TAG:-}" ]] && _tag="${_tag}_${RUN_TAG}"
         CHECKPOINT="${CHECKPOINT:-equilibrated_${_tag}.npz}"
         SAMPLE_NPZ="${SAMPLE_NPZ:-samples_${_tag}.npz}"
     fi
     if [[ -n "${DISABLE_ML:-}${CLASSICAL:-}" ]]; then
-        CHECKPOINT="${CHECKPOINT:-equilibrated_priors.npz}"
-        SAMPLE_NPZ="${SAMPLE_NPZ:-samples_priors.npz}"
+        CHECKPOINT="${CHECKPOINT:-equilibrated_priors${RUN_TAG:+_${RUN_TAG}}.npz}"
+        SAMPLE_NPZ="${SAMPLE_NPZ:-samples_priors${RUN_TAG:+_${RUN_TAG}}.npz}"
     fi
     echo "[job] modello ${MODEL:-tel26_model.pt} -> ${CHECKPOINT:-equilibrated.npz}, ${SAMPLE_NPZ:-samples.npz}"
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          ${MODEL:+MODEL='${MODEL}'} ${CLASSICAL:+CLASSICAL='${CLASSICAL}'} \
          ${CHECKPOINT:+CHECKPOINT='${CHECKPOINT}'} \
-         ${EQ_DT:+EQ_DT='${EQ_DT}'} bash 04_equilibrate.sh"
+         ${EQ_DT:+EQ_DT='${EQ_DT}'} ${EQ_GAMMA:+EQ_GAMMA='${EQ_GAMMA}'} \
+         ${EQ_ML_STEPS:+EQ_ML_STEPS='${EQ_ML_STEPS}'} bash 04_equilibrate.sh"
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          ${MODEL:+MODEL='${MODEL}'} ${DISABLE_ML:+DISABLE_ML='${DISABLE_ML}'} \
          ${CHECKPOINT:+CHECKPOINT='${CHECKPOINT}'} \
          ${SAMPLE_NPZ:+SAMPLE_NPZ='${SAMPLE_NPZ}'} \
+         ${GAMMA:+GAMMA='${GAMMA}'} \
          CG_STEPS=${CG_STEPS:-10000} bash 05_run_espresso.sh"
     ;;
 

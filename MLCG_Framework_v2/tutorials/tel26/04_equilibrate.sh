@@ -43,6 +43,13 @@ phase_args=()
 # termostato debole (gamma = 1 ps^-1), che non dissipa quanto un integratore
 # instabile inietta.
 [ -n "${EQ_DT:-}" ] && phase_args+=(--dt "${EQ_DT}")
+# EQ_GAMMA: attrito della fase 4.  In ESPResSo gamma e' un coefficiente
+# d'attrito, il rilassamento dura m/gamma: col default 1.0 e masse di ~300 amu
+# sono ~300 ps, e il calore rilasciato accendendo il ML non esce.  20 -> ~15 ps.
+# EQ_ML_STEPS: passi della fase 4, per dare tempo al sistema di rilassare nel
+# paesaggio del modello (default 2000, cioe' 4 ps a dt = 0.002).
+[ -n "${EQ_GAMMA:-}" ]    && phase_args+=(--gamma_final "${EQ_GAMMA}")
+[ -n "${EQ_ML_STEPS:-}" ] && phase_args+=(--steps_ml_uncapped "${EQ_ML_STEPS}")
 NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
 
 cd "${SCRIPT_DIR}"
