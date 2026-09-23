@@ -111,6 +111,7 @@ dataset)
     [[ -n "$AA_TOPOLOGY"   ]] || { echo "[ERROR] indica AA_TOPOLOGY=/percorso/della/topologia" >&2; exit 2; }
     run "cd '${TUTORIAL}' && AA_TRAJECTORY='${AA_TRAJECTORY}' AA_TOPOLOGY='${AA_TOPOLOGY}' \
          ${AA_FORCES_TRAJECTORY:+AA_FORCES_TRAJECTORY='${AA_FORCES_TRAJECTORY}'} \
+         ${AA_FORCES_TOPOLOGY:+AA_FORCES_TOPOLOGY='${AA_FORCES_TOPOLOGY}'} \
          ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} PYTHON_BIN=python3 bash 02_build_dataset.sh"
     echo
     echo "[NOTA] Prima di allenare, misura il pavimento di rumore sul dataset nuovo:"

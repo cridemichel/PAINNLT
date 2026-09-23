@@ -39,6 +39,11 @@ echo "[INFO] Traiettoria: ${AA_TRAJECTORY}"
 
 forces_args=()
 if [ -n "${AA_FORCES_TRAJECTORY:-}" ]; then
+    # Il .trr ha TUTTI gli atomi: senza il .tpr completo il builder userebbe
+    # AA_TOPOLOGY, la topologia ridotta, e MDAnalysis rifiuterebbe la coppia
+    # solo dopo aver indicizzato 14 GB di .trr.  Meglio fermarsi subito.
+    : "${AA_FORCES_TOPOLOGY:?con AA_FORCES_TRAJECTORY serve AA_FORCES_TOPOLOGY, il .tpr completo}"
+    [ -f "${AA_FORCES_TOPOLOGY}" ] || { echo "[ERROR] manca: ${AA_FORCES_TOPOLOGY}" >&2; exit 1; }
     forces_args+=(--forces-trajectory "${AA_FORCES_TRAJECTORY}")
     [ -n "${AA_FORCES_TOPOLOGY:-}" ] && forces_args+=(--forces-topology "${AA_FORCES_TOPOLOGY}")
     [ -n "${AA_FORCES_SELECTION:-}" ] && forces_args+=(--forces-selection "${AA_FORCES_SELECTION}")

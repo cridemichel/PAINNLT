@@ -463,7 +463,7 @@ Poi lo stesso protocollo del modello canonico, così i numeri sono confrontabili
 
 ```bash
 bash hpc/submit_leonardo.sh dataset SYSTEM=tel26 PRIOR_SET=b3morse \
-     AA_TOPOLOGY=... AA_TRAJECTORY=... AA_FORCES_TRAJECTORY=...
+     AA_TOPOLOGY=... AA_TRAJECTORY=... AA_FORCES_TRAJECTORY=... AA_FORCES_TOPOLOGY=...
 bash hpc/submit_leonardo.sh noisefloor SYSTEM=tel26 PRIOR_SET=b3morse
 bash hpc/submit_leonardo.sh production SYSTEM=tel26 PRIOR_SET=b3morse \
      CLASSICAL=1 DISABLE_ML=1 GAMMA=20 EQ_GAMMA=20 CG_STEPS=100000 RUN_TAG=100ps
@@ -499,7 +499,8 @@ directory e i nomi dei file prodotti derivano da `SYSTEM`.
 bash hpc/submit_leonardo.sh dataset SYSTEM=tel26 \
      AA_TOPOLOGY=.../tel26_solute.gro \
      AA_TRAJECTORY=.../prod-1.part0001.xtc \
-     AA_FORCES_TRAJECTORY=.../prod-1.part0001.trr
+     AA_FORCES_TRAJECTORY=.../prod-1.part0001.trr \
+     AA_FORCES_TOPOLOGY=.../prod-1.tpr
 
 bash hpc/submit_leonardo.sh noisefloor SYSTEM=tel26
 bash hpc/submit_leonardo.sh train      SYSTEM=tel26
