@@ -2581,6 +2581,15 @@ int main(int argc, char* argv[]) {
             model->to(torch::kCPU);
             torch::save(model, snapshot_path.string());
             model->to(device);
+            // Ogni snapshot ha il SUO manifest.  Prima lo aveva solo il modello
+            // finale, e la simulazione -- che valida architettura e impronta del
+            // file dei pesi prima di caricarli -- rifiutava tutti i checkpoint
+            // periodici: proprio quelli che servono, perche' il "best" e' scelto
+            // dalla validation loss, che sui modelli di riferimento ordina al
+            // contrario.  Lo sweep strutturale era quindi impossibile senza
+            // ricostruire i manifest a mano con create_model_manifest.py.
+            write_model_manifest(snapshot_path.string(), dataset_path, config_path,
+                                 effective_config, early_stopping.best_loss);
             std::cout << "  ---> [Checkpoint] Snapshot epoca " << epoch << ": "
                       << snapshot_path.filename().string() << "\n";
         }
