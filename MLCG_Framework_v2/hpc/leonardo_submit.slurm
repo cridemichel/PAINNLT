@@ -29,7 +29,10 @@ FRAMEWORK="${FRAMEWORK:-${PROJECT_ROOT}/MLCG_Framework_v2}"
 #
 SYSTEM="${SYSTEM:-tel22}"
 TUTORIAL="${TUTORIAL:-${FRAMEWORK}/tutorials/${SYSTEM}}"
-DATASET="${DATASET:-${SYSTEM}_dataset.bin}"
+# PRIOR_SET: l'insieme di prior (tutorials/tel26/_prior_set.sh).  Cambia il
+# dataset, perche' le forze allenate sono il residuo rispetto a quei prior.
+PRIOR_SET="${PRIOR_SET:-}"
+DATASET="${DATASET:-${SYSTEM}${PRIOR_SET:+_${PRIOR_SET}}_dataset.bin}"
 # Gli script di diagnostica vivono sotto tutorials/tel22 perche' sono nati
 # li', ma 32 e 33 prendono il dataset come argomento e non sanno nulla del
 # sistema: si riusano cosi' come sono.  44 e 45, invece, importano _tel22_cv,
@@ -108,7 +111,7 @@ dataset)
     [[ -n "$AA_TOPOLOGY"   ]] || { echo "[ERROR] indica AA_TOPOLOGY=/percorso/della/topologia" >&2; exit 2; }
     run "cd '${TUTORIAL}' && AA_TRAJECTORY='${AA_TRAJECTORY}' AA_TOPOLOGY='${AA_TOPOLOGY}' \
          ${AA_FORCES_TRAJECTORY:+AA_FORCES_TRAJECTORY='${AA_FORCES_TRAJECTORY}'} \
-         PYTHON_BIN=python3 bash 02_build_dataset.sh"
+         ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} PYTHON_BIN=python3 bash 02_build_dataset.sh"
     echo
     echo "[NOTA] Prima di allenare, misura il pavimento di rumore sul dataset nuovo:"
     echo "       bash hpc/submit_leonardo.sh noisefloor"
@@ -130,7 +133,7 @@ train)
     #   bash hpc/submit_leonardo.sh train SYSTEM=tel26 RUN=d64
     need_env
     run "cd '${TUTORIAL}' && TRAINER='${FRAMEWORK}/training/build/train_painn' \
-         ${RUN:+RUN='${RUN}'} bash 03_train_model.sh"
+         ${RUN:+RUN='${RUN}'} ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} bash 03_train_model.sh"
     ;;
 
 production)
@@ -153,17 +156,19 @@ production)
         SAMPLE_NPZ="${SAMPLE_NPZ:-samples_${_tag}.npz}"
     fi
     if [[ -n "${DISABLE_ML:-}${CLASSICAL:-}" ]]; then
-        CHECKPOINT="${CHECKPOINT:-equilibrated_priors${RUN_TAG:+_${RUN_TAG}}.npz}"
-        SAMPLE_NPZ="${SAMPLE_NPZ:-samples_priors${RUN_TAG:+_${RUN_TAG}}.npz}"
+        CHECKPOINT="${CHECKPOINT:-equilibrated_priors${PRIOR_SET:+_${PRIOR_SET}}${RUN_TAG:+_${RUN_TAG}}.npz}"
+        SAMPLE_NPZ="${SAMPLE_NPZ:-samples_priors${PRIOR_SET:+_${PRIOR_SET}}${RUN_TAG:+_${RUN_TAG}}.npz}"
     fi
     echo "[job] modello ${MODEL:-tel26_model.pt} -> ${CHECKPOINT:-equilibrated.npz}, ${SAMPLE_NPZ:-samples.npz}"
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          ${MODEL:+MODEL='${MODEL}'} ${CLASSICAL:+CLASSICAL='${CLASSICAL}'} \
+         ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} \
          ${CHECKPOINT:+CHECKPOINT='${CHECKPOINT}'} \
          ${EQ_DT:+EQ_DT='${EQ_DT}'} ${EQ_GAMMA:+EQ_GAMMA='${EQ_GAMMA}'} \
          ${EQ_ML_STEPS:+EQ_ML_STEPS='${EQ_ML_STEPS}'} bash 04_equilibrate.sh"
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          ${MODEL:+MODEL='${MODEL}'} ${DISABLE_ML:+DISABLE_ML='${DISABLE_ML}'} \
+         ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} \
          ${CHECKPOINT:+CHECKPOINT='${CHECKPOINT}'} \
          ${SAMPLE_NPZ:+SAMPLE_NPZ='${SAMPLE_NPZ}'} \
          ${GAMMA:+GAMMA='${GAMMA}'} \

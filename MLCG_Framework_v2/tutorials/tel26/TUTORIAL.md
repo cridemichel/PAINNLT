@@ -400,6 +400,96 @@ analizzare.
 
 ---
 
+## Prior analitici alternativi — studio di fattibilità
+
+Obiettivo: riprodurre la g(r) all-atom mappata con prior analitici non
+convenzionali (Morse sito-sito, FENE, LJ attrattivo pair-specific) più il
+residuo ML, tenendo per ora le tetradi formate.
+
+### Perché i prior del template non bastano
+
+I contatti delle tetradi ereditati dal TEL22 sono Morse **COM–COM** con
+D = 50 kJ/mol e a = 0.3 nm⁻¹: la curvatura al minimo, 2Da² = 9 kJ/mol/nm²,
+lascia fluttuare ogni contatto di ~0.5 nm. Nelle produzioni da 100 ps
+(γ = 20) il solo-prior si srotola (massa a 1.5–2 nm nel canale intra B3–B3,
+overlap 0.15); il D=64 ep1 resta compatto (overlap 0.49) ma perde la struttura
+fine: il riferimento ha due picchi B3–B3 netti a 0.45 e 0.65 nm — lato e
+diagonale della tetrade, rapporto √2 — e il modello tiene solo il primo. Il
+residuo ML, su un segnale vicino al pavimento di rumore, non ricostruisce una
+geometria che i prior non suggeriscono affatto.
+
+### Gli insiemi di prior: `PRIOR_SET`
+
+Il dataset **dipende** dai prior: le forze allenate sono il residuo
+F_AA − F_prior. Ogni insieme ha quindi topologia, dataset, `cg_priors` e
+modelli suoi (`_prior_set.sh`):
+
+| `PRIOR_SET` | topologia | dataset | modelli |
+|---|---|---|---|
+| vuoto | `tel26_topology.json` | `tel26_dataset.bin` | `tel26_d64_model.pt` |
+| `b3morse` | `tel26_topology.b3morse.json` | `tel26_b3morse_dataset.bin` | `tel26_b3morse_d64_model.pt` |
+
+`02` e `03` lo leggono dall'ambiente. `04` e `05` lo ricavano dal manifest del
+modello (`dataset_path`) e **si rifiutano** di mettere un residuo ML sopra
+prior diversi da quelli su cui è stato allenato: senza questo controllo lo
+sbaglio non darebbe alcun errore, solo una fisica sbagliata. Per i controlli
+solo-prior (`CLASSICAL=1 DISABLE_ML=1`) il modello non entra nella dinamica e
+`PRIOR_SET` va passato esplicitamente; i nomi degli output diventano
+`equilibrated_priors_<set>.npz`, `samples_priors_<set>.npz`.
+
+### Passo 1 — Morse sito-sito sulle B3
+
+```bash
+python3 fit_tetrad_site_morse.py --dataset tel26_dataset.bin \
+    --topology tel26_topology.json --out tel26_topology.b3morse.json
+```
+
+Ricava le tetradi dai grafi K4 dei Morse esistenti, sposta gli estremi sul sito
+B3 (Hoogsteen) e stima dal riferimento, per ciascuna delle 18 classi
+(tetrade × coppia, mediate sulle 10 copie):
+
+- r0 = mediana della distanza B3–B3;
+- a = √(kT / 2Dσ²), con σ = 1.4826·MAD (larghezza del nucleo; `--width std`
+  per la deviazione standard, che le code lunghe gonfiano di 2–4 volte);
+- r_cut = r0 + 7/a. D resta 50 kJ/mol: i Morse sono reversibili, una tetrade
+  può ancora aprirsi.
+
+Controllo da guardare: **diagonale / lato ≈ 1.41** per ogni tetrade. Sul
+TEL22 dà 1.42, 1.42, 1.38, con r0 dei lati 0.42–0.58 nm e a fra 1.5 e 5.6
+nm⁻¹ — curvature al minimo da 25 a 350 volte quella del template. Scrive anche
+`tel26_topology.b3morse.report.json` con tutte le distribuzioni.
+
+Poi lo stesso protocollo del modello canonico, così i numeri sono confrontabili:
+
+```bash
+bash hpc/submit_leonardo.sh dataset SYSTEM=tel26 PRIOR_SET=b3morse \
+     AA_TOPOLOGY=... AA_TRAJECTORY=... AA_FORCES_TRAJECTORY=...
+bash hpc/submit_leonardo.sh noisefloor SYSTEM=tel26 PRIOR_SET=b3morse
+bash hpc/submit_leonardo.sh production SYSTEM=tel26 PRIOR_SET=b3morse \
+     CLASSICAL=1 DISABLE_ML=1 GAMMA=20 EQ_GAMMA=20 CG_STEPS=100000 RUN_TAG=100ps
+bash hpc/submit_leonardo.sh train SYSTEM=tel26 PRIOR_SET=b3morse RUN=d64
+```
+
+Il solo-prior viene **prima** del training: se i Morse sito-sito tengono le
+tetradi e riproducono i due picchi B3–B3, il residuo ML ha un punto di
+partenza sensato; se non li riproducono, il problema è nei prior e allenare
+non serve. Il pavimento di rumore va rimisurato: con prior più vicini al
+riferimento il residuo si restringe, e il rapporto segnale/rumore cambia.
+
+### Passi successivi
+
+2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:
+   `k`, `r0`, `r_max`).
+3. **LJ attrattivo pair-specific** per i legami a idrogeno, come nel modello
+   unfoldable: oggi i LJ del runtime sono solo WCA per coppie di tipi, e un LJ
+   fra siti specifici richiede di estendere il meccanismo dei marker usato dai
+   Morse.
+
+Ogni nuovo contatto di tetrade deve portare `exclude_wca: false`: per default
+qualunque legame che non sia Morse esclude la WCA fra i due siti.
+
+---
+
 ## Su Leonardo
 
 Il wrapper di sottomissione prende il sistema come variabile: la tutorial

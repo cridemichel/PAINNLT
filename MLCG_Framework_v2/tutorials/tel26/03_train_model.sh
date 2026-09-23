@@ -20,16 +20,17 @@ FRAMEWORK_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 TRAINER="${TRAINER:-${FRAMEWORK_ROOT}/training/build/train_painn}"
 cd "${SCRIPT_DIR}"
 
+# PRIOR_SET sceglie il dataset (i residui di quale insieme di prior) ed entra
+# nel nome del modello: RUN=d64 PRIOR_SET=b3morse -> tel26_b3morse_d64_model.pt.
+# shellcheck source=_prior_set.sh
+source "${SCRIPT_DIR}/_prior_set.sh"
+PRIOR_SET="${PRIOR_SET:-}"
+prior_set_files "${PRIOR_SET}"
 RUN="${RUN:-}"
-if [ -n "${RUN}" ]; then
-    CONFIG="tel26_training_config.${RUN}.json"
-    MODEL_OUT="tel26_${RUN}_model.pt"
-else
-    CONFIG="tel26_training_config.json"
-    MODEL_OUT="tel26_model.pt"
-fi
+CONFIG="tel26_training_config${RUN:+.${RUN}}.json"
+MODEL_OUT="tel26${PRIOR_SET:+_${PRIOR_SET}}${RUN:+_${RUN}}_model.pt"
 
-for path in tel26_dataset.bin "${CONFIG}"; do
+for path in "${DATASET_BIN}" "${CONFIG}"; do
     [ -f "${path}" ] || { echo "[ERROR] manca: ${path}" >&2; exit 1; }
 done
 [ -x "${TRAINER}" ] || { echo "[ERROR] trainer non eseguibile: ${TRAINER}" >&2; exit 1; }
@@ -39,7 +40,7 @@ if [ -f cg_training_log.csv ] && [ ! -f "${MODEL_OUT%.pt}.training_log.csv" ]; t
     mv cg_training_log.csv "cg_training_log.prima_di_${MODEL_OUT%.pt}.csv"
 fi
 
-echo "[INFO] config ${CONFIG} -> ${MODEL_OUT}"
-"${TRAINER}" tel26_dataset.bin "${MODEL_OUT}" "${CONFIG}"
+echo "[INFO] dataset ${DATASET_BIN}, config ${CONFIG} -> ${MODEL_OUT}"
+"${TRAINER}" "${DATASET_BIN}" "${MODEL_OUT}" "${CONFIG}"
 cp cg_training_log.csv "${MODEL_OUT%.pt}.training_log.csv"
 echo "[DONE] ${MODEL_OUT} (log in ${MODEL_OUT%.pt}.training_log.csv)"

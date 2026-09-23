@@ -21,10 +21,16 @@ BUILDER="${FRAMEWORK_ROOT}/preprocessing/build_cg_dataset.py"
 
 cd "${SCRIPT_DIR}"
 
+# PRIOR_SET: quale topologia (e quindi quali prior) sottrarre; vedi _prior_set.sh.
+# shellcheck source=_prior_set.sh
+source "${SCRIPT_DIR}/_prior_set.sh"
+prior_set_files "${PRIOR_SET:-}"
+echo "[INFO] prior: ${PRIOR_SET:-canonico} (${TOPOLOGY_JSON})"
+
 : "${AA_TOPOLOGY:?indica AA_TOPOLOGY (la topologia ridotta ai non-Water, vedi extract_solute_topology.py)}"
 : "${AA_TRAJECTORY:?indica AA_TRAJECTORY, la traiettoria compressa con le posizioni}"
 
-for path in "${AA_TOPOLOGY}" "${AA_TRAJECTORY}" tel26_topology.json; do
+for path in "${AA_TOPOLOGY}" "${AA_TRAJECTORY}" "${TOPOLOGY_JSON}"; do
     [ -f "${path}" ] || { echo "[ERROR] manca: ${path}" >&2; exit 1; }
 done
 
@@ -68,15 +74,15 @@ limit_args=()
     --trajectory "${AA_TRAJECTORY}" \
     ${forces_args[@]+"${forces_args[@]}"} \
     ${limit_args[@]+"${limit_args[@]}"} \
-    --config tel26_topology.json \
-    --output tel26_dataset.bin \
-    --priors-output cg_priors.json \
-    --rb-info-output rigid_bodies_info.json
+    --config "${TOPOLOGY_JSON}" \
+    --output "${DATASET_BIN}" \
+    --priors-output "${PRIORS_JSON}" \
+    --rb-info-output "${RB_INFO_JSON}"
 
 built="$("${PYTHON_BIN}" -c "
 import struct
-print(struct.unpack('i', open('tel26_dataset.bin','rb').read(4))[0])" 2>/dev/null || echo "?")"
-echo "[DONE] tel26_dataset.bin (${built} frame), cg_priors.json, rigid_bodies_info.json"
+print(struct.unpack('i', open('${DATASET_BIN}','rb').read(4))[0])" 2>/dev/null || echo "?")"
+echo "[DONE] ${DATASET_BIN} (${built} frame), ${PRIORS_JSON}, ${RB_INFO_JSON}"
 echo
 echo "[NOTA] Prossimo passo: il pavimento di rumore, PRIMA di allenare."
-echo "       python3 ../tel22/diagnostics/scripts/33_check_mean_force_signal.py tel26_dataset.bin"
+echo "       python3 ../tel22/diagnostics/scripts/33_check_mean_force_signal.py ${DATASET_BIN}"

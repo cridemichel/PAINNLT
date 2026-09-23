@@ -54,7 +54,12 @@ NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
 
 cd "${SCRIPT_DIR}"
 
-for path in "${MODEL}" "${CONFIG}" cg_priors.json rigid_bodies_info.json tel26_dataset.bin; do
+# PRIOR_SET: dal manifest del modello, se non indicato; vedi _prior_set.sh.
+# shellcheck source=_prior_set.sh
+source "${SCRIPT_DIR}/_prior_set.sh"
+if [ -n "${CLASSICAL:-}" ]; then resolve_prior_set 0; else resolve_prior_set 1; fi
+
+for path in "${MODEL}" "${CONFIG}" "${PRIORS_JSON}" "${RB_INFO_JSON}" "${DATASET_BIN}"; do
     if [ ! -f "${path}" ]; then
         echo "[ERROR] Missing required input: ${path}" >&2
         exit 1
@@ -65,9 +70,9 @@ done
     --model "${MODEL}" \
     ${phase_args[@]+"${phase_args[@]}"} \
     --config "${CONFIG}" \
-    --priors cg_priors.json \
-    --rb_info rigid_bodies_info.json \
-    --dataset tel26_dataset.bin \
+    --priors "${PRIORS_JSON}" \
+    --rb_info "${RB_INFO_JSON}" \
+    --dataset "${DATASET_BIN}" \
     --out_checkpoint "${CHECKPOINT}" \
     --device "${DEVICE}" \
     --neighbor_search "${NEIGHBOR_SEARCH}" \

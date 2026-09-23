@@ -12,22 +12,23 @@ __pycache__/
 # Prodotti dello stadio 01: derivano dal .tpr e dall'.xtc della produzione,
 # che vivono su Leonardo e non nel repository.
 tel26_solute.gro
-tel26_topology.json
+tel26_topology*.json
 
 # Prodotti dello stadio 02
-tel26_dataset.bin
-cg_priors.json
-rigid_bodies_info.json
+tel26*_dataset.bin
+cg_priors*.json
+rigid_bodies_info*.json
 
 # Modelli e checkpoint (03)
-tel26_model.pt
-tel26_model.ep*.pt
+tel26*_model.pt
+tel26*_model.ep*.pt
 *.manifest.json
-cg_training_log.csv
+cg_training_log*.csv
+*.training_log.csv
 
 # Equilibrazione e produzione (04-05)
-equilibrated.npz
-samples.npz
+equilibrated*.npz
+samples*.npz
 cg_trajectory.vtf
 energy.csv
 

@@ -49,7 +49,12 @@ ml_args=()
 
 cd "${SCRIPT_DIR}"
 
-for path in "${MODEL}" "${CONFIG}" cg_priors.json rigid_bodies_info.json tel26_dataset.bin "${CHECKPOINT}"; do
+# PRIOR_SET: dal manifest del modello, se non indicato; vedi _prior_set.sh.
+# shellcheck source=_prior_set.sh
+source "${SCRIPT_DIR}/_prior_set.sh"
+if [ -n "${DISABLE_ML:-}" ]; then resolve_prior_set 0; else resolve_prior_set 1; fi
+
+for path in "${MODEL}" "${CONFIG}" "${PRIORS_JSON}" "${RB_INFO_JSON}" "${DATASET_BIN}" "${CHECKPOINT}"; do
     if [ ! -f "${path}" ]; then
         echo "[ERROR] Missing required input: ${path}" >&2
         exit 1
@@ -60,9 +65,9 @@ done
     --model "${MODEL}" \
     ${ml_args[@]+"${ml_args[@]}"} \
     --config "${CONFIG}" \
-    --priors cg_priors.json \
-    --rb_info rigid_bodies_info.json \
-    --dataset tel26_dataset.bin \
+    --priors "${PRIORS_JSON}" \
+    --rb_info "${RB_INFO_JSON}" \
+    --dataset "${DATASET_BIN}" \
     --checkpoint "${CHECKPOINT}" \
     --steps "${CG_STEPS}" \
     --dt "${CG_DT}" \
@@ -78,7 +83,7 @@ if [ -s "${SAMPLE_NPZ}" ]; then
     echo "[INFO] Traiettoria per l'analisi: ${SAMPLE_NPZ}"
     echo "[INFO] Confronto strutturale col riferimento all-atom mappato:"
     echo "  python3 ../tel22/diagnostics/scripts/44_tel22_rdf.py \\"
-    echo "      tel26_dataset.bin run=${SAMPLE_NPZ} --nuc 26"
+    echo "      ${DATASET_BIN} run=${SAMPLE_NPZ} --nuc 26"
     echo "       Il canale B3-B3 porta i legami di Hoogsteen: e' li' che si vede"
     echo "       se le tetradi reggono.  Serve la terza curva per attribuire un"
     echo "       accordo al residuo ML invece che ai prior -- rilancia con"
