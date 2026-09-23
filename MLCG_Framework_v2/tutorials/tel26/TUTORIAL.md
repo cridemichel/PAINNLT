@@ -308,6 +308,24 @@ bash hpc/submit_leonardo.sh train      SYSTEM=tel26
 bash hpc/submit_leonardo.sh production SYSTEM=tel26
 ```
 
+### Lo sweep sui checkpoint
+
+Basta passare `MODEL`: i nomi dello stato equilibrato e della traiettoria si
+derivano da lì, quindi otto produzioni possono girare in parallelo nella stessa
+directory senza pestarsi.
+
+```bash
+for EP in 5 10 15 20 25 30 35 40; do
+  bash hpc/submit_leonardo.sh production SYSTEM=tel26 \
+       MODEL=tel26_model.ep${EP}.pt CG_STEPS=2000
+done
+```
+
+Ciascuna scrive `equilibrated_tel26_model.ep<N>.npz` e
+`samples_tel26_model.ep<N>.npz`. Prima erano fissi su `equilibrated.npz`, e uno
+sweep in parallelo faceva partire la produzione di un modello dallo stato
+equilibrato di un altro — in silenzio, senza alcun errore.
+
 Prima del dataset intero, il campione per misurare il costo — stesso comando
 con `MAX_FRAMES=200` in più:
 

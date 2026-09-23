@@ -30,12 +30,14 @@ LOG_INTERVAL="${LOG_INTERVAL:-20}"
 #       modello da uno di impostazione, sia come terza curva del confronto
 #       sulla g(r), dove senza di essa un accordo non e' attribuibile.
 MODEL="${MODEL:-tel26_model.pt}"
+# Deve combaciare con quello scritto da 04: vedi li' il perche'.
+CHECKPOINT="${CHECKPOINT:-equilibrated.npz}"
 ml_args=()
 [ -n "${DISABLE_ML:-}" ] && ml_args+=(--disable_ml)
 
 cd "${SCRIPT_DIR}"
 
-for path in "${MODEL}" tel26_training_config.json cg_priors.json rigid_bodies_info.json tel26_dataset.bin equilibrated.npz; do
+for path in "${MODEL}" tel26_training_config.json cg_priors.json rigid_bodies_info.json tel26_dataset.bin "${CHECKPOINT}"; do
     if [ ! -f "${path}" ]; then
         echo "[ERROR] Missing required input: ${path}" >&2
         exit 1
@@ -49,7 +51,7 @@ done
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel26_dataset.bin \
-    --checkpoint equilibrated.npz \
+    --checkpoint "${CHECKPOINT}" \
     --steps "${CG_STEPS}" \
     --dt "${CG_DT}" \
     --kT 2.49 \

@@ -14,6 +14,12 @@ DEVICE="${DEVICE:-auto}"
 VELOCITY_SEED="${VELOCITY_SEED:-314159}"
 # MODEL: come in 05, per equilibrare un checkpoint diverso dal "best".
 MODEL="${MODEL:-tel26_model.pt}"
+# CHECKPOINT: il nome dello stato equilibrato.  Era fisso su equilibrated.npz,
+# e con piu' produzioni in parallelo nella stessa directory -- lo sweep sugli
+# otto checkpoint -- i job si sovrascrivevano a vicenda: la produzione di un
+# modello poteva partire dallo stato equilibrato di un altro, e il risultato
+# sarebbe stato mescolato in modo indistinguibile.  Uno per modello.
+CHECKPOINT="${CHECKPOINT:-equilibrated.npz}"
 # CLASSICAL=1 salta le due fasi ML dell'equilibrazione (con e senza force cap)
 # e produce uno stato equilibrato con i soli prior.  E' il punto di partenza
 # del controllo solo-prior: un equilibrato ML non serve a quel confronto, e se
@@ -46,10 +52,10 @@ done
     --priors cg_priors.json \
     --rb_info rigid_bodies_info.json \
     --dataset tel26_dataset.bin \
-    --out_checkpoint equilibrated.npz \
+    --out_checkpoint "${CHECKPOINT}" \
     --device "${DEVICE}" \
     --neighbor_search "${NEIGHBOR_SEARCH}" \
     --kT 2.49 \
     --velocity_seed "${VELOCITY_SEED}"
 
-echo "[DONE] equilibrated.npz"
+echo "[DONE] ${CHECKPOINT}"

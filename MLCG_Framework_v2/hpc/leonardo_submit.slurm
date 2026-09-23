@@ -136,11 +136,29 @@ production)
     # MODEL sceglie il checkpoint, CLASSICAL/DISABLE_ML il controllo solo-prior:
     #   bash hpc/submit_leonardo.sh production SYSTEM=tel26 MODEL=tel26_model.ep20.pt
     #   bash hpc/submit_leonardo.sh production SYSTEM=tel26 CLASSICAL=1 DISABLE_ML=1
+    #
+    # I nomi dello stato equilibrato e della traiettoria si DERIVANO dal modello.
+    # Erano fissi, e uno sweep di produzioni in parallelo nella stessa directory
+    # faceva sovrascrivere equilibrated.npz a tutti: la produzione di un modello
+    # poteva partire dallo stato equilibrato di un altro, in silenzio.  Cosi'
+    # invece basta passare MODEL e la collisione non e' possibile.
+    if [[ -n "${MODEL:-}" ]]; then
+        _tag="${MODEL##*/}"; _tag="${_tag%.pt}"
+        CHECKPOINT="${CHECKPOINT:-equilibrated_${_tag}.npz}"
+        SAMPLE_NPZ="${SAMPLE_NPZ:-samples_${_tag}.npz}"
+    fi
+    if [[ -n "${DISABLE_ML:-}${CLASSICAL:-}" ]]; then
+        CHECKPOINT="${CHECKPOINT:-equilibrated_priors.npz}"
+        SAMPLE_NPZ="${SAMPLE_NPZ:-samples_priors.npz}"
+    fi
+    echo "[job] modello ${MODEL:-tel26_model.pt} -> ${CHECKPOINT:-equilibrated.npz}, ${SAMPLE_NPZ:-samples.npz}"
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          ${MODEL:+MODEL='${MODEL}'} ${CLASSICAL:+CLASSICAL='${CLASSICAL}'} \
+         ${CHECKPOINT:+CHECKPOINT='${CHECKPOINT}'} \
          ${EQ_DT:+EQ_DT='${EQ_DT}'} bash 04_equilibrate.sh"
     run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
          ${MODEL:+MODEL='${MODEL}'} ${DISABLE_ML:+DISABLE_ML='${DISABLE_ML}'} \
+         ${CHECKPOINT:+CHECKPOINT='${CHECKPOINT}'} \
          ${SAMPLE_NPZ:+SAMPLE_NPZ='${SAMPLE_NPZ}'} \
          CG_STEPS=${CG_STEPS:-10000} bash 05_run_espresso.sh"
     ;;
