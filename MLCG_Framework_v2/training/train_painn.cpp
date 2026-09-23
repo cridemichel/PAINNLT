@@ -1097,6 +1097,16 @@ int main(int argc, char* argv[]) {
     int batch_size = 16;
     int diagnostic_overfit_frames = 0;
     int checkpoint_every_epochs = 0;  // 0 = disattivo (comportamento storico)
+    // TF32 nelle moltiplicazioni di matrici FP32 su GPU NVIDIA (tensor core):
+    // mantissa a 10 bit sui fattori, accumulo in FP32.  Spento di default.
+    // Vale SOLO per il training: i pesi salvati restano FP32 e il plugin
+    // ESPResSo li usa in FP32 pieno, perche' in MD le forze sono -grad E via
+    // autograd, e con i prodotti arrotondati anche nel passo all'indietro la
+    // forza non sarebbe piu' esattamente il gradiente dell'energia calcolata --
+    // un'incoerenza che rompe la conservazione dell'energia in NVE.  Nel
+    // training invece un errore relativo di ~1e-3 e' sepolto dal rumore
+    // termico del target.
+    bool allow_tf32 = false;
     // Stop quando la rete diventa peggio del predittore-zero.  Non e' l'optimum
     // - quello si trova solo a posteriori su osservabili strutturali - ma e' un
     // bound duro: oltre quel punto il residuo appreso peggiora le forze rispetto
@@ -1190,6 +1200,7 @@ int main(int argc, char* argv[]) {
         if (loaded_config.contains("batch_size")) batch_size = loaded_config["batch_size"];
         if (loaded_config.contains("diagnostic_overfit_frames")) diagnostic_overfit_frames = loaded_config["diagnostic_overfit_frames"];
         if (loaded_config.contains("checkpoint_every_epochs")) checkpoint_every_epochs = loaded_config["checkpoint_every_epochs"];
+        if (loaded_config.contains("allow_tf32")) allow_tf32 = loaded_config["allow_tf32"];
         if (loaded_config.contains("stop_when_skill_negative")) stop_when_skill_negative = loaded_config["stop_when_skill_negative"];
         if (loaded_config.contains("early_stopping_min_delta")) early_stopping_min_delta = loaded_config["early_stopping_min_delta"];
         if (loaded_config.contains("mean_force_kbt_kj_mol")) mean_force_kbt_kj_mol = loaded_config["mean_force_kbt_kj_mol"];
@@ -1324,6 +1335,23 @@ int main(int argc, char* argv[]) {
     effective_config["batch_size"] = batch_size;
     effective_config["diagnostic_overfit_frames"] = diagnostic_overfit_frames;
     effective_config["checkpoint_every_epochs"] = checkpoint_every_epochs;
+    // Si registra sia la richiesta sia l'effetto: su MPS e CPU il TF32 non
+    // esiste, e un manifest che dicesse allow_tf32=true senza distinguere
+    // farebbe credere a un training in precisione ridotta che non c'e' stato.
+    bool tf32_active = false;
+    if (allow_tf32) {
+        if (device.is_cuda()) {
+            at::globalContext().setFloat32MatmulPrecision("high");
+            tf32_active = true;
+            std::cout << "[INFO] TF32 attivo nelle matmul FP32 (tensor core).  "
+                         "Solo training: il plugin ESPResSo resta in FP32.\n";
+        } else {
+            std::cout << "[INFO] allow_tf32 richiesto ma il device e' " << device_name
+                      << ": TF32 esiste solo su GPU NVIDIA, ignorato.\n";
+        }
+    }
+    effective_config["allow_tf32"] = allow_tf32;
+    effective_config["tf32_active"] = tf32_active;
     effective_config["stop_when_skill_negative"] = stop_when_skill_negative;
     effective_config["early_stopping_min_delta"] = early_stopping_min_delta;
     effective_config["mean_force_kbt_kj_mol"] = mean_force_kbt_kj_mol;

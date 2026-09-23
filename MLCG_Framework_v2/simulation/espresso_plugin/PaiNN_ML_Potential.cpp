@@ -155,8 +155,20 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
         // roundoff from the forward/autograd evaluation without retraining.
         model->to(m_dtype);
         model->to(m_device);
+        // In MD le forze sono -grad E via autograd: con le matmul in TF32 anche
+        // il passo all'indietro verrebbe arrotondato, e la forza non sarebbe
+        // piu' il gradiente esatto dell'energia calcolata -- un'incoerenza che
+        // rompe la conservazione dell'energia in NVE.  LibTorch usa gia' FP32
+        // pieno di default, ma la variabile d'ambiente
+        // TORCH_ALLOW_TF32_CUBLAS_OVERRIDE lo cambia per tutto il processo:
+        // qui lo si fissa esplicitamente, cosi' la garanzia non dipende
+        // dall'ambiente del job.  Il TF32 resta un'opzione del solo trainer.
+        if (m_device.is_cuda()) {
+            at::globalContext().setFloat32MatmulPrecision("highest");
+        }
         std::cout << "[PaiNN] Inference precision: "
-                  << (m_dtype == torch::kFloat64 ? "float64" : "float32") << "\n";
+                  << (m_dtype == torch::kFloat64 ? "float64" : "float32")
+                  << (m_device.is_cuda() ? " (TF32 disabilitato)" : "") << "\n";
 
         if (m_device.type() == torch::kMPS) {
             constexpr const char* cadence_env =

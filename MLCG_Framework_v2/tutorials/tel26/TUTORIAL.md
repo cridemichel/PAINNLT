@@ -321,6 +321,41 @@ La variante `d64` cambia tre cose rispetto alla D=128: `hidden_channels: 64`,
 `epochs: 15`, `checkpoint_every_epochs: 1` — la finestra buona, se c'è, sta
 nelle prime epoche.
 
+### TF32: solo nel training
+
+`"allow_tf32": true` nella config fa usare al trainer i tensor core per le
+moltiplicazioni di matrici FP32: fattori arrotondati a 10 bit di mantissa,
+accumulo in FP32, stesso intervallo di valori. I pesi salvati restano FP32.
+
+Vale **solo per il training**. Il plugin ESPResSo fissa esplicitamente le
+matmul in FP32 pieno, perché in MD le forze sono −∇E via autograd: con i
+prodotti arrotondati anche nel passo all'indietro la forza non sarebbe più il
+gradiente esatto dell'energia calcolata, e la conservazione dell'energia in
+NVE ne risentirebbe. Nel training, invece, un errore relativo di ~10⁻³ è
+sepolto dal rumore termico del target. Il plugin lo fissa anche contro la
+variabile `TORCH_ALLOW_TF32_CUBLAS_OVERRIDE`, che altrimenti lo cambierebbe per
+tutto il processo.
+
+Il manifest registra sia `allow_tf32` (la richiesta) sia `tf32_active`
+(l'effetto): su MPS e CPU il TF32 non esiste e la richiesta viene ignorata.
+
+**Da sola non accelera molto.** Su 260 molecole con batch 4 il training è
+limitato dall'overhead, non dal calcolo — D=64 e D=128 costano uguale. Il TF32
+serve quando i kernel sono abbastanza grandi da far lavorare i tensor core,
+cioè insieme a un batch più grande. Le config `bench_*` misurano le quattro
+combinazioni (batch 4/32, con e senza TF32) su tre epoche:
+
+```bash
+for R in bench_b4_tf32 bench_b32 bench_b32_tf32; do
+  bash hpc/submit_leonardo.sh train SYSTEM=tel26 RUN=$R
+done
+```
+
+Il quarto punto, batch 4 in FP32, è il training `d64`. Si confronta il tempo
+per epoca nel log. Un batch più grande a parità di learning rate cambia anche
+la dinamica dell'ottimizzazione, quindi questi training servono al tempo, non
+come modelli.
+
 ### 04–05 — equilibrazione e produzione
 
 ```bash
