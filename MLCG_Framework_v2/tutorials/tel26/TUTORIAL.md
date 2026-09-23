@@ -1,5 +1,11 @@
 # TEL26 — G-quadruplex ibrido (3+1), PDB 2JPZ
 
+> **Obiettivo:** riprodurre la g(r) delle simulazioni atomistiche. Ogni
+> scelta — prior, architettura, checkpoint, protocollo — si giudica su quanto
+> la g(r) CG, intra e inter e per canale, si avvicina a quella all-atom
+> mappata. Stabilità e skill sulle forze sono condizioni necessarie, non il
+> bersaglio.
+
 Secondo sistema del framework, dopo TEL22. Stessa pipeline, tre differenze che
 cambiano i comandi: la piega, il formato delle traiettorie di partenza e il
 fatto che la topologia CG non è scritta a mano ma **generata**.
