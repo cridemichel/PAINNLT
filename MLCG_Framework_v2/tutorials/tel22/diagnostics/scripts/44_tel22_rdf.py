@@ -68,6 +68,31 @@ from _tel22_cv import (SITE_NAME, load_reference, load_samples,
 from _hb_common import mi
 
 
+def load_run(path, skip_ps=0.0, stride=1):
+    """Traiettoria di un modello, senza il transiente iniziale e sottocampionata.
+
+    skip_ps: scarta i frame con t < skip_ps.  Dopo aver acceso il potenziale ML
+             il sistema rilassa nel paesaggio del modello per decine di ps
+             (sul TEL26 D=64, E_ML si stabilizza dopo ~60 ps): mediare anche
+             quel tratto mescola l'ensemble del modello con la struttura di
+             partenza, che e' quella di riferimento, e gonfia l'accordo.
+    stride:  un frame ogni `stride`.  Con log_interval = 20 passi i frame sono
+             a 0.02 ps, fortemente correlati: uno ogni 10 non perde statistica
+             e riduce il costo dell'analisi di dieci volte.
+    """
+    S, L, nc, t = load_samples(path)
+    t = np.asarray(t, dtype=float)
+    keep = np.flatnonzero(t >= float(skip_ps))[::max(1, int(stride))]
+    if keep.size == 0:
+        raise SystemExit(f"[ERROR] {path}: nessun frame con t >= {skip_ps} ps "
+                         f"(la traiettoria arriva a {t.max():.1f} ps)")
+    L = np.asarray(L)
+    if L.ndim == 2 and L.shape[0] == S.shape[0]:
+        L = L[keep]
+    print(f"  {path}: {keep.size} frame da t = {t[keep[0]]:.1f} a {t[keep[-1]]:.1f} ps")
+    return S[keep], L, nc, t[keep]
+
+
 def _copy_of_site(nmol_total: int, ncopy: int) -> np.ndarray:
     """Indice di copia per ciascuna molecola."""
     return np.repeat(np.arange(ncopy), cv.NUC)
@@ -279,6 +304,12 @@ def main() -> None:
                          "diversi possono cancellarsi e farla sembrare giusta")
     ap.add_argument("--plot", default=None,
                     help="prefisso dei PNG per canale (richiede --types)")
+    ap.add_argument("--skip-ps", dest="skip_ps", type=float, default=0.0,
+                    help="scarta i primi N ps di ogni traiettoria di modello "
+                         "(transiente dopo l'accensione del ML); il riferimento "
+                         "non e' toccato")
+    ap.add_argument("--run-stride", dest="run_stride", type=int, default=1,
+                    help="un frame ogni N nelle traiettorie di modello (default 1)")
     ap.add_argument("--title", default=None,
                     help="titolo dei grafici; default: dal nome del dataset "
                          "(tel26_dataset.bin -> TEL26)")
@@ -312,7 +343,7 @@ def main() -> None:
               "bins": args.bins, "runs": []}
     rows = []
     for label, path in runs.items():
-        S, L, nc, _t = load_samples(path)
+        S, L, nc, _t = load_run(path, args.skip_ps, args.run_stride)
         hi2, he2, ni2, ne2, nf2, vol2, _ = accumulate(S, L, nc, args.rmax, args.bins, 1)
         _, p_mod, g_mod = normalize(hi2, he2, ne2, nf2, vol2, edges, nsites)
         e = {"run": label, "path": path,
@@ -359,7 +390,7 @@ def main() -> None:
         run_curves = {"intra": [], "inter": []}
         per_channel = {}
         for label, path in runs.items():
-            S, L, nc, _t = load_samples(path)
+            S, L, nc, _t = load_run(path, args.skip_ps, args.run_stride)
             acc_m, nint_m, nf_m, vol_m, _ = accumulate_channels(
                 S, L, nc, types, args.rmax, args.bins, 1)
             ci, ce = {}, {}
