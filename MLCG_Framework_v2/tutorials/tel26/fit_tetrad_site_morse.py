@@ -203,8 +203,9 @@ def main():
     ap.add_argument("--site", default="CG_DG_B3", help="sito dei contatti di Hoogsteen")
     ap.add_argument("--keep-tetrads", action="store_true",
                     help="lascia invariati i Morse delle tetradi gia' presenti")
-    ap.add_argument("--stacking", default=None, metavar="SITO",
-                    help="aggiungi Morse di impilamento fra guanine sovrapposte su SITO (es. CG_DG_B5)")
+    ap.add_argument("--stacking", default=None, metavar="SITO[:MODO],...",
+                    help="aggiungi Morse di impilamento su SITO (es. CG_DG_B5); piu' siti "
+                         "separati da virgole, ciascuno col suo modo: CG_DG_B5:core,CG_DG_B3:layers")
     ap.add_argument("--stacking-mode", choices=("tract", "layers", "core"), default="tract",
                     help="tract: guanine sovrapposte dello stesso tratto (8 per copia); "
                          "layers: tutte le coppie di tetradi diverse; "
@@ -328,11 +329,19 @@ def main():
         print(f"[INFO] {len(morse)} Morse di tetrade lasciati come sono (--keep-tetrads)")
 
     # ── impilamento fra guanine sovrapposte ────────────────────────────────
-    if args.stacking:
+    # --stacking SITO[:MODO][,SITO[:MODO]...]; senza MODO vale --stacking-mode
+    stack_specs = []
+    for spec in (args.stacking.split(",") if args.stacking else []):
+        site, _, mode = spec.strip().partition(":")
+        mode = mode or args.stacking_mode
+        if mode not in ("tract", "layers", "core"):
+            sys.exit(f"[ERROR] modo di impilamento sconosciuto {mode!r} in {spec!r}")
+        stack_specs.append((site, mode))
+    for st_site, st_mode in stack_specs:
         # stessi stimatori, profondita' eventualmente diversa per l'impilamento
         sargs = argparse.Namespace(**{**vars(args), "D": args.stack_D or args.D})
-        site_type = site_type_of(topo, args.stacking)
-        xyz, col, site_index = ref.site(involved, site_type, args.stacking)
+        site_type = site_type_of(topo, st_site)
+        xyz, col, site_index = ref.site(involved, site_type, st_site)
         per_copy = defaultdict(list)
         for m in involved:
             per_copy[m // nuc].append(m)
@@ -343,23 +352,25 @@ def main():
                     if b_ <= a_:
                         continue
                     same_tetrad = tetrad_of[a_] == tetrad_of[b_]
-                    if args.stacking_mode == "tract":
+                    if st_mode == "tract":
                         keep = b_ == a_ + 1 and not same_tetrad
-                    elif args.stacking_mode == "layers":
+                    elif st_mode == "layers":
                         keep = not same_tetrad
                     else:
                         keep = True
                     if keep:
                         pairs.append((a_, b_))
         per_class = len(pairs) // n_copies
-        print(f"\n[INFO] impilamento ({args.stacking_mode}): sito {args.stacking} = indice "
+        print(f"\n[INFO] impilamento ({st_mode}): sito {st_site} = indice "
               f"{sorted(set(site_index.values()))}; {len(pairs)} coppie, {per_class} per copia")
-        if args.stacking_mode == "tract" and per_class != 4 * (len(local) - 1):
+        if st_mode == "tract" and per_class != 4 * (len(local) - 1):
             print(f"[WARNING] attese {4 * (len(local) - 1)} coppie sovrapposte per copia "
                   f"({len(local)} tetradi, 4 tratti): controlla il registro")
+        # dalla topologia IN USCITA: i contatti di tetrade possono essere appena
+        # passati da COM-COM a sito-sito, e un doppione arriverebbe al runtime
         existing = {tuple(sorted(((int(b["mol_i"]), int(b.get("site_i", -1))),
                                   (int(b["mol_j"]), int(b.get("site_j", -1))))))
-                    for _, b in all_morse}
+                    for b in out["bonds"] if b.get("type") in CONTACT_TYPES}
         samples = defaultdict(list)
         for i, j in pairs:
             samples[(i % nuc + 1, j % nuc + 1)].append(ref.distances(xyz, col, i, j))
@@ -367,7 +378,7 @@ def main():
                     for key, rs in sorted(samples.items())}
         head = "eps (kT)" if args.form == "lj" else "a (1/nm)"
         layer_of = lambda res: local.index(next(t for t in local if res in t)) + 1
-        if args.stacking_mode == "tract":
+        if st_mode == "tract":
             print(f"\n  {'coppia':>9} {'tetradi':>8} {'r0 (nm)':>8} {'sigma':>7} {head:>9} {'r_cut':>6}")
             for key, c in sclasses.items():
                 val = c["epsilon"] / args.kT if args.form == "lj" else c["a"]
@@ -392,16 +403,15 @@ def main():
             c = sclasses[(i % nuc + 1, j % nuc + 1)]
             out["bonds"].append(morse_entry(i, j, site_index[i], site_index[j], c, sargs, "stacking"))
             added += 1
-        out.setdefault("g4_topology", {})["stacking_representation"] = (
-            f"site-site {args.stacking} {args.form}, mode {args.stacking_mode} (tract: same "
+        out.setdefault("g4_topology", {}).setdefault("stacking_representation", []).append(
+            f"site-site {st_site} {args.form}, mode {st_mode} (tract: same "
             f"G-tract adjacent tetrads; layers: all pairs in different tetrads; core: all "
             f"G-core pairs), fitted from the mapped all-atom reference "
             f"(fit_tetrad_site_morse.py, D={sargs.D}, width={args.width})")
         print(f"[INFO] {added} contatti di impilamento aggiunti ({args.form})")
-        report["stacking_site"] = args.stacking
-        report["stacking_mode"] = args.stacking_mode
-        report["stack_D"] = sargs.D
-        report["stacking_classes"] = [{"pair": list(k), **v} for k, v in sclasses.items()]
+        report.setdefault("stacking", []).append({
+            "site": st_site, "mode": st_mode, "D": sargs.D,
+            "classes": [{"pair": list(k), **v} for k, v in sclasses.items()]})
 
     Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
     print(f"\n[DONE] {args.out}")
