@@ -362,7 +362,7 @@ def main():
             f"site-site {args.stacking} {args.form} between stacked guanines (same G-tract, "
             f"adjacent tetrads), r0/a fitted from the mapped all-atom reference "
             f"(fit_tetrad_site_morse.py, D={args.D}, width={args.width})")
-        print(f"[INFO] {added} Morse di impilamento aggiunti")
+        print(f"[INFO] {added} contatti di impilamento aggiunti ({args.form})")
         report["stacking_site"] = args.stacking
         report["stacking_classes"] = [{"pair": list(k), **v} for k, v in sclasses.items()]
 
