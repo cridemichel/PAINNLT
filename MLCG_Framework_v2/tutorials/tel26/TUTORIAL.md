@@ -614,6 +614,30 @@ basi, cioè i picchi B5–B5 a 0,75–1,27 nm che con `tract` si fondono.
 `--stack-D` ne regola la profondità indipendentemente dai contatti di
 Hoogsteen.
 
+### Contatti fisici, aggiustati per iterazione
+
+I prior devono corrispondere a interazioni fisiche: i contatti di Hoogsteen
+(B3–B3 nel piano) e l'impilamento fra guanine sovrapposte (B5–B5, modo
+`tract`), cioè il b3stack. La rete `core` sul nucleo migliora la g(r) ma è
+un vincolo elastico fra basi lontane (fino a 1,4 nm), non un'interazione: la
+si tiene solo come confronto.
+
+Il difetto del fit per singola distanza (ogni contatto stimato come se fosse
+l'unica forza) si corregge per iterazione: una corsa con i soli prior, poi
+per ogni classe r0 ← r0 + (mediana_rif − mediana_CG), a ← a·σ_CG/σ_rif (LJ:
+σ e ε), tutte insieme.
+
+```bash
+python3 iterate_contacts.py --topology tel26_topology.b3stack.json \
+    --run samples_priors_b3stack_100ps.npz --out tel26_topology.b3it1.json
+python3 derive_prior_set.py --base b3stack --set b3it1
+# corsa con i soli prior PRIOR_SET=b3it1, poi b3it1 -> b3it2, ...
+```
+
+Criterio di arresto: |Δmediana| < 0,01 nm e |σ_CG/σ_rif − 1| < 10 % per
+tutte le classi. Lo spostamento di r0 è limitato a 0,05 nm per iterazione e il
+fattore su a a [½, 2]: lontano dal riferimento la correzione non è lineare.
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:
