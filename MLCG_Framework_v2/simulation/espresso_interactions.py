@@ -274,8 +274,13 @@ def configure_debye_huckel(system: Any, dh: dict[str, Any] | None) -> None:
             "Debye-Hueckel prior requested but espressomd.electrostatics is unavailable; "
             "enable ELECTROSTATICS in myconfig.hpp and rebuild ESPResSo."
         ) from exc
+    # I controioni sono impliciti -- sono loro a schermare, via lambda_D --:
+    # il sistema CG ha carica netta (-1 per nucleotide) per costruzione, e il
+    # controllo di neutralita' di ESPResSo va spento.  Con DH (solo corto
+    # raggio, nessun termine di Ewald) la carica netta non introduce artefatti.
     solver = electrostatics.DH(
-        prefactor=float(dh["prefactor"]), kappa=float(dh["kappa"]), r_cut=float(dh["r_cut"])
+        prefactor=float(dh["prefactor"]), kappa=float(dh["kappa"]), r_cut=float(dh["r_cut"]),
+        check_neutrality=False,
     )
     system.electrostatics.solver = solver
 

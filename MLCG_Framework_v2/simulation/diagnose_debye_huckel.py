@@ -65,8 +65,9 @@ def main():
     q = np.where(np.arange(12) % 3 == 0, 1.0, -1.0)
     for x, qi in zip(pos, q):
         system.part.add(pos=x, q=float(qi))
+    # stessa scelta del runtime: controioni impliciti, carica netta ammessa
     system.electrostatics.solver = espressomd.electrostatics.DH(
-        prefactor=pref, kappa=kappa, r_cut=r_cut)
+        prefactor=pref, kappa=kappa, r_cut=r_cut, check_neutrality=False)
 
     def reference():
         f = np.zeros_like(pos)
