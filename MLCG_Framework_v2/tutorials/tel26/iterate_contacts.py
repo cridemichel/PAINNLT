@@ -45,7 +45,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from fit_tetrad_site_morse import Reference  # noqa: E402
+from fit_tetrad_site_morse import Reference, dihedral_angles  # noqa: E402
 
 CONTACT_TYPES = ("morse", "lj")
 
@@ -78,6 +78,8 @@ def main():
     ap.add_argument("--lj-cut", type=float, default=3.5, help="LJ: r_cut = lj_cut * sigma")
     ap.add_argument("--tol-r", type=float, default=0.01)
     ap.add_argument("--tol-s", type=float, default=0.10)
+    ap.add_argument("--tol-phi", type=float, default=3.0, help="gradi, per i diedri")
+    ap.add_argument("--max-dphi", type=float, default=20.0, help="gradi per iterazione")
     args = ap.parse_args()
 
     topo = json.loads(Path(args.topology).read_text())
@@ -107,6 +109,10 @@ def main():
     for _, b in contacts:
         by_site[int(b["site_i"])].add(int(b["mol_i"]))
         by_site[int(b["site_j"])].add(int(b["mol_j"]))
+    twists = [(k, d) for k, d in enumerate(topo.get("dihedrals", [])) if d.get("role") == "twist"]
+    for _, d in twists:
+        for x in "ijkl":
+            by_site[int(d[f"site_{x}"])].add(int(d[f"mol_{x}"]))
     ref_xyz = {}
     for s, mols in by_site.items():
         mols = sorted(mols)
@@ -125,6 +131,15 @@ def main():
         d = xi[:, ci[i]] - xj[:, cj[j]]
         d -= ref.box * np.round(d / ref.box)
         ref_samples[key(b)].append(np.linalg.norm(d, axis=1))
+
+    def dkey(d):
+        return ("twist", int(d["mol_i"]) % nuc + 1, int(d["mol_l"]) % nuc + 1)
+
+    ref_phi = defaultdict(list)
+    for _, d in twists:
+        pts = [ref_xyz[int(d[f"site_{x}"])][0][:, ref_xyz[int(d[f"site_{x}"])][1][int(d[f"mol_{x}"])]]
+               for x in "ijkl"]
+        ref_phi[dkey(d)].append(dihedral_angles(*pts, ref.box))
 
     # ── corsa CG ───────────────────────────────────────────────────────────
     z = np.load(args.run)
@@ -146,6 +161,16 @@ def main():
         d = sites[:, a_] - sites[:, b_]
         d -= box * np.round(d / box)
         cg_samples[key(b)].append(np.linalg.norm(d, axis=1))
+
+    cg_phi = defaultdict(list)
+    for _, d in twists:
+        pts = [sites[:, lookup[(int(d[f"mol_{x}"]), int(d[f"site_{x}"]))]] for x in "ijkl"]
+        cg_phi[dkey(d)].append(dihedral_angles(*pts, box))
+
+    def circ(phi):
+        c, s_ = float(np.mean(np.cos(phi))), float(np.mean(np.sin(phi)))
+        R = min(max(math.hypot(c, s_), 1e-6), 0.999999)
+        return math.atan2(s_, c), math.sqrt(-2.0 * math.log(R))
 
     # ── correzione per classe ──────────────────────────────────────────────
     stats = {}
@@ -174,6 +199,21 @@ def main():
             e["shift"] = "auto"
         e.pop("r_switch", None)
 
+    tstats = {}
+    for k in ref_phi:
+        mr, sr = circ(np.concatenate(ref_phi[k]))
+        mc, sc = circ(np.concatenate(cg_phi[k]))
+        tstats[k] = {"phi_ref": mr, "std_ref": sr, "phi_cg": mc, "std_cg": sc}
+    maxd = math.radians(args.max_dphi)
+    for kd, d in twists:
+        st = tstats[dkey(d)]
+        diff = math.atan2(math.sin(st["phi_ref"] - st["phi_cg"]), math.cos(st["phi_ref"] - st["phi_cg"]))
+        e = out["dihedrals"][kd]
+        e["phi0"] = float(e["phi0"]) + float(np.clip(args.damp * diff, -maxd, maxd))
+        e["phi0"] = math.atan2(math.sin(e["phi0"]), math.cos(e["phi0"]))
+        ratio = st["std_cg"] / st["std_ref"] if st["std_ref"] > 0 else 1.0
+        e["k"] = float(e["k"]) * min(hi, max(lo, ratio ** (2.0 * args.damp)))
+
     # ── riepilogo e criterio di arresto ────────────────────────────────────
     by_role = defaultdict(list)
     for k, st in stats.items():
@@ -188,13 +228,23 @@ def main():
         ok_all &= bool(ok.all())
         print(f"  {role:<10}{len(sts):7d}{dm.max():12.4f}{np.median(dm):12.4f}"
               f"{rs.min():8.2f}-{rs.max():<8.2f}{int(ok.sum()):>6d}/{len(sts)}")
+    if tstats:
+        dph = np.array([abs(math.degrees(math.atan2(math.sin(s["phi_ref"] - s["phi_cg"]),
+                                                    math.cos(s["phi_ref"] - s["phi_cg"]))))
+                        for s in tstats.values()])
+        rs = np.array([s["std_cg"] / s["std_ref"] for s in tstats.values()])
+        ok = (dph < args.tol_phi) & (np.abs(rs - 1.0) < args.tol_s)
+        ok_all &= bool(ok.all())
+        print(f"  {'twist':<10}{len(tstats):7d}{dph.max():11.1f}°{np.median(dph):11.1f}°"
+              f"{rs.min():8.2f}-{rs.max():<8.2f}{int(ok.sum()):>6d}/{len(tstats)}")
     worst = sorted(stats.items(), key=lambda kv: -abs(kv[1]["med_ref"] - kv[1]["med_cg"]))[:5]
     print("\n  classi piu' lontane (ruolo, res_i, sito_i, res_j, sito_j): mediana rif / CG, sigma rif / CG")
     for k, st in worst:
         print(f"    {str(k):<34} {st['med_ref']:.3f} / {st['med_cg']:.3f}   "
               f"{st['sig_ref']:.3f} / {st['sig_cg']:.3f}")
-    print(f"\n[{'CONVERGIUTO' if ok_all else 'NON ANCORA'}] criterio: |dmed| < {args.tol_r} nm e "
-          f"|sCG/sRif - 1| < {args.tol_s:.0%} per tutte le classi")
+    print(f"\n[{'CONVERGIUTO' if ok_all else 'NON ANCORA'}] criterio: |dmed| < {args.tol_r} nm, "
+          f"|sCG/sRif - 1| < {args.tol_s:.0%}"
+          f"{f', |dphi| < {args.tol_phi} gradi' if tstats else ''} per tutte le classi")
 
     out.setdefault("g4_topology", {}).setdefault("contact_iterations", []).append({
         "from": args.topology, "run": args.run, "damp": args.damp, "converged": ok_all})
@@ -202,7 +252,8 @@ def main():
     report = args.report or str(Path(args.out).with_suffix(".iter.json"))
     Path(report).write_text(json.dumps({
         "topology": args.topology, "run": args.run, "converged": ok_all,
-        "classes": [{"key": list(k), **v} for k, v in stats.items()]}, indent=2) + "\n")
+        "classes": [{"key": list(k), **v} for k, v in stats.items()],
+        "twist": [{"key": list(k), **v} for k, v in tstats.items()]}, indent=2) + "\n")
     print(f"[DONE] {args.out}\n[DONE] {report}")
 
 

@@ -173,6 +173,28 @@ def fit_class(r, args):
     return out
 
 
+def dihedral_angles(p1, p2, p3, p4, box):
+    """Diedro con la convenzione di build_cg_dataset.get_dihedral (e di ESPResSo,
+    a meno di 2 pi): b1 = p2-p1, b2 = p3-p2, b3 = p4-p3, immagine minima."""
+    def mic(v):
+        return v - box * np.round(v / box)
+    b1, b2, b3 = mic(p2 - p1), mic(p3 - p2), mic(p4 - p3)
+    m1, m2 = np.cross(b1, b2), np.cross(b2, b3)
+    x = np.einsum("ij,ij->i", m1, m2)
+    y = np.linalg.norm(b2, axis=1) * np.einsum("ij,ij->i", b1, np.cross(b2, b3))
+    return np.arctan2(y, x)
+
+
+def fit_twist(phi, kT):
+    """phi0 = media circolare; K dal von Mises equivalente: P ~ exp(kappa cos(phi-phi0))
+    corrisponde a U = K (1 - cos(phi - phi0)) con K = kappa kT."""
+    c, s_ = float(np.mean(np.cos(phi))), float(np.mean(np.sin(phi)))
+    R = min(math.hypot(c, s_), 0.999)
+    kappa = R * (2.0 - R * R) / (1.0 - R * R)          # Banerjee et al. 2005
+    return {"phi0": math.atan2(s_, c), "R": R, "kappa": kappa, "k": kappa * kT,
+            "circ_std_deg": math.degrees(math.sqrt(-2.0 * math.log(R)))}
+
+
 def site_type_of(topo, name):
     site_types = topo["mapping"]["site_types"]
     if name not in site_types:
@@ -210,6 +232,9 @@ def main():
                     help="tract: guanine sovrapposte dello stesso tratto (8 per copia); "
                          "layers: tutte le coppie di tetradi diverse; "
                          "core: tutte le coppie del nucleo di guanine, anche nel piano")
+    ap.add_argument("--twist", default=None, metavar="SITO_A,SITO_B",
+                    help="diedro di torsione fra guanine sovrapposte (stesso tratto): "
+                         "A(i)-B(i)-B(j)-A(j), per esempio CG_DG_B3,CG_DG_B5")
     ap.add_argument("--stack-D", type=float, default=None,
                     help="profondita' dei Morse di impilamento (default: --D)")
     ap.add_argument("--D", type=float, default=50.0, help="profondita' in kJ/mol")
@@ -223,8 +248,8 @@ def main():
                     help="forma dei contatti: Morse (D fissata) o LJ 12-6 (epsilon dalla larghezza)")
     ap.add_argument("--lj-cut", type=float, default=3.5, help="r_cut dei LJ in unita' di sigma")
     args = ap.parse_args()
-    if args.keep_tetrads and not args.stacking:
-        sys.exit("[ERROR] --keep-tetrads senza --stacking non cambierebbe nulla")
+    if args.keep_tetrads and not (args.stacking or args.twist):
+        sys.exit("[ERROR] --keep-tetrads senza --stacking o --twist non cambierebbe nulla")
 
     topo = json.loads(Path(args.topology).read_text())
     nuc = args.nuc or topo.get("g4_topology", {}).get("residues_per_copy")
@@ -235,7 +260,9 @@ def main():
     morse = [(k, b) for k, b in all_morse if b.get("role", "tetrad") != "stacking"]
     if not morse:
         sys.exit("[ERROR] nessun Morse di tetrade nella topologia: niente tetradi da cui partire")
-    if args.stacking and len(morse) != len(all_morse):
+    if args.keep_tetrads and args.twist and not args.stacking:
+        pass  # solo torsione sopra una topologia gia' adattata
+    elif args.stacking and len(morse) != len(all_morse):
         sys.exit("[ERROR] la topologia ha gia' Morse di impilamento: parti da quella senza")
 
     # ── tetradi: componenti connesse dei Morse in ogni copia ───────────────
@@ -412,6 +439,38 @@ def main():
         report.setdefault("stacking", []).append({
             "site": st_site, "mode": st_mode, "D": sargs.D,
             "classes": [{"pair": list(k), **v} for k, v in sclasses.items()]})
+
+    # ── torsione fra guanine sovrapposte ───────────────────────────────────
+    if args.twist:
+        name_a, name_b = [x.strip() for x in args.twist.split(",")]
+        xa, ca, ia = ref.site(involved, site_type_of(topo, name_a), name_a)
+        xb, cb, ib = ref.site(involved, site_type_of(topo, name_b), name_b)
+        pairs = [(a_, a_ + 1) for a_ in involved
+                 if (a_ + 1) in tetrad_of and a_ // nuc == (a_ + 1) // nuc
+                 and tetrad_of[a_] != tetrad_of[a_ + 1]]
+        tsamples = defaultdict(list)
+        for i, j in pairs:
+            phi = dihedral_angles(xa[:, ca[i]], xb[:, cb[i]], xb[:, cb[j]], xa[:, ca[j]], ref.box)
+            tsamples[(i % nuc + 1, j % nuc + 1)].append(phi)
+        tclasses = {k: fit_twist(np.concatenate(v), args.kT) for k, v in sorted(tsamples.items())}
+        print(f"\n[INFO] torsione {name_a}-{name_b}-{name_b}-{name_a}: {len(pairs)} diedri, "
+              f"{len(pairs) // n_copies} per copia")
+        print(f"\n  {'coppia':>9} {'phi0 (gradi)':>13} {'dev. circ.':>11} {'K (kT)':>8}")
+        for k, c in tclasses.items():
+            print(f"  {str(k):>9} {math.degrees(c['phi0']):13.1f} {c['circ_std_deg']:10.1f}° "
+                  f"{c['k'] / args.kT:8.2f}")
+        out["dihedrals"] = [d for d in out.get("dihedrals", []) if d.get("role") != "twist"]
+        for i, j in pairs:
+            c = tclasses[(i % nuc + 1, j % nuc + 1)]
+            out["dihedrals"].append({
+                "mol_i": i, "site_i": ia[i], "mol_j": i, "site_j": ib[i],
+                "mol_k": j, "site_k": ib[j], "mol_l": j, "site_l": ia[j],
+                "type": "cosine", "k": c["k"], "n": 1, "phi0": c["phi0"], "role": "twist"})
+        out.setdefault("g4_topology", {})["twist_representation"] = (
+            f"cosine dihedral {name_a}-{name_b}-{name_b}-{name_a} between stacked guanines "
+            f"(same G-tract, adjacent tetrads); phi0 = circular mean, K = kappa kT from the "
+            f"von Mises fit of the mapped all-atom reference")
+        report["twist"] = [{"pair": list(k), **v} for k, v in tclasses.items()]
 
     Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
     print(f"\n[DONE] {args.out}")

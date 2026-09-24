@@ -12,7 +12,8 @@ PERCHE'
 
     Questo script prende i cg_priors di un insieme esistente, sostituisce
     TUTTI i contatti pair-specific con quelli della topologia del nuovo
-    insieme (e il blocco debye_huckel, se c'e') e copia rigid_bodies_info.
+    insieme (e i diedri di torsione, role "twist", e il blocco debye_huckel,
+    se ci sono) e copia rigid_bodies_info.
     Il dataset del nuovo insieme NON esiste: 04/05 usano quello canonico come
     configurazione iniziale solo se il residuo ML non e' attivo, e 03 si
     rifiuta di allenare.  Quando un insieme merita il ML, si costruisce il suo
@@ -86,6 +87,14 @@ def main():
         sys.exit(f"[ERROR] {new_topo} non ha contatti pair-specific")
     priors["bonds"] = kept + contacts
 
+    # diedri di torsione (role "twist") dalla topologia; gli altri dalla base
+    twists = [dict(d) for d in topo.get("dihedrals", []) if d.get("role") == "twist"]
+    for d in twists:
+        if not all(isinstance(d.get(k), (int, float)) for k in ("k", "phi0")):
+            sys.exit(f"[ERROR] diedro di torsione con parametri non numerici: {d}")
+    base_dih = [d for d in priors.get("dihedrals", []) if d.get("role") != "twist"]
+    priors["dihedrals"] = base_dih + twists
+
     dh = normalize_debye_huckel(topo.get("debye_huckel"), topo["mapping"]["site_types"])
     if dh:
         priors["debye_huckel"] = dh
@@ -105,7 +114,7 @@ def main():
         roles[key] = roles.get(key, 0) + 1
     print(f"[INFO] base {base_priors}: {len(kept)} legami tenuti, {removed} contatti sostituiti")
     print(f"[INFO] da {new_topo}: {len(contacts)} contatti {roles}"
-          f"{', DH' if dh else ''}")
+          f"{f', {len(twists)} diedri di torsione' if twists else ''}{', DH' if dh else ''}")
     print(f"[DONE] {new_priors}, {new_rb}")
     print(f"       Solo corse con i soli prior: CLASSICAL=1 DISABLE_ML=1 PRIOR_SET={args.set}")
 

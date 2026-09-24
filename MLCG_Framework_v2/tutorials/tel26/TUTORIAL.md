@@ -638,6 +638,30 @@ Criterio di arresto: |Δmediana| < 0,01 nm e |σ_CG/σ_rif − 1| < 10 % per
 tutte le classi. Lo spostamento di r0 è limitato a 0,05 nm per iterazione e il
 fattore su a a [½, 2]: lontano dal riferimento la correzione non è lineare.
 
+### Torsione fra guanine sovrapposte
+
+La prima iterazione sul b3stack mostra che i 26 contatti hanno già mediane
+entro 0,015 nm e larghezze entro 0,80–1,07 del riferimento: le distanze fra
+basi a contatto sono giuste, e lo scarto della g(r) sta nelle coppie fra basi
+non a contatto (B3 di tetradi diverse), cioè nell'**orientazione relativa**
+delle tetradi impilate. Un contatto fra due siti è una distanza e non vincola
+la rotazione: serve la dipendenza angolare dell'impilamento.
+
+```bash
+python3 fit_tetrad_site_morse.py --dataset tel26_dataset.bin \
+    --topology tel26_topology.b3stack.json --keep-tetrads \
+    --twist CG_DG_B3,CG_DG_B5 --out tel26_topology.b3tw.json
+python3 derive_prior_set.py --base b3stack --set b3tw
+```
+
+Un diedro a coseno B3(i)–B5(i)–B5(j)–B3(j) per ogni coppia di guanine
+sovrapposte (8 per copia): φ0 = media circolare, K = κ kT dal von Mises
+equivalente. `iterate_contacts.py` aggiusta anche i diedri (φ0 e K). La
+convenzione dell'angolo si verifica con
+`pypresso ../../simulation/diagnose_dihedral.py`. Sul TEL22 le torsioni del
+riferimento sono ±21–36° (una fuori scala a 61°), coerenti con la torsione di
+un G-quadruplex.
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:
