@@ -45,10 +45,12 @@ def main():
     ok = True
     worst_f = worst_t = worst_e = 0.0
     offsets = [np.array([0.0, 0.0, 0.0]), np.array([0.25, 0.1, 0.0])]  # sito 0, sito 1 nel corpo
+    # ESPResSo ammette un solo System per processo: lo si riusa, svuotandolo.
+    system = espressomd.System(box_l=[box] * 3)
+    system.time_step = 0.001
+    system.cell_system.skin = 0.3
     for r_target in (0.40, 0.45, 0.52, 0.70, 1.00, 1.35, 1.50):
-        system = espressomd.System(box_l=[box] * 3)
-        system.time_step = 0.001
-        system.cell_system.skin = 0.3
+        system.part.clear()
         com_type = num_species + 1
         mol_com, mol_vs = {}, {}
         # corpo 0: sito 1 a (0.25, 0.1, 0) dal COM; corpo 1: sito 0 sul COM
