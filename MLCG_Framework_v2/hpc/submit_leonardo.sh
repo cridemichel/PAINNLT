@@ -66,6 +66,10 @@ SUBMIT="${FRAMEWORK}/hpc/leonardo_submit.slurm"
 extra_exports=()
 for kv in "$@"; do
     [[ "$kv" == *=* ]] || { echo "[ERROR] argomento non riconosciuto: $kv (atteso VAR=valore)" >&2; exit 2; }
+    # AFTER e' un'opzione della sottomissione, non una variabile del job: passata
+    # come argomento veniva esportata al job e ignorata dalla dipendenza, che la
+    # legge dall'ambiente -- e il job partiva subito.
+    if [[ "${kv%%=*}" == AFTER ]]; then AFTER="${kv#*=}"; continue; fi
     extra_exports+=("$kv")
     # I file di input si controllano QUI, sul login, prima di occupare un nodo:
     # una variabile di shell vuota ($R non definita in una shell nuova) produce
