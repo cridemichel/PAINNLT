@@ -2044,6 +2044,16 @@ with open(args.output, "wb") as f:
                     )
                 f_scalar = - k * diff / (1.0 - (diff/r_max)**2)
 
+            elif b_type == "lj":
+                # Pair-specific Lennard-Jones 12-6, stessa forma di ESPResSo
+                # (lennard_jones fra marker, offset 0): forza nulla oltre r_cut,
+                # lo shift dell'energia non entra nella forza.
+                eps, sig = float(b["epsilon"]), float(b["sigma"])
+                r_cut = float(b["r_cut"])
+                if r < r_cut:
+                    sr6 = (sig / r) ** 6
+                    f_scalar = 24.0 * eps * (2.0 * sr6 * sr6 - sr6) / r
+
             elif b_type == "morse":
                 # Keep the force prior exactly consistent with the reversible
                 # switched Morse used by the ESPResSo runtime.  The underlying
@@ -2074,6 +2084,9 @@ with open(args.output, "wb") as f:
                         d_switch_dr = -30.0*t*t*(1.0-t)*(1.0-t) / width
                         f_scalar = switch * base_force - base_energy * d_switch_dr
 
+
+            elif b_type != "harmonic" and b_type != "fene":
+                raise ValueError(f"tipo di legame non gestito nella sottrazione: {b_type!r}")
 
             f_vec = - f_scalar * r_hat
 

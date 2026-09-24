@@ -36,6 +36,7 @@ from conservative_spline_runtime import create_conservative_spline_interaction
 
 from espresso_interactions import (
     configure_pair_specific_morse,
+    pair_contact_summary,
     configure_pair_specific_morse_bonds,
     create_pair_specific_morse_markers,
     configure_debye_huckel,
@@ -462,7 +463,8 @@ for idx, b in enumerate(priors.get("bonds", [])):
         bond = espressomd.interactions.HarmonicBond(k=b["k"], r_0=b["r0"])
     elif b_type == "fene":
         bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
-    elif b_type == "morse":
+    elif b_type in ("morse", "lj"):
+        # contatti pair-specific: configurati sui marker, non come legami
         continue
     elif b_type == "tabulated":
         data = np.loadtxt(resolve_referenced_path(b["file"], args.priors))
@@ -650,11 +652,11 @@ if args.pair_specific_morse_runtime == "marker-nonbonded":
     )
     for contact in morse_contacts:
         print(
-            "[INFO] Added pair-specific reversible Morse contact "
+            "[INFO] Added pair-specific reversible contact "
             f"{contact['index']}: {contact['mol_i']}:{contact['site_i']} <-> "
             f"{contact['mol_j']}:{contact['site_j']} "
             f"(site=-1 means COM; runtime=marker-nonbonded, mode={args.morse_switch_mode}, "
-            f"r_switch={contact['r_switch']:.6g}, r_cut={contact['r_cut']:.6g})"
+            f"{pair_contact_summary(contact)})"
         )
 else:
     configure_pair_specific_morse_bonds(

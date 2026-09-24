@@ -546,6 +546,39 @@ coincide con il DH ricalcolato indipendentemente entro 2·10⁻⁴ kJ/mol/nm
 
 Poi il solito protocollo con `PRIOR_SET=b3dh`.
 
+### Passo 3 — LJ 12-6 al posto dei Morse
+
+Stessi contatti (Hoogsteen B3–B3 e impilamento B5–B5), forma del modello
+unfoldable:
+
+```bash
+python3 fit_tetrad_site_morse.py --dataset tel26_dataset.bin \
+    --topology tel26_topology.json --form lj --stacking CG_DG_B5 \
+    --out tel26_topology.b3stack_lj.json
+python3 add_debye_huckel.py --topology tel26_topology.b3stack_lj.json \
+    --out tel26_topology.b3dh_lj.json --ions 250 --box 11.91
+```
+
+σ = r0/2^{1/6} (minimo in r0), ε = kT r0²/(72 σ_r²) (curvatura al minimo
+72 ε/r0² = kT/σ_r²), r_cut = 3,5 σ con energia nulla al cutoff. Nel LJ
+profondità e curvatura sono legate: fissata la larghezza osservata la
+profondità segue dal riferimento invece di essere scelta (D = 50 kJ/mol dei
+Morse). Il confronto `b3dh_lj` contro `b3dh` isola la forma del contatto.
+
+Nel runtime i LJ usano gli stessi marker virtuali dei Morse
+(`lennard_jones` fra tipi di marker); nel builder la sottrazione è nel ciclo
+dei legami. Verifiche: sul TEL22 la differenza fra dataset con e senza i 260
+contatti LJ coincide con il LJ ricalcolato entro 3·10⁻⁶ relativo (float32);
+per il runtime
+
+```bash
+pypresso ../../simulation/diagnose_pair_specific_lj.py
+```
+
+confronta forza, coppia ed energia su due corpi rigidi con il kernel del
+builder. Il muro r⁻¹² è molto più ripido del Morse: controllare nel report
+del fit che `p01` delle distanze non cada troppo sotto σ.
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:

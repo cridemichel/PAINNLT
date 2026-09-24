@@ -280,6 +280,46 @@ def configure_debye_huckel(system: Any, dh: dict[str, Any] | None) -> None:
     system.electrostatics.solver = solver
 
 
+def _normalize_lj_contact(prior: dict[str, Any], index: int) -> dict[str, Any]:
+    """Normalize one explicit pair-specific Lennard-Jones 12-6 contact.
+
+    Same endpoint semantics as the Morse contacts (``site=-1`` is the COM).
+    The energy is shifted to zero at ``r_cut`` (ESPResSo ``shift``); the force
+    is the plain 12-6 force, truncated at ``r_cut``.
+    """
+    mol_i = int(prior["mol_i"])
+    mol_j = int(prior["mol_j"])
+    site_i = int(prior.get("site_i", -1))
+    site_j = int(prior.get("site_j", -1))
+    if mol_i < 0 or mol_j < 0 or mol_i == mol_j:
+        raise ValueError(f"LJ bond[{index}] has invalid molecule pair {mol_i} <-> {mol_j}")
+    eps = float(prior["epsilon"])
+    sig = float(prior["sigma"])
+    r_cut = float(prior["r_cut"])
+    if eps < 0.0 or sig <= 0.0:
+        raise ValueError(f"LJ bond[{index}] requires epsilon >= 0 and sigma > 0")
+    if r_cut <= 2.0 ** (1.0 / 6.0) * sig:
+        raise ValueError(
+            f"LJ bond[{index}] cutoff {r_cut} inside the minimum {2.0 ** (1.0 / 6.0) * sig:.4g}"
+        )
+    sr6 = (sig / r_cut) ** 6
+    shift = prior.get("shift", "auto")
+    shift = -(sr6 * sr6 - sr6) if shift in (None, "auto") else float(shift)
+    return {
+        "index": index, "kind": "lj",
+        "mol_i": mol_i, "site_i": site_i, "mol_j": mol_j, "site_j": site_j,
+        "epsilon": eps, "sigma": sig, "r_cut": r_cut, "shift": shift,
+    }
+
+
+def pair_contact_summary(contact: dict[str, Any]) -> str:
+    """One-line description of a pair-specific contact for the run log."""
+    if contact.get("kind") == "lj":
+        return (f"LJ eps={contact['epsilon']:.4g} sigma={contact['sigma']:.4g} "
+                f"r_cut={contact['r_cut']:.6g}")
+    return f"Morse r_switch={contact['r_switch']:.6g}, r_cut={contact['r_cut']:.6g}"
+
+
 def prepare_pair_specific_morse(
     priors: dict[str, Any], num_species: int
 ) -> tuple[dict[tuple[int, int], int], list[dict[str, Any]]]:
@@ -304,9 +344,13 @@ def prepare_pair_specific_morse(
     seen_pairs: dict[tuple[tuple[int, int], tuple[int, int]], int] = {}
     endpoints: set[tuple[int, int]] = set()
     for index, prior in enumerate(priors.get("bonds", [])):
-        if str(prior.get("type", "harmonic")).lower() != "morse":
+        kind = str(prior.get("type", "harmonic")).lower()
+        if kind == "morse":
+            contact = {**_normalize_morse_contact(prior, index), "kind": "morse"}
+        elif kind == "lj":
+            contact = _normalize_lj_contact(prior, index)
+        else:
             continue
-        contact = _normalize_morse_contact(prior, index)
         endpoint_i = (contact["mol_i"], contact["site_i"])
         endpoint_j = (contact["mol_j"], contact["site_j"])
         pair = tuple(sorted((endpoint_i, endpoint_j)))
@@ -400,6 +444,11 @@ def configure_pair_specific_morse_bonds(
     comparable but absolute total-energy offsets are not.
     """
     for contact in contacts:
+        if contact.get("kind") == "lj":
+            raise NotImplementedError(
+                "the bonded-analytic diagnostic runtime supports Morse contacts only; "
+                "pair-specific LJ contacts need --pair_specific_morse_runtime marker-nonbonded"
+            )
         endpoint_i = (int(contact["mol_i"]), int(contact["site_i"]))
         endpoint_j = (int(contact["mol_j"]), int(contact["site_j"]))
 
@@ -439,6 +488,15 @@ def configure_pair_specific_morse(
         endpoint_j = (contact["mol_j"], contact["site_j"])
         type_i = marker_types[endpoint_i]
         type_j = marker_types[endpoint_j]
+        if contact.get("kind") == "lj":
+            # Stesso trasporto sui marker dei Morse, forma 12-6 standard.
+            system.non_bonded_inter[type_i, type_j].lennard_jones.set_params(
+                epsilon=float(contact["epsilon"]),
+                sigma=float(contact["sigma"]),
+                cutoff=float(contact["r_cut"]),
+                shift=float(contact["shift"]),
+            )
+            continue
         try:
             morse = system.non_bonded_inter[type_i, type_j].morse
         except AttributeError as exc:
