@@ -109,21 +109,25 @@ def main():
     for _, b in contacts:
         by_site[int(b["site_i"])].add(int(b["mol_i"]))
         by_site[int(b["site_j"])].add(int(b["mol_j"]))
-    twists = [(k, d) for k, d in enumerate(topo.get("dihedrals", [])) if d.get("role") == "twist"]
+    twists = [(k, d) for k, d in enumerate(topo.get("dihedrals", []))
+              if d.get("role") in ("twist", "backbone")]
     for _, d in twists:
         for x in "ijkl":
             by_site[int(d[f"site_{x}"])].add(int(d[f"mol_{x}"]))
+    # posizioni per INDICE di sito (il tipo puo' cambiare fra molecole: il sito 0
+    # e' DA, DT o lo S di DG)
     ref_xyz = {}
+    fbase = ref.frames[:, None] * ref.length
     for s, mols in by_site.items():
         mols = sorted(mols)
-        w_type = None
-        # il tipo del sito s: dalla prima molecola, dal dataset
-        w, ns = ref.mols[mols[0]]
-        w_type = int(ref.words_i[w + 4 * s])
-        xyz, col, idx = ref.site(mols, w_type, f"indice {s}")
-        if any(v != s for v in idx.values()):
-            sys.exit(f"[ERROR] sito {s}: il tipo {w_type} non sta sempre allo stesso indice")
-        ref_xyz[s] = (xyz, col)
+        xyz = np.empty((ref.frames.size, len(mols), 3))
+        for c, m in enumerate(mols):
+            w, ns = ref.mols[m]
+            if s >= ns:
+                sys.exit(f"[ERROR] la molecola {m} non ha il sito di indice {s}")
+            word = w + 4 * s + 1
+            xyz[:, c] = np.stack([ref.words_f[fbase[:, 0] + word + k] for k in range(3)], axis=-1)
+        ref_xyz[s] = (xyz, {m: c for c, m in enumerate(mols)})
     for _, b in contacts:
         i, j, si, sj = int(b["mol_i"]), int(b["mol_j"]), int(b["site_i"]), int(b["site_j"])
         xi, ci = ref_xyz[si]
@@ -133,7 +137,7 @@ def main():
         ref_samples[key(b)].append(np.linalg.norm(d, axis=1))
 
     def dkey(d):
-        return ("twist", int(d["mol_i"]) % nuc + 1, int(d["mol_l"]) % nuc + 1)
+        return (d.get("role"), int(d["mol_i"]) % nuc + 1, int(d["mol_l"]) % nuc + 1)
 
     ref_phi = defaultdict(list)
     for _, d in twists:
@@ -228,15 +232,16 @@ def main():
         ok_all &= bool(ok.all())
         print(f"  {role:<10}{len(sts):7d}{dm.max():12.4f}{np.median(dm):12.4f}"
               f"{rs.min():8.2f}-{rs.max():<8.2f}{int(ok.sum()):>6d}/{len(sts)}")
-    if tstats:
+    for role in sorted({k[0] for k in tstats}):
+        sts = [v for k, v in tstats.items() if k[0] == role]
         dph = np.array([abs(math.degrees(math.atan2(math.sin(s["phi_ref"] - s["phi_cg"]),
                                                     math.cos(s["phi_ref"] - s["phi_cg"]))))
-                        for s in tstats.values()])
-        rs = np.array([s["std_cg"] / s["std_ref"] for s in tstats.values()])
+                        for s in sts])
+        rs = np.array([s["std_cg"] / s["std_ref"] for s in sts])
         ok = (dph < args.tol_phi) & (np.abs(rs - 1.0) < args.tol_s)
         ok_all &= bool(ok.all())
-        print(f"  {'twist':<10}{len(tstats):7d}{dph.max():11.1f}°{np.median(dph):11.1f}°"
-              f"{rs.min():8.2f}-{rs.max():<8.2f}{int(ok.sum()):>6d}/{len(tstats)}")
+        print(f"  {role:<10}{len(sts):7d}{dph.max():11.1f}°{np.median(dph):11.1f}°"
+              f"{rs.min():8.2f}-{rs.max():<8.2f}{int(ok.sum()):>6d}/{len(sts)}")
     worst = sorted(stats.items(), key=lambda kv: -abs(kv[1]["med_ref"] - kv[1]["med_cg"]))[:5]
     print("\n  classi piu' lontane (ruolo, res_i, sito_i, res_j, sito_j): mediana rif / CG, sigma rif / CG")
     for k, st in worst:

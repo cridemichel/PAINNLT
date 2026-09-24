@@ -681,6 +681,24 @@ bash hpc/submit_leonardo.sh iterate SYSTEM=tel26 AFTER=<job della corsa b3tw> \
 correzione applicata; `BASE_SET` (default b3stack) l'insieme da cui vengono
 legami, angoli e WCA.
 
+### Diedri di backbone
+
+Con contatti e torsione a convergenza (catene twA, twB) la P(r) intra passa
+solo da 0,938 a 0,944: lo scarto residuo sta nei loop (coppie con DA e DT le
+peggiori, S–S a 1,2–2 nm piatto, copia troppo estesa oltre 1,4 nm). Per il
+backbone ci sono solo legami e angoli; `fit_backbone_dihedrals.py` aggiunge un
+diedro a coseno sul sito di backbone (indice 0) di ogni quaterna di nucleotidi
+consecutivi, 23 per copia, con φ0 e K dal riferimento (K ≤ 100 kT). Una
+distribuzione multimodale dà un K piccolo: il termine resta debole invece di
+forzare uno stato. `derive_prior_set.py` e `iterate_contacts.py` trattano i
+diedri con role `backbone` come quelli `twist`.
+
+```bash
+python3 fit_backbone_dihedrals.py --dataset tel26_dataset.bin \
+    --topology tel26_topology.twA2.json --out tel26_topology.bbd0.json
+python3 derive_prior_set.py --base b3stack --set bbd0
+```
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:
