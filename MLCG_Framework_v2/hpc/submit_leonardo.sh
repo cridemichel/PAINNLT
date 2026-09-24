@@ -67,7 +67,19 @@ extra_exports=()
 for kv in "$@"; do
     [[ "$kv" == *=* ]] || { echo "[ERROR] argomento non riconosciuto: $kv (atteso VAR=valore)" >&2; exit 2; }
     extra_exports+=("$kv")
+    # I file di input si controllano QUI, sul login, prima di occupare un nodo:
+    # una variabile di shell vuota ($R non definita in una shell nuova) produce
+    # percorsi come "/prod-1.part0001.xtc", e il job fallisce dopo la coda.
+    case "${kv%%=*}" in
+        AA_TOPOLOGY|AA_TRAJECTORY|AA_FORCES_TRAJECTORY|AA_FORCES_TOPOLOGY)
+            [[ -f "${kv#*=}" ]] || { echo "[ERROR] ${kv%%=*}: file inesistente: '${kv#*=}'" >&2; exit 2; }
+            ;;
+    esac
 done
+if [[ -n "${LD_PRELOAD:-}" ]]; then
+    echo "[submit] ATTENZIONE: LD_PRELOAD=${LD_PRELOAD} finira' nel job (--export=ALL)." >&2
+    echo "[submit]             Se era solo per un test sul login: unset LD_PRELOAD" >&2
+fi
 
 export_list="ALL,STAGE=${STAGE},PROJECT_ROOT=${PROJECT_ROOT},FRAMEWORK=${FRAMEWORK}"
 for kv in ${extra_exports[@]+"${extra_exports[@]}"}; do
