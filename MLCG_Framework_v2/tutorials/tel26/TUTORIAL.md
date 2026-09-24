@@ -509,6 +509,43 @@ vincolo reversibile alla geometria del riferimento, non un contatto fisico.
 
 Poi lo stesso protocollo con `PRIOR_SET=b3stack`.
 
+### Passo 2 — repulsione elettrostatica fra i backbone (Debye–Hückel)
+
+Risultato del passo 1b (seconda metà di 100 ps): i **soli prior b3stack**
+sono i migliori sui canali strutturali — B3–B3 0,722, B5–B5 0,842, S–S 0,838 —
+meglio di ogni corsa con ML. Il ML sopra il b3morse porta il totale a 0,95 ma
+**attacca le copie fra loro** (S–S inter 0,2–0,48 fra 0,7 e 1,1 nm, contro 0,04
+del riferimento) e peggiora l'S–S intra. Nessuna corsa riproduce la struttura
+dell'S–S intra a 1,2–2 nm (loop).
+
+Ai prior manca l'elettrostatica: fra copie e fra siti S lontani agisce solo la
+WCA. Il passo 2 aggiunge un Debye–Hückel fra i siti di backbone (sito unico di
+DA/DT, sito S di DG), carica −1, λ_D dagli ioni del riferimento:
+
+```bash
+python3 add_debye_huckel.py --topology tel26_topology.b3stack.json \
+    --out tel26_topology.b3dh.json --ions 250 --box 11.91
+```
+
+250 K⁺ in 11,91 nm → I = 0,123 M, λ_D = 0,87 nm a 300 K; U(1 nm) = 0,23 kT.
+
+**Il DH agisce su tutte le coppie cariche, legate comprese.** ESPResSo non
+applica le esclusioni di particella all'elettrostatica (il kernel Coulomb è
+fuori dal controllo `do_nonbonded`), quindi il builder sottrae la stessa somma
+senza esclusioni. Sui primi vicini la forza è ~4 kJ/mol/nm: sposta la
+lunghezza del legame di ~10⁻³ nm. La coerenza si verifica con
+
+```bash
+pypresso ../../simulation/diagnose_debye_huckel.py --priors cg_priors.b3dh.json
+```
+
+che confronta forze ed energie ESPResSo con il kernel del dataset e controlla
+che le esclusioni non spengano il DH. Sul TEL22 la sottrazione nel dataset
+coincide con il DH ricalcolato indipendentemente entro 2·10⁻⁴ kJ/mol/nm
+(precisione float32 del file).
+
+Poi il solito protocollo con `PRIOR_SET=b3dh`.
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:

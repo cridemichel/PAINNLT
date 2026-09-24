@@ -10,7 +10,9 @@ from conservative_spline import (
     load_conservative_spline,
 )
 from prior_kernels import (
+    debye_huckel_radial_force_array,
     load_tabulated_prior,
+    normalize_debye_huckel,
     switched_morse_radial_force_array,
     tabulated_angle_forces,
     tabulated_dihedral_forces,
@@ -183,6 +185,18 @@ BONDS = copy.deepcopy(config_data.get("bonds", []))
 MORSE_TYPE_PAIRS = normalize_morse_type_pairs(
     copy.deepcopy(config_data.get("morse_type_pairs", [])), site_types.values()
 )
+# Debye-Hueckel fra siti carichi (ioni impliciti).  Vedi
+# prior_kernels.normalize_debye_huckel: agisce su TUTTE le coppie di siti carichi
+# di molecole diverse, perche' ESPResSo non applica le esclusioni
+# all'elettrostatica; la sottrazione qui sotto fa lo stesso.
+DEBYE_HUCKEL = normalize_debye_huckel(config_data.get("debye_huckel"), site_types)
+if DEBYE_HUCKEL:
+    print(
+        "[INFO] Debye-Hueckel: cariche per tipo "
+        f"{DEBYE_HUCKEL['charges_by_type']}, prefactor={DEBYE_HUCKEL['prefactor']:.4f} "
+        f"kJ/mol nm, lambda_D={1.0 / DEBYE_HUCKEL['kappa']:.3f} nm, "
+        f"r_cut={DEBYE_HUCKEL['r_cut']:.3f} nm"
+    )
 if MORSE_TYPE_PAIRS and any(
     isinstance(b, dict) and str(b.get("type", "")).lower() == "morse"
     for b in BONDS
@@ -1316,6 +1330,11 @@ if args.priors:
     derived_priors["morse_type_pairs"] = normalize_morse_type_pairs(
         copy.deepcopy(derived_priors.get("morse_type_pairs", [])), site_types.values()
     )
+    _dh_loaded = normalize_debye_huckel(derived_priors.get("debye_huckel"))
+    if _dh_loaded:
+        derived_priors["debye_huckel"] = _dh_loaded
+    else:
+        derived_priors.pop("debye_huckel", None)
     exclusion_meta = derived_priors.get("wca_exclusions", {})
     if not (
         exclusion_meta.get("policy_version") == 3
@@ -1371,6 +1390,7 @@ if derived_priors is None:
     derived_priors = {
         "bonds": [],
         "morse_type_pairs": copy.deepcopy(MORSE_TYPE_PAIRS),
+        **({"debye_huckel": copy.deepcopy(DEBYE_HUCKEL)} if DEBYE_HUCKEL else {}),
         "wca": {
             "sigma": WCA_SIGMA_VAL,
             "epsilon": WCA_EPSILON if WCA_EPSILON > 0 else 1000.0,
@@ -1740,6 +1760,38 @@ else:
     morse_D_all = morse_a_all = morse_r0_all = np.empty(0, dtype=np.float64)
     morse_switch_all = morse_cut_all = np.empty(0, dtype=np.float64)
 
+# Debye-Hueckel: coppie di siti carichi di molecole diverse, SENZA esclusioni
+# (ESPResSo non le applica all'elettrostatica).  Topologia fissa: si calcola
+# una volta, per frame restano distanze e kernel.
+dh_prior = derived_priors.get("debye_huckel")
+if dh_prior:
+    _dh_mol, _dh_type = [], []
+    for m_idx, sites in enumerate(sites_data_history[0]):
+        for s_type, _ in sites:
+            _dh_mol.append(m_idx)
+            _dh_type.append(int(s_type))
+    _dh_mol = np.asarray(_dh_mol, dtype=np.int64)
+    _dh_type = np.asarray(_dh_type, dtype=np.int64)
+    _dh_charges = {int(k): float(v) for k, v in dh_prior["charges_by_type"].items()}
+    _dh_q_flat = np.asarray([_dh_charges.get(int(t), 0.0) for t in _dh_type])
+    dh_sites = np.flatnonzero(_dh_q_flat != 0.0)
+    _a, _b = np.triu_indices(dh_sites.size, k=1)
+    dh_pair_i, dh_pair_j = dh_sites[_a], dh_sites[_b]
+    _keep = _dh_mol[dh_pair_i] != _dh_mol[dh_pair_j]
+    dh_pair_i, dh_pair_j = dh_pair_i[_keep], dh_pair_j[_keep]
+    dh_q1q2 = _dh_q_flat[dh_pair_i] * _dh_q_flat[dh_pair_j]
+    dh_mol_i, dh_mol_j = _dh_mol[dh_pair_i], _dh_mol[dh_pair_j]
+    dh_prefactor = float(dh_prior["prefactor"])
+    dh_kappa = float(dh_prior["kappa"])
+    dh_r_cut = float(dh_prior["r_cut"])
+    dh_force_norms = []
+    print(
+        f"[INFO] Debye-Hueckel kernel: {dh_sites.size} siti carichi, "
+        f"{dh_pair_i.size} coppie (nessuna esclusione), r_cut={dh_r_cut:.3f} nm"
+    )
+else:
+    dh_pair_i = np.empty(0, dtype=np.int64)
+
 with open(args.output, "wb") as f:
     num_frames = len(cg_centers_history)
     f.write(struct.pack("i", num_frames))
@@ -1875,6 +1927,61 @@ with open(args.output, "wb") as f:
                 lever_j = flat_pos[j_idx] - frame_centers_arr[mol_j]
                 np.add.at(res_torques, mol_i, -np.cross(lever_i, f_vec))
                 np.add.at(res_torques, mol_j, +np.cross(lever_j, f_vec))
+
+        # 3.1.2 Sottrazione Debye-Hueckel sui siti carichi.
+        if dh_pair_i.size:
+            dh_pos = np.asarray(
+                [s_pos for sites in frame_sites for _, s_pos in sites], dtype=np.float64
+            )
+            dh_centers = np.asarray(frame_centers, dtype=np.float64)
+            dh_diff = dh_pos[dh_pair_i] - dh_pos[dh_pair_j]
+            dh_diff -= box_dim * np.round(dh_diff / box_dim)
+            dh_r = np.sqrt(np.einsum("ij,ij->i", dh_diff, dh_diff))
+            active_idx = np.flatnonzero((dh_r > 1.0e-6) & (dh_r < dh_r_cut))
+            if active_idx.size:
+                r = dh_r[active_idx]
+                f_scalar = debye_huckel_radial_force_array(
+                    r, dh_q1q2[active_idx], dh_prefactor, dh_kappa, dh_r_cut
+                )
+                f_vec = f_scalar[:, None] * (dh_diff[active_idx] / r[:, None])
+                mol_i = dh_mol_i[active_idx]
+                mol_j = dh_mol_j[active_idx]
+                np.add.at(res_forces, mol_i, -f_vec)
+                np.add.at(res_forces, mol_j, +f_vec)
+                lever_i = dh_pos[dh_pair_i[active_idx]] - dh_centers[mol_i]
+                lever_j = dh_pos[dh_pair_j[active_idx]] - dh_centers[mol_j]
+                np.add.at(res_torques, mol_i, -np.cross(lever_i, f_vec))
+                np.add.at(res_torques, mol_j, +np.cross(lever_j, f_vec))
+                if ts_idx % 50 == 0:
+                    # campione: ~3e4 coppie per frame, tutte in lista sarebbero GB
+                    dh_force_norms.extend(np.linalg.norm(f_vec, axis=1).tolist())
+
+                if ts_idx == 0:
+                    # Controllo indipendente sul primo frame: doppio ciclo
+                    # esplicito sulle coppie attive, stessa fisica.
+                    chk_f = np.zeros_like(res_forces)
+                    for k in active_idx:
+                        a_, b_ = int(dh_pair_i[k]), int(dh_pair_j[k])
+                        d = dh_pos[a_] - dh_pos[b_]
+                        d -= box_dim * np.round(d / box_dim)
+                        rr = float(np.linalg.norm(d))
+                        ff = (dh_prefactor * dh_q1q2[k] * np.exp(-dh_kappa * rr)
+                              * (1.0 + dh_kappa * rr) / (rr * rr))
+                        chk_f[dh_mol_i[k]] += ff * d / rr
+                        chk_f[dh_mol_j[k]] -= ff * d / rr
+                    vec_f = np.zeros_like(res_forces)
+                    np.add.at(vec_f, mol_i, f_vec)
+                    np.add.at(vec_f, mol_j, -f_vec)
+                    err = float(np.max(np.abs(vec_f - chk_f)))
+                    scale = float(np.max(np.abs(chk_f))) or 1.0
+                    if err > 1.0e-9 * max(scale, 1.0):
+                        raise RuntimeError(
+                            f"Debye-Hueckel: kernel vettoriale e controllo divergono ({err:.3e})"
+                        )
+                    print(
+                        f"\n[INFO] Debye-Hueckel frame 0: {active_idx.size} coppie attive, "
+                        f"forza per molecola max {scale:.3f} kJ/mol/nm, controllo ok"
+                    )
 
         # 3.2 Sottrazione Legami (con supporto per siti specifici e momento torcente)
         for b_idx, b in enumerate(derived_priors["bonds"]):
@@ -2150,6 +2257,8 @@ def _print_force_percentiles(label, values):
 print("\n[INFO] Diagnostica forze sui frame fisici (prima di eventuale clipping):")
 _print_force_percentiles("|F_reference|", reference_force_norms)
 _print_force_percentiles("|F_WCA pair contribution|", wca_force_norms)
+if dh_pair_i.size and dh_force_norms:
+    _print_force_percentiles("|F_Debye-Hueckel pair contribution|", dh_force_norms)
 _print_force_percentiles("|F_ML,target residual|", residual_force_norms)
 
 print("\n[INFO] Coda delle forze WCA per type-pair:")

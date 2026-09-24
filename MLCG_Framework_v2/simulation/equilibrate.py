@@ -27,9 +27,11 @@ from conservative_spline_runtime import create_conservative_spline_interaction
 from espresso_interactions import (
     configure_pair_specific_morse,
     create_pair_specific_morse_markers,
+    configure_debye_huckel,
     configure_type_pair_morse,
     max_type_pair_morse_cutoff,
     prepare_pair_specific_morse,
+    prepare_debye_huckel,
     prepare_type_pair_morse,
 )
 
@@ -101,6 +103,15 @@ morse_marker_types, morse_contacts = prepare_pair_specific_morse(
     priors, nn_config["num_species"]
 )
 morse_type_pairs = prepare_type_pair_morse(priors, nn_config["num_species"])
+# Debye-Hueckel fra siti carichi (ioni impliciti): cariche sui siti fisici,
+# nessuna esclusione (ESPResSo non le applica all'elettrostatica).
+debye_huckel = prepare_debye_huckel(priors)
+if debye_huckel:
+    print(
+        f"[INFO] Debye-Hueckel: cariche per tipo {debye_huckel['charges']}, "
+        f"prefactor={debye_huckel['prefactor']:.4f} kJ/mol nm, "
+        f"lambda_D={1.0 / debye_huckel['kappa']:.3f} nm, r_cut={debye_huckel['r_cut']:.3f} nm"
+    )
 if morse_contacts and morse_type_pairs:
     print(
         "[WARNING] Both pair-specific Morse contacts and site type-pair Morse "
@@ -170,6 +181,8 @@ with open(args.dataset, "rb") as f:
             # Virtual sites must have near-zero mass/inertia to not inflate the total system mass.
             # ESPResSo requires mass > 0, so we use 1e-5.
             p_vs = system.part.add(pos=spos, type=stype, mass=1e-5, rinertia=[1e-5, 1e-5, 1e-5], mol_id=mol_idx)
+            if debye_huckel and int(stype) in debye_huckel["charges"]:
+                p_vs.q = debye_huckel["charges"][int(stype)]
             p_vs.virtual = True
             p_vs.vs_auto_relate_to(p_com.id)
             p_vs.gamma = 0.0
@@ -382,7 +395,17 @@ regular_cutoff = max(
     float(nn_config.get("cutoff", 0.0)),
     max((float(item.get("cutoff_nm", 0.0)) for item in priors.get("wca_pairs", {}).values()), default=0.0),
     max_type_pair_morse_cutoff(morse_type_pairs),
+    # Il DH agisce sui siti fisici, lato regolare della decomposizione ibrida:
+    # con un cutoff_regular piu' corto le coppie oltre verrebbero perse in silenzio.
+    float(debye_huckel["r_cut"]) if debye_huckel else 0.0,
 )
+if debye_huckel:
+    _dh_required = 2.0 * (float(debye_huckel["r_cut"]) + float(system.cell_system.skin))
+    if min(system.box_l) <= _dh_required:
+        raise ValueError(
+            f"Debye-Hueckel r_cut={debye_huckel['r_cut']:.4g} nm troppo lungo per la scatola "
+            f"{list(system.box_l)}: serve box > {_dh_required:.4g} nm"
+        )
 # Pair-specific Morse contacts use dedicated technical marker types on the
 # N-square side of the hybrid decomposition. Type-pair Morse acts on ordinary
 # physical CG site types and therefore contributes to the regular cutoff above.
@@ -414,6 +437,11 @@ configure_neighbor_search(
 # explicit regular-cutoff validation below authoritative instead of letting the
 # default cell system reject the interaction first.
 configure_type_pair_morse(system, morse_type_pairs)
+configure_debye_huckel(system, debye_huckel)
+if debye_huckel:
+    _n_q = sum(1 for p in system.part if abs(float(p.q)) > 0.0)
+    print(f"[INFO] Debye-Hueckel attivo su {_n_q} siti carichi (carica totale "
+          f"{sum(float(p.q) for p in system.part):.1f})")
 for item in morse_type_pairs:
     print(
         "[INFO] Added type-pair reversible Morse interaction "

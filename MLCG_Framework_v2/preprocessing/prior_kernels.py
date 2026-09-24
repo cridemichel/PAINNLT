@@ -72,6 +72,105 @@ def switched_morse_radial_force_array(r, D, a, r0, r_switch, r_cut):
     return force
 
 
+# Coulomb constant e^2 / (4 pi eps0) in kJ/mol nm (CODATA 2018, GROMACS value).
+COULOMB_KJ_MOL_NM = 138.935458
+
+
+def normalize_debye_huckel(config, site_types=None):
+    """Validate a Debye-Hueckel prior and return it in runtime form.
+
+    Accepts the topology form, with charges keyed by CG site-type NAME and
+    physical parameters::
+
+        {"charges": {"CG_DA": -1, "CG_DT": -1, "CG_DG_S": -1},
+         "debye_length_nm": 0.9, "epsilon_r": 78.0, "r_cut_nm": 3.5}
+
+    or the already normalized priors form, with ``charges_by_type`` keyed by
+    the integer site type and ``prefactor``/``kappa``/``r_cut``.  Returns None
+    when the prior is absent.  The runtime form mirrors the ESPResSo DH
+    solver: U = prefactor q_i q_j exp(-kappa r) / r for r < r_cut, zero
+    beyond (no shift), applied to EVERY pair of charged particles -- ESPResSo
+    does not apply particle exclusions to electrostatics.
+    """
+    if not config:
+        return None
+    cfg = dict(config)
+    if "charges_by_type" in cfg:
+        charges = {int(k): float(v) for k, v in cfg["charges_by_type"].items()}
+        prefactor = float(cfg["prefactor"])
+        kappa = float(cfg["kappa"])
+        r_cut = float(cfg["r_cut"])
+        epsilon_r = cfg.get("epsilon_r")
+        debye_length = cfg.get("debye_length_nm")
+    else:
+        if site_types is None:
+            raise ValueError("debye_huckel: charges by name need the site_types mapping")
+        charges = {}
+        for name, q in dict(cfg.get("charges", {})).items():
+            if name not in site_types:
+                raise ValueError(
+                    f"debye_huckel: unknown CG site type {name!r}; known: {sorted(site_types)}"
+                )
+            charges[int(site_types[name])] = float(q)
+        epsilon_r = float(cfg.get("epsilon_r", 78.0))
+        debye_length = float(cfg["debye_length_nm"])
+        if epsilon_r <= 0.0 or debye_length <= 0.0:
+            raise ValueError("debye_huckel: epsilon_r and debye_length_nm must be positive")
+        prefactor = COULOMB_KJ_MOL_NM / epsilon_r
+        kappa = 1.0 / debye_length
+        r_cut = float(cfg.get("r_cut_nm", 4.0 * debye_length))
+    charges = {t: q for t, q in charges.items() if q != 0.0}
+    if not charges:
+        raise ValueError("debye_huckel: no non-zero charges")
+    if prefactor <= 0.0 or kappa < 0.0 or r_cut <= 0.0:
+        raise ValueError(
+            f"debye_huckel: invalid prefactor={prefactor}, kappa={kappa}, r_cut={r_cut}"
+        )
+    out = {
+        "charges_by_type": {str(t): q for t, q in sorted(charges.items())},
+        "prefactor": prefactor,
+        "kappa": kappa,
+        "r_cut": r_cut,
+        "exclusions": "none (ESPResSo electrostatics ignores particle exclusions)",
+    }
+    if epsilon_r is not None:
+        out["epsilon_r"] = float(epsilon_r)
+    if debye_length is not None:
+        out["debye_length_nm"] = float(debye_length)
+    return out
+
+
+def debye_huckel_radial_force_array(r, q1q2, prefactor, kappa, r_cut):
+    """Signed radial Debye-Hueckel force, same convention as the Morse kernel.
+
+    Mirrors ESPResSo's DH kernel: F = prefactor q1 q2 exp(-kappa r)
+    (1 + kappa r) / r^2 for r < r_cut, zero beyond.  Positive = repulsive
+    (force on the first particle along the vector from the second).
+    """
+    r = np.asarray(r, dtype=np.float64)
+    q1q2 = np.asarray(q1q2, dtype=np.float64)
+    force = np.zeros_like(r)
+    active = r < r_cut
+    if np.any(active):
+        rr = r[active]
+        force[active] = (
+            prefactor * q1q2[active] * np.exp(-kappa * rr) * (1.0 + kappa * rr) / (rr * rr)
+        )
+    return force
+
+
+def debye_huckel_energy_array(r, q1q2, prefactor, kappa, r_cut):
+    """Debye-Hueckel pair energy matching :func:`debye_huckel_radial_force_array`."""
+    r = np.asarray(r, dtype=np.float64)
+    q1q2 = np.asarray(q1q2, dtype=np.float64)
+    energy = np.zeros_like(r)
+    active = r < r_cut
+    if np.any(active):
+        rr = r[active]
+        energy[active] = prefactor * q1q2[active] * np.exp(-kappa * rr) / rr
+    return energy
+
+
 def resolve_tabulated_path(filename: str | Path, priors_path: str | Path | None = None) -> Path:
     """Resolve a table path relative to the JSON file that references it."""
     path = Path(filename).expanduser()

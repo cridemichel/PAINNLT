@@ -235,6 +235,51 @@ def max_type_pair_morse_cutoff(interactions: list[dict[str, Any]]) -> float:
     return max((float(item["r_cut"]) for item in interactions), default=0.0)
 
 
+def prepare_debye_huckel(priors: dict[str, Any]) -> dict[str, Any] | None:
+    """Read the Debye-Hueckel prior written by build_cg_dataset.py.
+
+    Returns None when the priors carry no ``debye_huckel`` block.  The charges
+    are keyed by the physical CG site type; the runtime puts them on the
+    physical virtual sites, never on COM particles or Morse markers.
+    ESPResSo applies electrostatics to EVERY pair of charged particles --
+    particle exclusions do not reach the Coulomb kernel -- and the dataset
+    builder subtracts the same all-pairs sum.
+    """
+    dh = priors.get("debye_huckel")
+    if not dh:
+        return None
+    charges = {
+        int(k): float(v) for k, v in dict(dh["charges_by_type"]).items() if float(v) != 0.0
+    }
+    prefactor = float(dh["prefactor"])
+    kappa = float(dh["kappa"])
+    r_cut = float(dh["r_cut"])
+    if not charges:
+        raise ValueError("debye_huckel prior without non-zero charges")
+    if not (prefactor > 0.0 and kappa >= 0.0 and r_cut > 0.0):
+        raise ValueError(
+            f"invalid debye_huckel prior: prefactor={prefactor}, kappa={kappa}, r_cut={r_cut}"
+        )
+    return {"charges": charges, "prefactor": prefactor, "kappa": kappa, "r_cut": r_cut}
+
+
+def configure_debye_huckel(system: Any, dh: dict[str, Any] | None) -> None:
+    """Activate ESPResSo's DH solver with the parameters of the prior."""
+    if not dh:
+        return
+    try:
+        import espressomd.electrostatics as electrostatics
+    except ImportError as exc:  # pragma: no cover - depends on the build
+        raise RuntimeError(
+            "Debye-Hueckel prior requested but espressomd.electrostatics is unavailable; "
+            "enable ELECTROSTATICS in myconfig.hpp and rebuild ESPResSo."
+        ) from exc
+    solver = electrostatics.DH(
+        prefactor=float(dh["prefactor"]), kappa=float(dh["kappa"]), r_cut=float(dh["r_cut"])
+    )
+    system.electrostatics.solver = solver
+
+
 def prepare_pair_specific_morse(
     priors: dict[str, Any], num_species: int
 ) -> tuple[dict[tuple[int, int], int], list[dict[str, Any]]]:
