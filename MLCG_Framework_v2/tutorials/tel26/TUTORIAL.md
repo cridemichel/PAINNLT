@@ -579,6 +579,41 @@ confronta forza, coppia ed energia su due corpi rigidi con il kernel del
 builder. Il muro r⁻¹² è molto più ripido del Morse: controllare nel report
 del fit che `p01` delle distanze non cada troppo sotto σ.
 
+### Struttura della copia e interazioni fra copie: due problemi separati
+
+Nel riferimento le copie quasi non si toccano (g(r) inter < 0,15 fino a
+2 nm): la struttura di un TEL26 e le interazioni fra TEL26 si studiano
+separatamente. Il DH a carica piena svuota l'inter fino a 2 nm ma non cambia
+l'intra (b3dh sovrapposto a b3stack in tutti i canali): è un parametro
+dell'inter, e lo si riprende dopo. Per ora il bersaglio è la **P(r) intra per
+canale**.
+
+**Ciclo veloce per i soli prior.** Una corsa con i soli prior non ha bisogno
+del dataset: i prior che cambiano sono i contatti pair-specific, e legami,
+angoli e WCA restano quelli dell'insieme di partenza.
+
+```bash
+python3 fit_tetrad_site_morse.py --dataset tel26_dataset.bin \
+    --topology tel26_topology.json --stacking CG_DG_B5 --stacking-mode core \
+    --out tel26_topology.b3core.json
+python3 derive_prior_set.py --base b3stack --set b3core
+```
+
+`derive_prior_set.py` scrive `cg_priors.b3core.json` e
+`rigid_bodies_info.b3core.json` sostituendo tutti i contatti; il dataset
+`tel26_b3core_dataset.bin` non esiste, e 04/05 prendono la configurazione
+iniziale da `tel26_dataset.bin` finché il ML non è attivo. 03 si rifiuta di
+allenare senza il dataset proprio: quando un insieme merita il ML, si
+costruisce con lo stadio dataset.
+
+**`--stacking-mode`**: `tract` (default, 8 coppie per copia: guanine
+sovrapposte dello stesso tratto), `layers` (48: tutte le coppie di tetradi
+diverse), `core` (66: anche nel piano). `core` è una rete elastica sul nucleo
+di guanine: vincola l'impilamento fra tratti diversi e l'orientazione delle
+basi, cioè i picchi B5–B5 a 0,75–1,27 nm che con `tract` si fondono.
+`--stack-D` ne regola la profondità indipendentemente dai contatti di
+Hoogsteen.
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:

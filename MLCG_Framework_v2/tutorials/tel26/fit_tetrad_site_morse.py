@@ -15,7 +15,7 @@ PERCHE'
     larghezza della sua distribuzione.  I Morse restano pair-specific e
     reversibili: una tetrade puo' ancora aprirsi.
 
-L'IMPILAMENTO (--stacking SITO)
+L'IMPILAMENTO (--stacking SITO, --stacking-mode tract|layers|core)
     Con i soli Morse di Hoogsteen le tetradi si formano ma non restano
     impilate: sul TEL26 il picco B5-B5 a 0.42 nm (guanine sovrapposte di
     tetradi adiacenti) sparisce, e il B3-B3 intra acquista una coda fino a
@@ -26,6 +26,12 @@ L'IMPILAMENTO (--stacking SITO)
     fra le coppie (g, h) con g e h in tetradi diverse e |g - h| = 1: stesso
     tratto, residui consecutivi.  Sono 8 per copia con tre tetradi.  I
     parametri si stimano come per i contatti di Hoogsteen.
+    --stacking-mode layers estende a tutte le coppie di guanine di tetradi
+    diverse (48 per copia con tre tetradi), core anche alle coppie nel piano
+    (66): una rete elastica sul nucleo di guanine, che vincola anche
+    l'orientazione delle basi e l'impilamento fra tratti diversi.  Sono
+    vincoli reversibili alla geometria del riferimento; --stack-D ne regola la
+    profondita' indipendentemente dai contatti di Hoogsteen.
     Con --keep-tetrads i Morse delle tetradi gia' presenti restano come sono:
     serve per aggiungere l'impilamento a una topologia gia' adattata.
 
@@ -199,6 +205,12 @@ def main():
                     help="lascia invariati i Morse delle tetradi gia' presenti")
     ap.add_argument("--stacking", default=None, metavar="SITO",
                     help="aggiungi Morse di impilamento fra guanine sovrapposte su SITO (es. CG_DG_B5)")
+    ap.add_argument("--stacking-mode", choices=("tract", "layers", "core"), default="tract",
+                    help="tract: guanine sovrapposte dello stesso tratto (8 per copia); "
+                         "layers: tutte le coppie di tetradi diverse; "
+                         "core: tutte le coppie del nucleo di guanine, anche nel piano")
+    ap.add_argument("--stack-D", type=float, default=None,
+                    help="profondita' dei Morse di impilamento (default: --D)")
     ap.add_argument("--D", type=float, default=50.0, help="profondita' in kJ/mol")
     ap.add_argument("--kT", type=float, default=2.49)
     ap.add_argument("--cut", type=float, default=7.0, help="r_cut = r0 + cut/a")
@@ -317,6 +329,8 @@ def main():
 
     # ── impilamento fra guanine sovrapposte ────────────────────────────────
     if args.stacking:
+        # stessi stimatori, profondita' eventualmente diversa per l'impilamento
+        sargs = argparse.Namespace(**{**vars(args), "D": args.stack_D or args.D})
         site_type = site_type_of(topo, args.stacking)
         xyz, col, site_index = ref.site(involved, site_type, args.stacking)
         per_copy = defaultdict(list)
@@ -326,12 +340,21 @@ def main():
         for copy_mols in per_copy.values():
             for a_ in copy_mols:
                 for b_ in copy_mols:
-                    if b_ == a_ + 1 and tetrad_of[a_] != tetrad_of[b_]:
+                    if b_ <= a_:
+                        continue
+                    same_tetrad = tetrad_of[a_] == tetrad_of[b_]
+                    if args.stacking_mode == "tract":
+                        keep = b_ == a_ + 1 and not same_tetrad
+                    elif args.stacking_mode == "layers":
+                        keep = not same_tetrad
+                    else:
+                        keep = True
+                    if keep:
                         pairs.append((a_, b_))
         per_class = len(pairs) // n_copies
-        print(f"\n[INFO] impilamento: sito {args.stacking} = indice "
+        print(f"\n[INFO] impilamento ({args.stacking_mode}): sito {args.stacking} = indice "
               f"{sorted(set(site_index.values()))}; {len(pairs)} coppie, {per_class} per copia")
-        if per_class != 4 * (len(local) - 1):
+        if args.stacking_mode == "tract" and per_class != 4 * (len(local) - 1):
             print(f"[WARNING] attese {4 * (len(local) - 1)} coppie sovrapposte per copia "
                   f"({len(local)} tetradi, 4 tratti): controlla il registro")
         existing = {tuple(sorted(((int(b["mol_i"]), int(b.get("site_i", -1))),
@@ -340,30 +363,44 @@ def main():
         samples = defaultdict(list)
         for i, j in pairs:
             samples[(i % nuc + 1, j % nuc + 1)].append(ref.distances(xyz, col, i, j))
-        sclasses = {key: {**fit_class(np.concatenate(rs), args), "copies": len(rs)}
+        sclasses = {key: {**fit_class(np.concatenate(rs), sargs), "copies": len(rs)}
                     for key, rs in sorted(samples.items())}
         head = "eps (kT)" if args.form == "lj" else "a (1/nm)"
-        print(f"\n  {'coppia':>9} {'tetradi':>8} {'r0 (nm)':>8} {'sigma':>7} {head:>9} {'r_cut':>6}")
-        for key, c in sclasses.items():
-            ti = local.index(next(t for t in local if key[0] in t)) + 1
-            tj = local.index(next(t for t in local if key[1] in t)) + 1
-            val = c["epsilon"] / args.kT if args.form == "lj" else c["a"]
-            print(f"  {str(key):>9} {f'{ti}-{tj}':>8} {c['r0']:8.3f} {c['sigma']:7.3f} "
-                  f"{val:9.2f} {c['r_cut']:6.2f}")
+        layer_of = lambda res: local.index(next(t for t in local if res in t)) + 1
+        if args.stacking_mode == "tract":
+            print(f"\n  {'coppia':>9} {'tetradi':>8} {'r0 (nm)':>8} {'sigma':>7} {head:>9} {'r_cut':>6}")
+            for key, c in sclasses.items():
+                val = c["epsilon"] / args.kT if args.form == "lj" else c["a"]
+                print(f"  {str(key):>9} {f'{layer_of(key[0])}-{layer_of(key[1])}':>8} "
+                      f"{c['r0']:8.3f} {c['sigma']:7.3f} {val:9.2f} {c['r_cut']:6.2f}")
+        else:
+            # riepilogo per coppia di tetradi: con 48-66 classi la tabella intera e' illeggibile
+            groups = defaultdict(list)
+            for key, c in sclasses.items():
+                groups[tuple(sorted((layer_of(key[0]), layer_of(key[1]))))].append(c)
+            print(f"\n  {'tetradi':>8} {'classi':>6} {'r0 (nm)':>13} {'sigma':>13} {head:>13}")
+            for g, cs in sorted(groups.items()):
+                vals = [c["epsilon"] / args.kT if args.form == "lj" else c["a"] for c in cs]
+                r0s = [c["r0"] for c in cs]; sgs = [c["sigma"] for c in cs]
+                print(f"  {f'{g[0]}-{g[1]}':>8} {len(cs):6d} {min(r0s):6.3f}-{max(r0s):5.3f} "
+                      f"{min(sgs):6.3f}-{max(sgs):5.3f} {min(vals):6.2f}-{max(vals):5.2f}")
         added = 0
         for i, j in pairs:
             endpoint = tuple(sorted(((i, site_index[i]), (j, site_index[j]))))
             if endpoint in existing:
                 sys.exit(f"[ERROR] esiste gia' un Morse fra {endpoint}")
             c = sclasses[(i % nuc + 1, j % nuc + 1)]
-            out["bonds"].append(morse_entry(i, j, site_index[i], site_index[j], c, args, "stacking"))
+            out["bonds"].append(morse_entry(i, j, site_index[i], site_index[j], c, sargs, "stacking"))
             added += 1
         out.setdefault("g4_topology", {})["stacking_representation"] = (
-            f"site-site {args.stacking} {args.form} between stacked guanines (same G-tract, "
-            f"adjacent tetrads), r0/a fitted from the mapped all-atom reference "
-            f"(fit_tetrad_site_morse.py, D={args.D}, width={args.width})")
+            f"site-site {args.stacking} {args.form}, mode {args.stacking_mode} (tract: same "
+            f"G-tract adjacent tetrads; layers: all pairs in different tetrads; core: all "
+            f"G-core pairs), fitted from the mapped all-atom reference "
+            f"(fit_tetrad_site_morse.py, D={sargs.D}, width={args.width})")
         print(f"[INFO] {added} contatti di impilamento aggiunti ({args.form})")
         report["stacking_site"] = args.stacking
+        report["stacking_mode"] = args.stacking_mode
+        report["stack_D"] = sargs.D
         report["stacking_classes"] = [{"pair": list(k), **v} for k, v in sclasses.items()]
 
     Path(args.out).write_text(json.dumps(out, indent=2) + "\n")

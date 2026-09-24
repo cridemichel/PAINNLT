@@ -20,6 +20,10 @@
 #   tel26_b3morse_d64_model.pt.  04 e 05 ricavano l'insieme dal manifest del
 #   modello (dataset_path), e si rifiutano di mettere un residuo ML sopra prior
 #   diversi da quelli su cui e' stato allenato.
+#
+#   Insiemi DERIVATI (derive_prior_set.py): cg_priors e rigid_bodies_info
+#   senza dataset, per le sole corse con i soli prior; 04/05 prendono la
+#   configurazione iniziale da tel26_dataset.bin.
 
 prior_set_files() {
     local s="${1:-}"
@@ -59,5 +63,13 @@ resolve_prior_set() {
         exit 1
     fi
     prior_set_files "${PRIOR_SET}"
+    # Insiemi derivati con derive_prior_set.py: niente dataset proprio.  Per
+    # una corsa con i soli prior il dataset serve solo come configurazione
+    # iniziale (le posizioni sono le stesse per ogni insieme), quindi si usa
+    # quello canonico.  Con il ML attivo no: il residuo e' legato ai prior.
+    if [ "${ml_active}" != 1 ] && [ ! -f "${DATASET_BIN}" ] && [ -f tel26_dataset.bin ]; then
+        echo "[INFO] ${DATASET_BIN} assente: soli prior, configurazione iniziale da tel26_dataset.bin"
+        DATASET_BIN=tel26_dataset.bin
+    fi
     echo "[INFO] prior: ${PRIOR_SET:-canonico} (${PRIORS_JSON}, ${DATASET_BIN})"
 }
