@@ -132,7 +132,7 @@ dataset|noisefloor|analysis)
          --account="$ACCOUNT_CPU")
     ;;
 
-train|select|production)
+train|select|production|iterate)
     # Una A100 per nodo: il trainer e il driver di simulazione usano una GPU
     # sola.  Su Booster il rapporto e' 8 core per GPU.
     res=(--partition=boost_usr_prod --time=24:00:00

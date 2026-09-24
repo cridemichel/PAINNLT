@@ -186,6 +186,54 @@ select)
          bash diagnostics/scripts/45_select_checkpoint.sh"
     ;;
 
+iterate)
+    # Ciclo automatico di aggiustamento dei contatti (iterate_contacts.py), a
+    # soli prior, senza nessuno nel mezzo: il collo di bottiglia non era il
+    # calcolo ma il giro umano fra un'iterazione e l'altra.  Un job = una
+    # catena; catene diverse (insiemi di partenza, DAMP) girano in parallelo,
+    # una GPU ciascuna.
+    #
+    #   bash hpc/submit_leonardo.sh iterate SYSTEM=tel26 \
+    #        START_TOPOLOGY=tel26_topology.b3tw.json \
+    #        START_RUN=samples_priors_b3tw_100ps.npz PREFIX=b3twit NITER=5
+    #
+    # Iterazione n: iterate_contacts.py sulla corsa precedente -> topologia
+    # <PREFIX>n, derive_prior_set.py (base BASE_SET, default b3stack), 04 e 05
+    # con i soli prior.  Si ferma quando iterate_contacts.py stampa
+    # [CONVERGIUTO] (la topologia buona e' allora quella della corsa appena
+    # valutata) o dopo NITER iterazioni.
+    need_env
+    : "${START_TOPOLOGY:?indica START_TOPOLOGY, la topologia della corsa di partenza}"
+    : "${START_RUN:?indica START_RUN, il samples_*.npz della corsa di partenza}"
+    : "${PREFIX:?indica PREFIX, il nome base degli insiemi (es. b3twit)}"
+    _topo="${START_TOPOLOGY}"
+    _npz="${START_RUN}"
+    for _n in $(seq 1 "${NITER:-5}"); do
+        _ps="${PREFIX}${_n}"
+        echo "[job] iterazione ${_n}: ${_topo} + ${_npz} -> ${_ps}"
+        _out="$(run "cd '${TUTORIAL}' && python3 iterate_contacts.py --topology '${_topo}' \
+                 --run '${_npz}' --dataset '${SYSTEM}_dataset.bin' \
+                 --out '${SYSTEM}_topology.${_ps}.json' --damp '${DAMP:-1.0}'")"
+        echo "${_out}"
+        if grep -q "\[CONVERGIUTO\]" <<<"${_out}"; then
+            echo "[job] convergiuto alla corsa di ${_topo}"
+            break
+        fi
+        run "cd '${TUTORIAL}' && python3 derive_prior_set.py --base '${BASE_SET:-b3stack}' \
+             --set '${_ps}' --force"
+        run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
+             CLASSICAL=1 PRIOR_SET='${_ps}' EQ_GAMMA=20 \
+             CHECKPOINT='equilibrated_priors_${_ps}_100ps.npz' bash 04_equilibrate.sh"
+        run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
+             DISABLE_ML=1 PRIOR_SET='${_ps}' GAMMA=20 CG_STEPS=${CG_STEPS:-100000} \
+             CHECKPOINT='equilibrated_priors_${_ps}_100ps.npz' \
+             SAMPLE_NPZ='samples_priors_${_ps}_100ps.npz' bash 05_run_espresso.sh"
+        _topo="${SYSTEM}_topology.${_ps}.json"
+        _npz="samples_priors_${_ps}_100ps.npz"
+    done
+    echo "[job] ultima corsa: ${_topo}, ${_npz}"
+    ;;
+
 analysis)
     # La g(r) vale per qualunque G-quadruplex da 1c84f30: serve solo --nuc.
     # Gira qui e non sul nodo di login perche' load_reference legge il dataset

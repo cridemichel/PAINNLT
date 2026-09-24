@@ -662,6 +662,25 @@ convenzione dell'angolo si verifica con
 riferimento sono ±21–36° (una fuori scala a 61°), coerenti con la torsione di
 un G-quadruplex.
 
+### Iterazioni automatiche, in parallelo
+
+Il collo di bottiglia dell'iterazione non è il calcolo ma il giro umano fra
+una corsa e l'altra. Lo stadio `iterate` fa l'intera catena in un solo job
+GPU (iterate_contacts → derive_prior_set → 04 → 05, fino a `NITER` volte o
+fino a `[CONVERGIUTO]`); catene diverse girano in parallelo, una GPU
+ciascuna, e con `AFTER` possono partire da una corsa ancora in esecuzione.
+
+```bash
+bash hpc/submit_leonardo.sh iterate SYSTEM=tel26 AFTER=<job della corsa b3tw> \
+     START_TOPOLOGY=tel26_topology.b3tw.json \
+     START_RUN=samples_priors_b3tw_100ps.npz PREFIX=twA NITER=5
+```
+
+`PREFIX` deve essere diverso per ogni catena: gli insiemi si chiamano
+`<PREFIX>1`, `<PREFIX>2`, … `DAMP` (default 1) è la frazione della
+correzione applicata; `BASE_SET` (default b3stack) l'insieme da cui vengono
+legami, angoli e WCA.
+
 ### Passi successivi
 
 2. **FENE** sul backbone al posto dell'armonico (tipo già supportato:
