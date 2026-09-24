@@ -152,6 +152,46 @@ def accumulate_channels(S, L, ncopy, types, rmax, nbins, stride=1):
     return acc, n_inter, nf, vol / max(nf, 1), edges
 
 
+# Nomi dei tipi del mapping G-quadruplex del framework (DA, DT un sito; DG
+# sei).  Un tipo fuori tabella si stampa col suo numero.
+TYPE_NAMES = {0: "DA", 1: "DT", 2: "S", 3: "B1", 4: "B2", 5: "B3", 6: "B4", 7: "B5"}
+
+
+def accumulate_type_pairs_intra(S, L, ncopy, types, rmax, nbins, stride=1):
+    """Istogrammi INTRA-copia per OGNI coppia di tipi, in un passaggio.
+
+    -> (hist[ntype, ntype, nbins] triangolare superiore, edges, ntype)
+    Serve a capire dove sta lo scarto residuo della P(r) totale: i quattro
+    canali di --types ne coprono solo una parte.
+    """
+    T = S.shape[0]
+    cop = np.repeat(np.arange(ncopy), cv.NUC)
+    edges = np.linspace(0.0, rmax, nbins + 1)
+    dr = edges[1] - edges[0]
+    ntype = int(np.max(types)) + 1
+    hist = np.zeros(ntype * ntype * nbins, dtype=np.int64)
+    for t in range(0, T, stride):
+        Lt = _box_at(L, t)
+        blk = S[t]
+        ok = np.isfinite(blk).all(axis=2)
+        pos = blk[ok]
+        who = np.repeat(cop, blk.shape[1])[ok.ravel()]
+        typ = types[ok].astype(np.int64)
+        n = pos.shape[0]
+        for i in range(0, n, 512):
+            d = mi(pos[i:i + 512, None, :] - pos[None, :, :], Lt)
+            r = np.linalg.norm(d, axis=2)
+            gi = np.arange(i, min(i + 512, n))
+            sel = (gi[:, None] < np.arange(n)[None, :]) & (who[i:i + 512, None] == who[None, :]) \
+                & (r < rmax)
+            ta = np.broadcast_to(typ[i:i + 512, None], r.shape)[sel]
+            tb = np.broadcast_to(typ[None, :], r.shape)[sel]
+            lo, hi = np.minimum(ta, tb), np.maximum(ta, tb)
+            b = np.minimum((r[sel] / dr).astype(np.int64), nbins - 1)
+            hist += np.bincount((lo * ntype + hi) * nbins + b, minlength=hist.size)
+    return hist.reshape(ntype, ntype, nbins), edges, ntype
+
+
 def plot_channels(path, edges, ref, runs, kind="intra", title="", scores=None):
     """Curve per canale, riferimento in continuo e modelli tratteggiati.
 
@@ -297,6 +337,9 @@ def main() -> None:
     ap.add_argument("--stride", type=int, default=2,
                     help="stride sui frame del riferimento (default 2)")
     ap.add_argument("--json", default=None)
+    ap.add_argument("--all-pairs", dest="all_pairs", action="store_true",
+                    help="tabella INTRA per ogni coppia di tipi: peso nel totale, "
+                         "sovrapposizione per corsa e contributo allo scarto")
     ap.add_argument("--types", action="store_true",
                     help="scomponi per canale di tipo (tutti, B3-B3 legami H, "
                          "B5-B5 stacking, S-S backbone).  La curva totale li "
@@ -433,6 +476,50 @@ def main() -> None:
                 plot_channels(out, edges, ref_curves[kind], run_curves[kind], kind,
                               title=title, scores=scores)
                 print(f"  grafico -> {out}")
+
+    if args.all_pairs:
+        types_ap = load_site_types(args.dataset)
+        h_ref, edges_ap, ntype = accumulate_type_pairs_intra(
+            Sr, Lr, ncr, types_ap, args.rmax, args.bins, args.stride)
+        r_ap = 0.5 * (edges_ap[:-1] + edges_ap[1:])
+        dr_ap = edges_ap[1] - edges_ap[0]
+        total_ref = h_ref.sum()
+        h_runs = {}
+        for label, path in runs.items():
+            S, L, nc, _t = load_run(path, args.skip_ps, args.run_stride)
+            h_runs[label], _, _ = accumulate_type_pairs_intra(
+                S, L, nc, types_ap, args.rmax, args.bins, 1)
+        rows_ap = []
+        for a in range(ntype):
+            for b in range(a, ntype):
+                hr = h_ref[a, b]
+                if hr.sum() == 0:
+                    continue
+                w = hr.sum() / total_ref
+                pr = hr / hr.sum() / dr_ap
+                ovs = {}
+                for label in runs:
+                    hm = h_runs[label][a, b]
+                    pm = hm / max(hm.sum(), 1) / dr_ap
+                    ovs[label] = overlap_metrics(pr, pm, r_ap)["integral_overlap"]
+                name = f"{TYPE_NAMES.get(a, a)}-{TYPE_NAMES.get(b, b)}"
+                rows_ap.append((name, w, ovs))
+        first = next(iter(runs))
+        rows_ap.sort(key=lambda x: -x[1] * (1.0 - x[2][first]))
+        print(f"\n  INTRA per coppia di tipi (r < {args.rmax} nm), ordinate per "
+              f"peso x (1 - sovrapp.) di '{first}'")
+        header = f"  {'coppia':<8}{'peso':>7}" + "".join(f"{lab:>12}" for lab in runs) \
+            + f"{'scarto':>9}"
+        print(header)
+        print("  " + "-" * (len(header) - 2))
+        for name, w, ovs in rows_ap:
+            print(f"  {name:<8}{w:7.3f}" + "".join(f"{ovs[lab]:>12.4f}" for lab in runs)
+                  + f"{w * (1.0 - ovs[first]):9.4f}")
+        print("  peso = frazione delle coppie intra del riferimento; scarto = peso x "
+              "(1 - sovrapposizione): dove conviene lavorare.")
+        report["all_pairs_intra"] = [
+            {"pair": n, "weight": float(w), "overlap": {k: float(v) for k, v in o.items()}}
+            for n, w, o in rows_ap]
 
     print("\n  g(r) sovrapposta e' NECESSARIA, non sufficiente: Henderson vale")
     print("  per un potenziale di coppia puro, qui c'e' anche un residuo ML a")
