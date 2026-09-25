@@ -14,6 +14,7 @@ import time
 from contextlib import ExitStack
 
 from framework_utils import (
+    bonded_partner_reach,
     configure_neighbor_search,
     ensure_single_rank,
     get_rb_data_by_sites,
@@ -70,6 +71,7 @@ parser.add_argument("--device", type=str, default="auto", help="Device for ML (c
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
 parser.add_argument("--painn_profile_report", type=str, default=None, help="Write opt-in PaiNN C++ stage timing JSON; profiling is CPU-reference only")
 parser.add_argument("--painn_profile_warmup_calls", type=int, default=20, help="PaiNN force calls excluded before profiling accumulation")
+parser.add_argument("--bonded_reach_margin", type=float, default=0.8, help="nm oltre la portata iniziale dei legami che la cella regolare dell'ibrida deve coprire")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
 parser.add_argument("--morse_switch_mode", choices=("switched", "stock-shifted"), default="switched", help="Pair-specific/type-pair Morse runtime branch; stock-shifted is a diagnostic control that keeps markers/cutoff but disables the C2 tail switch")
 parser.add_argument(
@@ -617,6 +619,15 @@ marker_nonbonded_morse = bool(
 morse_n_square_types = (
     {DUMMY_COM_TYPE, *morse_marker_types.values()} if marker_nonbonded_morse else None
 )
+# La portata dei legami non entra nella cella regolare dell'ibrida: si allarga
+# cutoff_regular finche' la cella copre il partner piu' lontano con margine.
+# Cambia solo la suddivisione in celle, non la fisica.
+_bonded_reach = bonded_partner_reach(system)
+_bonded_need = _bonded_reach + args.bonded_reach_margin - float(system.cell_system.skin)
+if _bonded_need > regular_cutoff:
+    print(f"[INFO] cutoff regolare {regular_cutoff:.4g} -> {_bonded_need:.4g} nm: portata dei legami "
+          f"{_bonded_reach:.4g} nm + margine {args.bonded_reach_margin:.3g} nm - skin")
+    regular_cutoff = _bonded_need
 configure_neighbor_search(
     system, args.neighbor_search,
     n_square_types=morse_n_square_types,
