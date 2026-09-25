@@ -89,6 +89,9 @@ def main():
     ap.add_argument("--cut", type=float, default=7.0, help="r_cut = r0 + cut/a")
     ap.add_argument("--stride", type=int, default=5)
     ap.add_argument("--width", choices=("mad", "std"), default="mad")
+    ap.add_argument("--max-r0", type=float, default=None,
+                    help="tieni solo le classi con r0 <= MAX_R0 nm (legami N2-N7 veri; "
+                         "le coppie con N2-N7 allungato restano col solo B3-B3)")
     args = ap.parse_args()
     fit_args = SimpleNamespace(form="morse", width=args.width, kT=args.kT, D=args.D,
                                cut=args.cut, lj_cut=3.5)
@@ -148,6 +151,12 @@ def main():
         print(f"  {f'{k[0]}->{k[1]}':>20} {c['r0']:8.3f} {c['sigma']:7.3f} {c['a']:9.2f} "
               f"{c['r_cut']:6.2f} {np.mean(ratio[k]):19.2f}")
 
+    if args.max_r0 is not None:
+        kept = {k for k, c in classes.items() if c["r0"] <= args.max_r0}
+        print(f"\n[INFO] --max-r0 {args.max_r0}: tengo {len(kept)} classi su {len(classes)} "
+              f"({', '.join(f'{k[0]}->{k[1]}' for k in sorted(kept))})")
+        pairs = [q for q in pairs if (q[0] % nuc + 1, q[1] % nuc + 1) in kept]
+        classes = {k: c for k, c in classes.items() if k in kept}
     out = json.loads(json.dumps(topo))
     for i, j, _ in pairs:
         c = classes[(i % nuc + 1, j % nuc + 1)]
@@ -156,7 +165,7 @@ def main():
         f"Morse {args.donor}(i)-{args.acceptor}(j), N2-H...N7 of each Hoogsteen pair, "
         f"direction and sides from the mapped all-atom reference, D={args.D}, width={args.width}")
     Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
-    print(f"\n[INFO] {len(pairs)} contatti N2-H...N7 ({len(pairs) // len(groups)} per tetrade), "
+    print(f"\n[INFO] {len(pairs)} contatti N2-H...N7 ({len(pairs) / len(groups):.3g} per tetrade), "
           f"{len(classes)} classi")
     print(f"[DONE] {args.out}")
 
