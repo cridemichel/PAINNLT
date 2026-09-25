@@ -531,26 +531,6 @@ def validate_checkpoint(
     return metadata
 
 
-def bonded_partner_reach(system: Any) -> float:
-    """Distanza massima (immagine minima) fra una particella e i partner dei suoi legami.
-
-    Nella decomposizione ibrida la cella regolare e' ``cutoff_regular + skin`` e
-    ESPResSo NON vi include la portata dei legami: un partner piu' lontano di
-    una cella puo' non stare fra i ghost, e l'integrazione si ferma con
-    "bond broken between particles ...".  Con i diedri di backbone il sito
-    centrale arriva al sito di due nucleotidi piu' in la': 1,4-1,8 nm nei loop,
-    oltre i 1,66 nm della cella con cutoff PaiNN 1,26 nm.  La misura qui, sulla
-    configurazione di partenza, serve a chi sceglie ``cutoff_regular``.
-    """
-    reach = 0.0
-    for p in system.part.all():
-        for bond in p.bonds:
-            for partner in bond[1:]:
-                pid = partner if isinstance(partner, (int,)) else int(getattr(partner, "id", partner))
-                reach = max(reach, float(system.distance(p, system.part.by_id(pid))))
-    return reach
-
-
 def configure_neighbor_search(
     system: Any,
     mode: str,

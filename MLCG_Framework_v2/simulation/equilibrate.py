@@ -8,7 +8,6 @@ import struct
 import os
 
 from framework_utils import (
-    bonded_partner_reach,
     configure_neighbor_search,
     ensure_single_rank,
     get_rb_data_by_sites,
@@ -46,7 +45,6 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--out_checkpoint", type=str, default="equilibrated.npz", help="Output checkpoint file")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu/mps/cuda)")
-parser.add_argument("--bonded_reach_margin", type=float, default=0.8, help="nm oltre la portata iniziale dei legami che la cella regolare dell'ibrida deve coprire")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell"), default="verlet", help="Pair traversal in ESPResSo regular decomposition")
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
 parser.add_argument("--steps_sd", type=int, default=5000, help="Number of steps for Phase 1 Steepest Descent (default 5000)")
@@ -425,15 +423,6 @@ if morse_type_pairs:
             "this regular-cell constraint because they use the N-square side of the hybrid decomposition."
         )
 morse_n_square_types = {DUMMY_COM_TYPE, *morse_marker_types.values()} if morse_contacts else None
-# La portata dei legami non entra nella cella regolare dell'ibrida: si allarga
-# cutoff_regular finche' la cella copre il partner piu' lontano con margine.
-# Cambia solo la suddivisione in celle, non la fisica.
-_bonded_reach = bonded_partner_reach(system)
-_bonded_need = _bonded_reach + args.bonded_reach_margin - float(system.cell_system.skin)
-if _bonded_need > regular_cutoff:
-    print(f"[INFO] cutoff regolare {regular_cutoff:.4g} -> {_bonded_need:.4g} nm: portata dei legami "
-          f"{_bonded_reach:.4g} nm + margine {args.bonded_reach_margin:.3g} nm - skin")
-    regular_cutoff = _bonded_need
 configure_neighbor_search(
     system, args.neighbor_search,
     n_square_types=morse_n_square_types,

@@ -57,6 +57,10 @@ copy_if_different "$SCRIPT_DIR/painn.pyx" \
 "$PYTHON_BIN" "$SCRIPT_DIR/install_switched_morse_nonbonded.py" \
     --espresso-root "$ESPRESSO_ROOT"
 
+# Diedro indefinito (tre siti allineati): forza nulla invece di "bond broken".
+"$PYTHON_BIN" "$SCRIPT_DIR/install_dihedral_undefined_zero.py" \
+    --espresso-root "$ESPRESSO_ROOT"
+
 # myconfig.hpp: ESPResSo decide a COMPILAZIONE quali interazioni esistono, e il
 # suo default non include MORSE -- su cui la pipeline CG fonda i contatti fra
 # guanine di una tetrade.  Senza, tutto il codice Morse (estensione switched
