@@ -54,7 +54,9 @@ ROLE = "hoogsteen_n2n7"
 def tetrads_from_contacts(bonds):
     adj = defaultdict(set)
     for b in bonds:
-        if str(b.get("type", "")).lower() in ("morse", "lj") and b.get("role") == "tetrad":
+        # le topologie piu' vecchie non scrivono il ruolo dei contatti di
+        # tetrade: senza ruolo vale "tetrad", come in fit_tetrad_site_morse.py
+        if str(b.get("type", "")).lower() in ("morse", "lj") and b.get("role", "tetrad") == "tetrad":
             i, j = int(b["mol_i"]), int(b["mol_j"])
             adj[i].add(j)
             adj[j].add(i)
