@@ -360,6 +360,11 @@ def main() -> None:
                     help="residui per copia (default 22, cioe' TEL22; 26 per il "
                          "TEL26).  Serve solo a spezzare le molecole in copie, "
                          "quindi la g(r) vale per qualunque G-quadruplex")
+    ap.add_argument("--ref-range", dest="ref_range", default=None, metavar="A:B",
+                    help="usa come riferimento solo la frazione [A, B) dei frame "
+                         "del dataset (es. 0:0.5).  Con una corsa '@ref:0.5:1' da' il "
+                         "tetto di sovrapposizione: meta' del riferimento contro "
+                         "l'altra meta', cioe' il rumore statistico del riferimento")
     args = ap.parse_args()
     if args.nuc:
         cv.set_nuc(args.nuc)
@@ -373,7 +378,51 @@ def main() -> None:
         runs[k] = v
 
     print(f"  riferimento: {args.dataset}")
-    Sr, Lr, ncr = load_reference(args.dataset)
+    S_full, L_full, ncr = load_reference(args.dataset)
+
+    def frac_slice(spec, what):
+        try:
+            lo, hi = (float(x) for x in spec.split(":"))
+        except ValueError:
+            raise SystemExit(f"[ERROR] {what}: atteso A:B con frazioni, ricevuto {spec!r}")
+        if not 0.0 <= lo < hi <= 1.0:
+            raise SystemExit(f"[ERROR] {what}: serve 0 <= A < B <= 1, ricevuto {spec!r}")
+        T = S_full.shape[0]
+        return int(round(lo * T)), int(round(hi * T))
+
+    if args.ref_range:
+        i0, i1 = frac_slice(args.ref_range, "--ref-range")
+        Sr, Lr = S_full[i0:i1], L_full[i0:i1]
+        print(f"  riferimento ristretto ai frame {i0}-{i1} (--ref-range {args.ref_range})")
+    else:
+        Sr, Lr = S_full, L_full
+
+    def get_run(path):
+        """Corsa di un modello, o una fetta del riferimento con '@ref:A:B'."""
+        if path.startswith("@ref:"):
+            i0, i1 = frac_slice(path[5:], path)
+            st = max(1, int(args.stride))
+            print(f"  {path}: frame {i0}-{i1} del riferimento, stride {st}")
+            return S_full[i0:i1:st], L_full[i0:i1:st], ncr, None
+        if "#" in path:
+            # finestra temporale di una corsa: percorso#T0:T1 (ps).  Due finestre
+            # della stessa corsa danno la dispersione statistica della corsa CG.
+            path, win = path.split("#", 1)
+            try:
+                t0, t1 = (float(x) for x in win.split(":"))
+            except ValueError:
+                raise SystemExit(f"[ERROR] finestra {win!r}: attesa T0:T1 in ps")
+            S, L, nc, t = load_run(path, max(t0, args.skip_ps), args.run_stride)
+            keep = np.flatnonzero(t < t1)
+            if keep.size == 0:
+                raise SystemExit(f"[ERROR] {path}: nessun frame in [{t0}, {t1}) ps")
+            L = np.asarray(L)
+            if L.ndim == 2 and L.shape[0] == S.shape[0]:
+                L = L[keep]
+            print(f"    finestra {t0:g}-{t1:g} ps: {keep.size} frame")
+            return S[keep], L, nc, t[keep]
+        return load_run(path, args.skip_ps, args.run_stride)
+
     hi, he, ni, ne, nf, vol, edges = accumulate(Sr, Lr, ncr, args.rmax,
                                                 args.bins, args.stride)
     nsites = int(np.isfinite(Sr[0]).all(axis=2).sum())
@@ -386,7 +435,7 @@ def main() -> None:
               "bins": args.bins, "runs": []}
     rows = []
     for label, path in runs.items():
-        S, L, nc, _t = load_run(path, args.skip_ps, args.run_stride)
+        S, L, nc, _t = get_run(path)
         hi2, he2, ni2, ne2, nf2, vol2, _ = accumulate(S, L, nc, args.rmax, args.bins, 1)
         _, p_mod, g_mod = normalize(hi2, he2, ne2, nf2, vol2, edges, nsites)
         e = {"run": label, "path": path,
@@ -433,7 +482,7 @@ def main() -> None:
         run_curves = {"intra": [], "inter": []}
         per_channel = {}
         for label, path in runs.items():
-            S, L, nc, _t = load_run(path, args.skip_ps, args.run_stride)
+            S, L, nc, _t = get_run(path)
             acc_m, nint_m, nf_m, vol_m, _ = accumulate_channels(
                 S, L, nc, types, args.rmax, args.bins, 1)
             ci, ce = {}, {}
@@ -486,7 +535,7 @@ def main() -> None:
         total_ref = h_ref.sum()
         h_runs = {}
         for label, path in runs.items():
-            S, L, nc, _t = load_run(path, args.skip_ps, args.run_stride)
+            S, L, nc, _t = get_run(path)
             h_runs[label], _, _ = accumulate_type_pairs_intra(
                 S, L, nc, types_ap, args.rmax, args.bins, 1)
         rows_ap = []
