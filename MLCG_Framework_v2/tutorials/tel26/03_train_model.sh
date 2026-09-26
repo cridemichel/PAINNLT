@@ -35,9 +35,19 @@ for path in "${DATASET_BIN}" "${CONFIG}"; do
 done
 [ -x "${TRAINER}" ] || { echo "[ERROR] trainer non eseguibile: ${TRAINER}" >&2; exit 1; }
 
+# Due training nella stessa cartella (due varianti dietro lo stesso dataset)
+# si contendono cg_training_log.csv, nome fisso scritto dal trainer: il
+# secondo e' morto in 10 s su un mv del file che l'altro aveva appena
+# spostato.  Il lock li mette in fila: il secondo aspetta il primo.
+exec 9> .train.lock
+if ! flock -n 9; then
+    echo "[INFO] un altro training usa questa cartella: attendo che finisca"
+    flock 9
+fi
+
 # Un log lasciato da un training precedente non va perso.
 if [ -f cg_training_log.csv ] && [ ! -f "${MODEL_OUT%.pt}.training_log.csv" ]; then
-    mv cg_training_log.csv "cg_training_log.prima_di_${MODEL_OUT%.pt}.csv"
+    mv -f cg_training_log.csv "cg_training_log.prima_di_${MODEL_OUT%.pt}.csv" || true
 fi
 
 echo "[INFO] dataset ${DATASET_BIN}, config ${CONFIG} -> ${MODEL_OUT}"

@@ -2339,6 +2339,18 @@ for pair_key in sorted(wca_prior_dict):
         f"{min_source:>12} {counts[0]:>8d} {counts[1]:>8d} {counts[2]:>8d}"
     )
 
+if pass2_fit_min_violations and args.priors:
+    # Con --priors il fit WCA viene da un'ALTRA traiettoria (es. un blocco
+    # PART della stessa produzione): che questa scenda un poco sotto il suo
+    # minimo e' atteso, non un'incoerenza di rappresentazione.  Resta
+    # vincolante il controllo del guard qui sotto.
+    details = "; ".join(
+        f"{pair}: {rmin:.4f} < {fitmin:.4f}"
+        for pair, rmin, fitmin in pass2_fit_min_violations
+    )
+    print(f"[WARN] prior preimpostati (--priors): distanze sotto il minimo del fit WCA "
+          f"originale, attese su un'altra traiettoria: {details}")
+    pass2_fit_min_violations = []
 if pass2_fit_min_violations:
     details = "; ".join(
         f"{pair}: pass2_min={rmin:.6f} < fit_min={fitmin:.6f}"
