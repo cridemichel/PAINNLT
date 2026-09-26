@@ -148,8 +148,9 @@ def accumulate_channels(S, L, ncopy, types, rmax, nbins, stride=1):
             gi = np.arange(i, min(i + 512, n))
             upper = gi[:, None] < np.arange(n)[None, :]
             same = who[i:i + 512, None] == who[None, :]
-            if SKIP_SAME_RES:
-                same = same & (mol[i:i + 512, None] != mol[None, :])
+            # le coppie dello stesso residuo escono dall'INTRA, ma non devono
+            # finire nell'INTER: si tolgono da si soltanto
+            keep_intra = (mol[i:i + 512, None] != mol[None, :]) if SKIP_SAME_RES else True
             ta, tb = typ[i:i + 512, None], typ[None, :]
             for name, pair in CHANNELS:
                 if pair is None:
@@ -157,7 +158,7 @@ def accumulate_channels(S, L, ncopy, types, rmax, nbins, stride=1):
                 else:
                     a, b = pair
                     sel = upper & (((ta == a) & (tb == b)) | ((ta == b) & (tb == a)))
-                si, so = sel & same, sel & ~same
+                si, so = sel & same & keep_intra, sel & ~same
                 acc[name][0] += np.histogram(r[si], bins=edges)[0]
                 acc[name][1] += np.histogram(r[so], bins=edges)[0]
                 n_inter[name] += int(so.sum())
