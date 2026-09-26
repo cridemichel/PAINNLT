@@ -68,6 +68,17 @@ from _tel22_cv import (SITE_NAME, load_reference, load_samples,
 from _hb_common import mi
 
 
+# --no-same-residue: esclude dall'INTRA le coppie di siti dello stesso
+# residuo.  Nel CG la guanina e' un corpo rigido: le sue 15 distanze interne
+# sono fisse, nel riferimento fluttuano.  Quelle coppie misurano il mapping,
+# non il campo di forza, e nessun prior puo' avvicinarle.
+SKIP_SAME_RES = False
+
+
+def _mol_of_site(blk, ok):
+    return np.repeat(np.arange(blk.shape[0]), blk.shape[1])[ok.ravel()]
+
+
 def load_run(path, skip_ps=0.0, stride=1):
     """Traiettoria di un modello, senza il transiente iniziale e sottocampionata.
 
@@ -127,6 +138,7 @@ def accumulate_channels(S, L, ncopy, types, rmax, nbins, stride=1):
         pos = blk[ok]
         who = np.repeat(cop, blk.shape[1])[ok.ravel()]
         typ = types[ok]
+        mol = _mol_of_site(blk, ok)
         n = pos.shape[0]
         if n < 2:
             continue
@@ -136,6 +148,8 @@ def accumulate_channels(S, L, ncopy, types, rmax, nbins, stride=1):
             gi = np.arange(i, min(i + 512, n))
             upper = gi[:, None] < np.arange(n)[None, :]
             same = who[i:i + 512, None] == who[None, :]
+            if SKIP_SAME_RES:
+                same = same & (mol[i:i + 512, None] != mol[None, :])
             ta, tb = typ[i:i + 512, None], typ[None, :]
             for name, pair in CHANNELS:
                 if pair is None:
@@ -177,6 +191,7 @@ def accumulate_type_pairs_intra(S, L, ncopy, types, rmax, nbins, stride=1):
         pos = blk[ok]
         who = np.repeat(cop, blk.shape[1])[ok.ravel()]
         typ = types[ok].astype(np.int64)
+        mol = _mol_of_site(blk, ok)
         n = pos.shape[0]
         for i in range(0, n, 512):
             d = mi(pos[i:i + 512, None, :] - pos[None, :, :], Lt)
@@ -184,6 +199,8 @@ def accumulate_type_pairs_intra(S, L, ncopy, types, rmax, nbins, stride=1):
             gi = np.arange(i, min(i + 512, n))
             sel = (gi[:, None] < np.arange(n)[None, :]) & (who[i:i + 512, None] == who[None, :]) \
                 & (r < rmax)
+            if SKIP_SAME_RES:
+                sel &= mol[i:i + 512, None] != mol[None, :]
             ta = np.broadcast_to(typ[i:i + 512, None], r.shape)[sel]
             tb = np.broadcast_to(typ[None, :], r.shape)[sel]
             lo, hi = np.minimum(ta, tb), np.maximum(ta, tb)
@@ -253,6 +270,7 @@ def accumulate(S, L, ncopy, rmax, nbins, stride=1):
         ok = np.isfinite(blk).all(axis=2)            # (M, 6)
         pos = blk[ok]                                # (Ns, 3)
         who = np.repeat(cop, blk.shape[1])[ok.ravel()]
+        mol = _mol_of_site(blk, ok)
         n = pos.shape[0]
         if n < 2:
             continue
@@ -267,6 +285,8 @@ def accumulate(S, L, ncopy, rmax, nbins, stride=1):
             upper = gi[:, None] < np.arange(n)[None, :]
             m_intra = upper & same
             m_inter = upper & ~same
+            if SKIP_SAME_RES:
+                m_intra &= mol[i:i + 512, None] != mol[None, :]
             h_intra += np.histogram(r[m_intra], bins=edges)[0]
             h_inter += np.histogram(r[m_inter], bins=edges)[0]
             n_intra += int(m_intra.sum())
@@ -360,12 +380,19 @@ def main() -> None:
                     help="residui per copia (default 22, cioe' TEL22; 26 per il "
                          "TEL26).  Serve solo a spezzare le molecole in copie, "
                          "quindi la g(r) vale per qualunque G-quadruplex")
+    ap.add_argument("--no-same-residue", dest="no_same_res", action="store_true",
+                    help="escludi dall'INTRA le coppie di siti dello stesso residuo "
+                         "(interne al corpo rigido della guanina: fisse nel CG)")
     ap.add_argument("--ref-range", dest="ref_range", default=None, metavar="A:B",
                     help="usa come riferimento solo la frazione [A, B) dei frame "
                          "del dataset (es. 0:0.5).  Con una corsa '@ref:0.5:1' da' il "
                          "tetto di sovrapposizione: meta' del riferimento contro "
                          "l'altra meta', cioe' il rumore statistico del riferimento")
     args = ap.parse_args()
+    global SKIP_SAME_RES
+    SKIP_SAME_RES = bool(args.no_same_res)
+    if SKIP_SAME_RES:
+        print("[INFO] INTRA senza le coppie dello stesso residuo (--no-same-residue)")
     if args.nuc:
         cv.set_nuc(args.nuc)
     print(f"[INFO] {cv.NUC} residui per copia")
