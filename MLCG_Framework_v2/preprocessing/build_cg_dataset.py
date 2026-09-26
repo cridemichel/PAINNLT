@@ -676,12 +676,27 @@ def get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim):
     sin_phi = np.dot(b2, np.cross(m1, m2)) / (b2_norm * np.sqrt(m1_sq * m2_sq))
     return np.arctan2(sin_phi, cos_phi)
 
-def dihedral_energy(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0):
+def _cbt_sin3(u, w):
+    """sin^3 dell'angolo al vertice comune dei legami u e w (u = p_b - p_a, w = p_c - p_b)."""
+    c = -np.dot(u, w) / (np.linalg.norm(u) * np.linalg.norm(w))
+    c = min(1.0, max(-1.0, c))
+    return (1.0 - c * c) ** 1.5
+
+
+def dihedral_energy(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0, cbt=False):
     phi = get_dihedral(pos_i, pos_j, pos_k, pos_l, box_dim)
-    return K * (1.0 - np.cos(n * phi - phi0))
+    e = K * (1.0 - np.cos(n * phi - phi0))
+    if cbt:
+        # flessione-torsione combinate (Bulacu 2013), come il Dihedral di
+        # ESPResSo con mult < 0 (install_dihedral_cbt.py)
+        b1 = mic_vector(pos_i, pos_j, box_dim)
+        b2 = mic_vector(pos_j, pos_k, box_dim)
+        b3 = mic_vector(pos_k, pos_l, box_dim)
+        e *= _cbt_sin3(b1, b2) * _cbt_sin3(b2, b3)
+    return e
 
 
-def dihedral_forces(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0):
+def dihedral_forces(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0, cbt=False):
     """Conservative reference forces for the cosine dihedral.
 
     A central finite difference is deliberately used here.  Preprocessing is
@@ -693,7 +708,7 @@ def dihedral_forces(pos_i, pos_j, pos_k, pos_l, box_dim, K, n, phi0):
     eps = 1.0e-6
 
     def energy(coords):
-        return dihedral_energy(*coords, box_dim, K, n, phi0)
+        return dihedral_energy(*coords, box_dim, K, n, phi0, cbt)
 
     for atom in range(4):
         for axis in range(3):
@@ -2213,6 +2228,7 @@ with open(args.output, "wb") as f:
                     d["k"],
                     d.get("n", 1),
                     d["phi0"],
+                    bool(d.get("cbt", False)),
                 )
             else:
                 continue

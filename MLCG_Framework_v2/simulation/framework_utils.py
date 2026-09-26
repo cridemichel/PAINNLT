@@ -531,6 +531,31 @@ def validate_checkpoint(
     return metadata
 
 
+def require_cbt_dihedral(espressomd_module: Any) -> None:
+    """Ferma la corsa se ESPResSo non ha il diedro CBT compilato.
+
+    Con un ESPResSo senza install_dihedral_cbt.py un Dihedral con mult < 0 non
+    da' errori: calcola cos(-n phi - phase) con fattore di forza di segno
+    opposto, cioe' fisica sbagliata in silenzio.  Si controlla che il sorgente
+    abbia la patch e che la libreria compilata sia piu' recente del sorgente.
+    """
+    pkg = Path(espressomd_module.__file__).resolve().parent      # build/src/python/espressomd
+    build = pkg.parents[2]                                          # build/
+    header = build.parent / "src/core/bonded_interactions/dihedral.hpp"
+    if not header.is_file() or "MLCG CBT" not in header.read_text():
+        raise SystemExit(
+            f"[ERROR] la topologia ha diedri CBT (cbt: true) ma {header} non ha la patch: "
+            "python3 simulation/espresso_plugin/install_dihedral_cbt.py --espresso-root espresso, "
+            "poi bash hpc/submit_leonardo.sh build")
+    libs = [q for q in list((build / "src/core").rglob("*.so*")) + list(pkg.glob("*.so"))
+            if q.is_file()]
+    if not libs or max(q.stat().st_mtime for q in libs) < header.stat().st_mtime:
+        raise SystemExit(
+            "[ERROR] diedri CBT richiesti ma la build di ESPResSo e' piu' vecchia della patch: "
+            "bash hpc/submit_leonardo.sh build")
+    print("[INFO] diedro CBT: patch presente e compilata")
+
+
 def configure_neighbor_search(
     system: Any,
     mode: str,

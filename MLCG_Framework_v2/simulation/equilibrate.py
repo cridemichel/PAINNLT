@@ -8,6 +8,7 @@ import struct
 import os
 
 from framework_utils import (
+    require_cbt_dihedral,
     configure_neighbor_search,
     ensure_single_rank,
     get_rb_data_by_sites,
@@ -342,12 +343,19 @@ for idx, a in enumerate(priors.get("angles", [])):
     print(f"[INFO] Added Angle bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k}")
 
 # Dihedrals
+if any(d.get("cbt", False) for d in priors.get("dihedrals", [])):
+    require_cbt_dihedral(espressomd)
 for idx, d in enumerate(priors.get("dihedrals", [])):
     d_type = d.get("type", "cosine")
     if d_type == "cosine":
         k_dih = d["k"]
         mult = d.get("n", 1)
         phase = d["phi0"]
+        if d.get("cbt", False):
+            # flessione-torsione combinate (install_dihedral_cbt.py): mult < 0
+            # moltiplica il diedro per sin^3 dei due angoli di legame, cosi' la
+            # forza resta finita quando tre siti si allineano
+            mult = -abs(int(mult))
         dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
     elif d_type == "tabulated":
         import numpy as np

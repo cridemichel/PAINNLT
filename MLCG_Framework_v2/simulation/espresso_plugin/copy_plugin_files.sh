@@ -60,6 +60,10 @@ copy_if_different "$SCRIPT_DIR/painn.pyx" \
 # Diedro indefinito (tre siti allineati): forza nulla invece di "bond broken".
 "$PYTHON_BIN" "$SCRIPT_DIR/install_dihedral_undefined_zero.py" \
     --espresso-root "$ESPRESSO_ROOT"
+# Diedro a flessione-torsione combinate (mult < 0): forza finita con tre siti
+# allineati.  Dopo il precedente, da cui dipende.
+"$PYTHON_BIN" "$SCRIPT_DIR/install_dihedral_cbt.py" \
+    --espresso-root "$ESPRESSO_ROOT"
 
 # myconfig.hpp: ESPResSo decide a COMPILAZIONE quali interazioni esistono, e il
 # suo default non include MORSE -- su cui la pipeline CG fonda i contatti fra
