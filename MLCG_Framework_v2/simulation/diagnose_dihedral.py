@@ -67,6 +67,7 @@ def main():
     worst_e = worst_f = 0.0
     n_tests = 0
     worst_cbt_f = 0.0
+    n_undef, undef_f = 0, 0.0
     for n, cbt in ((1, False), (2, False), (1, True), (2, True)):
         for phi0 in (-2.5, -0.4, 0.0, 0.9, 2.8):
             K = 12.0
@@ -86,17 +87,27 @@ def main():
                 system.integrator.run(0, recalc_forces=True)
                 e_esp = float(system.analysis.energy()["bonded"])
                 f_esp = np.asarray([p.f for p in parts])
-                e_ref = builder_energy(pos, K, n, phi0, cbt)
-                f_ref = builder_forces(pos, K, n, phi0, cbt)
                 if cbt:
                     worst_cbt_f = max(worst_cbt_f, float(np.max(np.abs(f_esp))))
+                b1, b2, b3 = pos[1] - pos[0], pos[2] - pos[1], pos[3] - pos[2]
+                if min(np.linalg.norm(np.cross(b1, b2)), np.linalg.norm(np.cross(b2, b3))) <= 1e-4:
+                    # sotto la soglia di ESPResSo il diedro e' indefinito e il runtime
+                    # (install_dihedral_undefined_zero.py) da' forza ed energia nulle;
+                    # il builder, per la CBT, un residuo ~K sin t che qui vale < 1
+                    n_undef += 1
+                    undef_f = max(undef_f, float(np.max(np.abs(f_esp))))
+                    continue
+                e_ref = builder_energy(pos, K, n, phi0, cbt)
+                f_ref = builder_forces(pos, K, n, phi0, cbt)
                 worst_e = max(worst_e, abs(e_esp - e_ref) / max(1.0, abs(e_ref)))
                 worst_f = max(worst_f, float(np.max(np.abs(f_esp - f_ref))) / max(1.0, float(np.max(np.abs(f_ref)))))
                 n_tests += 1
     print(f"  {n_tests} configurazioni, n = 1, 2, cinque fasi, coseno e CBT: errore relativo "
           f"massimo energia {worst_e:.1e}, forza {worst_f:.1e}")
     print(f"  CBT anche con tre siti quasi allineati: forza massima {worst_cbt_f:.1f} (K = 12)")
-    ok = worst_e < 1e-6 and worst_f < 1e-5
+    print(f"  {n_undef} configurazioni sotto la soglia di diedro indefinito: forza runtime "
+          f"massima {undef_f:.1e} (attesa 0)")
+    ok = worst_e < 1e-6 and worst_f < 1e-5 and undef_f == 0.0
     print("[OK] diedro a coseno coerente fra runtime e dataset" if ok
           else "[FAIL] convenzioni diverse: la fase stimata dal riferimento non sarebbe quella simulata")
     sys.exit(0 if ok else 1)
