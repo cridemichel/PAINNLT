@@ -27,6 +27,22 @@ source "${SCRIPT_DIR}/_prior_set.sh"
 prior_set_files "${PRIOR_SET:-}"
 echo "[INFO] prior: ${PRIOR_SET:-canonico} (${TOPOLOGY_JSON})"
 
+# PART: un blocco in piu' della produzione all-atom (es. PART=prod2), costruito
+# con gli STESSI prior dell'insieme -- letti dal suo cg_priors, non ristimati:
+# la Boltzmann inversion e il WCA "auto" su un altro tratto darebbero numeri
+# leggermente diversi, e il residuo dei due blocchi non sarebbe piu' lo
+# stesso problema di regressione.  Scrive file a parte (.PART.); li unisce al
+# dataset principale concat_datasets.py.
+priors_in_args=()
+if [ -n "${PART:-}" ]; then
+    [ -f "${PRIORS_JSON}" ] || { echo "[ERROR] PART=${PART}: servono i prior dell'insieme, manca ${PRIORS_JSON} (costruisci prima il dataset principale)" >&2; exit 1; }
+    priors_in_args+=(--priors "${PRIORS_JSON}")
+    DATASET_BIN="${DATASET_BIN%.bin}.${PART}.bin"
+    PRIORS_JSON="${PRIORS_JSON%.json}.${PART}.json"
+    RB_INFO_JSON="${RB_INFO_JSON%.json}.${PART}.json"
+    echo "[INFO] blocco ${PART}: prior fissati da ${priors_in_args[1]}, output ${DATASET_BIN}"
+fi
+
 : "${AA_TOPOLOGY:?indica AA_TOPOLOGY (la topologia ridotta ai non-Water, vedi extract_solute_topology.py)}"
 : "${AA_TRAJECTORY:?indica AA_TRAJECTORY, la traiettoria compressa con le posizioni}"
 
@@ -79,6 +95,7 @@ limit_args=()
     --trajectory "${AA_TRAJECTORY}" \
     ${forces_args[@]+"${forces_args[@]}"} \
     ${limit_args[@]+"${limit_args[@]}"} \
+    ${priors_in_args[@]+"${priors_in_args[@]}"} \
     --config "${TOPOLOGY_JSON}" \
     --output "${DATASET_BIN}" \
     --priors-output "${PRIORS_JSON}" \

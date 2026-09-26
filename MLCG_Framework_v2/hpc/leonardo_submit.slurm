@@ -112,7 +112,8 @@ dataset)
     run "cd '${TUTORIAL}' && AA_TRAJECTORY='${AA_TRAJECTORY}' AA_TOPOLOGY='${AA_TOPOLOGY}' \
          ${AA_FORCES_TRAJECTORY:+AA_FORCES_TRAJECTORY='${AA_FORCES_TRAJECTORY}'} \
          ${AA_FORCES_TOPOLOGY:+AA_FORCES_TOPOLOGY='${AA_FORCES_TOPOLOGY}'} \
-         ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} PYTHON_BIN=python3 bash 02_build_dataset.sh"
+         ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} ${PART:+PART='${PART}'} \
+         PYTHON_BIN=python3 bash 02_build_dataset.sh"
     echo
     echo "[NOTA] Prima di allenare, misura il pavimento di rumore sul dataset nuovo:"
     echo "       bash hpc/submit_leonardo.sh noisefloor"
