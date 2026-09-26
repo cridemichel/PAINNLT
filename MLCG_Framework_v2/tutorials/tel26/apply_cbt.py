@@ -6,13 +6,15 @@ PERCHE'
     legame t si avvicina a 0 o 180 gradi.  Nel TEL26 col residuo ML acceso i
     loop si raddrizzano: l'angolo 14T-15A-16G e' arrivato a sin t = 0,009 e i
     due diedri di backbone che ci poggiano hanno dato forze ~10^4 (tutte le
-    produzioni ML fermate dal controllo di sicurezza).  La CBT (Bulacu et al.,
-    JCTC 2013) moltiplica il diedro per sin^3(t1) sin^3(t2): la forza va a zero
-    in modo liscio invece di divergere.
+    produzioni ML fermate dal controllo di sicurezza).  Qui il diedro si
+    moltiplica per g(t1) g(t2), con g = 1 finche' sin t >= 0,3 e un raccordo C1
+    a zero sotto (l'idea della flessione-torsione combinate di Bulacu et al.,
+    JCTC 2013, ma senza il loro sin^3, che sul backbone del TEL26 -- angoli di
+    140-150 gradi -- ridurrebbe il diedro di 20-100 volte ovunque).
 
 LA RICALIBRAZIONE
     K era stimato dalla larghezza della distribuzione di phi (von Mises) per
-    V = K (1 - cos).  Con V = K g1 g2 (1 - cos), g = sin^3, la rigidita' media
+    V = K (1 - cos).  Con V = K g1 g2 (1 - cos) la rigidita' media
     in phi e' K <g1 g2>: per conservarla K diventa K / <g1 g2>, con la media sul
     riferimento mappato, classe per classe (ruolo, residuo iniziale e finale
     nella copia).  --k-max limita K.
@@ -37,10 +39,15 @@ sys.path.insert(0, str(HERE))
 from fit_tetrad_site_morse import Reference  # noqa: E402
 
 
+S0 = 0.3  # come mlcg_cbt_s0 in install_dihedral_cbt.py
+
+
 def sin3(u, w):
+    """(fattore di smorzamento g, sin t) per ogni frame."""
     c = -np.einsum("ij,ij->i", u, w) / (np.linalg.norm(u, axis=1) * np.linalg.norm(w, axis=1))
     c = np.clip(c, -1.0, 1.0)
-    return (1.0 - c * c) ** 1.5, np.sqrt(1.0 - c * c)
+    x = (1.0 - c * c) / (S0 * S0)
+    return np.where(x >= 1.0, 1.0, x * (2.0 - x)), np.sqrt(1.0 - c * c)
 
 
 def main():
@@ -115,8 +122,9 @@ def main():
             print(f"  {key[0][:4]} {key[1]:>2}-{key[2]:<2}  {f:8.3f} {q:13.3f} {k_old / args.kT:8.2f} "
                   f"{k_new / args.kT:8.2f}")
     out.setdefault("g4_topology", {})["cbt_dihedrals"] = (
-        f"roles {sorted(roles)}: combined bending-torsion V = K sin^3 t1 sin^3 t2 (1 - cos), "
-        f"K rescaled by 1/<sin^3 t1 sin^3 t2> over the mapped reference, K <= {args.k_max} kT")
+        f"roles {sorted(roles)}: angle-damped dihedral V = K g(t1) g(t2) (1 - cos), g = 1 for "
+        f"sin t >= {S0}, x(2-x) below (x = sin^2 t / S0^2); K rescaled by 1/<g1 g2> over the mapped "
+        f"reference, K <= {args.k_max} kT")
     Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
     print(f"\n[DONE] {args.out}")
 

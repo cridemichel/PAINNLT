@@ -352,9 +352,9 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
         mult = d.get("n", 1)
         phase = d["phi0"]
         if d.get("cbt", False):
-            # flessione-torsione combinate (install_dihedral_cbt.py): mult < 0
-            # moltiplica il diedro per sin^3 dei due angoli di legame, cosi' la
-            # forza resta finita quando tre siti si allineano
+            # diedro con smorzamento angolare (install_dihedral_cbt.py): mult < 0
+            # lo spegne in modo C1 quando un angolo di legame va verso 180 gradi,
+            # cosi' la forza resta finita quando tre siti si allineano
             mult = -abs(int(mult))
         dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
     elif d_type == "tabulated":

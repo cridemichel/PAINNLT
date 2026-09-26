@@ -34,8 +34,10 @@ def builder_phi(p1, p2, p3, p4):
 
 
 def sin3(u, w):
+    """Smorzamento angolare della CBT (come build_cg_dataset._cbt_factor, S0 = 0,3)."""
     c = np.clip(-np.dot(u, w) / (np.linalg.norm(u) * np.linalg.norm(w)), -1.0, 1.0)
-    return (1.0 - c * c) ** 1.5
+    x = (1.0 - c * c) / 0.09
+    return 1.0 if x >= 1.0 else x * (2.0 - x)
 
 
 def builder_energy(pos, K, n, phi0, cbt=False):
