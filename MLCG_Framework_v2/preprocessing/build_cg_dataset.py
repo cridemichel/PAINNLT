@@ -124,6 +124,10 @@ parser.add_argument("--max-frames", type=int, default=None,
                          "costo dello stadio su un sottoinsieme prima di lanciarlo "
                          "intero: la lettura e' lineare nei frame, quindi il tempo "
                          "su 500 si estrapola.")
+parser.add_argument("--dump-prior-forces", dest="dump_prior_forces", type=str, default=None,
+                    help="Scrive in un .npz, per i primi --dump-frames frame, centri, forze e coppie "
+                         "all-atom mappate e la somma dei prior sottratti (confronto con il runtime)")
+parser.add_argument("--dump-frames", dest="dump_frames", type=int, default=3)
 parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
 args = parser.parse_args()
 
@@ -1812,6 +1816,7 @@ if dh_prior:
 else:
     dh_pair_i = np.empty(0, dtype=np.int64)
 
+_prior_dump = []
 with open(args.output, "wb") as f:
     num_frames = len(cg_centers_history)
     f.write(struct.pack("i", num_frames))
@@ -2254,6 +2259,14 @@ with open(args.output, "wb") as f:
     
         # Record the true residual target distribution before optional clipping.
         residual_force_norms.extend(np.linalg.norm(res_forces, axis=1).tolist())
+        if args.dump_prior_forces and ts_idx < args.dump_frames:
+            _prior_dump.append({
+                "centers": np.asarray(frame_centers, dtype=float),
+                "aa_force": np.asarray(frame_forces, dtype=float),
+                "aa_torque": np.asarray(frame_torques, dtype=float),
+                "prior_force": np.asarray(frame_forces, dtype=float) - res_forces,
+                "prior_torque": np.asarray(frame_torques, dtype=float) - res_torques,
+            })
 
         # 3.3 Optional residual-force clipping and binary output.
         # Clipping is a training-data policy, not part of the IBI definition;
@@ -2273,6 +2286,12 @@ with open(args.output, "wb") as f:
                 f.write(struct.pack("i", site_type))
                 f.write(struct.pack("3f", *site_pos))
 
+
+
+if args.dump_prior_forces and _prior_dump:
+    np.savez(args.dump_prior_forces,
+             **{k: np.stack([d[k] for d in _prior_dump]) for k in _prior_dump[0]})
+    print(f"[INFO] forze prior sottratte dei primi {len(_prior_dump)} frame -> {args.dump_prior_forces}")
 
 
 def _print_force_percentiles(label, values):

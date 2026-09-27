@@ -58,6 +58,7 @@ parser.add_argument("--dataset", type=str, required=True, help="Dataset to get i
 parser.add_argument("--checkpoint", type=str, default=None, help="NPZ file with pos and v to load instead of dataset positions")
 parser.add_argument("--dt", type=float, default=0.002, help="Time step (ps)")
 parser.add_argument("--steps", type=int, default=10000, help="Simulation steps")
+parser.add_argument("--dump_initial_forces", type=str, default=None, help="Scrive forza e coppia di ogni corpo (COM) sulla configurazione iniziale, senza termostato, ed esce: confronto runtime <-> dataset (compare_prior_parity.py)")
 parser.add_argument("--no_log", action="store_true", help="Disable energy and trajectory logging")
 parser.add_argument("--no_vtf", action="store_true", help="Disable VTF trajectory output while keeping the energy log")
 parser.add_argument("--energy_file", type=str, default="energy.csv", help="Energy CSV output path")
@@ -1110,6 +1111,25 @@ if args.generalized_fd_report is not None:
     run_generalized_fd_probe(args.generalized_fd_report)
 
 simulation_ok = True
+if args.dump_initial_forces:
+    # Parita' dei prior runtime <-> dataset: forze e coppie di ogni corpo sulla
+    # configurazione iniziale (il frame 0 del dataset se non c'e' --checkpoint),
+    # senza termostato, cosi' da confrontarle con quelle che build_cg_dataset.py
+    # ha sottratto (--dump-prior-forces).
+    system.thermostat.turn_off()
+    system.integrator.run(0, recalc_forces=True)
+    _ids = [mol_com_parts[m] for m in sorted(mol_com_parts)]
+    np.savez(
+        args.dump_initial_forces,
+        mol=np.asarray(sorted(mol_com_parts), dtype=np.int64),
+        com=np.asarray([system.part.by_id(i).pos for i in _ids], dtype=float),
+        force=np.asarray([system.part.by_id(i).f for i in _ids], dtype=float),
+        torque_lab=np.asarray([system.part.by_id(i).torque_lab for i in _ids], dtype=float),
+        ml_active=np.asarray(ml_active),
+    )
+    print(f"[DONE] forze e coppie iniziali di {len(_ids)} corpi -> {args.dump_initial_forces}")
+    sys.exit(0)
+
 with ExitStack() as stack:
     energy_handle = None
     energy_writer = None

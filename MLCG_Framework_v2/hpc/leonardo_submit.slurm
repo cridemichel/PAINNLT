@@ -113,6 +113,7 @@ dataset)
          ${AA_FORCES_TRAJECTORY:+AA_FORCES_TRAJECTORY='${AA_FORCES_TRAJECTORY}'} \
          ${AA_FORCES_TOPOLOGY:+AA_FORCES_TOPOLOGY='${AA_FORCES_TOPOLOGY}'} \
          ${PRIOR_SET:+PRIOR_SET='${PRIOR_SET}'} ${PART:+PART='${PART}'} \
+         ${DUMP_PRIOR_FORCES:+DUMP_PRIOR_FORCES='${DUMP_PRIOR_FORCES}'} \
          PYTHON_BIN=python3 bash 02_build_dataset.sh"
     echo
     echo "[NOTA] Prima di allenare, misura il pavimento di rumore sul dataset nuovo:"

@@ -88,6 +88,9 @@ fi
 # estrapola.  Un dataset troncato NON si usa per allenare.
 limit_args=()
 [ -n "${MAX_FRAMES:-}" ] && limit_args+=(--max-frames "${MAX_FRAMES}")
+# DUMP_PRIOR_FORCES=file.npz: forze prior sottratte nei primi frame, per il
+# confronto con il runtime (compare_prior_parity.py)
+[ -n "${DUMP_PRIOR_FORCES:-}" ] && limit_args+=(--dump-prior-forces "${DUMP_PRIOR_FORCES}")
 [ -n "${STRIDE:-}" ]     && limit_args+=(--stride "${STRIDE}")
 
 "${PYTHON_BIN}" "${BUILDER}" \
