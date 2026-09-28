@@ -423,9 +423,20 @@ static int run(int argc, char* argv[]) {
         const int64_t nc = std::min<int64_t>(cg.frames, 6);
         auto ia = torch::arange(na, torch::kInt64);
         auto ic = torch::arange(nc, torch::kInt64);
+        // Perturbazione RELATIVA alla scala di ogni tensore: una perturbazione
+        // assoluta di 0.3 su pesi inizializzati a ~0.1 fa esplodere le feature
+        // strato dopo strato (fino a 1e9 con molti archi) e rende le SiLU dei
+        // gradini alla scala di theta 1/|feature|: le differenze finite non
+        // convergono piu' e il controllo misura quel modello patologico, non
+        // train_relent.  I tensori nulli (readout con --zero-init) ricevono
+        // una scala fissa 0.1.
         auto perturb = [&](double amplitude) {
             torch::NoGradGuard no_grad;
-            for (auto& p : model->parameters()) p.add_(torch::randn_like(p) * amplitude);
+            for (auto& p : model->parameters()) {
+                double scale = p.pow(2).mean().sqrt().item<double>();
+                if (!(scale > 0.0)) scale = 0.1;
+                p.add_(torch::randn_like(p) * (amplitude * scale));
+            }
         };
         // Un modello non banale (con --zero-init l'energia sarebbe nulla).
         perturb(0.3);
@@ -448,7 +459,7 @@ static int run(int argc, char* argv[]) {
         // theta_0 = questo modello; theta = theta_0 + perturbazione, cosi' i
         // pesi di ripesatura non sono uniformi.
         auto u0 = u_all;
-        perturb(0.005);
+        perturb(0.15);
         auto objective = [&]() {
             auto ua = energies_no_grad(model, aa, ia, cutoff, na);
             auto uc = energies_no_grad(model, cg, ic, cutoff, nc);
@@ -461,54 +472,107 @@ static int run(int argc, char* argv[]) {
         auto uc_g = batch_energy(model, cg, ic, cutoff);
         auto surrogate = beta * (ua_g.mean() - (w * uc_g).sum());
         surrogate.backward();
-        std::vector<torch::Tensor> dir;
-        double analytic = 0.0, norm2 = 0.0;
-        for (auto& p : model->parameters()) {
-            auto d = torch::randn_like(p);
-            norm2 += (d * d).sum().item<double>();
-            dir.push_back(d);
-        }
-        const double inv_norm = 1.0 / std::sqrt(norm2);
         auto params = model->parameters();
-        for (std::size_t k = 0; k < params.size(); ++k) {
-            dir[k] = dir[k] * inv_norm;
-            if (params[k].grad().defined()) {
-                analytic += (params[k].grad() * dir[k]).sum().item<double>();
+        // Due direzioni: il solo readout (l'energia vi dipende attraverso un
+        // solo MLP) e tutti i parametri.
+        std::vector<bool> in_readout(params.size(), false);
+        {
+            std::vector<const void*> readout_ptrs;
+            for (const auto& p : model->readout->parameters()) readout_ptrs.push_back(p.unsafeGetTensorImpl());
+            for (std::size_t k = 0; k < params.size(); ++k) {
+                in_readout[k] = std::find(readout_ptrs.begin(), readout_ptrs.end(),
+                                          params[k].unsafeGetTensorImpl()) != readout_ptrs.end();
             }
         }
-        auto shift = [&](double s) {
-            torch::NoGradGuard no_grad;
-            for (std::size_t k = 0; k < params.size(); ++k) params[k].add_(dir[k] * s);
+        auto directional_check = [&](const std::string& label, bool readout_only) {
+            std::vector<torch::Tensor> dir;
+            double norm2 = 0.0;
+            for (std::size_t k = 0; k < params.size(); ++k) {
+                auto d = torch::randn_like(params[k]);
+                if (readout_only && !in_readout[k]) d.zero_();
+                norm2 += (d * d).sum().item<double>();
+                dir.push_back(d);
+            }
+            const double inv_norm = 1.0 / std::sqrt(norm2);
+            double analytic = 0.0;
+            for (std::size_t k = 0; k < params.size(); ++k) {
+                dir[k] = dir[k] * inv_norm;
+                if (params[k].grad().defined()) {
+                    analytic += (params[k].grad() * dir[k]).sum().item<double>();
+                }
+            }
+            auto shift = [&](double s) {
+                torch::NoGradGuard no_grad;
+                for (std::size_t k = 0; k < params.size(); ++k) params[k].add_(dir[k] * s);
+            };
+            // Differenze centrali a piu' passi, con estrapolazione di Richardson
+            // fra eps ed eps/2 (l'errore di troncamento liscio va come eps^2).
+            auto central = [&](double eps) {
+                shift(+eps); const double fp = objective();
+                shift(-2 * eps); const double fm = objective();
+                shift(+eps);
+                return (fp - fm) / (2 * eps);
+            };
+            std::cout << "[CHECK] direzione " << label << ": derivata analitica " << analytic << "\n";
+            double best_rich = std::numeric_limits<double>::infinity();
+            double best_any = std::numeric_limits<double>::infinity();
+            for (double eps : {1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6}) {
+                const double n1 = central(eps);
+                const double n2 = central(eps / 2);
+                const double richardson = (4.0 * n2 - n1) / 3.0;
+                const double rel_raw = std::abs(analytic - n2) / std::max(1e-12, std::abs(n2));
+                const double rel_rich =
+                    std::abs(analytic - richardson) / std::max(1e-12, std::abs(richardson));
+                best_rich = std::min(best_rich, rel_rich);
+                best_any = std::min({best_any, rel_rich, rel_raw});
+                std::cout << "[CHECK]   eps " << std::setw(7) << eps
+                          << "  centrale " << n2 << " (err. rel. " << rel_raw << ")"
+                          << "  Richardson " << richardson << " (err. rel. " << rel_rich << ")\n";
+            }
+            std::cout << "[CHECK]   miglior errore relativo: Richardson " << best_rich
+                      << ", qualunque passo " << best_any << "\n";
+            return std::make_pair(best_rich, best_any);
         };
-        // Differenze centrali a piu' passi, con estrapolazione di Richardson
-        // fra eps ed eps/2 (l'errore di troncamento va come eps^2): su un
-        // sistema grande la curvatura in theta e' grande e un passo solo non
-        // separa il troncamento dall'arrotondamento.
-        auto central = [&](double eps) {
-            shift(+eps); const double fp = objective();
-            shift(-2 * eps); const double fm = objective();
-            shift(+eps);
-            return (fp - fm) / (2 * eps);
-        };
+
         const double ess = 1.0 / (w * w).sum().item<double>() / static_cast<double>(nc);
         std::cout << std::setprecision(10)
-                  << "[CHECK] ESS/N = " << ess << " (pesi non uniformi se < 1)\n"
-                  << "[CHECK] derivata direzionale analitica: " << analytic << "\n";
-        double best_rel = std::numeric_limits<double>::infinity();
-        for (double eps : {1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6}) {
-            const double n1 = central(eps);
-            const double n2 = central(eps / 2);
-            const double richardson = (4.0 * n2 - n1) / 3.0;
-            const double rel_raw = std::abs(analytic - n2) / std::max(1e-12, std::abs(n2));
-            const double rel_rich =
-                std::abs(analytic - richardson) / std::max(1e-12, std::abs(richardson));
-            best_rel = std::min(best_rel, rel_rich);
-            std::cout << "[CHECK]   eps " << std::setw(7) << eps
-                      << "  centrale " << n2 << " (err. rel. " << rel_raw << ")"
-                      << "  Richardson " << richardson << " (err. rel. " << rel_rich << ")\n";
+                  << "[CHECK] ESS/N = " << ess << " (pesi non uniformi se < 1)\n";
+
+        // Scala delle feature per strato: deve restare O(1-100).  Feature
+        // enormi rendono la rete non liscia alla scala dei passi delle
+        // differenze finite (vedi la perturbazione relativa sopra).
+        {
+            torch::NoGradGuard no_grad;
+            auto pos = cg.pos.index_select(0, ic.slice(0, 0, 1));
+            auto box = cg.box.index_select(0, ic.slice(0, 0, 1)).view({1, 1, 1, 3});
+            auto diff = pos.unsqueeze(2) - pos.unsqueeze(1);
+            diff = diff - box * torch::round(diff / box);
+            auto mask = ((diff * diff).sum(-1) <= cutoff * cutoff) & cg.inter_mol.unsqueeze(0);
+            auto nz = mask.nonzero();
+            auto ii = nz.select(1, 1), jj = nz.select(1, 2);
+            auto edge_index = torch::stack({ii, jj});
+            auto r_ij = diff.index({nz.select(1, 0), ii, jj});
+            auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
+            auto rbf = model->expansion_rbf(d_ij);
+            auto r_norm = r_ij / d_ij.unsqueeze(1);
+            auto s_feat = model->embedding->forward(cg.types);
+            auto v_feat = torch::zeros({s_feat.size(0), 3, s_feat.size(1)}, s_feat.options());
+            std::cout << "[CHECK] archi intermolecolari nel frame 0: " << nz.size(0) << "\n";
+            for (int layer = 0; layer < model->num_layers; ++layer) {
+                auto msg = model->messages[layer]->forward(s_feat, v_feat, edge_index, rbf, r_norm);
+                s_feat = s_feat + msg.first;
+                v_feat = v_feat + msg.second;
+                std::tie(s_feat, v_feat) = model->updates[layer]->forward(s_feat, v_feat);
+                std::cout << "[CHECK] strato " << layer << ": max|s| = "
+                          << s_feat.abs().max().item<double>() << ", max|v| = "
+                          << v_feat.abs().max().item<double>() << "\n";
+            }
         }
-        std::cout << "[CHECK] miglior errore relativo (Richardson): " << best_rel << "\n";
-        const bool ok = best_rel < 1e-6 && batch_err < 1e-9 * std::max(1.0, u_spread) && u_spread > 0.0;
+
+        const auto readout = directional_check("solo readout", true);
+        const auto all = directional_check("tutti i parametri", false);
+        const bool batching_ok = batch_err < 1e-9 * std::max(1.0, u_spread) && u_spread > 0.0;
+        const bool ok = batching_ok && readout.first < 1e-6 && all.first < 1e-6;
         std::cout << (ok ? "[OK] gradiente dell'entropia relativa verificato\n"
                          : "[FAIL] gradiente o batching non coerenti\n");
         return ok ? 0 : 1;
