@@ -261,6 +261,9 @@ static void usage() {
 }
 
 static int run(int argc, char* argv[]) {
+    // Output riga per riga anche quando stdout e' un file (log di Slurm):
+    // altrimenti l'avanzamento compare solo a fine processo.
+    std::cout << std::unitbuf;
     std::string config_path, aa_path, cg_path, in_path, out_path, report_path;
     std::string device_name = "auto";
     bool zero_init = false, check_gradient = false;
