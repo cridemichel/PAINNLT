@@ -260,7 +260,7 @@ static void usage() {
         "       [--report R.json] [--check-gradient]\n";
 }
 
-int main(int argc, char* argv[]) {
+static int run(int argc, char* argv[]) {
     std::string config_path, aa_path, cg_path, in_path, out_path, report_path;
     std::string device_name = "auto";
     bool zero_init = false, check_gradient = false;
@@ -476,22 +476,39 @@ int main(int argc, char* argv[]) {
                 analytic += (params[k].grad() * dir[k]).sum().item<double>();
             }
         }
-        const double eps = 1e-5;
         auto shift = [&](double s) {
             torch::NoGradGuard no_grad;
             for (std::size_t k = 0; k < params.size(); ++k) params[k].add_(dir[k] * s);
         };
-        shift(+eps); const double fp = objective();
-        shift(-2 * eps); const double fm = objective();
-        shift(+eps);
-        const double numeric = (fp - fm) / (2 * eps);
+        // Differenze centrali a piu' passi, con estrapolazione di Richardson
+        // fra eps ed eps/2 (l'errore di troncamento va come eps^2): su un
+        // sistema grande la curvatura in theta e' grande e un passo solo non
+        // separa il troncamento dall'arrotondamento.
+        auto central = [&](double eps) {
+            shift(+eps); const double fp = objective();
+            shift(-2 * eps); const double fm = objective();
+            shift(+eps);
+            return (fp - fm) / (2 * eps);
+        };
         const double ess = 1.0 / (w * w).sum().item<double>() / static_cast<double>(nc);
-        const double rel = std::abs(analytic - numeric) / std::max(1e-12, std::abs(numeric));
         std::cout << std::setprecision(10)
                   << "[CHECK] ESS/N = " << ess << " (pesi non uniformi se < 1)\n"
-                  << "[CHECK] derivata direzionale: analitica " << analytic
-                  << ", differenze finite " << numeric << ", errore relativo " << rel << "\n";
-        const bool ok = rel < 1e-5 && batch_err < 1e-9 * std::max(1.0, u_spread) && u_spread > 0.0;
+                  << "[CHECK] derivata direzionale analitica: " << analytic << "\n";
+        double best_rel = std::numeric_limits<double>::infinity();
+        for (double eps : {1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6}) {
+            const double n1 = central(eps);
+            const double n2 = central(eps / 2);
+            const double richardson = (4.0 * n2 - n1) / 3.0;
+            const double rel_raw = std::abs(analytic - n2) / std::max(1e-12, std::abs(n2));
+            const double rel_rich =
+                std::abs(analytic - richardson) / std::max(1e-12, std::abs(richardson));
+            best_rel = std::min(best_rel, rel_rich);
+            std::cout << "[CHECK]   eps " << std::setw(7) << eps
+                      << "  centrale " << n2 << " (err. rel. " << rel_raw << ")"
+                      << "  Richardson " << richardson << " (err. rel. " << rel_rich << ")\n";
+        }
+        std::cout << "[CHECK] miglior errore relativo (Richardson): " << best_rel << "\n";
+        const bool ok = best_rel < 1e-6 && batch_err < 1e-9 * std::max(1.0, u_spread) && u_spread > 0.0;
         std::cout << (ok ? "[OK] gradiente dell'entropia relativa verificato\n"
                          : "[FAIL] gradiente o batching non coerenti\n");
         return ok ? 0 : 1;
@@ -636,4 +653,13 @@ int main(int argc, char* argv[]) {
         std::chrono::steady_clock::now() - t_start).count();
     write_report();
     return 0;
+}
+
+int main(int argc, char* argv[]) {
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] " << e.what() << "\n";
+        return 1;
+    }
 }
