@@ -252,8 +252,12 @@ relent)
     : "${START_CHECKPOINT:?indica START_CHECKPOINT, lo stato equilibrato di partenza}"
     # Le altre variabili (TAG, NITER, CG_STEPS, RE_*, ...) arrivano dall'ambiente
     # del job, esportato da submit_leonardo.sh.
-    run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
-         PRIOR_SET='${PRIOR_SET}' START_CHECKPOINT='${START_CHECKPOINT}' bash 06_relent.sh"
+    # NON dentro run(): lo script lancia ogni programma in un passo srun suo
+    # (STEP_SRUN=1).  In un unico passo, dopo la MD (MPI) il processo
+    # successivo veniva ucciso dal gestore d'errore PMIx di Slurm.
+    ( cd "${TUTORIAL}" && PYRESSO="${FRAMEWORK}/espresso/build/pypresso" DEVICE=cuda \
+        STEP_SRUN=1 PRIOR_SET="${PRIOR_SET}" START_CHECKPOINT="${START_CHECKPOINT}" \
+        bash 06_relent.sh )
     ;;
 
 analysis)

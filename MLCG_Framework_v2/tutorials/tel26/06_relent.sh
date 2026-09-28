@@ -95,6 +95,20 @@ samples_of() { printf "samples_%s_it%02d.npz" "${base}" "$1"; }
 state_of()   { printf "state_%s_it%02d.npz" "${base}" "$1"; }
 cgbin_of()   { printf "relent_cg_%s_it%02d.bin" "${base}" "$1"; }
 
+# Ogni programma in un passo di Slurm suo (STEP_SRUN=1, dallo stadio relent).
+# Dentro un unico srun il primo programma MPI (pypresso) registra il passo
+# presso il server PMIx; a MPI chiuso, il processo successivo nello stesso
+# passo faceva scattare il gestore d'errore di PMIx (status -25) e Slurm
+# uccideva tutto il passo con SIGKILL.  Con un passo per programma lo stato
+# PMIx non sopravvive fra un programma e l'altro.  Fuori da Slurm: diretto.
+launch() {
+    if [ -n "${STEP_SRUN:-}" ] && [ -n "${SLURM_JOB_ID:-}" ]; then
+        srun --ntasks=1 --nodes=1 --cpus-per-task="${SLURM_CPUS_PER_TASK:-1}" "$@"
+    else
+        "$@"
+    fi
+}
+
 manifest() {
     "${PYTHON_BIN}" "${FRAMEWORK_ROOT}/training/create_model_manifest.py" \
         --model "$1" --config "${CONFIG}" --dataset "${DATASET_BIN}" >/dev/null
@@ -111,7 +125,7 @@ if [ ! -f "${m0}" ]; then
         cp "${START_MODEL}" "${m0}.tmp" && mv "${m0}.tmp" "${m0}"
         echo "[INFO] partenza da ${START_MODEL}"
     else
-        "${RELENT_BIN}" --config "${CONFIG}" --aa "${DATASET_BIN}" --zero-init \
+        launch "${RELENT_BIN}" --config "${CONFIG}" --aa "${DATASET_BIN}" --zero-init \
             --steps 0 --out "${m0}" --report "${m0%.pt}.relent.json"
     fi
 fi
@@ -131,7 +145,7 @@ simulate() {
     echo "[INFO] $(date '+%F %T') MD di ${model} da ${ckpt_in}: ${CG_STEPS} passi, campioni dopo ${SKIP_STEPS}"
     # --allow_checkpoint_mismatch: lo stato viene dalla corsa del modello
     # precedente, quindi l'hash del modello non coincide per costruzione.
-    "${PYRESSO}" "${FRAMEWORK_ROOT}/simulation/run_cg_md.py" \
+    launch "${PYRESSO}" "${FRAMEWORK_ROOT}/simulation/run_cg_md.py" \
         --model "${model}" --config "${CONFIG}" \
         --priors "${PRIORS_JSON}" --rb_info "${RB_INFO_JSON}" --dataset "${DATASET_BIN}" \
         --checkpoint "${ckpt_in}" --allow_checkpoint_mismatch \
@@ -164,7 +178,7 @@ for n in $(seq 1 "${NITER}"); do
 
     report="${next_model%.pt}.relent.json"
     echo "[INFO] $(date '+%F %T') train_relent: $(model_of "${prev}") -> ${next_model}"
-    "${RELENT_BIN}" --config "${CONFIG}" --aa "${DATASET_BIN}" --cg "${cgbin}" \
+    launch "${RELENT_BIN}" --config "${CONFIG}" --aa "${DATASET_BIN}" --cg "${cgbin}" \
         --in "$(model_of "${prev}")" --out "${next_model}.tmp.pt" --report "${report}" \
         --steps "${RE_STEPS}" --lr "${RE_LR}" --weight-decay "${RE_WD}" \
         --batch-aa "${RE_BATCH}" --batch-cg "${RE_BATCH}" --ess-min "${RE_ESS_MIN}" \
