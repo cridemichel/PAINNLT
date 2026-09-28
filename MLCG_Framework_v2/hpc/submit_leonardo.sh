@@ -39,7 +39,7 @@
 set -euo pipefail
 
 STAGE="${1:-}"
-[[ -n "$STAGE" ]] || { echo "uso: $0 <setup|configure|build|dataset|noisefloor|train|select|production|analysis> [VAR=valore ...]" >&2; exit 2; }
+[[ -n "$STAGE" ]] || { echo "uso: $0 <setup|configure|build|dataset|noisefloor|train|select|production|iterate|relent|analysis> [VAR=valore ...]" >&2; exit 2; }
 shift
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -136,7 +136,7 @@ dataset|noisefloor|analysis)
          --account="$ACCOUNT_CPU")
     ;;
 
-train|select|production|iterate)
+train|select|production|iterate|relent)
     # Una A100 per nodo: il trainer e il driver di simulazione usano una GPU
     # sola.  Su Booster il rapporto e' 8 core per GPU.
     res=(--partition=boost_usr_prod --time=24:00:00
@@ -146,7 +146,7 @@ train|select|production|iterate)
 
 *)
     echo "[ERROR] stadio non riconosciuto: $STAGE" >&2
-    echo "        Attesi: setup | configure | build | dataset | noisefloor | train | select | production | analysis" >&2
+    echo "        Attesi: setup | configure | build | dataset | noisefloor | train | select | production | iterate | relent | analysis" >&2
     exit 2
     ;;
 esac

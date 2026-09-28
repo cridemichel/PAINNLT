@@ -236,6 +236,26 @@ iterate)
     echo "[job] ultima corsa: ${_topo}, ${_npz}"
     ;;
 
+relent)
+    # Allenamento a entropia relativa (tutorials/tel26/06_relent.sh): MD breve
+    # col modello corrente, poi passi di gradiente sulle posizioni, in ciclo.
+    # La catena si riprende da sola: rilanciata con lo stesso TAG salta le
+    # iterazioni gia' fatte.
+    #   bash hpc/submit_leonardo.sh relent SYSTEM=tel26 PRIOR_SET=lp1 \
+    #        START_CHECKPOINT=equilibrated_priors_lp1.npz TAG=re0 NITER=8
+    need_env
+    [[ -x "${FRAMEWORK}/training/build/train_relent" ]] || {
+        echo "[ERROR] train_relent non compilato: rilancia  bash hpc/submit_leonardo.sh build" >&2
+        exit 2
+    }
+    [[ -n "${PRIOR_SET}" ]] || { echo "[ERROR] indica PRIOR_SET (es. lp1)" >&2; exit 2; }
+    : "${START_CHECKPOINT:?indica START_CHECKPOINT, lo stato equilibrato di partenza}"
+    # Le altre variabili (TAG, NITER, CG_STEPS, RE_*, ...) arrivano dall'ambiente
+    # del job, esportato da submit_leonardo.sh.
+    run "cd '${TUTORIAL}' && PYRESSO='${FRAMEWORK}/espresso/build/pypresso' DEVICE=cuda \
+         PRIOR_SET='${PRIOR_SET}' START_CHECKPOINT='${START_CHECKPOINT}' bash 06_relent.sh"
+    ;;
+
 analysis)
     # La g(r) vale per qualunque G-quadruplex da 1c84f30: serve solo --nuc.
     # Gira qui e non sul nodo di login perche' load_reference legge il dataset
@@ -249,7 +269,7 @@ analysis)
 
 *)
     echo "[ERROR] STAGE non indicato o non riconosciuto: '${STAGE}'" >&2
-    echo "        Attesi: setup | configure | build | dataset | noisefloor | train | select | production | analysis" >&2
+    echo "        Attesi: setup | configure | build | dataset | noisefloor | train | select | production | iterate | relent | analysis" >&2
     echo "        Sottometti con: bash hpc/submit_leonardo.sh <stadio>" >&2
     exit 2
     ;;

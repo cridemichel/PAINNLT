@@ -103,3 +103,12 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(eval_parity PRIVATE m)
 endif()
 set_property(TARGET eval_parity PROPERTY CXX_STANDARD 17)
+
+# Allenamento a entropia relativa (train_relent.cpp): stesso modello PaiNN,
+# gradiente dalle posizioni AA e dai campioni CG invece che dalle forze.
+add_executable(train_relent train_relent.cpp)
+target_link_libraries(train_relent PRIVATE ${TORCH_LIBRARIES})
+if(UNIX AND NOT APPLE)
+    target_link_libraries(train_relent PRIVATE m)
+endif()
+set_property(TARGET train_relent PROPERTY CXX_STANDARD 17)
