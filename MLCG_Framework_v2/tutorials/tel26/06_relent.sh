@@ -34,7 +34,11 @@
 #   LOG_INTERVAL      passi fra due campioni (default 100 = 0.1 ps)
 #   SKIP_PS           ps scartati dopo il cambio di modello (default 5)
 #   GAMMA             attrito di Langevin (default 20: tau = m/gamma ~ 15 ps, come le corse g20)
-#   RE_STEPS, RE_LR, RE_WD, RE_BATCH, RE_ESS_MIN, RE_HOLDOUT, RE_EVAL_EVERY
+#   RE_STEPS, RE_LR, RE_WD, RE_BATCH, RE_ESS_MIN, RE_HOLDOUT, RE_EVAL_EVERY,
+#   RE_TOL, RE_MAX_BACKTRACKS
+#                     RE_LR e' il massimo: ogni iterazione parte dal doppio del
+#                     learning rate a cui la precedente e' arrivata dimezzando
+#                     (regione di fiducia adattiva, train_relent --max-backtracks)
 #                     parametri di train_relent
 set -euo pipefail
 
@@ -71,6 +75,10 @@ RE_BATCH="${RE_BATCH:-8}"
 RE_ESS_MIN="${RE_ESS_MIN:-0.5}"
 RE_HOLDOUT="${RE_HOLDOUT:-0.2}"
 RE_EVAL_EVERY="${RE_EVAL_EVERY:-10}"
+# Guadagno minimo di S_rel (nat per frame dell'intero sistema) perche' un'iterazione
+# conti come progresso: sotto questa soglia il Delta S di holdout e' rumore.
+RE_TOL="${RE_TOL:-0.5}"
+RE_MAX_BACKTRACKS="${RE_MAX_BACKTRACKS:-6}"
 
 cd "${SCRIPT_DIR}"
 source "${SCRIPT_DIR}/_prior_set.sh"
@@ -160,13 +168,28 @@ simulate() {
     mv "${samples}.tmp.npz" "${samples}"
 }
 
+# Learning rate della prossima iterazione: il doppio di quello finale della
+# precedente, al massimo RE_LR.  Report senza lr_final (versioni vecchie): RE_LR.
+next_lr() {
+    "${PYTHON_BIN}" -c "
+import json, sys
+cap = float(sys.argv[2])
+try:
+    lr = min(cap, 2.0 * float(json.load(open(sys.argv[1]))['lr_final']))
+except Exception:
+    lr = cap
+print(f'{lr:.6g}')" "$1" "${RE_LR}"
+}
+
 no_gain=0
 last=0
+cur_lr="${RE_LR}"
 for n in $(seq 1 "${NITER}"); do
     prev=$((n - 1))
     next_model="$(model_of "$n")"
     if [ -f "${next_model}" ] && [ -f "${next_model}.manifest.json" ]; then
         last="$n"
+        [ -f "${next_model%.pt}.relent.json" ] && cur_lr="$(next_lr "${next_model%.pt}.relent.json")"
         continue
     fi
     if [ "${prev}" -eq 0 ]; then ckpt="${START_CHECKPOINT}"; else ckpt="$(state_of $((prev - 1)))"; fi
@@ -177,16 +200,17 @@ for n in $(seq 1 "${NITER}"); do
         --template "${DATASET_BIN}" --samples "$(samples_of "${prev}")" --out "${cgbin}"
 
     report="${next_model%.pt}.relent.json"
-    echo "[INFO] $(date '+%F %T') train_relent: $(model_of "${prev}") -> ${next_model}"
+    echo "[INFO] $(date '+%F %T') train_relent: $(model_of "${prev}") -> ${next_model} (lr ${cur_lr})"
     launch "${RELENT_BIN}" --config "${CONFIG}" --aa "${DATASET_BIN}" --cg "${cgbin}" \
         --in "$(model_of "${prev}")" --out "${next_model}.tmp.pt" --report "${report}" \
-        --steps "${RE_STEPS}" --lr "${RE_LR}" --weight-decay "${RE_WD}" \
+        --steps "${RE_STEPS}" --lr "${cur_lr}" --weight-decay "${RE_WD}" \
         --batch-aa "${RE_BATCH}" --batch-cg "${RE_BATCH}" --ess-min "${RE_ESS_MIN}" \
         --holdout-frac "${RE_HOLDOUT}" --eval-every "${RE_EVAL_EVERY}" \
-        --seed "$((42 + n))" --device "${DEVICE}"
+        --max-backtracks "${RE_MAX_BACKTRACKS}" --seed "$((42 + n))" --device "${DEVICE}"
     mv "${next_model}.tmp.pt" "${next_model}"
     manifest "${next_model}"
     last="$n"
+    cur_lr="$(next_lr "${report}")"
 
     summary=$("${PYTHON_BIN}" -c "
 import json, sys
@@ -195,10 +219,11 @@ print(r['best_step'], r['best_dS'], r['stop_reason'], r['ess_last'], round(r['se
     read -r best_step best_ds stop ess secs <<<"${summary}"
     echo "[RELENT-ITER] it$(printf %02d "$n") passo_migliore=${best_step} dS_holdout=${best_ds}" \
          "arresto=${stop} ESS/N=${ess} (${secs} s)"
-    if [ "${best_step}" -eq 0 ]; then
+    gain=$("${PYTHON_BIN}" -c "import sys; print(int(float(sys.argv[1]) < -float(sys.argv[2])))" "${best_ds}" "${RE_TOL}")
+    if [ "${gain}" -eq 0 ]; then
         no_gain=$((no_gain + 1))
         if [ "${no_gain}" -ge "${STOP_AFTER_NO_GAIN}" ]; then
-            echo "[CONVERGENZA] ${no_gain} iterazioni senza guadagno su S_rel: catena ferma a it$(printf %02d "$n")"
+            echo "[CONVERGENZA] ${no_gain} iterazioni con guadagno su S_rel sotto ${RE_TOL}: catena ferma a it$(printf %02d "$n")"
             break
         fi
     else

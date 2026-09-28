@@ -257,6 +257,7 @@ static void usage() {
         "       [--kT 2.49] [--batch-aa 8] [--batch-cg 8] [--eval-batch 8]\n"
         "       [--ess-min 0.5] [--holdout-frac 0.2] [--monitor-frames 256]\n"
         "       [--eval-every 10] [--energy-scale kT] [--seed 42] [--device auto]\n"
+        "       [--max-backtracks 6]\n"
         "       [--report R.json] [--check-gradient]\n";
 }
 
@@ -268,7 +269,7 @@ static int run(int argc, char* argv[]) {
     std::string device_name = "auto";
     bool zero_init = false, check_gradient = false;
     int steps = 100, batch_aa = 8, batch_cg = 8, eval_batch = 8, eval_every = 10;
-    int monitor_frames = 256, seed = 42;
+    int monitor_frames = 256, seed = 42, max_backtracks = 6;
     double lr = 1e-3, weight_decay = 0.0, grad_clip = 0.0, kT = 2.49;
     double ess_min = 0.5, holdout_frac = 0.2, energy_scale = -1.0;
 
@@ -294,6 +295,7 @@ static int run(int argc, char* argv[]) {
         else if (a == "--eval-every") eval_every = std::stoi(next());
         else if (a == "--monitor-frames") monitor_frames = std::stoi(next());
         else if (a == "--seed") seed = std::stoi(next());
+        else if (a == "--max-backtracks") max_backtracks = std::stoi(next());
         else if (a == "--lr") lr = std::stod(next());
         else if (a == "--weight-decay") weight_decay = std::stod(next());
         else if (a == "--grad-clip") grad_clip = std::stod(next());
@@ -632,38 +634,69 @@ static int run(int argc, char* argv[]) {
     int steps_done = 0;
     double last_ess = 1.0;
 
-    std::cout << "[INFO] passo      ESS/N      dS_train      dS_hold     beta*gap\n";
-    for (int step = 1; step <= steps; ++step) {
+    // Regione di fiducia con passo adattivo.  Un passo che porta ESS/N sotto
+    // la soglia viene annullato e il learning rate dimezzato, fino a
+    // --max-backtracks volte; solo allora si torna a simulare.  Senza questo,
+    // i primi passi di Adam (ampi ~lr per parametro qualunque sia il
+    // gradiente) superavano la regione di fiducia gia' al primo tentativo e
+    // l'iterazione non guadagnava nulla (TEL26 it04-it05, falsa convergenza).
+    double current_lr = lr;
+    int backtracks = 0;
+    auto set_lr = [&](double value) {
+        for (auto& group : optimizer.param_groups()) {
+            static_cast<torch::optim::AdamWOptions&>(group.options()).lr(value);
+        }
+    };
+    int updates = 0;
+    int last_logged = -1;
+    double prev_ess = 1.0;          // ESS/N dello stato prima dell'ultimo passo
+    double last_step_lr = -1.0;     // lr dell'ultimo passo tentato
+    double accepted_lr = -1.0;      // lr dell'ultimo passo accettato
+    std::cout << "[INFO] passo      ESS/N      dS_train      dS_hold     beta*gap        lr\n";
+    while (updates < steps) {
         auto u_cg = energies_no_grad(model, cg, on_dev(cg_idx), cutoff, eval_batch);
         auto w_cg = torch::softmax(-beta * (u_cg - u0_cg), 0);
         const double ess = 1.0 / (w_cg * w_cg).sum().item<double>() / static_cast<double>(cg.frames);
         last_ess = ess;
         if (ess < ess_min) {
-            // L'ultimo passo ha portato theta troppo lontano dai campioni:
-            // lo si annulla e si torna a simulare.
+            // L'ultimo passo ha portato theta troppo lontano dai campioni.
             restore_parameters(model, prev_params);
-            steps_done = step - 2;  // lo stato ripristinato e' quello prima del passo step-1
-            stop_reason = "ess";
-            std::cout << "[INFO] ESS/N = " << ess << " < " << ess_min
-                      << " al passo " << step << ": serve una nuova simulazione\n";
-            break;
+            --updates;
+            // Se lo stato ripristinato e' gia' a ridosso della soglia, nessun
+            // passo, per quanto piccolo, porta lontano: inutile dimezzare.
+            if (backtracks >= max_backtracks || prev_ess < 1.2 * ess_min) {
+                stop_reason = "ess";
+                std::cout << "[INFO] ESS/N = " << ess << " < " << ess_min << " anche con lr "
+                          << current_lr << ": serve una nuova simulazione\n";
+                break;
+            }
+            ++backtracks;
+            current_lr *= 0.5;
+            set_lr(current_lr);
+            std::cout << "[INFO] ESS/N = " << ess << " < " << ess_min << " dopo il passo "
+                      << (updates + 1) << ": annullato, lr -> " << current_lr << "\n";
+            continue;
         }
-        if ((step - 1) % eval_every == 0) {
+        if (updates > 0 && last_step_lr > 0.0) accepted_lr = last_step_lr;
+        if (updates % eval_every == 0 && updates != last_logged) {
+            last_logged = updates;
             const Eval e = evaluate(u_cg);
             const double score = n_hold > 0 ? e.ds_hold : e.ds_train;
-            std::cout << "[RELENT] " << std::setw(5) << (step - 1) << std::fixed
+            std::cout << "[RELENT] " << std::setw(5) << updates << std::fixed
                       << std::setprecision(4) << std::setw(10) << e.ess
                       << std::setw(14) << e.ds_train << std::setw(13) << e.ds_hold
-                      << std::setw(13) << e.gap << std::defaultfloat << "\n";
-            history.push_back({{"step", step - 1}, {"ess", e.ess}, {"dS_train", e.ds_train},
-                           {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}});
+                      << std::setw(13) << e.gap << std::defaultfloat
+                      << std::setw(10) << current_lr << "\n";
+            history.push_back({{"step", updates}, {"ess", e.ess}, {"dS_train", e.ds_train},
+                               {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"lr", current_lr}});
             if (score < best_score) {
                 best_score = score;
-                best_step = step - 1;
+                best_step = updates;
                 best_params = snapshot_parameters(model);
             }
         }
         prev_params = snapshot_parameters(model);
+        prev_ess = ess;
 
         optimizer.zero_grad();
         auto ia = on_dev(aa_train_idx.index_select(
@@ -675,8 +708,10 @@ static int run(int argc, char* argv[]) {
         loss.backward();
         if (grad_clip > 0.0) torch::nn::utils::clip_grad_norm_(model->parameters(), grad_clip);
         optimizer.step();
-        steps_done = step;
+        last_step_lr = current_lr;
+        ++updates;
     }
+    steps_done = std::max(0, updates);
     // Stato finale (dopo l'ultimo passo, o quello prima del crollo dell'ESS):
     // lo si valuta sempre, perche' con eval_every > 1 potrebbe essere il migliore.
     {
@@ -710,6 +745,10 @@ static int run(int argc, char* argv[]) {
     report["steps_done"] = steps_done;
     report["stop_reason"] = stop_reason;
     report["ess_last"] = last_ess;
+    // lr dell'ultimo passo accettato: la scala giusta per l'iterazione dopo
+    // (i dimezzamenti finali a ridosso della soglia non dicono nulla).
+    report["lr_final"] = accepted_lr > 0.0 ? accepted_lr : current_lr;
+    report["backtracks"] = backtracks;
     report["best_step"] = best_step;
     report["best_dS"] = best_score;
     report["best_dS_source"] = n_hold > 0 ? "holdout" : "train";
