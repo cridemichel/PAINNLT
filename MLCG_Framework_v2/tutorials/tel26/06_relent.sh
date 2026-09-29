@@ -35,7 +35,7 @@
 #   SKIP_PS           ps scartati dopo il cambio di modello (default 5)
 #   GAMMA             attrito di Langevin (default 20: tau = m/gamma ~ 15 ps, come le corse g20)
 #   RE_STEPS, RE_LR, RE_WD, RE_BATCH, RE_ESS_MIN, RE_HOLDOUT, RE_EVAL_EVERY,
-#   RE_TOL, RE_MAX_BACKTRACKS
+#   RE_TOL, RE_MAX_BACKTRACKS, RE_RESIDUES_PER_COPY
 #                     RE_LR e' il massimo: ogni iterazione parte dal doppio del
 #                     learning rate a cui la precedente e' arrivata dimezzando
 #                     (regione di fiducia adattiva, train_relent --max-backtracks)
@@ -79,6 +79,10 @@ RE_EVAL_EVERY="${RE_EVAL_EVERY:-10}"
 # conti come progresso: sotto questa soglia il Delta S di holdout e' rumore.
 RE_TOL="${RE_TOL:-0.5}"
 RE_MAX_BACKTRACKS="${RE_MAX_BACKTRACKS:-6}"
+# Ripesatura per copia: con 26 (residui per copia del TEL26) ogni copia e' un
+# gruppo di pesi a se', e la regione di fiducia non e' piu' limitata dalla
+# varianza di Delta U sommata su 10 copie quasi indipendenti.  0 = un gruppo.
+RE_RESIDUES_PER_COPY="${RE_RESIDUES_PER_COPY:-0}"
 
 cd "${SCRIPT_DIR}"
 source "${SCRIPT_DIR}/_prior_set.sh"
@@ -206,7 +210,8 @@ for n in $(seq 1 "${NITER}"); do
         --steps "${RE_STEPS}" --lr "${cur_lr}" --weight-decay "${RE_WD}" \
         --batch-aa "${RE_BATCH}" --batch-cg "${RE_BATCH}" --ess-min "${RE_ESS_MIN}" \
         --holdout-frac "${RE_HOLDOUT}" --eval-every "${RE_EVAL_EVERY}" \
-        --max-backtracks "${RE_MAX_BACKTRACKS}" --seed "$((42 + n))" --device "${DEVICE}"
+        --max-backtracks "${RE_MAX_BACKTRACKS}" --residues-per-copy "${RE_RESIDUES_PER_COPY}" \
+        --seed "$((42 + n))" --device "${DEVICE}"
     mv "${next_model}.tmp.pt" "${next_model}"
     manifest "${next_model}"
     last="$n"

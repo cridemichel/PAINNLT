@@ -163,11 +163,16 @@ struct DeviceSet {
     torch::Tensor box;        // [F, 3]
     torch::Tensor types;      // [N]
     torch::Tensor inter_mol;  // [N, N] bool: coppia di corpi diversi
+    torch::Tensor group;      // [N] gruppo (copia) di ogni sito, 0..G-1
+    int64_t groups = 1;
     int64_t frames = 0;
     int64_t sites = 0;
 };
 
-static DeviceSet to_device(const PositionSet& set, torch::Device device, torch::Dtype dtype) {
+// residues_per_copy > 0: i corpi (residui) consecutivi formano copie di
+// residues_per_copy corpi ciascuna, e ogni copia e' un gruppo di ripesatura.
+static DeviceSet to_device(const PositionSet& set, torch::Device device, torch::Dtype dtype,
+                           int residues_per_copy) {
     DeviceSet d;
     d.frames = set.num_frames;
     d.sites = set.num_sites;
@@ -180,6 +185,18 @@ static DeviceSet to_device(const PositionSet& set, torch::Device device, torch::
     d.types = torch::tensor(set.site_types, torch::kInt64).to(device);
     auto mol = torch::tensor(set.site_mol, torch::kInt64).to(device);
     d.inter_mol = mol.unsqueeze(1) != mol.unsqueeze(0);
+    const int64_t num_mol = set.site_mol.empty() ? 0 : set.site_mol.back() + 1;
+    if (residues_per_copy > 0) {
+        if (num_mol % residues_per_copy != 0) {
+            throw std::runtime_error("il numero di corpi (" + std::to_string(num_mol) +
+                                     ") non e' multiplo di --residues-per-copy");
+        }
+        d.groups = num_mol / residues_per_copy;
+        d.group = torch::div(mol, residues_per_copy, "floor");
+    } else {
+        d.groups = 1;
+        d.group = torch::zeros_like(mol);
+    }
     return d;
 }
 
@@ -207,11 +224,16 @@ static torch::Tensor batch_energy(PaiNNModel& model, const DeviceSet& set,
         r_ij = diff.index({b, i, j});
     }
     auto types = set.types.repeat({B});
-    auto batch_indices = torch::arange(B, types.options()).repeat_interleave(N);
-    return model->forward_with_rij(types, r_ij, edge_index, batch_indices);  // [B]
+    // Energia per (frame, gruppo): la rete somma le energie di sito per
+    // batch_indices, quindi basta indicizzare frame*G + gruppo.  I messaggi
+    // restano quelli del sistema intero (archi fra copie compresi).
+    const int64_t G = set.groups;
+    auto batch_indices = (torch::arange(B, types.options()).repeat_interleave(N) * G +
+                          set.group.repeat({B}));
+    return model->forward_with_rij(types, r_ij, edge_index, batch_indices).view({B, G});
 }
 
-// Energia su tutti i frame indicati, senza grafo, a blocchi.
+// Energia [frame, gruppo] su tutti i frame indicati, senza grafo, a blocchi.
 static torch::Tensor energies_no_grad(PaiNNModel& model, const DeviceSet& set,
                                       const torch::Tensor& frame_idx, double cutoff,
                                       int64_t chunk) {
@@ -226,8 +248,21 @@ static torch::Tensor energies_no_grad(PaiNNModel& model, const DeviceSet& set,
     return torch::cat(parts);
 }
 
+// Somma sui gruppi di ln <exp(x)>_frame.  Con un gruppo solo e' il vecchio
+// ln <exp(x)>; con piu' gruppi e' la stima fattorizzata (copie indipendenti).
 static double log_mean_exp(const torch::Tensor& x) {
-    return (torch::logsumexp(x, 0) - std::log(static_cast<double>(x.size(0)))).item<double>();
+    auto xx = x.dim() == 1 ? x.unsqueeze(1) : x;
+    return (torch::logsumexp(xx, 0) - std::log(static_cast<double>(xx.size(0)))).sum().item<double>();
+}
+
+// Pesi di ripesatura per gruppo (normalizzati sui frame, colonna per colonna)
+// e ESS/N del gruppo peggiore.
+static torch::Tensor group_weights(const torch::Tensor& log_w) {
+    return torch::softmax(log_w, 0);
+}
+static double min_ess_fraction(const torch::Tensor& w) {
+    auto ess = 1.0 / (w * w).sum(0);                   // [G]
+    return (ess.min() / static_cast<double>(w.size(0))).item<double>();
 }
 
 static std::vector<torch::Tensor> snapshot_parameters(PaiNNModel& model) {
@@ -257,7 +292,7 @@ static void usage() {
         "       [--kT 2.49] [--batch-aa 8] [--batch-cg 8] [--eval-batch 8]\n"
         "       [--ess-min 0.5] [--holdout-frac 0.2] [--monitor-frames 256]\n"
         "       [--eval-every 10] [--energy-scale kT] [--seed 42] [--device auto]\n"
-        "       [--max-backtracks 6]\n"
+        "       [--max-backtracks 6] [--residues-per-copy 0]\n"
         "       [--report R.json] [--check-gradient]\n";
 }
 
@@ -269,7 +304,7 @@ static int run(int argc, char* argv[]) {
     std::string device_name = "auto";
     bool zero_init = false, check_gradient = false;
     int steps = 100, batch_aa = 8, batch_cg = 8, eval_batch = 8, eval_every = 10;
-    int monitor_frames = 256, seed = 42, max_backtracks = 6;
+    int monitor_frames = 256, seed = 42, max_backtracks = 6, residues_per_copy = 0;
     double lr = 1e-3, weight_decay = 0.0, grad_clip = 0.0, kT = 2.49;
     double ess_min = 0.5, holdout_frac = 0.2, energy_scale = -1.0;
 
@@ -296,6 +331,7 @@ static int run(int argc, char* argv[]) {
         else if (a == "--monitor-frames") monitor_frames = std::stoi(next());
         else if (a == "--seed") seed = std::stoi(next());
         else if (a == "--max-backtracks") max_backtracks = std::stoi(next());
+        else if (a == "--residues-per-copy") residues_per_copy = std::stoi(next());
         else if (a == "--lr") lr = std::stod(next());
         else if (a == "--weight-decay") weight_decay = std::stod(next());
         else if (a == "--grad-clip") grad_clip = std::stod(next());
@@ -412,8 +448,13 @@ static int run(int argc, char* argv[]) {
         std::cerr << "[ERROR] AA e CG non hanno la stessa topologia di siti\n";
         return 2;
     }
-    DeviceSet aa = to_device(aa_raw, device, dtype);
-    DeviceSet cg = to_device(cg_raw, device, dtype);
+    DeviceSet aa = to_device(aa_raw, device, dtype, residues_per_copy);
+    DeviceSet cg = to_device(cg_raw, device, dtype, residues_per_copy);
+    report["groups"] = cg.groups;
+    if (cg.groups > 1) {
+        std::cout << "[INFO] ripesatura per copia: " << cg.groups << " gruppi da "
+                  << residues_per_copy << " corpi\n";
+    }
     aa_raw.positions.clear(); aa_raw.positions.shrink_to_fit();
     cg_raw.positions.clear(); cg_raw.positions.shrink_to_fit();
 
@@ -448,7 +489,7 @@ static int run(int argc, char* argv[]) {
         {
             // Scala l'energia a una dispersione di ~2 kT fra i frame: pesi di
             // ripesatura informativi, ne' uniformi ne' degeneri.
-            auto u = energies_no_grad(model, cg, ic, cutoff, nc);
+            auto u = energies_no_grad(model, cg, ic, cutoff, nc).sum(1);
             const double spread = u.std().item<double>();
             torch::NoGradGuard no_grad;
             if (spread > 0.0) model->energy_scale.mul_(2.0 * kT / spread);
@@ -457,7 +498,7 @@ static int run(int argc, char* argv[]) {
         auto u_one = energies_no_grad(model, cg, ic, cutoff, 1);
         auto u_all = energies_no_grad(model, cg, ic, cutoff, nc);
         const double batch_err = (u_one - u_all).abs().max().item<double>();
-        const double u_spread = u_all.std().item<double>();
+        const double u_spread = u_all.sum(1).std().item<double>();
         std::cout << "[CHECK] batching: max|U(1) - U(" << nc << ")| = " << batch_err
                   << " (dispersione di U fra i frame: " << u_spread << " kJ/mol)\n";
 
@@ -468,14 +509,14 @@ static int run(int argc, char* argv[]) {
         auto objective = [&]() {
             auto ua = energies_no_grad(model, aa, ia, cutoff, na);
             auto uc = energies_no_grad(model, cg, ic, cutoff, nc);
-            return beta * ua.mean().item<double>() + log_mean_exp(-beta * (uc - u0));
+            return beta * ua.sum(1).mean().item<double>() + log_mean_exp(-beta * (uc - u0));
         };
         model->zero_grad();
         auto uc_now = energies_no_grad(model, cg, ic, cutoff, nc);
         auto w = torch::softmax(-beta * (uc_now - u0), 0).to(dtype);
         auto ua_g = batch_energy(model, aa, ia, cutoff);
         auto uc_g = batch_energy(model, cg, ic, cutoff);
-        auto surrogate = beta * (ua_g.mean() - (w * uc_g).sum());
+        auto surrogate = beta * (ua_g.sum(1).mean() - (w * uc_g).sum());
         surrogate.backward();
         auto params = model->parameters();
         // Due direzioni: il solo readout (l'energia vi dipende attraverso un
@@ -539,7 +580,7 @@ static int run(int argc, char* argv[]) {
             return std::make_pair(best_rich, best_any);
         };
 
-        const double ess = 1.0 / (w * w).sum().item<double>() / static_cast<double>(nc);
+        const double ess = min_ess_fraction(w);
         std::cout << std::setprecision(10)
                   << "[CHECK] ESS/N = " << ess << " (pesi non uniformi se < 1)\n";
 
@@ -597,9 +638,9 @@ static int run(int argc, char* argv[]) {
     auto on_dev = [&](const torch::Tensor& t) { return t.to(device); };
 
     auto u0_cg = energies_no_grad(model, cg, on_dev(cg_idx), cutoff, eval_batch);
-    auto u0_mon = energies_no_grad(model, aa, on_dev(aa_mon_idx), cutoff, eval_batch);
+    auto u0_mon = energies_no_grad(model, aa, on_dev(aa_mon_idx), cutoff, eval_batch).sum(1);
     auto u0_hold = n_hold > 0
-        ? energies_no_grad(model, aa, on_dev(aa_hold_idx), cutoff, eval_batch)
+        ? energies_no_grad(model, aa, on_dev(aa_hold_idx), cutoff, eval_batch).sum(1)
         : torch::zeros({0}, torch::kFloat64);
     std::cout << "[INFO] frame AA: " << n_train << " allenamento (" << aa_mon_idx.size(0)
               << " di controllo), " << n_hold << " holdout; frame CG: " << cg.frames << "\n";
@@ -612,13 +653,13 @@ static int run(int argc, char* argv[]) {
         Eval e{};
         auto du = u_cg - u0_cg;
         auto w = torch::softmax(-beta * du, 0);
-        e.ess = 1.0 / (w * w).sum().item<double>() / static_cast<double>(cg.frames);
+        e.ess = min_ess_fraction(w);
         const double z_term = log_mean_exp(-beta * du);
-        auto u_mon = energies_no_grad(model, aa, on_dev(aa_mon_idx), cutoff, eval_batch);
+        auto u_mon = energies_no_grad(model, aa, on_dev(aa_mon_idx), cutoff, eval_batch).sum(1);
         e.ds_train = beta * (u_mon - u0_mon).mean().item<double>() + z_term;
         e.ds_hold = std::numeric_limits<double>::quiet_NaN();
         if (n_hold > 0) {
-            auto u_hold = energies_no_grad(model, aa, on_dev(aa_hold_idx), cutoff, eval_batch);
+            auto u_hold = energies_no_grad(model, aa, on_dev(aa_hold_idx), cutoff, eval_batch).sum(1);
             e.ds_hold = beta * (u_hold - u0_hold).mean().item<double>() + z_term;
         }
         e.gap = beta * (u_mon.mean().item<double>() - (w * u_cg).sum().item<double>());
@@ -656,7 +697,7 @@ static int run(int argc, char* argv[]) {
     while (updates < steps) {
         auto u_cg = energies_no_grad(model, cg, on_dev(cg_idx), cutoff, eval_batch);
         auto w_cg = torch::softmax(-beta * (u_cg - u0_cg), 0);
-        const double ess = 1.0 / (w_cg * w_cg).sum().item<double>() / static_cast<double>(cg.frames);
+        const double ess = min_ess_fraction(w_cg);
         last_ess = ess;
         if (ess < ess_min) {
             // L'ultimo passo ha portato theta troppo lontano dai campioni.
@@ -702,9 +743,20 @@ static int run(int argc, char* argv[]) {
         auto ia = on_dev(aa_train_idx.index_select(
             0, torch::randint(n_train, {batch_aa}, torch::kInt64)));
         // Campionamento per importanza dai pesi: media semplice sul batch.
-        auto ic = on_dev(torch::multinomial(w_cg.to(torch::kFloat64), batch_cg, true));
-        auto loss = beta * (batch_energy(model, aa, ia, cutoff).mean() -
-                            batch_energy(model, cg, ic, cutoff).mean());
+        torch::Tensor loss_cg;
+        if (cg.groups == 1) {
+            // Un gruppo: campionamento per importanza dai pesi, media semplice.
+            auto ic = on_dev(torch::multinomial(w_cg.select(1, 0).to(torch::kFloat64), batch_cg, true));
+            loss_cg = batch_energy(model, cg, ic, cutoff).sum(1).mean();
+        } else {
+            // Piu' gruppi: frame uniformi e pesi per gruppo (stima non distorta
+            // di sum_c sum_i w_ic U_ic).
+            auto pick = torch::randint(cg.frames, {batch_cg}, torch::kInt64);
+            auto w_sel = w_cg.index_select(0, pick).to(dtype).to(device) *
+                         (static_cast<double>(cg.frames) / batch_cg);
+            loss_cg = (w_sel * batch_energy(model, cg, on_dev(pick), cutoff)).sum();
+        }
+        auto loss = beta * (batch_energy(model, aa, ia, cutoff).sum(1).mean() - loss_cg);
         loss.backward();
         if (grad_clip > 0.0) torch::nn::utils::clip_grad_norm_(model->parameters(), grad_clip);
         optimizer.step();
