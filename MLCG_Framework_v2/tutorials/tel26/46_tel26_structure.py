@@ -186,7 +186,7 @@ def rmsf_on_core(Xu, ref):
     msf = ((A - mean[None]) ** 2).sum(axis=2).mean(axis=0)    # (86,)
     res = np.array([r for r, _ in sel.all])
     rmsf = np.array([np.sqrt(msf[res == r].mean()) for r in range(res.max() + 1)])
-    return rmsf, mean
+    return rmsf, mean, res
 
 
 # ── confronto fra distribuzioni ─────────────────────────────────────────────
@@ -319,7 +319,7 @@ def main():
     print(row)
     # Fluttuazioni contro spostamento medio: una RMSD piu' grande puo' venire
     # da fluttuazioni piu' ampie o da una struttura media diversa.
-    rmsf_ref, mean_ref = rmsf_on_core(Xr, ref)
+    rmsf_ref, mean_ref, site_res = rmsf_on_core(Xr, ref)
     print("\n  struttura media contro AA (nel sistema del nucleo AA) e RMSF per regione")
     groups = {"tetrade 1": [3, 11, 15, 21], "tetrade 2": [4, 10, 16, 22],
               "tetrade 3": [5, 9, 17, 23],
@@ -336,16 +336,47 @@ def main():
         if not idx:
             continue
         row = f"  {g:<18s} {rmsf_ref[idx].mean():8.4f}"
-        for lab, (rf, _m) in run_rmsf.items():
+        for lab, (rf, _m, _r) in run_rmsf.items():
             row += f"   {rf[idx].mean():7.4f} ({rf[idx].mean() / rmsf_ref[idx].mean():4.2f}x)"
         print(row)
     row = "  scarto medio (nm)          "
-    for lab, (_rf, m) in run_rmsf.items():
-        off = np.sqrt(((m - mean_ref) ** 2).sum(axis=1).mean())
+    site_off2 = {}
+    for lab, (_rf, m, _r) in run_rmsf.items():
+        site_off2[lab] = ((m - mean_ref) ** 2).sum(axis=1)           # per sito
+        off = np.sqrt(site_off2[lab].mean())
         results["runs"][lab]["mean_structure_offset_nm"] = float(off)
         row += f"   {off:13.4f}"
     print(row)
     print("  (scarto medio: RMSD fra la struttura media della corsa e quella AA, a nucleo allineato)")
+
+    # Scarto della struttura media per regione e per residuo: dice DOVE la
+    # geometria media si sposta (nucleo o loop), separandolo dalla morbidezza.
+    def res_off(lab, residues):
+        mask = np.isin(site_res, residues)
+        return float(np.sqrt(site_off2[lab][mask].mean())) if mask.any() else float("nan")
+
+    print("\n  scarto medio per regione (nm)" + "".join(f"{lab:>10s}" for lab in run_rmsf))
+    for g, idx in groups.items():
+        if not idx:
+            continue
+        row = f"  {g:<30s}"
+        for lab in run_rmsf:
+            v = res_off(lab, idx)
+            results["runs"][lab].setdefault("offset_by_region_nm", {})[g] = v
+            row += f"{v:10.4f}"
+        print(row)
+
+    print("\n  per residuo: RMSF AA (nm), poi per corsa  RMSF/AA | scarto medio (nm)")
+    print("  res  " + "".join(f"{lab:>16s}" for lab in run_rmsf))
+    for r in range(nuc):
+        where = next((f"t{k + 1}" for k, t in enumerate(TETRADS_1B) if r + 1 in t), "")
+        row = f"  {r + 1:2d}{SEQUENCE[r]}{where:<3s} {rmsf_ref[r]:6.3f}"
+        for lab, (rf, _m, _r) in run_rmsf.items():
+            v = res_off(lab, [r])
+            results["runs"][lab].setdefault("per_residue", []).append(
+                {"res": r + 1, "rmsf_ratio": float(rf[r] / rmsf_ref[r]), "offset_nm": v})
+            row += f"   {rf[r] / rmsf_ref[r]:4.2f}x|{v:6.3f}"
+        print(row)
     print("\n  RMSD in nm dalla struttura media AA dopo sovrapposizione (Kabsch).")
     print("  Il tetto e' un riferimento contro se' stesso: '@ref:0.5:1' con --ref-range 0:0.5.")
 
