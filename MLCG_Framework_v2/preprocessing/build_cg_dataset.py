@@ -128,6 +128,11 @@ parser.add_argument("--dump-prior-forces", dest="dump_prior_forces", type=str, d
                     help="Scrive in un .npz, per i primi --dump-frames frame, centri, forze e coppie "
                          "all-atom mappate e la somma dei prior sottratti (confronto con il runtime)")
 parser.add_argument("--dump-frames", dest="dump_frames", type=int, default=3)
+parser.add_argument("--allow-guard-violations", dest="allow_guard_violations", action="store_true",
+                    help="Solo con --priors: le distanze sotto il guard WCA dei prior diventano un "
+                         "avviso invece di un errore.  Per dataset usati solo per le POSIZIONI "
+                         "(entropia relativa, g(r)); le forze residue di quei frame NON sono "
+                         "affidabili per il force matching.")
 parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
 args = parser.parse_args()
 
@@ -2400,6 +2405,16 @@ if pass2_fit_min_violations:
         "WCA rigid-geometry consistency check failed: Pass 2 observed shorter "
         f"physical distances than the WCA fit. {details}"
     )
+if pass2_guard_violations and args.allow_guard_violations:
+    if not args.priors:
+        raise SystemExit("[ERROR] --allow-guard-violations vale solo con --priors")
+    details = "; ".join(
+        f"{pair}: pass2_min={rmin:.6f} < r_guard={rguard:.6f}"
+        for pair, rmin, rguard in pass2_guard_violations
+    )
+    print("[WARN] --allow-guard-violations: distanze sotto il guard WCA dei prior "
+          f"({details}).  Dataset valido per le posizioni, NON per il force matching.")
+    pass2_guard_violations = []
 if pass2_guard_violations:
     details = "; ".join(
         f"{pair}: pass2_min={rmin:.6f} < r_guard={rguard:.6f}"

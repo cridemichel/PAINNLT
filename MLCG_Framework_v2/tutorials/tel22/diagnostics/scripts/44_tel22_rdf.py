@@ -426,7 +426,15 @@ def main() -> None:
         Sr, Lr = S_full, L_full
 
     def get_run(path):
-        """Corsa di un modello, o una fetta del riferimento con '@ref:A:B'."""
+        """Corsa di un modello, una fetta del riferimento con '@ref:A:B', o un
+        ALTRO dataset all-atom con '@bin:file.bin' (es. il blocco prod-2: il
+        confronto fra blocchi separati della produzione e' un tetto piu' onesto
+        di meta' contro meta')."""
+        if path.startswith("@bin:"):
+            S, L, nc = load_reference(path[5:])
+            st = max(1, int(args.stride))
+            print(f"  {path}: {S.shape[0]} frame, stride {st}")
+            return S[::st], L[::st] if np.ndim(L) == 2 and np.shape(L)[0] == S.shape[0] else L, nc, None
         if path.startswith("@ref:"):
             i0, i1 = frac_slice(path[5:], path)
             st = max(1, int(args.stride))

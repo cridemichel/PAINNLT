@@ -92,6 +92,13 @@ limit_args=()
 # confronto con il runtime (compare_prior_parity.py)
 [ -n "${DUMP_PRIOR_FORCES:-}" ] && limit_args+=(--dump-prior-forces "${DUMP_PRIOR_FORCES}")
 [ -n "${STRIDE:-}" ]     && limit_args+=(--stride "${STRIDE}")
+# POSITIONS_ONLY=1 (solo con PART): il dataset serve per le posizioni
+# (entropia relativa, g(r)), e le distanze sotto il guard WCA dei prior sono
+# un avviso.  Le forze residue di quei frame non vanno usate per allenare.
+if [ -n "${POSITIONS_ONLY:-}" ]; then
+    [ -n "${PART:-}" ] || { echo "[ERROR] POSITIONS_ONLY richiede PART" >&2; exit 1; }
+    limit_args+=(--allow-guard-violations)
+fi
 
 "${PYTHON_BIN}" "${BUILDER}" \
     --topology "${AA_TOPOLOGY}" \
