@@ -27,6 +27,24 @@ USO (in tutorials/tel26)
     python3 find_loop_contacts.py --dataset tel26_dataset.bin --topology tel26_topology.hb0.json \\
         --out tel26_topology.lp0.json
     python3 derive_prior_set.py --base b3stack --set lp0
+
+CAPPUCCI CON PIU' DISTANZE (lp2)
+    Un solo contatto per base fissa un guscio sferico attorno al partner, non
+    una posizione: con lp1 A3 sta a 0,2 nm dal suo posto pur col Morse A3-G22.
+    Una base impilata su una tetrade esterna ha distanze stabili verso piu'
+    guanine di QUELLA tetrade; tre partner non allineati sullo stesso piano la
+    fissano (il riflesso rispetto al piano cadrebbe dentro la pila).
+        --face-tetrads '4,12,16,22;6,10,18,24'  partner G solo sulla faccia
+        --site-choice sigma                     il sito piu' stretto, non il piu' vicino
+        --max-per-base 3                        i tre partner piu' stretti per base
+        --min-sep 2                             ammette la G della faccia a due residui
+    python3 find_loop_contacts.py --dataset tel26_lp1_dataset.bin \\
+        --topology tel26_topology.hb0.json --r-max 0.9 --s-max 0.07 --copy-tol 0.10 \\
+        --min-sep 2 --site-choice sigma --max-per-base 3 \\
+        --face-tetrads '4,12,16,22;6,10,18,24' --out tel26_topology.lp2a.json
+    python3 apply_cbt.py --dataset tel26_lp1_dataset.bin --topology tel26_topology.lp2a.json \\
+        --out tel26_topology.lp2.json
+    python3 derive_prior_set.py --base lp1 --set lp2
 """
 from __future__ import annotations
 
@@ -62,6 +80,16 @@ def main():
     ap.add_argument("--kT", type=float, default=2.49)
     ap.add_argument("--cut", type=float, default=7.0)
     ap.add_argument("--stride", type=int, default=5)
+    ap.add_argument("--site-choice", choices=("median", "sigma"), default="median",
+                    help="sito del partner: mediana piu' corta (storico) o sigma minima "
+                         "fra i siti con mediana <= --r-max")
+    ap.add_argument("--max-per-base", type=int, default=0,
+                    help="al piu' N contatti per base di loop, i piu' stretti in sigma (0 = tutti)")
+    ap.add_argument("--face-tetrads", default="",
+                    help="tetradi esterne, residui 1-based: '4,12,16,22;6,10,18,24'.  Ogni base "
+                         "di loop si assegna alla tetrade piu' vicina e i partner G si cercano "
+                         "solo in quella (impilamento sulla faccia); le altre basi di loop "
+                         "restano partner ammessi")
     args = ap.parse_args()
     fit_args = SimpleNamespace(form="morse", width="mad", kT=args.kT, D=args.D, cut=args.cut, lj_cut=3.5)
 
@@ -101,22 +129,46 @@ def main():
         d -= ref.box * np.round(d / ref.box)
         return np.linalg.norm(d, axis=1)
 
+    def site_stats(r, q, sq):
+        per_copy = [dist(c * nuc + r, 0, c * nuc + q, sq) for c in range(ncopy)]
+        allr = np.concatenate(per_copy)
+        med = float(np.median(allr))
+        sig = 1.4826 * float(np.median(np.abs(allr - med)))
+        return med, sig, per_copy
+
+    # Faccia di ogni base di loop: la tetrade esterna con la distanza media
+    # (sulle sue guanine, sito piu' vicino) piu' corta.
+    face = {}
+    if args.face_tetrads:
+        tets = [[int(x) - 1 for x in t.split(",")] for t in args.face_tetrads.split(";") if t.strip()]
+        for t in tets:
+            if any(p < 0 or p >= nuc or p in loops for p in t):
+                sys.exit(f"[ERROR] --face-tetrads: residui non validi in {[p + 1 for p in t]}")
+        for r in loops:
+            score = []
+            for t in tets:
+                d = [min(site_stats(r, q, sq)[0] for sq in range(len(types[q]))) for q in t]
+                score.append(float(np.mean(d)))
+            k = int(np.argmin(score))
+            face[r] = set(tets[k])
+            print(f"[INFO] {label(r, 0)}: faccia della tetrade {[p + 1 for p in tets[k]]} "
+                  f"(distanze medie {', '.join(f'{x:.2f}' for x in score)} nm)")
+
     cands = []
     seen = set()
     for r in loops:
         for q in range(nuc):
             if abs(q - r) < args.min_sep or (min(r, q), max(r, q)) in seen:
                 continue
+            if face and q not in loops and q not in face[r]:
+                continue
             seen.add((min(r, q), max(r, q)))
-            best = None
-            for sq in range(len(types[q])):
-                per_copy = [dist(c * nuc + r, 0, c * nuc + q, sq) for c in range(ncopy)]
-                med = float(np.median(np.concatenate(per_copy)))
-                if best is None or med < best[0]:
-                    best = (med, sq, per_copy)
-            med, sq, per_copy = best
-            allr = np.concatenate(per_copy)
-            sig = 1.4826 * float(np.median(np.abs(allr - med)))
+            stats = [(site_stats(r, q, sq), sq) for sq in range(len(types[q]))]
+            if args.site_choice == "sigma":
+                near = [x for x in stats if x[0][0] <= args.r_max]
+                (med, sig, per_copy), sq = min(near or stats, key=lambda x: x[0][1])
+            else:
+                (med, sig, per_copy), sq = min(stats, key=lambda x: x[0][0])
             spread = max(abs(float(np.median(x)) - med) for x in per_copy)
             if med <= args.r_max:
                 cands.append({"r": r, "q": q, "sq": sq, "med": med, "sig": sig, "spread": spread,
@@ -124,12 +176,23 @@ def main():
                               "dup": (min(r, q), max(r, q)) in existing, "samples": per_copy})
 
     cands.sort(key=lambda c: c["sig"])
+    chosen, per_base = [], defaultdict(int)
+    for c in cands:                      # gia' in ordine di sigma crescente
+        if not c["ok"] or c["dup"]:
+            continue
+        if args.max_per_base and per_base[c["r"]] >= args.max_per_base:
+            c["capped"] = True
+            continue
+        per_base[c["r"]] += 1
+        chosen.append(c)
     print(f"\n  {'coppia':>16} {'mediana':>8} {'sigma':>7} {'scarto copie':>13}  esito")
     for c in cands:
-        tag = "gia' presente" if c["dup"] else ("CONTATTO" if c["ok"] else "-")
+        tag = ("gia' presente" if c["dup"] else "oltre --max-per-base" if c.get("capped")
+               else "CONTATTO" if c["ok"] else "-")
         print(f"  {label(c['r'], 0) + ' - ' + label(c['q'], c['sq']):>16} {c['med']:8.3f} "
               f"{c['sig']:7.3f} {c['spread']:13.3f}  {tag}")
-    chosen = [c for c in cands if c["ok"] and not c["dup"]]
+    if args.max_per_base:
+        print("\n  per base: " + ", ".join(f"{label(r, 0)} {per_base[r]}" for r in loops))
     print(f"\n[INFO] {len(chosen)} contatti persistenti (mediana <= {args.r_max} nm, sigma <= "
           f"{args.s_max} nm, copie entro {args.copy_tol} nm) su {len(cands)} coppie a contatto")
 
@@ -142,7 +205,9 @@ def main():
                                                 fc, fit_args, ROLE))
         out.setdefault("g4_topology", {})["loop_contacts"] = (
             f"persistent loop-base contacts from the mapped reference: median <= {args.r_max} nm, "
-            f"sigma <= {args.s_max} nm, min_sep {args.min_sep}; Morse D={args.D}")
+            f"sigma <= {args.s_max} nm, min_sep {args.min_sep}, copy_tol {args.copy_tol} nm, "
+            f"site_choice {args.site_choice}, max_per_base {args.max_per_base or 'all'}, "
+            f"face_tetrads '{args.face_tetrads or 'none'}'; Morse D={args.D}")
         Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
         print(f"[DONE] {args.out}: {len(chosen) * ncopy} contatti di ruolo '{ROLE}'")
 
