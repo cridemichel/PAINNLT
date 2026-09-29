@@ -168,6 +168,27 @@ def collective(Xu, ref, beta=25.0, lam=1.2):
     return out
 
 
+def rmsf_on_core(Xu, ref):
+    """RMSF per residuo (media sui siti), dopo sovrapposizione sul nucleo
+    AA, e posizione media di ogni sito nel sistema del nucleo.
+    """
+    sel = ref.sel
+    core = take(Xu, sel.core)
+    Xc = core - core.mean(axis=1, keepdims=True)
+    H = np.einsum("bni,nj->bij", Xc, ref.core)
+    U, _s, Vt = np.linalg.svd(H)
+    d = np.sign(np.linalg.det(np.einsum("bij,bjk->bik", U, Vt)))
+    D = np.ones((core.shape[0], 3)); D[:, 2] = d
+    R = np.einsum("bij,bj,bjk->bik", U, D, Vt)
+    allx = take(Xu, sel.all) - core.mean(axis=1, keepdims=True)
+    A = np.einsum("bni,bij->bnj", allx, R)                     # (N, 86, 3)
+    mean = A.mean(axis=0)
+    msf = ((A - mean[None]) ** 2).sum(axis=2).mean(axis=0)    # (86,)
+    res = np.array([r for r, _ in sel.all])
+    rmsf = np.array([np.sqrt(msf[res == r].mean()) for r in range(res.max() + 1)])
+    return rmsf, mean
+
+
 # ── confronto fra distribuzioni ─────────────────────────────────────────────
 
 def hist_compare(a, b, lo, hi, bins=60):
@@ -296,6 +317,35 @@ def main():
         results["runs"][lab]["fes2d_jsd"] = j2
         row += f"   {lab} {j2:.4f}"
     print(row)
+    # Fluttuazioni contro spostamento medio: una RMSD piu' grande puo' venire
+    # da fluttuazioni piu' ampie o da una struttura media diversa.
+    rmsf_ref, mean_ref = rmsf_on_core(Xr, ref)
+    print("\n  struttura media contro AA (nel sistema del nucleo AA) e RMSF per regione")
+    groups = {"tetrade 1": [3, 11, 15, 21], "tetrade 2": [4, 10, 16, 22],
+              "tetrade 3": [5, 9, 17, 23],
+              "loop/code": [r for r in range(nuc) if SEQUENCE[r] != "G"],
+              "G fuori tetradi": [r for r in range(nuc) if SEQUENCE[r] == "G"
+                                  and r not in {x - 1 for t in TETRADS_1B for x in t}]}
+    print("  regione            RMSF AA " + "".join(f"{lab:>14s}" for lab in run_cvs))
+    run_rmsf = {}
+    for lab in run_cvs:
+        S, L, nc = load_run(dict(x.split("=", 1) for x in args.runs)[lab])
+        X = unwrap_copies(S, L, nc, nuc).reshape(-1, nuc, S.shape[2], 3)
+        run_rmsf[lab] = rmsf_on_core(X, ref)
+    for g, idx in groups.items():
+        if not idx:
+            continue
+        row = f"  {g:<18s} {rmsf_ref[idx].mean():8.4f}"
+        for lab, (rf, _m) in run_rmsf.items():
+            row += f"   {rf[idx].mean():7.4f} ({rf[idx].mean() / rmsf_ref[idx].mean():4.2f}x)"
+        print(row)
+    row = "  scarto medio (nm)          "
+    for lab, (_rf, m) in run_rmsf.items():
+        off = np.sqrt(((m - mean_ref) ** 2).sum(axis=1).mean())
+        results["runs"][lab]["mean_structure_offset_nm"] = float(off)
+        row += f"   {off:13.4f}"
+    print(row)
+    print("  (scarto medio: RMSD fra la struttura media della corsa e quella AA, a nucleo allineato)")
     print("\n  RMSD in nm dalla struttura media AA dopo sovrapposizione (Kabsch).")
     print("  Il tetto e' un riferimento contro se' stesso: '@ref:0.5:1' con --ref-range 0:0.5.")
 
