@@ -71,6 +71,7 @@ parser.add_argument("--log_interval", type=int, default=10, help="Interval for e
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
 parser.add_argument("--painn_profile_report", type=str, default=None, help="Write opt-in PaiNN C++ stage timing JSON (--device cpu or cuda; CUDA stages are synchronised only while profiling)")
+parser.add_argument("--energy_interval", type=int, default=1, help="Calcola la decomposizione completa delle energie (system.analysis.energy(), ~1 s) solo ogni K registrazioni; nelle altre E_kin viene dalle velocita' ed E_tot/E_class/E_bonded/E_non_bonded sono NaN nel CSV (default 1: sempre)")
 parser.add_argument("--legacy_diagnostics", action="store_true", help="Log per particella (lento, ~1.5 s per registrazione) invece di quello vettoriale verificato al passo 0")
 parser.add_argument("--painn_profile_warmup_calls", type=int, default=20, help="PaiNN force calls excluded before profiling accumulation")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
@@ -1155,7 +1156,9 @@ class _OrderedSlice:
         return values.reshape(len(self.ids), -1)[self._inverse]
 
 
-_fast_log_state = {"cache": None, "disabled": bool(args.legacy_diagnostics)}
+_fast_log_state = {"cache": None, "disabled": bool(args.legacy_diagnostics), "records": 0}
+if args.energy_interval < 1:
+    raise ValueError("--energy_interval must be >= 1")
 
 
 def _build_fast_log_cache():
@@ -1301,7 +1304,25 @@ def _verify_fast_log(cache, step):
         problems.append("testo VCF diverso")
     if not (np.array_equal(legacy_com, fast_com) and np.array_equal(legacy_sites, fast_sites)):
         problems.append("posizioni COM/siti dei campioni diverse")
-    return problems, t1 - t0, t2 - t1
+
+    # Tempi per voce del percorso vettoriale, e controllo dell'energia
+    # cinetica dalle velocita' (usata nelle registrazioni senza energy()).
+    voices = {}
+    tic = time.perf_counter()
+    energies = system.analysis.energy()
+    voices["energy()"] = time.perf_counter() - tic
+    for name, call in (("cinetica", lambda: _fast_kinetic(cache)),
+                       ("min_dist/max_f", lambda: _fast_diagnostics(cache)),
+                       ("max_t", lambda: _fast_max_torque(cache)),
+                       ("VCF", lambda: _fast_vcf_text(cache)),
+                       ("campioni", lambda: (cache["com"].get("pos"), cache["sites"].get("pos")))):
+        tic = time.perf_counter()
+        call()
+        voices[name] = time.perf_counter() - tic
+    e_trans, e_rot = _fast_kinetic(cache)
+    kinetic_espresso = float(energies["kinetic"])
+    kinetic_rel = abs(e_trans + e_rot - kinetic_espresso) / max(abs(kinetic_espresso), 1e-12)
+    return problems, t1 - t0, t2 - t1, voices, kinetic_rel
 
 
 def _fast_log_cache(step):
@@ -1312,9 +1333,10 @@ def _fast_log_cache(step):
     if state["cache"] is None:
         try:
             cache = _build_fast_log_cache()
-            problems, t_legacy, t_fast = _verify_fast_log(cache, step)
+            problems, t_legacy, t_fast, voices, kinetic_rel = _verify_fast_log(cache, step)
         except Exception as exc:  # noqa: BLE001 - mai fermare la produzione per il log
             problems, t_legacy, t_fast, cache = [f"eccezione: {exc!r}"], 0.0, 0.0, None
+            voices, kinetic_rel = {}, float("nan")
         if problems:
             print("[WARN] Log vettoriale NON coerente con quello per particella; "
                   "uso il percorso per particella. Differenze:")
@@ -1325,11 +1347,39 @@ def _fast_log_cache(step):
         state["cache"] = cache
         print(f"[INFO] Log vettoriale verificato al passo {step}: "
               f"per particella {t_legacy:.3f} s, vettoriale {t_fast:.3f} s per registrazione")
+        print("[INFO] Log vettoriale, tempi per voce: " + ", ".join(
+            f"{name} {1000.0 * value:.1f} ms" for name, value in voices.items()))
+        if args.energy_interval > 1:
+            state["kinetic_ok"] = kinetic_rel <= 1e-6
+            print(f"[INFO] Energia completa ogni {args.energy_interval} registrazioni; "
+                  f"E_kin dalle velocita' contro ESPResSo: scarto relativo {kinetic_rel:.2e}"
+                  + ("" if state["kinetic_ok"] else
+                     " -> NON coincide: energia completa a ogni registrazione"))
     return state["cache"]
+
+def _light_energies(fast):
+    """Registrazione senza system.analysis.energy(): cinetica dalle velocita',
+    E_ML dal plugin (gia' calcolata con le forze), il resto NaN."""
+    e_trans, e_rot = _fast_kinetic(fast)
+    e_ml = espressomd.painn.get_painn_energy() if ml_active else 0.0
+    nan = float("nan")
+    return nan, e_trans + e_rot, e_trans, e_rot, nan, e_ml, nan, nan
+
 
 def record_state(step, energy_writer, energy_handle, vtf_handle):
     fast = _fast_log_cache(step)
-    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded = measure_energies(fast)
+    state = _fast_log_state
+    full_energy = (
+        fast is None
+        or args.energy_interval <= 1
+        or not state.get("kinetic_ok", False)
+        or state["records"] % args.energy_interval == 0
+    )
+    state["records"] += 1
+    if full_energy:
+        e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded = measure_energies(fast)
+    else:
+        e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded = _light_energies(fast)
     if fast is None:
         g_dist, g_pair, g_pids, max_f = log_diagnostics(step)
         max_t = _legacy_max_torque()

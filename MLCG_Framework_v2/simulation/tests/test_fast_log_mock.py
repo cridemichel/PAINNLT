@@ -14,7 +14,7 @@ tree = ast.parse(src)
 want = {"_minimum_image_box", "_minimum_image", "_minimum_image_distance_matrix", "log_diagnostics", "measure_energies", "stringify_pair", "record_structured_sample",
         "record_state_sample", "_OrderedSlice", "_build_fast_log_cache", "_fast_diagnostics",
         "_fast_kinetic", "_fast_max_torque", "_fast_vcf_text", "_legacy_max_torque",
-        "_verify_fast_log", "_fast_log_cache"}
+        "_verify_fast_log", "_fast_log_cache", "_light_energies"}
 nodes = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.name in want]
 assert {n.name for n in nodes} == want, want - {n.name for n in nodes}
 mod = ast.Module(body=nodes, type_ignores=[])
@@ -55,7 +55,10 @@ class Part:
     def by_id(s, i): return parts[i]
     def by_ids(s, ids): return Slice(ids)
 class Analysis:
-    def energy(s): return {"total": 1.0, "kinetic": 2.0, "bonded": 0.5, "non_bonded": 0.25}
+    def energy(s):
+        kin = sum(0.5 * p.mass * float(np.dot(p.v, p.v)) + 0.5 * float(np.sum(p.rinertia * p.omega_body ** 2))
+                  for p in parts.values() if not p.mass < 1e-4)
+        return {"total": 1.0, "kinetic": kin, "bonded": 0.5, "non_bonded": 0.25}
 # contatto attraverso il bordo: due siti di molecole diverse a 0.12 nm
 # tramite l'immagine x+L (posizioni non ripiegate, una fuori dalla box)
 BOX = np.array([6.0, 6.5, 7.0])
@@ -86,14 +89,18 @@ ns = dict(np=np, math=math, time=time, pdist=pdist, squareform=squareform, syste
           num_molecules=nmol, sample_site_keys=sorted(mol_vs_parts),
           state_sample_particle_ids=sorted(i for i in parts if parts[i].mass > 1e-4),
           args=types.SimpleNamespace(legacy_diagnostics=False, sample_npz="x", sample_start_step=0,
-                                     state_sample_npz="y"),
+                                     state_sample_npz="y", energy_interval=10),
           sample_steps=[], sample_com=[], sample_sites=[], state_sample_steps=[],
           state_sample_positions=[], state_sample_velocities=[], state_sample_quaternions=[],
           state_sample_omegas=[])
 exec(code, ns)
-ns["_fast_log_state"] = {"cache": None, "disabled": False}
+ns["_fast_log_state"] = {"cache": None, "disabled": False, "records": 0}
 cache = ns["_fast_log_cache"](0)
 assert cache is not None, "fallback!"
+assert ns["_fast_log_state"].get("kinetic_ok") is True, "E_kin dalle velocita' non coincide"
+light = ns["_light_energies"](cache)
+full = ns["measure_energies"](cache)
+assert abs(light[1] - full[1]) < 1e-9 * abs(full[1]) and np.isnan(light[0]) and light[5] == full[5]
 fd_, ld_ = ns["_fast_diagnostics"](cache), ns["log_diagnostics"](0)
 print("fast diag:", fd_)
 print("legacy   :", ld_)
@@ -109,7 +116,7 @@ for k in ("state_sample_positions", "state_sample_velocities", "state_sample_qua
     assert np.array_equal(ns[k][0], ns[k][1]), k
 print("kinetic fast/legacy:", ns["measure_energies"](cache)[2:4], ns["measure_energies"]()[2:4])
 # negative control: corrupt a cached type -> must fall back
-ns["_fast_log_state"] = {"cache": None, "disabled": False}
+ns["_fast_log_state"] = {"cache": None, "disabled": False, "records": 0}
 orig = ns["_build_fast_log_cache"]
 def broken():
     c = orig(); c["pair_i"] = c["pair_i"][1:]; c["pair_j"] = c["pair_j"][1:]; c["vs_types"] = np.zeros_like(c["vs_types"]); return c
