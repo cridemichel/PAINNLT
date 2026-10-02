@@ -71,6 +71,7 @@ parser.add_argument("--log_interval", type=int, default=10, help="Interval for e
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
 parser.add_argument("--painn_profile_report", type=str, default=None, help="Write opt-in PaiNN C++ stage timing JSON (--device cpu or cuda; CUDA stages are synchronised only while profiling)")
+parser.add_argument("--legacy_diagnostics", action="store_true", help="Log per particella (lento, ~1.5 s per registrazione) invece di quello vettoriale verificato al passo 0")
 parser.add_argument("--painn_profile_warmup_calls", type=int, default=20, help="PaiNN force calls excluded before profiling accumulation")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
 parser.add_argument("--morse_switch_mode", choices=("switched", "stock-shifted"), default="switched", help="Pair-specific/type-pair Morse runtime branch; stock-shifted is a diagnostic control that keeps markers/cutoff but disables the C2 tail switch")
@@ -846,7 +847,7 @@ def log_diagnostics(step):
     return global_min_dist, global_min_pair, global_min_pids, f_max
 
 
-def measure_energies():
+def measure_energies(fast=None):
     energies = system.analysis.energy()
 
     bad_energy_terms = []
@@ -884,6 +885,9 @@ def measure_energies():
     e_non_bonded = float(energies.get("non_bonded", 0.0))
 
     e_kin = energies["kinetic"]
+    if fast is not None:
+        e_kin_trans, e_kin_rot = _fast_kinetic(fast)
+        return e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded
     e_kin_trans = 0.0
     e_kin_rot = 0.0
     for p in system.part:
@@ -1042,10 +1046,14 @@ if sorted(mol_com_parts) != list(range(num_molecules)):
     raise RuntimeError("COM particle mapping is not contiguous in molecule-index order")
 
 
-def record_structured_sample(step):
+def record_structured_sample(step, fast=None):
     if args.sample_npz is None or step < args.sample_start_step:
         return
     sample_steps.append(int(step))
+    if fast is not None:
+        sample_com.append(fast["com"].get("pos"))
+        sample_sites.append(fast["sites"].get("pos"))
+        return
     sample_com.append(np.asarray([
         system.part.by_id(mol_com_parts[mol]).pos for mol in range(num_molecules)
     ], dtype=float))
@@ -1054,10 +1062,21 @@ def record_structured_sample(step):
     ], dtype=float))
 
 
-def record_state_sample(step):
+def record_state_sample(step, fast=None):
     if args.state_sample_npz is None:
         return
     state_sample_steps.append(int(step))
+    if fast is not None:
+        try:
+            omega_fast = fast["state"].get("omega_body")
+        except Exception:  # noqa: BLE001 - come il percorso per particella
+            omega_fast = None
+        if omega_fast is not None:
+            state_sample_positions.append(fast["state"].get("pos"))
+            state_sample_velocities.append(fast["state"].get("v"))
+            state_sample_quaternions.append(fast["state"].get("quat", width=4))
+            state_sample_omegas.append(omega_fast)
+            return
     particles = [system.part.by_id(pid) for pid in state_sample_particle_ids]
     state_sample_positions.append(np.asarray([p.pos for p in particles], dtype=float))
     state_sample_velocities.append(np.asarray([p.v for p in particles], dtype=float))
@@ -1071,14 +1090,222 @@ def record_state_sample(step):
     state_sample_omegas.append(np.asarray(omega, dtype=float))
 
 
-def record_state(step, energy_writer, energy_handle, vtf_handle):
-    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded = measure_energies()
-    g_dist, g_pair, g_pids, max_f = log_diagnostics(step)
+
+# ---------------------------------------------------------------------------
+# Log vettoriale.  Il log per particella (system.part / by_id, una chiamata
+# all'interfaccia di ESPResSo per ogni proprieta' di ogni particella) costava
+# ~1.5-1.8 s per registrazione: a dt 4 fs con un log ogni ps sono ~6-7 ms per
+# passo, quasi quanto i prior.  Qui le proprieta' statiche (tipi, mol_id,
+# masse, inerzie, coppie ammesse per min_dist) si leggono una volta e quelle
+# dinamiche con una sola lettura per slice.  Al primo uso (passo 0) il
+# risultato e' confrontato con quello per particella; se differisce si torna
+# al percorso per particella con un avviso.  --legacy_diagnostics lo forza.
+# ---------------------------------------------------------------------------
+class _OrderedSlice:
+    """Accesso vettoriale a una lista fissa di particelle, nell'ordine dato.
+
+    ESPResSo restituisce le proprieta' ottimizzate (pos, type, q) ordinate per
+    id e le altre nell'ordine della selezione: la slice si costruisce sugli id
+    ordinati e ogni array e' riportato all'ordine richiesto.
+    """
+
+    def __init__(self, ids):
+        ids = np.asarray([int(i) for i in ids], dtype=np.int64)
+        if len(np.unique(ids)) != len(ids):
+            raise ValueError("_OrderedSlice: id di particella duplicati")
+        order = np.argsort(ids, kind="stable")
+        self.ids = ids
+        self._inverse = np.empty_like(order)
+        self._inverse[order] = np.arange(len(ids))
+        self._slice = system.part.by_ids([int(i) for i in ids[order]]) if len(ids) else None
+
+    def get(self, attribute, width=3):
+        if self._slice is None:
+            return np.zeros((0, width), dtype=float)
+        values = np.asarray(getattr(self._slice, attribute), dtype=float)
+        return values.reshape(len(self.ids), -1)[self._inverse]
+
+
+_fast_log_state = {"cache": None, "disabled": bool(args.legacy_diagnostics)}
+
+
+def _build_fast_log_cache():
+    all_ids, vs_ids, vs_types, vs_mol = [], [], [], []
+    kin_ids, kin_mass, kin_inertia, torque_ids = [], [], [], []
+    for p in system.part:
+        pid = int(p.id)
+        all_ids.append(pid)
+        if particle_is_virtual(p):
+            vs_ids.append(pid)
+            vs_types.append(int(p.type))
+            vs_mol.append(int(p.mol_id))
+        mass = float(p.mass)
+        if not mass < 1e-4:          # stesso criterio di measure_energies
+            kin_ids.append(pid)
+            kin_mass.append(mass)
+            kin_inertia.append(np.asarray(p.rinertia, dtype=float))
+        if mass > 1e-4:              # stesso criterio di record_state
+            torque_ids.append(pid)
+    vs_types = np.asarray(vs_types, dtype=np.int64)
+    vs_mol = np.asarray(vs_mol, dtype=np.int64)
+    n_vs = len(vs_ids)
+    blocked = np.zeros((n_vs, n_vs), dtype=float)
+    blocked[vs_mol[:, None] == vs_mol[None, :]] = np.inf
+    np.fill_diagonal(blocked, np.inf)
+    mask_excluded_particle_distances(
+        blocked, vs_ids, diagnostic_nonbonded_excluded_pid_pairs
+    )
+    num_species = int(nn_config["num_species"])
+    in_range = (vs_types >= 0) & (vs_types < num_species)
+    allowed = np.isfinite(blocked) & in_range[:, None] & in_range[None, :]
+    upper_i, upper_j = np.triu_indices(n_vs, 1)
+    keep = allowed[upper_i, upper_j]
+    return {
+        "all": _OrderedSlice(all_ids),
+        "vs": _OrderedSlice(vs_ids),
+        "vs_ids": np.asarray(vs_ids, dtype=np.int64),
+        "vs_types": vs_types,
+        "pair_i": upper_i[keep],
+        "pair_j": upper_j[keep],
+        "kin": _OrderedSlice(kin_ids),
+        "kin_mass": np.asarray(kin_mass, dtype=float),
+        "kin_inertia": np.asarray(kin_inertia, dtype=float).reshape(-1, 3),
+        "torque": _OrderedSlice(torque_ids),
+        "com": _OrderedSlice([mol_com_parts[mol] for mol in range(num_molecules)]),
+        "sites": _OrderedSlice([mol_vs_parts[key] for key in sample_site_keys]),
+        "state": _OrderedSlice(state_sample_particle_ids),
+    }
+
+
+def _fast_diagnostics(cache):
+    pos = cache["vs"].get("pos")
+    forces = cache["vs"].get("f")
+    f_max = np.max(np.linalg.norm(forces, axis=1))
+    pair_i, pair_j = cache["pair_i"], cache["pair_j"]
+    if len(pair_i) == 0:
+        return np.inf, None, None, f_max
+    diff = pos[pair_i] - pos[pair_j]
+    dist = np.sqrt(np.sum(diff * diff, axis=1))
+    k = int(np.argmin(dist))
+    i, j = pair_i[k], pair_j[k]
+    t_i, t_j = int(cache["vs_types"][i]), int(cache["vs_types"][j])
+    pair = (min(t_i, t_j), max(t_i, t_j))
+    pids = (cache["vs_ids"][i], cache["vs_ids"][j])
+    return float(dist[k]), pair, pids, f_max
+
+
+def _fast_kinetic(cache):
+    v = cache["kin"].get("v")
+    omega = cache["kin"].get("omega_body")
+    e_trans = 0.5 * float(np.sum(cache["kin_mass"] * np.sum(v * v, axis=1)))
+    e_rot = 0.5 * float(np.sum(cache["kin_inertia"] * omega * omega))
+    return e_trans, e_rot
+
+
+def _fast_max_torque(cache):
+    torque = cache["torque"].get("torque_lab")
+    if len(torque) == 0:
+        return 0.0
+    return float(np.max(np.sqrt(np.sum(torque * torque, axis=1))))
+
+
+def _fast_vcf_text(cache):
+    pos = cache["all"].get("pos")
+    lines = ["\ntimestep indexed\n"]
+    for vtf_id, row in enumerate(pos):
+        lines.append(f"{vtf_id} {' '.join(map(str, row))}\n")
+    return "".join(lines)
+
+
+def _legacy_max_torque():
     real_particles = [p for p in system.part if p.mass > 1e-4]
-    max_t = max(
+    return max(
         (sum(t_c**2 for t_c in p.torque_lab) ** 0.5 for p in real_particles),
         default=0.0,
     )
+
+
+def _verify_fast_log(cache, step):
+    """Confronta log vettoriale e per particella sullo stato corrente."""
+    import io
+    problems = []
+
+    def close(a, b, rtol=1e-10, atol=1e-12):
+        return (a == b) or abs(a - b) <= atol + rtol * max(abs(a), abs(b))
+
+    t0 = time.perf_counter()
+    legacy_e = measure_energies()
+    legacy_d = log_diagnostics(step)
+    legacy_t = _legacy_max_torque()
+    legacy_vcf = io.StringIO()
+    espressomd.io.writer.vtf.writevcf(system, legacy_vcf)
+    legacy_com = np.asarray([
+        system.part.by_id(mol_com_parts[mol]).pos for mol in range(num_molecules)
+    ], dtype=float)
+    legacy_sites = np.asarray([
+        system.part.by_id(mol_vs_parts[key]).pos for key in sample_site_keys
+    ], dtype=float)
+    t1 = time.perf_counter()
+    fast_e = measure_energies(cache)
+    fast_d = _fast_diagnostics(cache)
+    fast_t = _fast_max_torque(cache)
+    fast_vcf = _fast_vcf_text(cache)
+    fast_com = cache["com"].get("pos")
+    fast_sites = cache["sites"].get("pos")
+    t2 = time.perf_counter()
+
+    for name, a, b in (("E_kin_trans", legacy_e[2], fast_e[2]),
+                       ("E_kin_rot", legacy_e[3], fast_e[3]),
+                       ("max_f", legacy_d[3], fast_d[3]),
+                       ("max_t", legacy_t, fast_t)):
+        if not close(float(a), float(b)):
+            problems.append(f"{name}: {a!r} contro {b!r}")
+    if not (close(float(legacy_d[0]), float(fast_d[0]), rtol=0.0, atol=1e-12)
+            or (np.isinf(legacy_d[0]) and np.isinf(fast_d[0]))):
+        problems.append(f"min_dist: {legacy_d[0]!r} contro {fast_d[0]!r}")
+    if stringify_pair(legacy_d[1]) != stringify_pair(fast_d[1]):
+        problems.append(f"min_pair: {legacy_d[1]!r} contro {fast_d[1]!r}")
+    if stringify_pair(legacy_d[2]) != stringify_pair(fast_d[2]):
+        problems.append(f"min_pids: {legacy_d[2]!r} contro {fast_d[2]!r}")
+    if legacy_vcf.getvalue() != fast_vcf:
+        problems.append("testo VCF diverso")
+    if not (np.array_equal(legacy_com, fast_com) and np.array_equal(legacy_sites, fast_sites)):
+        problems.append("posizioni COM/siti dei campioni diverse")
+    return problems, t1 - t0, t2 - t1
+
+
+def _fast_log_cache(step):
+    """Cache del log vettoriale, o None per il percorso per particella."""
+    state = _fast_log_state
+    if state["disabled"]:
+        return None
+    if state["cache"] is None:
+        try:
+            cache = _build_fast_log_cache()
+            problems, t_legacy, t_fast = _verify_fast_log(cache, step)
+        except Exception as exc:  # noqa: BLE001 - mai fermare la produzione per il log
+            problems, t_legacy, t_fast, cache = [f"eccezione: {exc!r}"], 0.0, 0.0, None
+        if problems:
+            print("[WARN] Log vettoriale NON coerente con quello per particella; "
+                  "uso il percorso per particella. Differenze:")
+            for problem in problems:
+                print(f"    {problem}")
+            state["disabled"] = True
+            return None
+        state["cache"] = cache
+        print(f"[INFO] Log vettoriale verificato al passo {step}: "
+              f"per particella {t_legacy:.3f} s, vettoriale {t_fast:.3f} s per registrazione")
+    return state["cache"]
+
+def record_state(step, energy_writer, energy_handle, vtf_handle):
+    fast = _fast_log_cache(step)
+    e_tot, e_kin, e_kin_trans, e_kin_rot, e_class, e_ml, e_bonded, e_non_bonded = measure_energies(fast)
+    if fast is None:
+        g_dist, g_pair, g_pids, max_f = log_diagnostics(step)
+        max_t = _legacy_max_torque()
+    else:
+        g_dist, g_pair, g_pids, max_f = _fast_diagnostics(fast)
+        max_t = _fast_max_torque(fast)
     time_ps = float(step) * float(args.dt)
 
     print(
@@ -1109,10 +1336,13 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
 
     if vtf_handle is not None:
         vtf_handle.write(f"\ntimestep {step}\n")
-        espressomd.io.writer.vtf.writevcf(system, vtf_handle)
+        if fast is None:
+            espressomd.io.writer.vtf.writevcf(system, vtf_handle)
+        else:
+            vtf_handle.write(_fast_vcf_text(fast))
 
-    record_structured_sample(step)
-    record_state_sample(step)
+    record_structured_sample(step, fast)
+    record_state_sample(step, fast)
     unsafe = max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15
     return unsafe
 
