@@ -83,7 +83,7 @@ private:
     torch::Tensor m_graph_species;   // [N] int64, device
     torch::Tensor m_pair_i;          // [P] int64, device, i<j
     torch::Tensor m_pair_j;          // [P] int64, device
-    torch::Tensor m_pos_host;        // [N,3] float64, pinned when CUDA
+    torch::Tensor m_pos_host;        // [N,3] float64, host (pageable)
     torch::Tensor m_box_t;           // [1,3] float64, device
     torch::Tensor m_box_inv_t;       // [1,3] float64, device (0 = non periodic)
     std::array<double, 3> m_box_cached{{-1.0, -1.0, -1.0}};

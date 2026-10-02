@@ -787,9 +787,13 @@ void PaiNN_ML_Potential::rebuild_device_graph_cache(
     m_pair_i = ti.masked_select(keep).contiguous();
     m_pair_j = tj.masked_select(keep).contiguous();
 
-    m_pos_host = torch::empty(
-        {n, 3},
-        torch::TensorOptions().dtype(torch::kFloat64).pinned_memory(m_device.is_cuda()));
+    // Plain (pageable) host memory on purpose.  The buffer is N x 3 doubles
+    // (~20 KB for TEL26), so pinning gains nothing measurable, while a pinned
+    // block used by a non_blocking copy is released through CUDA's caching
+    // host allocator: when the global potential is destroyed at process exit,
+    // after the CUDA runtime has started unloading, that release throws inside
+    // a destructor and aborts the process (job 59217069).
+    m_pos_host = torch::empty({n, 3}, torch::TensorOptions().dtype(torch::kFloat64));
 
     std::cerr << "[PaiNN] Device graph cache built: N=" << n
               << " candidate intermolecular pairs=" << m_pair_i.size(0)
@@ -875,9 +879,9 @@ void PaiNN_ML_Potential::calculate_forces_device_graph(CellStructure& cell_struc
         }
     }
     // copy=true: on CPU the model input must not alias the reused buffer.
-    // The non_blocking H2D copy is complete before the buffer is rewritten:
-    // the pair search below synchronises (nonzero) on every call.
-    auto x = m_pos_host.to(m_device, torch::kFloat64, /*non_blocking=*/true, /*copy=*/true);
+    // Synchronous copy from pageable memory: the buffer can be rewritten as
+    // soon as .to() returns.
+    auto x = m_pos_host.to(m_device, torch::kFloat64, /*non_blocking=*/false, /*copy=*/true);
 
     {
         auto const& box_geo = *::System::get_system().box_geo;
