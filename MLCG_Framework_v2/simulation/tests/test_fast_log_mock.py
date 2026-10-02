@@ -11,7 +11,7 @@ SIM = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, SIM)
 src = open(os.path.join(SIM, "run_cg_md.py")).read()
 tree = ast.parse(src)
-want = {"log_diagnostics", "measure_energies", "stringify_pair", "record_structured_sample",
+want = {"_minimum_image_box", "_minimum_image", "_minimum_image_distance_matrix", "log_diagnostics", "measure_energies", "stringify_pair", "record_structured_sample",
         "record_state_sample", "_OrderedSlice", "_build_fast_log_cache", "_fast_diagnostics",
         "_fast_kinetic", "_fast_max_torque", "_fast_vcf_text", "_legacy_max_torque",
         "_verify_fast_log", "_fast_log_cache"}
@@ -56,7 +56,17 @@ class Part:
     def by_ids(s, ids): return Slice(ids)
 class Analysis:
     def energy(s): return {"total": 1.0, "kinetic": 2.0, "bonded": 0.5, "non_bonded": 0.25}
-system = types.SimpleNamespace(part=Part(), analysis=Analysis())
+# contatto attraverso il bordo: due siti di molecole diverse a 0.12 nm
+# tramite l'immagine x+L (posizioni non ripiegate, una fuori dalla box)
+BOX = np.array([6.0, 6.5, 7.0])
+vs_all = sorted(i for i in parts if parts[i].virtual)
+a, b = vs_all[2], vs_all[-3]
+assert parts[a].mol_id != parts[b].mol_id
+parts[a].type, parts[b].type = 1, 2
+parts[a].pos = np.array([-0.05, 3.0, 3.0])
+parts[b].pos = np.array([BOX[0] + 6.0 - 0.17, 3.0 + 6.5, 3.0])   # due immagini piu' in la'
+system = types.SimpleNamespace(part=Part(), analysis=Analysis(), box_l=BOX,
+                               periodicity=[True, True, True])
 def writevcf(system, fp):
     idx = {pid: k for k, pid in enumerate(p.id for p in system.part)}
     fp.write("\ntimestep indexed\n")
@@ -84,8 +94,14 @@ exec(code, ns)
 ns["_fast_log_state"] = {"cache": None, "disabled": False}
 cache = ns["_fast_log_cache"](0)
 assert cache is not None, "fallback!"
-print("fast diag:", ns["_fast_diagnostics"](cache))
-print("legacy   :", ns["log_diagnostics"](0))
+fd_, ld_ = ns["_fast_diagnostics"](cache), ns["log_diagnostics"](0)
+print("fast diag:", fd_)
+print("legacy   :", ld_)
+assert abs(fd_[0] - 0.12) < 1e-9 and set(map(int, fd_[2])) == {a, b}, "contatto attraverso il bordo non visto"
+system.periodicity = [False, True, True]   # asse x aperto: il contatto sparisce
+_f, _l = ns["_fast_diagnostics"](cache)[0], ns["log_diagnostics"](0)[0]
+assert _f > 0.5 and abs(_f - _l) < 1e-12, (_f, _l)
+system.periodicity = [True, True, True]
 ns["record_structured_sample"](0, cache); ns["record_structured_sample"](0, None)
 assert np.array_equal(ns["sample_com"][0], ns["sample_com"][1]) and np.array_equal(ns["sample_sites"][0], ns["sample_sites"][1])
 ns["record_state_sample"](0, cache); ns["record_state_sample"](0, None)
@@ -96,7 +112,8 @@ print("kinetic fast/legacy:", ns["measure_energies"](cache)[2:4], ns["measure_en
 ns["_fast_log_state"] = {"cache": None, "disabled": False}
 orig = ns["_build_fast_log_cache"]
 def broken():
-    c = orig(); c["pair_i"] = c["pair_i"][1:]; c["pair_j"] = c["pair_j"][1:]; c["vs_types"] = c["vs_types"][::-1].copy(); return c
+    c = orig(); c["pair_i"] = c["pair_i"][1:]; c["pair_j"] = c["pair_j"][1:]; c["vs_types"] = np.zeros_like(c["vs_types"]); return c
 ns["_build_fast_log_cache"] = broken
-print("negative control ->", ns["_fast_log_cache"](0))
+assert ns["_fast_log_cache"](0) is None, "il controllo negativo non ha fatto scattare il ritorno"
+print("negative control -> fallback ok")
 print("ALL OK")

@@ -786,6 +786,35 @@ print(f"[INFO] Running {args.steps} integration steps...")
 
 
 
+def _minimum_image_box():
+    """Lati della box e loro inversi (0 sugli assi non periodici)."""
+    box = np.asarray(system.box_l, dtype=float)
+    periodic = np.asarray(system.periodicity, dtype=bool)
+    inverse = np.where(periodic, 1.0 / box, 0.0)
+    return box, inverse
+
+
+def _minimum_image(diff, box, inverse):
+    """Spostamenti (..., 3) ridotti all'immagine minima."""
+    return diff - box * np.round(diff * inverse)
+
+
+def _minimum_image_distance_matrix(pos):
+    """Matrice delle distanze sito-sito con l'immagine minima.
+
+    Le posizioni lette da ESPResSo sono non ripiegate: senza immagine minima
+    due siti di copie diverse a contatto attraverso il bordo della box
+    risultano lontani, e il controllo su min_dist non li vede.
+    """
+    box, inverse = _minimum_image_box()
+    squared = np.zeros((len(pos), len(pos)), dtype=float)
+    for axis in range(3):
+        d = pos[:, axis][:, None] - pos[:, axis][None, :]
+        d = d - box[axis] * np.round(d * inverse[axis])
+        squared += d * d
+    return np.sqrt(squared)
+
+
 def log_diagnostics(step):
     pos = []
     types = []
@@ -806,7 +835,7 @@ def log_diagnostics(step):
     forces = np.array(forces)
     pids = np.array(pids)
     
-    dist_matrix = squareform(pdist(pos))
+    dist_matrix = _minimum_image_distance_matrix(pos)
     mask = mol_ids[:, None] == mol_ids[None, :]
     dist_matrix[mask] = np.inf
     np.fill_diagonal(dist_matrix, np.inf)
@@ -1184,8 +1213,9 @@ def _fast_diagnostics(cache):
     pair_i, pair_j = cache["pair_i"], cache["pair_j"]
     if len(pair_i) == 0:
         return np.inf, None, None, f_max
-    diff = pos[pair_i] - pos[pair_j]
-    dist = np.sqrt(np.sum(diff * diff, axis=1))
+    box, inverse = _minimum_image_box()
+    diff = _minimum_image(pos[pair_i] - pos[pair_j], box, inverse)
+    dist = np.sqrt(diff[:, 0] * diff[:, 0] + diff[:, 1] * diff[:, 1] + diff[:, 2] * diff[:, 2])
     k = int(np.argmin(dist))
     i, j = pair_i[k], pair_j[k]
     t_i, t_j = int(cache["vs_types"][i]), int(cache["vs_types"][j])
