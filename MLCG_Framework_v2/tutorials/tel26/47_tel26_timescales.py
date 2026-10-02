@@ -36,7 +36,8 @@ USO (in tutorials/tel26)
     python3 47_tel26_timescales.py tel26_lp1_dataset.bin \\
         re0_it30=samples_1ns_it30_s1.npz+samples_1ns_it30_s2.npz+samples_1ns_it30_s3.npz+samples_1ns_it30_s4.npz \\
         re1_it08=samples_tel26_lp2_re1_it08_100ps.npz \\
-        [--aa-dt 20] [--aa-stride 1] [--ns-day-aa 150 --ns-day-cg 1.4] [--json ts.json]
+        [--aa-dt 20] [--aa-stride 1] [--ns-day-aa 150 --ns-day-cg 1.4] [--json ts.json] \\
+        [--gamma re0_it30=20 --gamma re1_it08=20 --kT 2.49]
 """
 from __future__ import annotations
 
@@ -187,6 +188,39 @@ def diffusion(lag_t, m, lo, hi):
     return slope / 6.0                       # nm^2/ps
 
 
+def diffusion_langevin(lag_t, m, lo, hi):
+    """D e tau_v dal fit dell'MSD del moto di Langevin libero.
+
+    MSD(t) = 6 D [t - tau (1 - exp(-t/tau))] + b, con tau = M / sum(gamma) il
+    tempo di rilassamento della velocita' del centro di massa e b un piccolo
+    offset (fluttuazioni interne veloci).  Con gamma basso il regime balistico
+    dura ~tau e una retta su una finestra fissa sottostima D: questo fit usa
+    anche il tratto balistico.  Restituisce (D in nm^2/ps, tau in ps, flag):
+    flag '?' se tau supera un terzo della finestra (D estrapolato).
+    """
+    from scipy.optimize import curve_fit
+
+    sel = (lag_t >= lo) & (lag_t <= hi) & (m > 0)
+    if sel.sum() < 5:
+        return float("nan"), float("nan"), "?"
+    t, y = lag_t[sel], m[sel]
+
+    def model(t, D, tau, b):
+        return 6.0 * D * (t + tau * np.expm1(-t / tau)) + b
+
+    tail = max(3, len(t) // 3)
+    D0 = max(np.polyfit(t[-tail:], y[-tail:], 1)[0] / 6.0, 1e-12)
+    p0 = [D0, max(float(t[len(t) // 4]), 1e-3), 0.0]
+    try:
+        p, _ = curve_fit(model, t, y, p0=p0, sigma=y,
+                         bounds=([0.0, 1e-6, -np.inf], [np.inf, 1e7, np.inf]),
+                         maxfev=20000)
+    except (RuntimeError, ValueError):
+        return float("nan"), float("nan"), "?"
+    D, tau = float(p[0]), float(p[1])
+    return D, tau, ("?" if tau > hi / 3.0 else "")
+
+
 # ── una corsa ────────────────────────────────────────────────────────────────
 
 def analyse(label, S, L, nc, t, ref, nuc, msd_lo):
@@ -206,6 +240,10 @@ def analyse(label, S, L, nc, t, ref, nuc, msd_lo):
     lo = max(msd_lo, 5 * dt)
     out["D_nm2_per_ns"] = diffusion(lt, m, lo, tmax) * 1000.0
     out["msd_window_ps"] = [lo, tmax]
+    D_l, tau_v, flag_l = diffusion_langevin(lt, m, 2 * dt, tmax)
+    out["D_langevin_nm2_per_ns"] = D_l * 1000.0
+    out["tau_v_ps"] = tau_v
+    out["langevin_flag"] = flag_l
     c2 = p2_corr(stack_axis(X), lags)
     out["tau_rot"] = tau_1e(lt, c2, tmax)
 
@@ -241,6 +279,11 @@ def main():
                     help="ps: inizio della finestra lineare dell'MSD (sopra il regime balistico)")
     ap.add_argument("--ns-day-aa", type=float, default=None)
     ap.add_argument("--ns-day-cg", type=float, default=None)
+    ap.add_argument("--gamma", action="append", default=[], metavar="ETICHETTA=GAMMA",
+                    help="attrito di Langevin di una corsa CG, come --gamma di run_cg_md.py (amu/ps): aggiunge D teorico = kT/(N gamma)")
+    ap.add_argument("--kT", type=float, default=2.49, help="kJ/mol, per D teorico")
+    ap.add_argument("--bodies-per-copy", type=int, default=None,
+                    help="corpi con attrito per copia (default: --nuc, un corpo per residuo)")
     ap.add_argument("--json", default=None)
     args = ap.parse_args()
     cv.set_nuc(args.nuc)
@@ -252,11 +295,22 @@ def main():
     Xr = s46.unwrap_copies(Sr, Lr, nc, nuc).reshape(-1, nuc, S.shape[2], 3)
     ref = s46.Reference(Xr, s46.Selection(nuc, Xr[0]))
 
+    gammas = {}
+    for spec in args.gamma:
+        label, value = spec.split("=", 1)
+        gammas[label] = float(value)
+    n_bodies = args.bodies_per_copy or nuc
+
     results = [analyse("AA", S, L, nc, t, ref, nuc, max(args.msd_from, 100.0))]
     for spec in args.runs:
         label, path = spec.split("=", 1)
         Sc, Lc, ncc, tc = load_cg(path, args.cg_stride)
         results.append(analyse(label, Sc, Lc, ncc, tc, ref, nuc, args.msd_from))
+        if label in gammas:
+            # Einstein per un insieme di corpi con attrito gamma ciascuno e forze
+            # interne conservative: D_COM = kT / (N gamma), esatto e indipendente
+            # dalle masse (le forze interne si cancellano nel centro di massa).
+            results[-1]["D_theory_nm2_per_ns"] = 1000.0 * args.kT / (n_bodies * gammas[label])
 
     keys = [("tau_rot", "rotazione della copia"), ("tau_Rg", "raggio di girazione"),
             ("tau_loops", "spostamenti dei loop"), ("tau_core_sites", "spostamenti del nucleo"),
@@ -268,6 +322,13 @@ def main():
     for k, name in keys:
         print(f"  {name:<34s} " + "".join(f"{fmt_tau(r[k]):>14s}" for r in results))
     print(f"  {'D traslazionale (nm^2/ns)':<34s} " + "".join(f"{r['D_nm2_per_ns']:14.4g}" for r in results))
+    print(f"  {'D, fit Langevin (nm^2/ns)':<34s} " + "".join(
+        f"{r['langevin_flag'] + format(r['D_langevin_nm2_per_ns'], '.4g'):>14s}" for r in results))
+    if gammas:
+        print(f"  {'D teorico kT/(N gamma) (nm^2/ns)':<34s} " + "".join(
+            f"{r.get('D_theory_nm2_per_ns', float('nan')):14.4g}" for r in results))
+    print(f"  {'tau_v del centro di massa (ps)':<34s} " + "".join(
+        f"{r['langevin_flag'] + format(r['tau_v_ps'], '.3g'):>14s}" for r in results))
 
     aa = results[0]
     print("\n  fattore di accelerazione alpha = tau_AA / tau_CG  (D_CG / D_AA per la traslazione)")
@@ -292,6 +353,25 @@ def main():
     for r in results[1:]:
         row += f"{r['D_nm2_per_ns'] / aa['D_nm2_per_ns']:14.3g}"
     print(row)
+    # Per l'AA resta la retta: frame ogni 20 ps, il tratto balistico (sub-ps)
+    # non si vede e la retta sopra 100 ps e' gia' nel regime diffusivo.
+    row = f"  {'traslazione (fit Langevin)':<34s} "
+    trans_l = []
+    for r in results[1:]:
+        a = r["D_langevin_nm2_per_ns"] / aa["D_nm2_per_ns"]
+        trans_l.append((a, r["langevin_flag"]))
+        row += f"{r['langevin_flag'] + format(a, '.3g'):>14s}"
+    print(row)
+    rows.append(("traslazione (fit Langevin)", trans_l))
+    if gammas:
+        row = f"  {'traslazione (teorico)':<34s} "
+        trans_t = []
+        for r in results[1:]:
+            a = r.get("D_theory_nm2_per_ns", float("nan")) / aa["D_nm2_per_ns"]
+            trans_t.append((a, ""))
+            row += f"{a:14.3g}"
+        print(row)
+        rows.append(("traslazione (teorico)", trans_t))
 
     if args.ns_day_aa and args.ns_day_cg:
         print(f"\n  velocita' efficiente CG / AA = (ns/giorno CG x alpha) / ns/giorno AA "
@@ -302,6 +382,8 @@ def main():
         print("  (> 1: il CG campiona quel moto piu' in fretta dell'AA, a parita' di GPU)")
 
     print("\n  Note: alpha dipende dal moto; per i moti diffusivi scala come 1/gamma del termostato CG.")
+    print("  D, fit Langevin: MSD = 6D[t - tau_v(1 - exp(-t/tau_v))] + b, dal tratto balistico in su;")
+    print("  '?' = tau_v oltre un terzo della finestra, D estrapolato.  Per l'AA alpha usa la retta.")
     print("  Un tempo AA sotto --aa-dt (\"<\") non e' risolto dal dataset: alpha e' allora un limite superiore.")
     if args.json:
         pathlib.Path(args.json).write_text(json.dumps(results, indent=2, default=float))
