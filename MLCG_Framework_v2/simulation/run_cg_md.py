@@ -760,6 +760,11 @@ if ml_active:
             "[FATAL] Impossibile attivare il potenziale PaiNN: kwargs non "
             "supportati oltre il limite di tentativi."
         )
+    # Libera il potenziale (tensori, grafi CUDA) all'uscita di Python, mentre
+    # il runtime CUDA e' ancora attivo; i distruttori statici arrivano dopo.
+    if hasattr(espressomd.painn, "deactivate_painn_potential"):
+        import atexit
+        atexit.register(espressomd.painn.deactivate_painn_potential)
     if args.painn_profile_report is not None:
         espressomd.painn.configure_painn_profiling(
             True, warmup_calls=args.painn_profile_warmup_calls

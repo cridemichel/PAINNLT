@@ -22,6 +22,16 @@ def get_painn_energy():
         return global_painn_potential.get().get_last_energy()
     return 0.0
 
+def deactivate_painn_potential():
+    """Rilascia il potenziale PaiNN globale e le sue risorse sul device.
+
+    Da chiamare prima che il processo esca (run_cg_md.py lo registra con
+    atexit): cosi' tensori e grafi CUDA vengono liberati mentre il runtime CUDA
+    e' ancora attivo, invece che dai distruttori statici a fine processo.
+    """
+    global global_painn_potential
+    global_painn_potential.reset()
+
 def configure_painn_profiling(enabled: bool = True, warmup_calls: int = 0):
     """Enable/disable low-overhead C++ PaiNN stage profiling."""
     if global_painn_potential.get() == NULL:

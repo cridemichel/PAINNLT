@@ -17,7 +17,7 @@
 # Variabili: MODEL, CHECKPOINT (default re1 it30 / lp2 100 ps), CONFIG (dal manifest), DEVICE (cuda),
 #            BENCH_STEPS (1000), NVE_STEPS (2000), OUT (bench_graph/ qui accanto),
 #            SKIP_NVE=1 per saltare la prova 3.
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRAMEWORK_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -47,72 +47,91 @@ export ENERGY_INTERVAL=1
 COMMON_ARGS="${COMMON_ARGS:---allow_checkpoint_mismatch}"
 echo "[bench] modello ${MODEL}, config ${CONFIG:-dal manifest}, stato ${CHECKPOINT}, device ${DEVICE}, uscite in ${OUT}"
 
+# Modi confrontati (MODES, default "legacy device graph"):
+#   legacy  loop di coppie di ESPResSo + grafo sull'host
+#   device  ricerca delle coppie e forze sui nodi sul device
+#   graph   come device, con lista delle coppie a capacita' fissa e forward +
+#           autograd catturati in un CUDA graph (MLCG_PAINN_CUDA_GRAPH=1)
+MODES="${MODES:-legacy device graph}"
+run_mode() {   # modo  log  [variabili...]
+    local mode="$1" log="$2"; shift 2
+    local graph="${mode}" static=0
+    if [[ "${mode}" == "graph" ]]; then graph=device; static=1; fi
+    env MLCG_PAINN_GRAPH="${graph}" MLCG_PAINN_CUDA_GRAPH="${static}" "$@" \
+        bash "${RUN05}" > "${log}" 2>&1 || echo "[bench] FALLITO: vedi ${log}"
+}
+
 # ── 1. parita' ──────────────────────────────────────────────────────────────
-for mode in legacy device; do
+for mode in ${MODES}; do
     echo "[bench] parita': ${mode}"
-    MLCG_PAINN_GRAPH="${mode}" CG_STEPS=1 \
+    run_mode "${mode}" "${OUT}/log_dump_${mode}.txt" CG_STEPS=1 \
         SAMPLE_NPZ="${OUT}/dump_${mode}.samples.npz" \
-        MD_EXTRA_ARGS="${COMMON_ARGS} --dump_initial_forces ${OUT}/forces_${mode}.npz" \
-        bash "${RUN05}" > "${OUT}/log_dump_${mode}.txt" 2>&1
+        MD_EXTRA_ARGS="${COMMON_ARGS} --dump_initial_forces ${OUT}/forces_${mode}.npz"
 done
-python3 - "${OUT}/forces_legacy.npz" "${OUT}/forces_device.npz" <<'EOF' | tee "${OUT}/parity.txt"
-import sys
+python3 - "${OUT}" ${MODES} <<'EOF' | tee "${OUT}/parity.txt"
+import os, sys
 import numpy as np
-a, b = np.load(sys.argv[1]), np.load(sys.argv[2])
-print(f"percorsi: {a['painn_graph']} contro {b['painn_graph']}")
+out, modes = sys.argv[1], sys.argv[2:]
+ref = np.load(os.path.join(out, "forces_legacy.npz"))
 ok = True
-for key in ("force", "torque_lab"):
-    fa, fb = a[key], b[key]
-    scale = np.abs(fa).max()
-    diff = np.abs(fa - fb).max()
-    rel = diff / scale if scale > 0 else diff
-    ok &= rel < 1e-4
-    print(f"{key:10s} max|legacy| {scale:.6g}  max|diff| {diff:.3e}  relativo {rel:.3e}")
-ea, eb = float(a["e_ml"]), float(b["e_ml"])
-print(f"E_ML       legacy {ea:.9f}  device {eb:.9f}  diff {eb - ea:.3e}")
-ok &= abs(eb - ea) <= 1e-4 * max(1.0, abs(ea))
+for mode in modes[1:]:
+    path = os.path.join(out, f"forces_{mode}.npz")
+    if not os.path.exists(path):
+        print(f"{mode}: forze mancanti"); ok = False; continue
+    b = np.load(path)
+    print(f"legacy contro {mode}:")
+    for key in ("force", "torque_lab"):
+        scale = np.abs(ref[key]).max()
+        diff = np.abs(ref[key] - b[key]).max()
+        rel = diff / scale if scale > 0 else diff
+        ok &= rel < 1e-4
+        print(f"  {key:10s} max|legacy| {scale:.6g}  max|diff| {diff:.3e}  relativo {rel:.3e}")
+    ea, eb = float(ref["e_ml"]), float(b["e_ml"])
+    print(f"  E_ML       legacy {ea:.9f}  {mode} {eb:.9f}  diff {eb - ea:.3e}")
+    ok &= abs(eb - ea) <= 1e-4 * max(1.0, abs(ea))
 print("PARITA':", "OK" if ok else "FALLITA")
 EOF
 
 # ── 2. profilo per fasi ─────────────────────────────────────────────────────
-for mode in legacy device; do
+for mode in ${MODES}; do
     echo "[bench] profilo: ${mode}"
-    MLCG_PAINN_GRAPH="${mode}" CG_STEPS="${BENCH_STEPS}" CG_DT=0.004 GAMMA=2 \
+    run_mode "${mode}" "${OUT}/log_prof_${mode}.txt" CG_STEPS="${BENCH_STEPS}" CG_DT=0.004 GAMMA=2 \
         LOG_INTERVAL="$((BENCH_STEPS / 2))" \
         SAMPLE_NPZ="${OUT}/prof_${mode}.samples.npz" \
-        MD_EXTRA_ARGS="${COMMON_ARGS} --painn_profile_report ${OUT}/prof_${mode}.json --painn_profile_warmup_calls 50 --no_vtf --energy_file ${OUT}/prof_${mode}.energy.csv" \
-        bash "${RUN05}" > "${OUT}/log_prof_${mode}.txt" 2>&1
+        MD_EXTRA_ARGS="${COMMON_ARGS} --painn_profile_report ${OUT}/prof_${mode}.json --painn_profile_warmup_calls 50 --no_vtf --energy_file ${OUT}/prof_${mode}.energy.csv"
 done
-python3 - "${OUT}/prof_legacy.json" "${OUT}/prof_device.json" <<'EOF' | tee "${OUT}/profile.txt"
-import json, sys
+python3 - "${OUT}" ${MODES} <<'EOF' | tee "${OUT}/profile.txt"
+import json, os, sys
+out, modes = sys.argv[1], [m for m in sys.argv[2:] if os.path.exists(os.path.join(sys.argv[1], f"prof_{m}.json"))]
 rows = ("node_index", "neighbor_traversal", "edge_pack", "tensor_inputs", "forward",
         "energy_scalar", "autograd", "force_to_cpu", "force_scatter", "total")
-data = [json.load(open(p)) for p in sys.argv[1:]]
-print(f"{'fase (ms/chiamata)':22s} {'legacy':>10s} {'device':>10s}")
+data = [json.load(open(os.path.join(out, f"prof_{m}.json"))) for m in modes]
+print(f"{'fase (ms/chiamata)':22s}" + "".join(f"{m:>10s}" for m in modes))
 for r in rows:
-    vals = [d["timings_ms"].get(f"{r}_mean", 0.0) for d in data]
-    print(f"{r:22s} {vals[0]:10.3f} {vals[1]:10.3f}")
+    print(f"{r:22s}" + "".join(f"{d['timings_ms'].get(r + '_mean', 0.0):10.3f}" for d in data))
 w = [d["integration"]["wall_ms_per_step"] for d in data]
-print(f"{'passo intero (ms)':22s} {w[0]:10.3f} {w[1]:10.3f}")
-e = [d["graph"]["directed_edges_mean"] for d in data]
-print(f"{'archi diretti':22s} {e[0]:10.1f} {e[1]:10.1f}")
-print(f"ns/giorno a dt 4 fs (solo integrazione): legacy {86400e3 / w[0] * 4e-6:.2f}, "
-      f"device {86400e3 / w[1] * 4e-6:.2f}  (guadagno {w[0] / w[1]:.2f}x)")
+print(f"{'passo intero (ms)':22s}" + "".join(f"{x:10.3f}" for x in w))
+print(f"{'archi diretti':22s}" + "".join(f"{d['graph']['directed_edges_mean']:10.1f}" for d in data))
+print(f"{'catture CUDA graph':22s}" + "".join(f"{d.get('static_graph_captures', 0):10d}" for d in data))
+print(f"{'ns/giorno (dt 4 fs)':22s}" + "".join(f"{86400e3 / x * 4e-6:10.2f}" for x in w))
 EOF
 
 # ── 3. NVE ──────────────────────────────────────────────────────────────────
 if [[ -z "${SKIP_NVE:-}" ]]; then
-    for mode in legacy device; do
+    for mode in ${MODES}; do
         echo "[bench] NVE: ${mode}"
-        MLCG_PAINN_GRAPH="${mode}" CG_STEPS="${NVE_STEPS}" CG_DT=0.002 LOG_INTERVAL=50 \
+        run_mode "${mode}" "${OUT}/log_nve_${mode}.txt" CG_STEPS="${NVE_STEPS}" CG_DT=0.002 LOG_INTERVAL=50 \
             SAMPLE_NPZ="${OUT}/nve_${mode}.samples.npz" \
-            MD_EXTRA_ARGS="${COMMON_ARGS} --nve --allow_nonconservative_tables --no_vtf --energy_file ${OUT}/nve_${mode}.energy.csv" \
-            bash "${RUN05}" > "${OUT}/log_nve_${mode}.txt" 2>&1
+            MD_EXTRA_ARGS="${COMMON_ARGS} --nve --allow_nonconservative_tables --no_vtf --energy_file ${OUT}/nve_${mode}.energy.csv"
     done
-    python3 - "${OUT}/nve_legacy.energy.csv" "${OUT}/nve_device.energy.csv" <<'EOF' | tee "${OUT}/nve.txt"
-import sys
+    python3 - "${OUT}" ${MODES} <<'EOF' | tee "${OUT}/nve.txt"
+import os, sys
 import numpy as np
-for path, mode in zip(sys.argv[1:], ("legacy", "device")):
+out = sys.argv[1]
+for mode in sys.argv[2:]:
+    path = os.path.join(out, f"nve_{mode}.energy.csv")
+    if not os.path.exists(path):
+        print(f"{mode:7s} mancante"); continue
     d = np.genfromtxt(path, delimiter=",", skip_header=1, usecols=(1, 2, 3))
     t, etot, ekin = d[:, 0], d[:, 1], d[:, 2]
     slope = np.polyfit(t, etot, 1)[0]

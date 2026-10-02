@@ -15,5 +15,5 @@ g++ -std=c++20 -O1 -I "$HERE/stubs" -I "$WORK" -I "$TP/include" \
     "$HERE/test_parity.cpp" "$WORK/PaiNN_ML_Potential.cpp" \
     -L "$TP/lib" -Wl,-rpath,"$TP/lib" -ltorch -ltorch_cpu -lc10 -o "$WORK/test_parity"
 for precision in float64 float32; do
-    "$WORK/test_parity" "$precision" 2>&1 | grep -E "precision=|max\||net force|marker|FD axis"
+    "$WORK/test_parity" "$precision" 2>&1 | grep -E "precision=|max\||net force|marker|FD axis|static"
 done

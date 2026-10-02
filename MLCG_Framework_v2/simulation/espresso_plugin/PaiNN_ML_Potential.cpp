@@ -25,6 +25,17 @@
 #include <ATen/mps/MPSAllocatorInterface.h>
 #endif
 
+// CUDA graphs for the static-graph mode, only when the libtorch build ships
+// the CUDA headers (Leonardo).  Elsewhere the static mode runs eagerly.
+#if defined(__has_include)
+#if __has_include(<ATen/cuda/CUDAGraph.h>) && __has_include(<cuda_runtime_api.h>)
+#include <ATen/cuda/CUDAGraph.h>
+#include <c10/cuda/CUDAGuard.h>
+#include <c10/cuda/CUDAStream.h>
+#define MLCG_HAVE_CUDA_GRAPH 1
+#endif
+#endif
+
 std::shared_ptr<PaiNN_ML_Potential> global_painn_potential = nullptr;
 
 namespace {
@@ -188,6 +199,18 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
                     "MLCG_PAINN_GRAPH must be 'legacy' or 'device', got '" + graph_mode + "'");
             }
             // stderr + endl: always visible even if pypresso does not flush stdout.
+            const char* static_env = std::getenv("MLCG_PAINN_CUDA_GRAPH");
+            const std::string static_mode = static_env ? std::string(static_env) : "0";
+            if (static_mode == "1") {
+                if (!m_device_graph) {
+                    throw std::invalid_argument(
+                        "MLCG_PAINN_CUDA_GRAPH=1 requires MLCG_PAINN_GRAPH=device");
+                }
+                m_static_graph = true;
+            } else if (static_mode != "0") {
+                throw std::invalid_argument(
+                    "MLCG_PAINN_CUDA_GRAPH must be '0' or '1', got '" + static_mode + "'");
+            }
             std::cerr << "[PaiNN] Graph path: "
                       << (m_device_graph
                               ? "device (pair search + node forces on the model device)"
@@ -240,6 +263,24 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
                       << "(CGnet-exact head only; no isolated-species table)\n";
         }
         
+        if (m_static_graph) {
+            if (model->has_ordered_geometry_head()) {
+                throw std::invalid_argument(
+                    "MLCG_PAINN_CUDA_GRAPH=1 is not supported with an ordered-geometry head "
+                    "(padding self-edges would enter its dense features)");
+            }
+#ifdef MLCG_HAVE_CUDA_GRAPH
+            const bool graphs = m_device.is_cuda();
+#else
+            const bool graphs = false;
+#endif
+            std::cerr << "[PaiNN] Static graph: padded pair list"
+                      << (graphs ? ", forward+backward captured as a CUDA graph"
+                                 : (m_device.is_cuda()
+                                        ? " (CUDA graph support not compiled in: eager)"
+                                        : " (eager on this device)"))
+                      << std::endl;
+        }
         std::cout << "[PaiNN] Modello C++ inizializzato e pesi caricati da: " << model_path << "\n";
     } catch (const c10::Error& e) {
         std::cerr << "[PaiNN] Errore nel caricamento del modello: " << e.what() << "\n";
@@ -276,6 +317,9 @@ std::string PaiNN_ML_Potential::get_profile_json() const {
     out << "\"total_calls\":" << m_profile.total_calls << ",";
     out << "\"measured_calls\":" << m_profile.measured_calls << ",";
     out << "\"graph_path\":\"" << (m_device_graph ? "device" : "legacy") << "\",";
+    out << "\"static_graph\":" << (m_static_graph ? "true" : "false") << ",";
+    out << "\"static_graph_captures\":" << m_static_captures << ",";
+    out << "\"static_graph_capacity\":" << m_static_capacity << ",";
     out << "\"model_device\":\"" << m_device.str() << "\",";
     out << "\"timings_ms\":{";
     out << "\"total_mean\":" << mean(m_profile.total_ms) << ",";
@@ -312,6 +356,28 @@ std::string PaiNN_ML_Potential::get_profile_json() const {
     out << "}";
     out << "}";
     return out.str();
+}
+
+PaiNN_ML_Potential::~PaiNN_ML_Potential() {
+    try {
+        release_static_graph();
+    } catch (...) {
+        // Never throw from a destructor; at worst the CUDA runtime is gone.
+    }
+}
+
+void PaiNN_ML_Potential::release_static_graph() {
+    m_cuda_graph.reset();
+    m_gx = torch::Tensor();
+    m_gpi = torch::Tensor();
+    m_gpj = torch::Tensor();
+    m_gshift = torch::Tensor();
+    m_gE = torch::Tensor();
+    m_gF = torch::Tensor();
+    m_energy_tensor = torch::Tensor();
+    m_energy_pending = false;
+    m_static_capacity = 0;
+    m_static_nodes = 0;
 }
 
 double PaiNN_ML_Potential::get_last_energy() const {
@@ -795,6 +861,11 @@ void PaiNN_ML_Potential::rebuild_device_graph_cache(
     // a destructor and aborts the process (job 59217069).
     m_pos_host = torch::empty({n, 3}, torch::TensorOptions().dtype(torch::kFloat64));
 
+    // The static graph (if any) refers to the old species/positions tensors.
+    m_cuda_graph.reset();
+    m_gx = torch::Tensor();
+    m_static_nodes = 0;
+
     std::cerr << "[PaiNN] Device graph cache built: N=" << n
               << " candidate intermolecular pairs=" << m_pair_i.size(0)
               << " device=" << m_device.str() << std::endl;
@@ -881,7 +952,15 @@ void PaiNN_ML_Potential::calculate_forces_device_graph(CellStructure& cell_struc
     // copy=true: on CPU the model input must not alias the reused buffer.
     // Synchronous copy from pageable memory: the buffer can be rewritten as
     // soon as .to() returns.
-    auto x = m_pos_host.to(m_device, torch::kFloat64, /*non_blocking=*/false, /*copy=*/true);
+    torch::Tensor x;
+    if (m_static_graph) {
+        // Positions go straight into the static buffer the CUDA graph reads.
+        ensure_static_graph(n, 0);
+        m_gx.copy_(m_pos_host);
+        x = m_gx;
+    } else {
+        x = m_pos_host.to(m_device, torch::kFloat64, /*non_blocking=*/false, /*copy=*/true);
+    }
 
     {
         auto const& box_geo = *::System::get_system().box_geo;
@@ -928,6 +1007,86 @@ void PaiNN_ML_Potential::calculate_forces_device_graph(CellStructure& cell_struc
     }
     const std::int64_t num_pairs = pair_i.size(0);
     stage(m_profile.neighbor_traversal_ms);
+
+    if (m_static_graph) {
+        ensure_static_graph(n, num_pairs);
+        const std::int64_t cap = m_static_capacity;
+        m_gpi.narrow(0, 0, num_pairs).copy_(pair_i);
+        m_gpj.narrow(0, 0, num_pairs).copy_(pair_j);
+        m_gshift.narrow(0, 0, num_pairs).copy_(shift);
+        if (cap > num_pairs) {
+            // Padding: self-edges on node 0 at a constant separation of
+            // 2 r_c + 1 (r = x0 - x0 - shift).  Exact zeros, see header.
+            m_gpi.narrow(0, num_pairs, cap - num_pairs).zero_();
+            m_gpj.narrow(0, num_pairs, cap - num_pairs).zero_();
+            auto pad = m_gshift.narrow(0, num_pairs, cap - num_pairs);
+            pad.zero_();
+            pad.select(1, 0).fill_(-(2.0 * m_cutoff + 1.0));
+        }
+        stage(m_profile.edge_pack_ms);
+
+        bool replayed = false;
+#ifdef MLCG_HAVE_CUDA_GRAPH
+        if (m_device.is_cuda()) {
+            if (!m_cuda_graph) {
+                // Warm up on a side stream (lazy cuBLAS/allocator init must not
+                // happen inside the capture), then capture forward + backward.
+                torch::cuda::synchronize();
+                auto graph = std::make_shared<at::cuda::CUDAGraph>();
+                auto side = c10::cuda::getStreamFromPool(
+                    /*isHighPriority=*/false, m_device.has_index() ? m_device.index() : -1);
+                {
+                    c10::cuda::CUDAStreamGuard guard(side);
+                    for (int warm = 0; warm < 3; ++warm) {
+                        run_static_body();
+                    }
+                    side.synchronize();
+                    graph->capture_begin();
+                    run_static_body();
+                    graph->capture_end();
+                }
+                torch::cuda::synchronize();
+                m_cuda_graph = graph;
+                ++m_static_captures;
+                std::cerr << "[PaiNN] CUDA graph captured: N=" << n
+                          << " pair capacity=" << cap << " (capture #" << m_static_captures
+                          << ")" << std::endl;
+            }
+            static_cast<at::cuda::CUDAGraph*>(m_cuda_graph.get())->replay();
+            replayed = true;
+        }
+#endif
+        if (!replayed) {
+            run_static_body();
+        }
+        stage(m_profile.forward_ms);
+
+        // m_gE is overwritten by the next replay: keep a copy for the lazy read.
+        m_energy_tensor = m_gE.clone();
+        m_energy_pending = true;
+
+        const torch::Tensor node_forces = m_gF.neg().to(torch::kCPU).contiguous();
+        auto f = node_forces.accessor<double, 2>();
+        stage(m_profile.force_to_cpu_ms);
+        for (std::int64_t k = 0; k < n; ++k) {
+            auto& force = particles[k]->force();
+            force[0] += f[k][0];
+            force[1] += f[k][1];
+            force[2] += f[k][2];
+        }
+        stage(m_profile.force_scatter_ms);
+        if (profile_this_call) {
+            m_profile.particles_sum += static_cast<double>(n);
+            m_profile.directed_edges_sum += static_cast<double>(2 * num_pairs);
+            m_profile.physical_pairs_sum += static_cast<double>(num_pairs);
+            m_profile.particles_max = std::max<std::int64_t>(m_profile.particles_max, n);
+            m_profile.directed_edges_max =
+                std::max<std::int64_t>(m_profile.directed_edges_max, 2 * num_pairs);
+            m_profile.physical_pairs_max =
+                std::max<std::int64_t>(m_profile.physical_pairs_max, num_pairs);
+        }
+        return;
+    }
 
     // --- graph tensors (differentiable w.r.t. x) ---
     x.set_requires_grad(true);
@@ -987,4 +1146,55 @@ void PaiNN_ML_Potential::calculate_forces_device_graph(CellStructure& cell_struc
         m_profile.host_payload_lower_bound_bytes_sum +=
             static_cast<double>(n * 3 * sizeof(double) * 2);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Static-graph mode (MLCG_PAINN_CUDA_GRAPH=1).
+// ---------------------------------------------------------------------------
+
+void PaiNN_ML_Potential::ensure_static_graph(std::int64_t num_nodes, std::int64_t num_pairs) {
+    const auto dbl = torch::TensorOptions().dtype(torch::kFloat64).device(m_device);
+    const auto lng = torch::TensorOptions().dtype(torch::kInt64).device(m_device);
+    if (!m_gx.defined() || m_static_nodes != num_nodes) {
+        m_cuda_graph.reset();
+        m_gx = torch::zeros({num_nodes, 3}, dbl);
+        m_gF = torch::zeros({num_nodes, 3}, dbl);
+        // Same scalar type as sum_atom_energies_for_hamiltonian().
+        m_gE = torch::zeros(
+            {}, torch::TensorOptions()
+                    .dtype(m_device.is_cpu() ? torch::kFloat64 : m_dtype)
+                    .device(m_device));
+        m_static_nodes = num_nodes;
+        m_static_capacity = 0;
+    }
+    if (num_pairs > m_static_capacity || !m_gpi.defined()) {
+        // 25 % headroom: the number of pairs inside the cutoff fluctuates by a
+        // few per cent; growing beyond it forces a new capture.
+        const std::int64_t cap = std::max<std::int64_t>(1024, (num_pairs * 5 + 3) / 4);
+        m_cuda_graph.reset();
+        m_gpi = torch::zeros({cap}, lng);
+        m_gpj = torch::zeros({cap}, lng);
+        m_gshift = torch::zeros({cap, 3}, dbl);
+        m_static_capacity = cap;
+    }
+}
+
+void PaiNN_ML_Potential::run_static_body() {
+    // Fixed shapes only, no host synchronisation: this is what the CUDA graph
+    // captures.  Same operations as the dynamic device path.
+    auto x = m_gx.detach().requires_grad_(true);
+    auto r_low_minus_high = x.index_select(0, m_gpi) - x.index_select(0, m_gpj) - m_gshift;
+    auto edge_rows = torch::stack({m_gpi, m_gpj}, 1).reshape({-1});
+    auto edge_cols = torch::stack({m_gpj, m_gpi}, 1).reshape({-1});
+    auto edge_index = torch::stack({edge_rows, edge_cols}, 0);
+    auto r_ij = torch::stack({r_low_minus_high, -r_low_minus_high}, 1)
+                    .reshape({-1, 3})
+                    .to(m_dtype);
+    const torch::Tensor atom_energies =
+        model->forward_atom_energies(m_graph_species, r_ij, edge_index).squeeze(-1);
+    const torch::Tensor total_energy = sum_atom_energies_for_hamiltonian(atom_energies);
+    auto grads = torch::autograd::grad(
+        {total_energy}, {x}, {torch::ones_like(total_energy)}, false, false);
+    m_gE.copy_(total_energy.detach());
+    m_gF.copy_(grads[0]);
 }

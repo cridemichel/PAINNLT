@@ -50,6 +50,12 @@ public:
     // device-resident pair search, node forces from autograd w.r.t. positions).
     bool uses_device_graph() const { return m_device_graph; }
 
+    // Releases the static-graph buffers and the CUDA graph.  Called from the
+    // destructor; run_cg_md.py also drops the global potential through Python
+    // atexit, so this happens while the CUDA runtime is still alive.
+    void release_static_graph();
+    ~PaiNN_ML_Potential();
+
     // Profiling is opt-in and disabled by default. It must never alter the
     // graph, Hamiltonian, precision, or force accumulation path.
     void configure_profiling(bool enabled, std::int64_t warmup_calls = 0);
@@ -62,6 +68,8 @@ private:
     void calculate_forces_device_graph(CellStructure& cell_structure);
     void rebuild_device_graph_cache(
         CellStructure& cell_structure, std::vector<Particle*> const& particles);
+    void ensure_static_graph(std::int64_t num_nodes, std::int64_t num_pairs);
+    void run_static_body();
     void validate_tel22_layout(
         std::vector<Particle*> const& particles,
         std::vector<int64_t> const& atomic_numbers);
@@ -88,6 +96,26 @@ private:
     torch::Tensor m_box_inv_t;       // [1,3] float64, device (0 = non periodic)
     std::array<double, 3> m_box_cached{{-1.0, -1.0, -1.0}};
     std::array<bool, 3> m_periodic_cached{{false, false, false}};
+
+    // Static-graph mode (MLCG_PAINN_CUDA_GRAPH=1, device graph path only).
+    // The pair list is padded to a fixed capacity with self-edges on node 0 at
+    // a constant separation beyond the cutoff: the Toxvaerd envelope sets
+    // their radial basis to exactly zero, the filter has no bias, so they add
+    // exact zeros to messages and to forces.  With fixed shapes the forward
+    // and the autograd backward are captured once as a CUDA graph and
+    // replayed every step (same kernels, same FP32 arithmetic, no launch
+    // overhead).  On CPU the same padded body runs eagerly (test path).
+    bool m_static_graph = false;
+    std::int64_t m_static_capacity = 0;
+    std::int64_t m_static_nodes = 0;
+    std::int64_t m_static_captures = 0;
+    torch::Tensor m_gx;       // [N,3] float64, device: positions
+    torch::Tensor m_gpi;      // [cap] int64
+    torch::Tensor m_gpj;      // [cap] int64
+    torch::Tensor m_gshift;   // [cap,3] float64
+    torch::Tensor m_gE;       // [] model dtype: total energy
+    torch::Tensor m_gF;       // [N,3] float64: dE/dx
+    std::shared_ptr<void> m_cuda_graph;   // at::cuda::CUDAGraph when available
     torch::Device m_device{torch::kCPU};
     torch::Dtype m_dtype{torch::kFloat32};
     std::int64_t m_mps_empty_cache_every_force_calls = 0;

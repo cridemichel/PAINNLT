@@ -35,8 +35,9 @@ int main(int argc, char **argv) {
   // periodic-alias ghosts of locals (allowed)
   for (int k = 0; k < 10; ++k) cs.ghosts.push_back(cs.parts[k]);
 
-  auto run = [&](const char *mode, double &energy, std::string *prof) {
+  auto run = [&](const char *mode, double &energy, std::string *prof, const char *stat = "0") {
     setenv("MLCG_PAINN_GRAPH", mode, 1);
+    setenv("MLCG_PAINN_CUDA_GRAPH", stat, 1);
     PaiNN_ML_Potential pot("/tmp/claude_painn_test.pt", nspec, 32, 3, 16, rc, 0.3,
                            0, 0, 0, 0.0, false, 1, false, "cpu", precision);
     pot.configure_profiling(true, 0);
@@ -52,9 +53,18 @@ int main(int argc, char **argv) {
     for (auto &p : cs.parts) for (int a = 0; a < 3; ++a) f.push_back(p.f[a]);
     return f;
   };
-  double el, ed; std::string pj;
+  double el, ed, es; std::string pj, ps;
   auto fl = run("legacy", el, nullptr);
   auto fd = run("device", ed, &pj);
+  auto fs = run("device", es, &ps, "1");
+  {
+    double m = 0, mf = 0;
+    for (std::size_t k = 0; k < fl.size(); ++k) { m = std::max(m, std::abs(fl[k] - fs[k])); mf = std::max(mf, std::abs(fl[k])); }
+    std::cout.precision(12);
+    std::cout << "static(padded) vs legacy: |dE|=" << std::abs(el - es) << " max|dF|=" << m << " rel=" << m / mf << "\n";
+    std::cout << " static profile: " << ps.substr(ps.find("\"static_graph\""), 80) << "\n";
+  }
+  setenv("MLCG_PAINN_CUDA_GRAPH", "0", 1);
   double maxdf = 0, maxf = 0, sumf[3] = {0, 0, 0};
   for (std::size_t k = 0; k < fl.size(); ++k) {
     maxdf = std::max(maxdf, std::abs(fl[k] - fd[k]));
