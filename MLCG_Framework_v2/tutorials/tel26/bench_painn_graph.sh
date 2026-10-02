@@ -38,6 +38,11 @@ NVE_STEPS="${NVE_STEPS:-2000}"
 OUT="${OUT:-${SCRIPT_DIR}/bench_graph}"
 mkdir -p "${OUT}"
 RUN05="${SCRIPT_DIR}/05_run_espresso.sh"
+# Lo stato iniziale viene da una corsa con i soli prior (altro modello, altra
+# config): la provenienza del checkpoint non coincide per costruzione, come
+# nelle validazioni e nella catena RE.  Si parte quindi con
+# --allow_checkpoint_mismatch; legacy e device partono dallo stesso stato.
+COMMON_ARGS="${COMMON_ARGS:---allow_checkpoint_mismatch}"
 echo "[bench] modello ${MODEL}, config ${CONFIG:-dal manifest}, stato ${CHECKPOINT}, device ${DEVICE}, uscite in ${OUT}"
 
 # ── 1. parita' ──────────────────────────────────────────────────────────────
@@ -45,7 +50,7 @@ for mode in legacy device; do
     echo "[bench] parita': ${mode}"
     MLCG_PAINN_GRAPH="${mode}" CG_STEPS=1 \
         SAMPLE_NPZ="${OUT}/dump_${mode}.samples.npz" \
-        MD_EXTRA_ARGS="--dump_initial_forces ${OUT}/forces_${mode}.npz" \
+        MD_EXTRA_ARGS="${COMMON_ARGS} --dump_initial_forces ${OUT}/forces_${mode}.npz" \
         bash "${RUN05}" > "${OUT}/log_dump_${mode}.txt" 2>&1
 done
 python3 - "${OUT}/forces_legacy.npz" "${OUT}/forces_device.npz" <<'EOF' | tee "${OUT}/parity.txt"
@@ -73,7 +78,7 @@ for mode in legacy device; do
     MLCG_PAINN_GRAPH="${mode}" CG_STEPS="${BENCH_STEPS}" CG_DT=0.004 GAMMA=2 \
         LOG_INTERVAL="$((BENCH_STEPS / 2))" \
         SAMPLE_NPZ="${OUT}/prof_${mode}.samples.npz" \
-        MD_EXTRA_ARGS="--painn_profile_report ${OUT}/prof_${mode}.json --painn_profile_warmup_calls 50 --no_vtf --energy_file ${OUT}/prof_${mode}.energy.csv" \
+        MD_EXTRA_ARGS="${COMMON_ARGS} --painn_profile_report ${OUT}/prof_${mode}.json --painn_profile_warmup_calls 50 --no_vtf --energy_file ${OUT}/prof_${mode}.energy.csv" \
         bash "${RUN05}" > "${OUT}/log_prof_${mode}.txt" 2>&1
 done
 python3 - "${OUT}/prof_legacy.json" "${OUT}/prof_device.json" <<'EOF' | tee "${OUT}/profile.txt"
@@ -99,7 +104,7 @@ if [[ -z "${SKIP_NVE:-}" ]]; then
         echo "[bench] NVE: ${mode}"
         MLCG_PAINN_GRAPH="${mode}" CG_STEPS="${NVE_STEPS}" CG_DT=0.002 LOG_INTERVAL=50 \
             SAMPLE_NPZ="${OUT}/nve_${mode}.samples.npz" \
-            MD_EXTRA_ARGS="--nve --allow_nonconservative_tables --no_vtf --energy_file ${OUT}/nve_${mode}.energy.csv" \
+            MD_EXTRA_ARGS="${COMMON_ARGS} --nve --allow_nonconservative_tables --no_vtf --energy_file ${OUT}/nve_${mode}.energy.csv" \
             bash "${RUN05}" > "${OUT}/log_nve_${mode}.txt" 2>&1
     done
     python3 - "${OUT}/nve_legacy.energy.csv" "${OUT}/nve_device.energy.csv" <<'EOF' | tee "${OUT}/nve.txt"
