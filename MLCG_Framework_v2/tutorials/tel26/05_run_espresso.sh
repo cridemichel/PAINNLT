@@ -46,6 +46,12 @@ ml_args=()
 # GAMMA: attrito del termostato di produzione (default 1.0, cioe' ~300 ps di
 # rilassamento: produzione in pratica microcanonica).  Vedi 04_equilibrate.sh.
 [ -n "${GAMMA:-}" ] && ml_args+=(--gamma "${GAMMA}")
+# MD_EXTRA_ARGS: argomenti in piu' per run_cg_md.py, separati da spazi (es.
+# "--painn_profile_report prof.json --painn_profile_warmup_calls 50" oppure
+# "--dump_initial_forces forze.npz").  Il percorso del grafo PaiNN si sceglie
+# con la variabile d'ambiente MLCG_PAINN_GRAPH=legacy|device (letta dal plugin).
+extra_args=()
+[ -n "${MD_EXTRA_ARGS:-}" ] && read -r -a extra_args <<< "${MD_EXTRA_ARGS}"
 
 cd "${SCRIPT_DIR}"
 
@@ -75,7 +81,14 @@ done
     --device "${DEVICE}" \
     --neighbor_search "${NEIGHBOR_SEARCH}" \
     --sample_npz "${SAMPLE_NPZ}" \
-    --log_interval "${LOG_INTERVAL}"
+    --log_interval "${LOG_INTERVAL}" \
+    ${extra_args[@]+"${extra_args[@]}"}
+
+# --dump_initial_forces scrive le forze iniziali ed esce: nessuna traiettoria.
+if [[ " ${MD_EXTRA_ARGS:-} " == *" --dump_initial_forces "* ]]; then
+    echo "[DONE] Forze iniziali scritte (nessuna produzione)."
+    exit 0
+fi
 
 echo
 echo "[DONE] Produzione completata."

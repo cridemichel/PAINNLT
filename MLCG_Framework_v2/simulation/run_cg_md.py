@@ -70,7 +70,7 @@ parser.add_argument("--sample_start_step", type=int, default=0, help="First logg
 parser.add_argument("--log_interval", type=int, default=10, help="Interval for energy/trajectory logging (default: 10 steps)")
 parser.add_argument("--device", type=str, default="auto", help="Device for ML (cpu, mps, cuda, auto)")
 parser.add_argument("--ml_precision", choices=("float32", "float64"), default="float32", help="PaiNN inference precision; float64 is a CPU diagnostic mode")
-parser.add_argument("--painn_profile_report", type=str, default=None, help="Write opt-in PaiNN C++ stage timing JSON; profiling is CPU-reference only")
+parser.add_argument("--painn_profile_report", type=str, default=None, help="Write opt-in PaiNN C++ stage timing JSON (--device cpu or cuda; CUDA stages are synchronised only while profiling)")
 parser.add_argument("--painn_profile_warmup_calls", type=int, default=20, help="PaiNN force calls excluded before profiling accumulation")
 parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquare"), default="verlet", help="Pair traversal in ESPResSo; nsquare is an all-pairs diagnostic mode")
 parser.add_argument("--morse_switch_mode", choices=("switched", "stock-shifted"), default="switched", help="Pair-specific/type-pair Morse runtime branch; stock-shifted is a diagnostic control that keeps markers/cutoff but disables the C2 tail switch")
@@ -125,11 +125,20 @@ if args.painn_profile_warmup_calls < 0:
 if args.painn_profile_report is not None:
     if not ml_active:
         raise ValueError("--painn_profile_report requires an active PaiNN model")
-    if args.device != "cpu":
+    if args.device not in ("cpu", "cuda"):
         raise ValueError(
-            "PaiNN stage profiling is currently a synchronous CPU reference; "
-            "use --device cpu so wall-clock stage timings are meaningful."
+            "PaiNN stage profiling synchronises CPU and CUDA stage boundaries only; "
+            "use --device cpu or --device cuda so wall-clock stage timings are meaningful."
         )
+
+# Plugin graph path (read by the C++ constructor): "legacy" (default) or
+# "device" (pair search + node forces on the model device).  Validated here so
+# a typo fails before the system is built.
+painn_graph = os.environ.get("MLCG_PAINN_GRAPH", "legacy")
+if painn_graph not in ("legacy", "device"):
+    raise ValueError(f"MLCG_PAINN_GRAPH must be 'legacy' or 'device', got {painn_graph!r}")
+if ml_active:
+    print(f"[INFO] PaiNN graph path: {painn_graph}")
 
 print("[INFO] Loading configurations...")
 with open(args.config, "r") as f:
@@ -755,7 +764,8 @@ if ml_active:
         )
         print(
             "[PROFILE] PaiNN C++ stage profiling enabled "
-            f"(CPU, warmup_calls={args.painn_profile_warmup_calls})"
+            f"(device={args.device}, graph={painn_graph}, "
+            f"warmup_calls={args.painn_profile_warmup_calls})"
         )
 elif args.disable_ml:
     print("[INFO] PaiNN disabled by --disable_ml; --model is retained only for provenance/checkpoint validation.")
@@ -1126,6 +1136,8 @@ if args.dump_initial_forces:
         force=np.asarray([system.part.by_id(i).f for i in _ids], dtype=float),
         torque_lab=np.asarray([system.part.by_id(i).torque_lab for i in _ids], dtype=float),
         ml_active=np.asarray(ml_active),
+        e_ml=np.asarray(espressomd.painn.get_painn_energy() if ml_active else 0.0, dtype=float),
+        painn_graph=np.asarray(painn_graph),
     )
     print(f"[DONE] forze e coppie iniziali di {len(_ids)} corpi -> {args.dump_initial_forces}")
     sys.exit(0)
@@ -1238,6 +1250,7 @@ if simulation_ok:
         }
         profile["runtime_config"] = {
             "device": args.device,
+            "painn_graph": painn_graph,
             "ml_precision": args.ml_precision,
             "neighbor_search": args.neighbor_search,
             "dt_ps": float(args.dt),
