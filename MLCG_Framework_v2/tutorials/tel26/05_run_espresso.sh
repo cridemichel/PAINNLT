@@ -36,6 +36,11 @@ CHECKPOINT="${CHECKPOINT:-equilibrated.npz}"
 # manifest (config_path), perche' la validazione confronta l'architettura del
 # modello con questa config: una variante D=64 simulata con la config D=128
 # verrebbe rifiutata, e viceversa.
+# Tutti i percorsi (modello, manifest, config, prior, checkpoint) sono relativi
+# a questa cartella: ci si sposta qui PRIMA di leggere il manifest, altrimenti
+# lanciato da un'altra cartella (es. sbatch --wrap) il manifest non si trova e
+# CONFIG ripiega in silenzio su tel26_training_config.json.
+cd "${SCRIPT_DIR}"
 if [ -z "${CONFIG:-}" ]; then
     CONFIG="$(python3 -c 'import json,sys,os;print(os.path.basename(json.load(open(sys.argv[1]))["config_path"]))' "${MODEL}.manifest.json" 2>/dev/null || true)"
     CONFIG="${CONFIG:-tel26_training_config.json}"

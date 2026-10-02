@@ -14,7 +14,7 @@
 #   sbatch -A IscrB_G4MES -p boost_usr_prod --gres=gpu:1 --cpus-per-task=8 \
 #       --time=00:45:00 -J tel26_graph --wrap "bash <percorso assoluto>/bench_painn_graph.sh"
 #
-# Variabili: MODEL, CHECKPOINT (default re1 it30 / lp2 100 ps), DEVICE (cuda),
+# Variabili: MODEL, CHECKPOINT (default re1 it30 / lp2 100 ps), CONFIG (dal manifest), DEVICE (cuda),
 #            BENCH_STEPS (1000), NVE_STEPS (2000), OUT (bench_graph/ qui accanto),
 #            SKIP_NVE=1 per saltare la prova 3.
 set -euo pipefail
@@ -28,13 +28,17 @@ fi
 
 export MODEL="${MODEL:-tel26_lp2_re1_it30.pt}"
 export CHECKPOINT="${CHECKPOINT:-equilibrated_priors_lp2_100ps.npz}"
+# 05_run_espresso.sh legge la config dal manifest del modello con un percorso
+# relativo alla cartella corrente: si lavora quindi qui accanto (sbatch --wrap
+# parte dalla cartella di sottomissione).
+cd "${SCRIPT_DIR}"
 export DEVICE="${DEVICE:-cuda}"
 BENCH_STEPS="${BENCH_STEPS:-1000}"
 NVE_STEPS="${NVE_STEPS:-2000}"
 OUT="${OUT:-${SCRIPT_DIR}/bench_graph}"
 mkdir -p "${OUT}"
 RUN05="${SCRIPT_DIR}/05_run_espresso.sh"
-echo "[bench] modello ${MODEL}, stato ${CHECKPOINT}, device ${DEVICE}, uscite in ${OUT}"
+echo "[bench] modello ${MODEL}, config ${CONFIG:-dal manifest}, stato ${CHECKPOINT}, device ${DEVICE}, uscite in ${OUT}"
 
 # ── 1. parita' ──────────────────────────────────────────────────────────────
 for mode in legacy device; do
