@@ -11,15 +11,24 @@ fi
 
 PYRESSO="${PYRESSO:-${DEFAULT_PYPRESSO}}"
 DEVICE="${DEVICE:-auto}"
+# Default di produzione dal benchmark del 2/10 (claude/efficienza-cg-aa.md):
+# dt 4 fs (stabile a ogni gamma, struttura invariata), liste di Verlet (12,6
+# contro 21,0 ms per passo con link-cell), grafo PaiNN sul device (stessa
+# Hamiltoniana entro 2e-7), energia completa ogni 10 registrazioni (energy()
+# costa ~1,1 s).  Per riprodurre le corse precedenti al 2/10:
+#   CG_DT=0.001 GAMMA=1 NEIGHBOR_SEARCH=link-cell MLCG_PAINN_GRAPH=legacy ENERGY_INTERVAL=1 LOG_INTERVAL=20
 CG_STEPS="${CG_STEPS:-20000}"
-CG_DT="${CG_DT:-0.001}"
-NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
+CG_DT="${CG_DT:-0.004}"
+NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-verlet}"
+export MLCG_PAINN_GRAPH="${MLCG_PAINN_GRAPH:-device}"
+ENERGY_INTERVAL="${ENERGY_INTERVAL:-10}"
 # Traiettoria strutturata per l'analisi.  run_cg_md.py la scrive SOLO se
 # --sample_npz e' passato: senza, la produzione gira ma non lascia nulla da
 # analizzare, e la g(r), la W1 e il confronto appaiato sulle copie non hanno
 # input.  Lo script diagnostico 35 la passava, questo no.
 SAMPLE_NPZ="${SAMPLE_NPZ:-samples.npz}"
-LOG_INTERVAL="${LOG_INTERVAL:-20}"
+# 125 passi = 0,5 ps a dt 4 fs (come i run da 1 ns analizzati con lo script 47).
+LOG_INTERVAL="${LOG_INTERVAL:-125}"
 # MODEL scegli quale checkpoint simulare.  tel26_model.pt e' quello salvato
 #       dall'early stopping sulla validation loss, cioe' il criterio che sui
 #       quattro modelli di riferimento ordina AL CONTRARIO: per lo sweep si
@@ -48,9 +57,13 @@ fi
 echo "[INFO] modello ${MODEL}, config ${CONFIG}"
 ml_args=()
 [ -n "${DISABLE_ML:-}" ] && ml_args+=(--disable_ml)
-# GAMMA: attrito del termostato di produzione (default 1.0, cioe' ~300 ps di
-# rilassamento: produzione in pratica microcanonica).  Vedi 04_equilibrate.sh.
-[ -n "${GAMMA:-}" ] && ml_args+=(--gamma "${GAMMA}")
+# GAMMA: attrito del termostato di produzione (amu/ps).  Default 2: i moti
+# interni non dipendono da gamma, la diffusione scala come 1/gamma (D = kT /
+# (N gamma)); sotto ~2 la rotazione delle copie e' gia' quasi libera e non
+# accelera piu'.  Vedi 04_equilibrate.sh e claude/efficienza-cg-aa.md.
+GAMMA="${GAMMA:-2}"
+ml_args+=(--gamma "${GAMMA}")
+echo "[INFO] dt ${CG_DT} ps, gamma ${GAMMA}, ricerca dei vicini ${NEIGHBOR_SEARCH}, grafo PaiNN ${MLCG_PAINN_GRAPH}, log ogni ${LOG_INTERVAL} passi, energia completa ogni ${ENERGY_INTERVAL} log"
 # MD_EXTRA_ARGS: argomenti in piu' per run_cg_md.py, separati da spazi (es.
 # "--painn_profile_report prof.json --painn_profile_warmup_calls 50" oppure
 # "--dump_initial_forces forze.npz").  Il percorso del grafo PaiNN si sceglie
@@ -87,6 +100,7 @@ done
     --neighbor_search "${NEIGHBOR_SEARCH}" \
     --sample_npz "${SAMPLE_NPZ}" \
     --log_interval "${LOG_INTERVAL}" \
+    --energy_interval "${ENERGY_INTERVAL}" \
     ${extra_args[@]+"${extra_args[@]}"}
 
 # --dump_initial_forces scrive le forze iniziali ed esce: nessuna traiettoria.

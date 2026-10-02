@@ -38,6 +38,8 @@ NVE_STEPS="${NVE_STEPS:-2000}"
 OUT="${OUT:-${SCRIPT_DIR}/bench_graph}"
 mkdir -p "${OUT}"
 RUN05="${SCRIPT_DIR}/05_run_espresso.sh"
+# Energia completa a ogni registrazione: la prova NVE ha bisogno di E_tot.
+export ENERGY_INTERVAL=1
 # Lo stato iniziale viene da una corsa con i soli prior (altro modello, altra
 # config): la provenienza del checkpoint non coincide per costruzione, come
 # nelle validazioni e nella catena RE.  Si parte quindi con
