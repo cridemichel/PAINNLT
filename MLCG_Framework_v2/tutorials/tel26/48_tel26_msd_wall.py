@@ -206,16 +206,17 @@ def main():
         print("\n  MSD raggiunto dopo w ore di GPU (traslazione nm^2 / rotazione rad^2)")
         wmax = min(r["msd_window_ps"][1] / 1000 / (nsd[r["label"]] / 24) for r in results if r["label"] in nsd)
         grid = [w for w in (1 / 60, 5 / 60, 0.25, 0.5, 1, 2, 4, 8, 24) if w <= wmax] or [wmax]
-        print(f"  {'w (ore)':<36s}{hdr}")
+        W2 = 20
+        print(f"  {'w (ore)':<36s}" + "".join(f"{r['label']:>{W2}s}" for r in results))
         for w in grid:
             cells = []
             for r in results:
                 if r["label"] not in nsd:
-                    cells.append(f"{'-':>{W}s}"); continue
+                    cells.append(f"{'-':>{W2}s}"); continue
                 lag = w * nsd[r["label"]] / 24 * 1000
                 tr = np.interp(lag, r["lag_ps"], r["msd_trans_nm2"])
                 ro = np.interp(lag, r["lag_ps"], r["msd_rot_rad2"])
-                cells.append(f"{format(tr, '.3g') + ' / ' + format(ro, '.3g'):>{W}s}")
+                cells.append(f"{format(tr, '.3g') + ' / ' + format(ro, '.3g'):>{W2}s}")
             print(f"  {w:<36.3g}" + "".join(cells))
 
     print("\n  Note: la retta dell'MSD parte da --msd-from (AA almeno 100 ps).  '?' = tempo di")
