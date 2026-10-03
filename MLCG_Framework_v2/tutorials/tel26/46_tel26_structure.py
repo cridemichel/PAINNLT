@@ -30,7 +30,9 @@ Uso:
       lp1=samples_priors_lp1_100ps.npz#50:100 it30=samples_..._it30_100ps.npz#50:100 \\
       [--ref-range 0:0.5] [--stride 5] [--run-stride 5] [--plot struct_tel26]
 
-Corse: file .npz di run_cg_md (con finestra opzionale #T0:T1 in ps),
+Corse: file .npz di run_cg_md (con finestra opzionale #T0:T1 in ps; piu'
+repliche si concatenano con '+', ognuna con la sua finestra:
+'prod=a_r0.npz#100:1000+a_r1.npz#100:1000'),
 '@bin:altro_dataset.bin' (un altro blocco AA), '@ref:A:B' (fetta del
 riferimento, per il tetto AA contro AA).
 """
@@ -271,6 +273,16 @@ def main():
             L = L[keep]
         return S[keep], L, nc
 
+    def load_run_X(spec):
+        """Configurazioni (frame x copie) di una corsa; 'a.npz+b.npz' concatena
+        corse indipendenti (repliche), ciascuna con la propria finestra #T0:T1,
+        dopo aver ricomposto le copie di ognuna separatamente."""
+        parts = []
+        for part in spec.split("+"):
+            S, L, nc = load_run(part)
+            parts.append(unwrap_copies(S, L, nc, nuc).reshape(-1, nuc, S.shape[2], 3))
+        return np.concatenate(parts, axis=0)
+
     names = ["rmsd_core", "rmsd_all", "rmsd_loops", "Q", "Rg"]
     units = {"rmsd_core": "nm", "rmsd_all": "nm", "rmsd_loops": "nm", "Q": "", "Rg": "nm"}
     results = {"reference": args.dataset, "ref_range": args.ref_range, "runs": {}}
@@ -279,8 +291,7 @@ def main():
     run_cvs = {}
     for spec in args.runs:
         label, path = spec.split("=", 1)
-        S, L, nc = load_run(path)
-        X = unwrap_copies(S, L, nc, nuc).reshape(-1, nuc, S.shape[2], 3)
+        X = load_run_X(path)
         run_cvs[label] = collective(X, ref)
         print(f"  {label}: {X.shape[0]} configurazioni ({path})")
 
@@ -329,8 +340,7 @@ def main():
     print("  regione            RMSF AA " + "".join(f"{lab:>14s}" for lab in run_cvs))
     run_rmsf = {}
     for lab in run_cvs:
-        S, L, nc = load_run(dict(x.split("=", 1) for x in args.runs)[lab])
-        X = unwrap_copies(S, L, nc, nuc).reshape(-1, nuc, S.shape[2], 3)
+        X = load_run_X(dict(x.split("=", 1) for x in args.runs)[lab])
         run_rmsf[lab] = rmsf_on_core(X, ref)
     for g, idx in groups.items():
         if not idx:
