@@ -11,6 +11,7 @@ import struct
 import re
 import os
 import time
+_WALL_T0 = time.perf_counter()   # bilancio dei tempi a fine corsa ([TIMING])
 from contextlib import ExitStack
 
 from framework_utils import (
@@ -1500,17 +1501,21 @@ with ExitStack() as stack:
 
     completed = 0
     integration_wall_seconds = 0.0
+    record_wall_seconds = 0.0
+    record_count = 0
+    _WALL_LOOP_START = time.perf_counter()
     while simulation_ok and completed < args.steps:
         current = min(args.log_interval, args.steps - completed)
-        if args.painn_profile_report is None:
-            system.integrator.run(current)
-        else:
-            integration_start = time.perf_counter()
-            system.integrator.run(current)
-            integration_wall_seconds += time.perf_counter() - integration_start
+        integration_start = time.perf_counter()
+        system.integrator.run(current)
+        integration_wall_seconds += time.perf_counter() - integration_start
         completed += current
 
-        if record_state(completed, energy_writer, energy_handle, vtf_handle):
+        record_start = time.perf_counter()
+        unsafe_state = record_state(completed, energy_writer, energy_handle, vtf_handle)
+        record_wall_seconds += time.perf_counter() - record_start
+        record_count += 1
+        if unsafe_state:
             print("[CRITICAL] Safety abort triggered! max_f > 10000, E_kin > 5000, or min_dist < 0.15")
             system.integrator.run(0, recalc_forces=True)
             with open("crash.vtf", "w") as crash_vtf:
@@ -1527,6 +1532,8 @@ with ExitStack() as stack:
             print("[CRITICAL] Crash checkpoint saved. Exiting with non-zero status.")
             simulation_ok = False
             break
+
+_WALL_LOOP_END = time.perf_counter()
 
 if simulation_ok:
     if args.painn_profile_report is not None:
@@ -1753,6 +1760,33 @@ if simulation_ok:
     print("\n[INFO] Simulation finished successfully.")
 else:
     print("\n[ERROR] Simulation terminated by a safety guardrail.")
+
+# Bilancio dei tempi: dove va il tempo di una produzione (avvio, integrazione,
+# registrazioni, scritture finali) e ns/giorno effettivi.
+try:
+    _wall_end = time.perf_counter()
+    _total = _wall_end - _WALL_T0
+    _startup = _WALL_LOOP_START - _WALL_T0
+    _loop = _WALL_LOOP_END - _WALL_LOOP_START
+    _final = _wall_end - _WALL_LOOP_END
+    _other = _loop - integration_wall_seconds - record_wall_seconds
+    _ns = completed * float(args.dt) / 1000.0
+    print(
+        f"[TIMING] totale {_total:.1f} s | avvio {_startup:.1f} s | "
+        f"integrazione {integration_wall_seconds:.1f} s "
+        f"({1000.0 * integration_wall_seconds / max(1, completed):.2f} ms/passo, "
+        f"{completed} passi in {record_count} chiamate) | "
+        f"registrazioni {record_wall_seconds:.1f} s "
+        f"({1000.0 * record_wall_seconds / max(1, record_count):.0f} ms ciascuna) | "
+        f"resto del ciclo {_other:.1f} s | scritture finali {_final:.1f} s"
+    )
+    if _total > 0 and _ns > 0:
+        print(
+            f"[TIMING] {_ns:.4g} ns simulati: {_ns / _total * 86400:.2f} ns/giorno effettivi, "
+            f"{_ns / max(integration_wall_seconds, 1e-9) * 86400:.2f} ns/giorno di sola integrazione"
+        )
+except NameError:
+    pass  # uscita prima del ciclo principale
 
 # Force immediate exit to bypass PyTorch/MPI teardown crashes on macOS
 import sys

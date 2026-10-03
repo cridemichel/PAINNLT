@@ -30,10 +30,25 @@
 #   START_MODEL       modello di partenza; vuoto = inizializzazione a zero (U_ML == 0)
 #   TAG               nome della catena (default relent)
 #   NITER             iterazioni (default 10)
-#   CG_STEPS, CG_DT   lunghezza della simulazione per iterazione (default 25000 x 0.001 ps)
-#   LOG_INTERVAL      passi fra due campioni (default 100 = 0.1 ps)
+#   MD_PROFILE        fast (default dal 3/10) o legacy, vedi sotto
+#   MD_PS, SAMPLE_PS  durata della MD per iterazione e intervallo fra campioni in ps
+#                     (default 25 e 0.1, uguali nei due profili)
+#   CG_STEPS, CG_DT   in alternativa a MD_PS: passi e timestep (default dal profilo)
+#   LOG_INTERVAL      passi fra due campioni (default SAMPLE_PS / CG_DT)
 #   SKIP_PS           ps scartati dopo il cambio di modello (default 5)
-#   GAMMA             attrito di Langevin (default 20: tau = m/gamma ~ 15 ps, come le corse g20)
+#   GAMMA             attrito di Langevin (default 20: tau = m/gamma ~ 15 ps, come le corse g20).
+#                     Resta 20 anche nel profilo fast: dopo ogni cambio di modello
+#                     l'energia cinetica deve tornare canonica entro SKIP_PS, e a
+#                     gamma 2 il rilassamento della velocita' dura ~100 ps, piu'
+#                     dell'intera MD di un'iterazione.
+#
+# Profili della MD (MD_PROFILE):
+#   fast    dt 4 fs, liste di Verlet, grafo PaiNN sul device, energia completa
+#           ogni 10 registrazioni: stessa Hamiltoniana (parita' 2e-7), stessa
+#           distribuzione di equilibrio (matrice gamma x dt del 2/10), ~4-5x piu'
+#           veloce.  Stessi ps di MD e stesso intervallo fra campioni del legacy.
+#   legacy  dt 1 fs, link-cell, percorso PaiNN legacy, energia a ogni registrazione:
+#           riproduce le catene re0/re1.
 #   RE_STEPS, RE_LR, RE_WD, RE_BATCH, RE_ESS_MIN, RE_HOLDOUT, RE_EVAL_EVERY,
 #   RE_TOL, RE_MAX_BACKTRACKS, RE_RESIDUES_PER_COPY
 #                     RE_LR e' il massimo: ogni iterazione parte dal doppio del
@@ -60,12 +75,31 @@ CONFIG="${CONFIG:-tel26_training_config.d64.json}"
 START_MODEL="${START_MODEL:-}"
 TAG="${TAG:-relent}"
 NITER="${NITER:-10}"
-CG_STEPS="${CG_STEPS:-25000}"
-CG_DT="${CG_DT:-0.001}"
-LOG_INTERVAL="${LOG_INTERVAL:-100}"
+MD_PROFILE="${MD_PROFILE:-fast}"
+case "${MD_PROFILE}" in
+    fast)
+        CG_DT="${CG_DT:-0.004}"
+        NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-verlet}"
+        export MLCG_PAINN_GRAPH="${MLCG_PAINN_GRAPH:-device}"
+        ENERGY_INTERVAL="${ENERGY_INTERVAL:-10}"
+        ;;
+    legacy)
+        CG_DT="${CG_DT:-0.001}"
+        NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
+        export MLCG_PAINN_GRAPH="${MLCG_PAINN_GRAPH:-legacy}"
+        ENERGY_INTERVAL="${ENERGY_INTERVAL:-1}"
+        ;;
+    *)
+        echo "[ERROR] MD_PROFILE deve essere fast o legacy, non '${MD_PROFILE}'" >&2
+        exit 1
+        ;;
+esac
+MD_PS="${MD_PS:-25}"
+SAMPLE_PS="${SAMPLE_PS:-0.1}"
+CG_STEPS="${CG_STEPS:-$("${PYTHON_BIN}" -c "import sys; print(int(round(float(sys.argv[1]) / float(sys.argv[2]))))" "${MD_PS}" "${CG_DT}")}"
+LOG_INTERVAL="${LOG_INTERVAL:-$("${PYTHON_BIN}" -c "import sys; print(max(1, int(round(float(sys.argv[1]) / float(sys.argv[2])))))" "${SAMPLE_PS}" "${CG_DT}")}"
 SKIP_PS="${SKIP_PS:-5}"
 GAMMA="${GAMMA:-20}"
-NEIGHBOR_SEARCH="${NEIGHBOR_SEARCH:-link-cell}"
 FINAL_SAMPLES="${FINAL_SAMPLES:-1}"
 STOP_AFTER_NO_GAIN="${STOP_AFTER_NO_GAIN:-2}"
 RE_STEPS="${RE_STEPS:-200}"
@@ -85,6 +119,9 @@ RE_MAX_BACKTRACKS="${RE_MAX_BACKTRACKS:-6}"
 RE_RESIDUES_PER_COPY="${RE_RESIDUES_PER_COPY:-0}"
 
 cd "${SCRIPT_DIR}"
+echo "[INFO] MD per iterazione: profilo ${MD_PROFILE}, dt ${CG_DT} ps, ${CG_STEPS} passi," \
+     "campioni ogni ${LOG_INTERVAL} passi, gamma ${GAMMA}, vicini ${NEIGHBOR_SEARCH}," \
+     "grafo PaiNN ${MLCG_PAINN_GRAPH}, energia completa ogni ${ENERGY_INTERVAL} registrazioni"
 source "${SCRIPT_DIR}/_prior_set.sh"
 prior_set_files "${PRIOR_SET}"
 for path in "${CONFIG}" "${PRIORS_JSON}" "${RB_INFO_JSON}" "${DATASET_BIN}" "${START_CHECKPOINT}"; do
@@ -163,7 +200,7 @@ simulate() {
         --checkpoint "${ckpt_in}" --allow_checkpoint_mismatch \
         --steps "${CG_STEPS}" --dt "${CG_DT}" --kT 2.49 \
         --device "${DEVICE}" --neighbor_search "${NEIGHBOR_SEARCH}" \
-        --log_interval "${LOG_INTERVAL}" --no_vtf \
+        --log_interval "${LOG_INTERVAL}" --energy_interval "${ENERGY_INTERVAL}" --no_vtf \
         --energy_file "energy_${base}_it$(printf %02d "$k").csv" \
         --sample_npz "${samples}.tmp.npz" --sample_start_step "${SKIP_STEPS}" \
         --out_checkpoint "${state}.tmp.npz" \
