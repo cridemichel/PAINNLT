@@ -58,7 +58,11 @@ struct PaiNNMessageImpl : torch::nn::Module {
     std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor s, torch::Tensor v, torch::Tensor edge_index, torch::Tensor rbf, torch::Tensor r_ij_norm) {
         auto row = edge_index[0], col = edge_index[1]; 
         auto w = filter_mlp->forward(rbf); 
-        auto interaction = scalar_mlp->forward(s.index({row})) * w;      
+        // The context MLP acts on node features only, so it is evaluated once
+        // per node and then gathered on the edges: phi(s)[row] == phi(s[row]),
+        // the same FP32 operations, but ~E/N times fewer of them (E/N ~ 56 for
+        // TEL26).  Parameters and checkpoints are unchanged.
+        auto interaction = scalar_mlp->forward(s).index({row}) * w;
         auto chunks = interaction.chunk(3, 1);
         auto delta_v_edges = v.index({row}) * chunks[1].unsqueeze(1) + chunks[2].unsqueeze(1) * r_ij_norm.unsqueeze(2);
         auto delta_s = torch::zeros_like(s);
