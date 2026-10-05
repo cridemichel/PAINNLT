@@ -47,7 +47,7 @@ PYEOF
 # Da chiamare in 04/05 dopo aver fissato MODEL.  ML_ACTIVE=1 se il residuo ML
 # entra davvero nella dinamica (non CLASSICAL / DISABLE_ML).
 resolve_prior_set() {
-    local ml_active="${1}" trained
+    local ml_active="${1}" trained derived_ok=0
     trained="$(prior_set_of_model "${MODEL}")"
     if [ -z "${PRIOR_SET+x}" ]; then
         if [ "${trained}" = "?" ]; then
@@ -56,7 +56,27 @@ resolve_prior_set() {
             PRIOR_SET="${trained}"
         fi
     fi
-    if [ "${ml_active}" = 1 ] && [ "${trained}" != "?" ] && [ "${trained}" != "${PRIOR_SET}" ]; then
+    # Eccezione esplicita (ALLOW_ML_ON_DERIVED_PRIORS=1): residuo ML sopra un
+    # insieme DERIVATO (derive_prior_set.py) dalla sua stessa base, cioe' gli
+    # stessi prior piu' contatti pair-specific in piu' (add_state_contacts.py).
+    # Ha senso per un residuo allenato a entropia relativa, che non usa le forze
+    # del dataset; per un residuo da force matching la differenza dei contatti
+    # non e' stata sottratta.  Configurazione iniziale dal dataset della base.
+    if [ "${ml_active}" = 1 ] && [ "${trained}" != "?" ] && [ "${trained}" != "${PRIOR_SET}" ] \
+            && [ "${ALLOW_ML_ON_DERIVED_PRIORS:-0}" = 1 ]; then
+        local base_of_set
+        base_of_set="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])).get('derived_prior_set') or {}; print(d.get('base', '?'))" "cg_priors.${PRIOR_SET}.json" 2>/dev/null || echo "?")"
+        if [ "${base_of_set}" = "${trained:-canonico}" ]; then
+            derived_ok=1
+            echo "[WARN] ALLOW_ML_ON_DERIVED_PRIORS=1: residuo ML di '${trained:-canonico}' sopra l'insieme"
+            echo "       derivato '${PRIOR_SET}' (base '${base_of_set}'): contatti in piu' non sottratti nel training."
+        else
+            echo "[ERROR] ALLOW_ML_ON_DERIVED_PRIORS=1 vale solo per un insieme derivato dalla base del" >&2
+            echo "        modello ('${trained:-canonico}'); cg_priors.${PRIOR_SET}.json ha base '${base_of_set}'." >&2
+            exit 1
+        fi
+    fi
+    if [ "${ml_active}" = 1 ] && [ "${trained}" != "?" ] && [ "${trained}" != "${PRIOR_SET}" ] && [ "${derived_ok}" != 1 ]; then
         echo "[ERROR] ${MODEL} e' allenato sui residui dell'insieme '${trained:-canonico}'," >&2
         echo "        non su '${PRIOR_SET:-canonico}': il residuo ML ha senso solo sopra i" >&2
         echo "        prior che sono stati sottratti per allenarlo." >&2
@@ -67,6 +87,10 @@ resolve_prior_set() {
     # una corsa con i soli prior il dataset serve solo come configurazione
     # iniziale (le posizioni sono le stesse per ogni insieme), quindi si usa
     # quello canonico.  Con il ML attivo no: il residuo e' legato ai prior.
+    if [ "${derived_ok}" = 1 ]; then
+        DATASET_BIN="tel26${trained:+_${trained}}_dataset.bin"
+        echo "[INFO] configurazione iniziale e provenienza dal dataset della base: ${DATASET_BIN}"
+    fi
     if [ "${ml_active}" != 1 ] && [ ! -f "${DATASET_BIN}" ] && [ -f tel26_dataset.bin ]; then
         echo "[INFO] ${DATASET_BIN} assente: soli prior, configurazione iniziale da tel26_dataset.bin"
         DATASET_BIN=tel26_dataset.bin
