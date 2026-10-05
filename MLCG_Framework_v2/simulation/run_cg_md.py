@@ -326,22 +326,50 @@ if args.checkpoint:
         vel = np.asarray(chk["v"], dtype=float)
         quat = np.asarray(chk["quat"], dtype=float) if "quat" in chk.files else None
         omega = np.asarray(chk["omega"], dtype=float) if "omega" in chk.files else None
-    
-    if len(pos) != len(system.part):
-        raise ValueError(f"Checkpoint particle count ({len(pos)}) does not match system ({len(system.part)})")
-        
+        chk_virtual = (np.asarray(chk["particle_is_virtual"], dtype=bool)
+                       if "particle_is_virtual" in chk.files else None)
+        chk_mol = (np.asarray(chk["particle_mol_ids"], dtype=np.int64)
+                   if "particle_mol_ids" in chk.files else None)
+
+    if len(pos) == len(system.part):
+        source_of = {i: i for i in range(len(system.part))}
+    else:
+        # Numero di particelle diverso: succede quando l'insieme di prior ha
+        # contatti pair-specific con estremi nuovi (piu' marker virtuali, per
+        # esempio un insieme derivato con add_state_contacts.py).  Lo stato
+        # fisico sono solo i corpi rigidi (particelle reali): i siti CG e i
+        # marker sono virtuali e seguono il corpo.  Con --allow_checkpoint_mismatch
+        # si accoppiano le particelle reali nell'ordine degli id, controllando
+        # che siano tante quante e appartengano alle stesse molecole.
+        if not args.allow_checkpoint_mismatch or chk_virtual is None:
+            raise ValueError(
+                f"Checkpoint particle count ({len(pos)}) does not match system ({len(system.part)}); "
+                "con un insieme di prior con piu' marker usa --allow_checkpoint_mismatch")
+        chk_real = np.flatnonzero(~chk_virtual)
+        run_real = [i for i in range(len(system.part)) if not particle_is_virtual(system.part.by_id(i))]
+        if len(chk_real) != len(run_real):
+            raise ValueError(f"Checkpoint real-particle count ({len(chk_real)}) does not match system ({len(run_real)})")
+        if chk_mol is not None:
+            run_mol = np.array([int(system.part.by_id(i).mol_id) for i in run_real])
+            if not np.array_equal(chk_mol[chk_real], run_mol):
+                raise ValueError("Checkpoint real particles belong to different molecules than the runtime ones")
+        source_of = {i: int(j) for i, j in zip(run_real, chk_real)}
+        print(f"[WARNING] Checkpoint con {len(pos)} particelle, sistema con {len(system.part)}: "
+              f"ripristinati i {len(run_real)} corpi rigidi per id (siti e marker sono virtuali).")
+
     for i in range(len(system.part)):
         p = system.part.by_id(i)
         # Virtual sites positions/velocities are strictly tied to COM.
         # We only set the properties of the real (COM) particles, and the
         # virtual sites will follow automatically based on their auto-relation.
         if not particle_is_virtual(p):
-            p.pos = pos[i]
-            p.v = vel[i]
+            j = source_of[i]
+            p.pos = pos[j]
+            p.v = vel[j]
             if quat is not None:
-                p.quat = quat[i]
+                p.quat = quat[j]
             if omega is not None:
-                p.omega_body = omega[i]
+                p.omega_body = omega[j]
 
 if args.init_kT is not None:
     print(f"[INFO] Initializing velocities to kT={args.init_kT} with seed={args.velocity_seed}...")
