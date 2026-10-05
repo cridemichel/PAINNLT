@@ -107,8 +107,8 @@ def com_unwrapped(X, L):
 
 def stack_axis(X):
     """Asse della pila: baricentro della tetrade 1 meno quello della tetrade 3."""
-    t1 = [r - 1 for r in s46.TETRADS_1B[0]]
-    t3 = [r - 1 for r in s46.TETRADS_1B[2]]
+    t1 = [r - 1 for r in s46.SYS.outer_tetrads[0]]
+    t3 = [r - 1 for r in s46.SYS.outer_tetrads[-1]]
     a = X[:, :, t1].reshape(X.shape[0], X.shape[1], -1, 3).mean(axis=2)
     b = X[:, :, t3].reshape(X.shape[0], X.shape[1], -1, 3).mean(axis=2)
     n = a - b
@@ -270,8 +270,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("dataset", help="dataset AA (riferimento e corsa AA)")
     ap.add_argument("runs", nargs="*", help="etichetta=a.npz[+b.npz...]")
-    ap.add_argument("--nuc", type=int, default=26)
-    ap.add_argument("--aa-dt", type=float, default=20.0, help="ps fra due frame del dataset AA")
+    ap.add_argument("--nuc", type=int, default=s46.SYS.nuc)
+    ap.add_argument("--aa-dt", type=float, default=s46.SYS.aa_frame_dt_ps, help="ps fra due frame del dataset AA")
     ap.add_argument("--aa-stride", type=int, default=1)
     ap.add_argument("--cg-stride", type=int, default=1)
     ap.add_argument("--ref-stride", type=int, default=5, help="frame AA per la struttura media")
@@ -281,7 +281,7 @@ def main():
     ap.add_argument("--ns-day-cg", type=float, default=None)
     ap.add_argument("--gamma", action="append", default=[], metavar="ETICHETTA=GAMMA",
                     help="attrito di Langevin di una corsa CG, come --gamma di run_cg_md.py (amu/ps): aggiunge D teorico = kT/(N gamma)")
-    ap.add_argument("--kT", type=float, default=2.49, help="kJ/mol, per D teorico")
+    ap.add_argument("--kT", type=float, default=s46.SYS.kT, help="kJ/mol, per D teorico")
     ap.add_argument("--bodies-per-copy", type=int, default=None,
                     help="corpi con attrito per copia (default: --nuc, un corpo per residuo)")
     ap.add_argument("--json", default=None)

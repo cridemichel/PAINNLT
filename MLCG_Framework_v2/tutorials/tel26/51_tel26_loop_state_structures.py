@@ -43,7 +43,7 @@ s50 = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(s50)
 s47, s46, cv = s50.s47, s50.s46, s50.cv
 
-SITE_NAMES = ["S", "B1", "B2", "B3", "B4", "B5"]
+SITE_NAMES = s46.SYS.sites["G"]           # nomi dei siti (ordine del dataset), da system.json
 RESNAME = {"G": "DG", "T": "DT", "A": "DA", "C": "DC"}
 
 
@@ -51,9 +51,9 @@ def stack_frame(ref):
     """Asse della pila e quote delle tetradi 1 e 3 nel sistema del nucleo AA medio."""
     rows = {rs: i for i, rs in enumerate(ref.sel.core)}
     def centroid(tetrad):
-        idx = [rows[(r - 1, s)] for r in tetrad for s in range(6)]
+        idx = [rows[(r - 1, s)] for r in tetrad for s in range(len(SITE_NAMES))]
         return ref.core[idx].mean(0)
-    c1, c3 = centroid(s46.TETRADS_1B[0]), centroid(s46.TETRADS_1B[2])
+    c1, c3 = centroid(s46.SYS.outer_tetrads[0]), centroid(s46.SYS.outer_tetrads[-1])
     n = (c1 - c3) / np.linalg.norm(c1 - c3)
     return n, float(c1 @ n), float(c3 @ n)
 
@@ -106,8 +106,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("dataset")
     ap.add_argument("runs", nargs="*", help="etichetta=a.npz[+b.npz][,r1.npz...] (si usa la prima)")
-    ap.add_argument("--nuc", type=int, default=26)
-    ap.add_argument("--aa-dt", type=float, default=20.0)
+    ap.add_argument("--nuc", type=int, default=s46.SYS.nuc)
+    ap.add_argument("--aa-dt", type=float, default=s46.SYS.aa_frame_dt_ps)
     ap.add_argument("--aa-stride", type=int, default=1)
     ap.add_argument("--cg-stride", type=int, default=5)
     ap.add_argument("--ref-stride", type=int, default=5)

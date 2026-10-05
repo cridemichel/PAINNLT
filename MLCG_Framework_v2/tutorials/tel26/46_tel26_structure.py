@@ -49,11 +49,14 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "tel22" / "diagnostics" / "scripts"))
 import _tel22_cv as cv  # noqa: E402
 from _tel22_cv import load_reference, load_samples  # noqa: E402
+sys.path.insert(0, str(HERE.parent))
+from system_config import load_system  # noqa: E402
 
-SEQUENCE = "TTAGGGTTAGGGTTAGGGTTAGGGTT"
-# Tetradi (residui 1-based): la piega ibrida 3+1 del 2JPZ.
-TETRADS_1B = [(4, 12, 16, 22), (5, 11, 17, 23), (6, 10, 18, 24)]
-B3 = 3                     # indice del sito B3 nella guanina (S, B1..B5)
+# Tutto cio' che dipende dal sistema viene da system.json (vedi system_config.py).
+SYS = load_system(HERE)
+SEQUENCE = SYS.sequence
+TETRADS_1B = SYS.tetrads            # residui 1-based, dal basso verso l'alto della pila
+B3 = SYS.hoogsteen_index            # sito del contatto di Hoogsteen nella guanina
 
 
 # ── geometria ────────────────────────────────────────────────────────────────
@@ -111,10 +114,10 @@ class Selection:
         present = np.isfinite(template).all(axis=-1)          # (nuc, 6)
         g_core = sorted({r - 1 for t in TETRADS_1B for r in t})
         for r in g_core:
-            if SEQUENCE[r] != "G" or present[r].sum() != 6:
-                raise SystemExit(f"[ERROR] residuo {r + 1} non e' una guanina a 6 siti")
-        self.core = [(r, s) for r in g_core for s in range(6)]
-        self.all = [(r, s) for r in range(nuc) for s in range(6) if present[r, s]]
+            if SEQUENCE[r] != "G" or present[r].sum() != len(SYS.sites["G"]):
+                raise SystemExit(f"[ERROR] residuo {r + 1} non e' una guanina con tutti i siti di system.json")
+        self.core = [(r, s) for r in g_core for s in range(len(SYS.sites["G"]))]
+        self.all = [(r, s) for r in range(nuc) for s in range(present.shape[1]) if present[r, s]]
         self.loops = [(r, 0) for r in range(nuc) if SEQUENCE[r] != "G"]
         pairs = []
         for tet in TETRADS_1B:
@@ -223,7 +226,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("dataset")
     ap.add_argument("runs", nargs="*", help="etichetta=percorso")
-    ap.add_argument("--nuc", type=int, default=26)
+    ap.add_argument("--nuc", type=int, default=SYS.nuc)
     ap.add_argument("--ref-range", default=None, metavar="A:B")
     ap.add_argument("--stride", type=int, default=5, help="un frame AA ogni N")
     ap.add_argument("--run-stride", type=int, default=5, help="un frame CG ogni N")
@@ -415,7 +418,7 @@ def main():
             ax.scatter(cvs["rmsd_core"], cvs["Q"], s=1, alpha=0.15, label=lab)
         ax.set_xlabel("rmsd_core (nm)"); ax.set_ylabel("Q tetradi")
         ax.set_title("rmsd_core contro Q"); ax.legend(fontsize=8, markerscale=8)
-        fig.suptitle("TEL26 - struttura della copia: CG contro all-atom")
+        fig.suptitle(f"{SYS.name.upper()} - struttura della copia: CG contro all-atom")
         fig.tight_layout()
         out = f"{args.plot}.png"
         fig.savefig(out, dpi=130)

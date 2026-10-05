@@ -1,0 +1,19 @@
+{
+  "name": "tel26",
+  "description": "TEL26 ibrido 3+1 (PDB 2JPZ), (TTAGGG)4TT, 10 copie in scatola di 11,91 nm; riferimento AA di GiuliaC (prod-1, 136 ns, frame ogni 20 ps)",
+  "sequence": "TTAGGGTTAGGGTTAGGGTTAGGGTT",
+  "residues_per_copy": 26,
+  "copies": 10,
+  "sites": {"G": ["S", "B1", "B2", "B3", "B4", "B5"], "A": ["S"], "T": ["S"]},
+  "tetrads": [[4, 12, 16, 22], [5, 11, 17, 23], [6, 10, 18, 24]],
+  "outer_tetrads": [[4, 12, 16, 22], [6, 10, 18, 24]],
+  "hoogsteen_site": "B3",
+  "loop_groups": [["coda 5' T1-A3", [1, 2, 3]], ["loop 1 T7-A9", [7, 8, 9]], ["loop 2 T13-A15", [13, 14, 15]],
+                  ["loop 3 T19-A21", [19, 20, 21]], ["coda 3' T25-T26", [25, 26]]],
+  "contact_pairs": "1-15,1-21,2-15,9-18,19-21,20-18",
+  "file_prefix": "tel26",
+  "reference_dataset": "tel26_lp1_dataset.bin",
+  "aa": {"frame_dt_ps": 20.0, "ns_day": 137},
+  "md": {"dt_ps": 0.004, "gamma": 2.0, "kT": 2.49},
+  "production": {"model": "tel26_lp2_re1_it30.pt", "prior_set": "lp2"}
+}

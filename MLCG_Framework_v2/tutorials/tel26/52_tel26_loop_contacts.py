@@ -41,7 +41,7 @@ _spec.loader.exec_module(s47)
 s46 = s47.s46
 cv = s47.cv
 
-DEFAULT_PAIRS = "1-15,1-21,20-18,20-22,21-16,21-17"
+DEFAULT_PAIRS = s46.SYS.contact_pairs   # coppie candidate, da system.json
 
 
 def residue_positions(parts, nuc):
@@ -83,8 +83,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("dataset")
     ap.add_argument("runs", nargs="*", help="etichetta=a.npz[+b.npz][,r1.npz...]")
-    ap.add_argument("--nuc", type=int, default=26)
-    ap.add_argument("--aa-dt", type=float, default=20.0)
+    ap.add_argument("--nuc", type=int, default=s46.SYS.nuc)
+    ap.add_argument("--aa-dt", type=float, default=s46.SYS.aa_frame_dt_ps)
     ap.add_argument("--aa-stride", type=int, default=1)
     ap.add_argument("--cg-stride", type=int, default=5)
     ap.add_argument("--pairs", default=DEFAULT_PAIRS, help="coppie di residui 1-based, 'i-j,...'")
