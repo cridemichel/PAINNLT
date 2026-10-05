@@ -64,6 +64,8 @@ def main():
     ap.add_argument("--stride", type=int, default=1)
     ap.add_argument("--drop", default="", help="coppie da togliere, 'i-j,...' (1-based)")
     ap.add_argument("--dry-run", action="store_true", help="solo la tabella, nessun file")
+    ap.add_argument("--update-all", action="store_true",
+                    help="aggiorna anche i contatti con f_CG gia' entro l'errore AA (di norma restano fermi)")
     args = ap.parse_args()
     cv.set_nuc(args.nuc)
     nuc = args.nuc
@@ -109,9 +111,13 @@ def main():
             D_new = max(args.D_min, m["D"] + step * args.kT)
         else:
             D_new = m["D"]
-        new_D[key] = D_new
         ok = f_cg is not None and abs(f_cg - m["f_aa"]) <= max(m["f_aa_err"], 0.02)
-        rows.append((m, f_cg, D_new, "entro l'errore AA" if ok else ""))
+        # Entro l'errore AA il riferimento non distingue: inseguire lo scarto
+        # vorrebbe dire adattare D al rumore delle poche copie AA.
+        if ok and not args.update_all:
+            D_new = m["D"]
+        new_D[key] = D_new
+        rows.append((m, f_cg, D_new, ("entro l'errore AA" + ("" if args.update_all else ": D fermo")) if ok else ""))
 
     print(f"\n  {'contatto':<18s}{'f_AA':>14s}{'f_CG':>8s}{'D (kJ/mol)':>12s}{'D nuovo':>10s}   nota")
     for m, f_cg, D_new, note in rows:
