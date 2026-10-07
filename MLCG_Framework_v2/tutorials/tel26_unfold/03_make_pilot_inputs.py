@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""Input del pilota AA: TEL26 a 400 K senza il K+ del canale, 4 copie.
+
+PERCHE'
+    Nelle corse di Giulia a 400 K la tetrade 3 si apre appena il suo sito di
+    K+ si svuota, mentre le tetradi 1 e 2, con un K+ fra loro (resid 28120),
+    restano chiuse per 746 ns (02_tetrads_k.py).  Il pilota toglie quel K+ dal
+    canale per vedere se anche loro si aprono: unfolding completo in tempi
+    accessibili.
+
+COSA FA (solo numpy; gli input sono le copie in AA_unfold/input)
+    - dalla struttura di fine equilibratura sposta il K+ --k-resid nel bulk:
+      scambia la sua posizione con quella dell'ossigeno di una molecola d'acqua
+      lontana dal DNA (> --min-dna nm) e dagli altri K+ (> --min-k nm); l'acqua
+      viene traslata rigidamente nel sito lasciato libero.  Ordine degli atomi
+      e topologia invariati, carica totale neutra;
+    - scrive index.ndx con i gruppi System e DNA_K (DNA + K+, per l'xtc);
+    - scrive em.mdp (steepest descent) e md_rep<N>.mdp per --nrep copie, da
+      MD.mdp di Giulia: 400 K, velocita' generate con seed diversi, barostato
+      C-rescale, --ns ns, xtc del solo DNA_K ogni 10 ps, niente trr;
+    - copia .top e kions.itp nella cartella di lavoro.
+
+USO (Leonardo, login, dopo source hpc/env_leonardo.sh)
+    python3 03_make_pilot_inputs.py --input /leonardo_work/IscrB_G4MES/cdemiche/AA_unfold/input \\
+        --out /leonardo_work/IscrB_G4MES/cdemiche/AA_unfold/pilot_noK400
+"""
+from __future__ import annotations
+
+import argparse
+import pathlib
+import shutil
+
+import numpy as np
+
+DNA_RES = {"DT5", "DT", "DA", "DG", "DT3"}
+
+
+def read_gro(path):
+    L = pathlib.Path(path).read_text().splitlines()
+    n = int(L[1])
+    rows = L[2:2 + n]
+    resid = np.array([int(l[0:5]) for l in rows])
+    resn = [l[5:10].strip() for l in rows]
+    name = [l[10:15].strip() for l in rows]
+    xyz = np.array([[float(l[20:28]), float(l[28:36]), float(l[36:44])] for l in rows])
+    box = np.array([float(x) for x in L[2 + n].split()[:3]])
+    return L, rows, resid, resn, name, xyz, box
+
+
+def write_gro(path, L, rows, xyz, title):
+    out = [title, L[1]]
+    for l, x in zip(rows, xyz):
+        out.append(f"{l[:20]}{x[0]:8.3f}{x[1]:8.3f}{x[2]:8.3f}{l[44:]}")
+    out.append(L[2 + len(rows)])
+    pathlib.Path(path).write_text("\n".join(out) + "\n")
+
+
+def set_mdp(text, values):
+    """sostituisce o aggiunge chiavi (confronto con '-' e '_' equivalenti)"""
+    norm = lambda k: k.strip().lower().replace("_", "-")
+    want = {norm(k): (k, v) for k, v in values.items()}
+    out, seen = [], set()
+    for line in text.splitlines():
+        body = line.split(";")[0]
+        if "=" in body:
+            k = norm(body.split("=")[0])
+            if k in want:
+                out.append(f"{want[k][0]:<24s} = {want[k][1]}")
+                seen.add(k)
+                continue
+        out.append(line)
+    for k, (orig, v) in want.items():
+        if k not in seen:
+            out.append(f"{orig:<24s} = {v}")
+    return "\n".join(out) + "\n"
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--input", required=True, help="cartella con equil_hybrid_tel26.gro, .top, kions.itp, MD.mdp")
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--gro", default="equil_hybrid_tel26.gro")
+    ap.add_argument("--top", default="ibrido_noions_spce.top")
+    ap.add_argument("--k-resid", type=int, default=28120, help="K+ da togliere dal canale")
+    ap.add_argument("--min-dna", type=float, default=2.5)
+    ap.add_argument("--min-k", type=float, default=1.0)
+    ap.add_argument("--nrep", type=int, default=4)
+    ap.add_argument("--ns", type=float, default=200.0)
+    ap.add_argument("--temp", type=float, default=400.0)
+    ap.add_argument("--seed0", type=int, default=4001)
+    args = ap.parse_args()
+    inp, out = pathlib.Path(args.input), pathlib.Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+
+    L, rows, resid, resn, name, xyz, box = read_gro(inp / args.gro)
+    n = len(rows)
+    dna = np.array([r in DNA_RES for r in resn])
+    isk = np.array([r == "K" for r in resn])
+    kidx = np.where(isk & (resid == args.k_resid))[0]
+    if len(kidx) != 1:
+        raise SystemExit(f"[ERROR] K+ resid {args.k_resid} non trovato")
+    k = kidx[0]
+
+    def mind(p, sel):
+        d = xyz[sel] - p
+        d -= box * np.round(d / box)
+        return np.sqrt((d ** 2).sum(1)).min()
+
+    ow = np.where((np.array(resn) == "SOL") & (np.array(name) == "OW"))[0]
+    others = np.where(isk & (np.arange(n) != k))[0]
+    best = None
+    for o in ow[np.random.default_rng(0).permutation(len(ow))]:
+        dd, dk = mind(xyz[o], dna), mind(xyz[o], others)
+        if dd > args.min_dna and dk > args.min_k:
+            score = min(dd, 2 * dk)
+            if best is None or score > best[0]:
+                best = (score, o, dd, dk)
+    if best is None:
+        raise SystemExit("[ERROR] nessuna acqua abbastanza lontana: ridurre --min-dna / --min-k")
+    _, o, dd, dk = best
+    wat = np.where(resid == resid[o])[0]                      # OW, HW1, HW2 della stessa molecola
+    new = xyz.copy()
+    shift = xyz[k] - xyz[o]
+    new[wat] = xyz[wat] + shift
+    new[k] = xyz[o]
+    print(f"[INFO] K+ resid {args.k_resid} (atomo {k + 1}) dal canale a {xyz[o].round(3)}: "
+          f"{dd:.2f} nm dal DNA, {dk:.2f} nm dal K+ piu' vicino; acqua resid {resid[o]} nel canale")
+    write_gro(out / "start.gro", L, rows, new, f"TEL26 400 K senza K+ {args.k_resid} nel canale")
+
+    # indice: System e DNA_K (numerazione 1-based)
+    def block(title, idx):
+        lines = [f"[ {title} ]"]
+        for i in range(0, len(idx), 15):
+            lines.append(" ".join(f"{j + 1:6d}" for j in idx[i:i + 15]))
+        return "\n".join(lines)
+    (out / "index.ndx").write_text(block("System", np.arange(n)) + "\n" +
+                                   block("DNA_K", np.where(dna | isk)[0]) + "\n")
+    print(f"[INFO] index.ndx: System {n} atomi, DNA_K {int((dna | isk).sum())} atomi")
+
+    md = (inp / "MD.mdp").read_text()
+    em = set_mdp(md, {"integrator": "steep", "nsteps": "5000", "emtol": "500", "emstep": "0.01",
+                      "Tcoupl": "no", "pcoupl": "no", "gen_vel": "no", "constraints": "none",
+                      "nstxout": "0", "nstvout": "0", "nstxout-compressed": "0", "nstenergy": "100"})
+    (out / "em.mdp").write_text(em)
+    nsteps = int(round(args.ns * 1000 / 0.002))
+    for r in range(1, args.nrep + 1):
+        txt = set_mdp(md, {"nsteps": str(nsteps), "continuation": "no",
+                           "gen_vel": "yes", "gen_temp": f"{args.temp:g}", "gen_seed": str(args.seed0 + r),
+                           "ref_t": f"{args.temp:g}", "pcoupl": "C-rescale", "tau_p": "2",
+                           "nstxout": "0", "nstvout": "0", "nstfout": "0", "nstlog": "50000",
+                           "nstenergy": "5000", "nstxout-compressed": "5000", "compressed-x-grps": "DNA_K"})
+        (out / f"md_rep{r}.mdp").write_text(txt)
+    for f in (args.top, "kions.itp"):
+        shutil.copy2(inp / f, out / f)
+    print(f"[DONE] {out}: start.gro, index.ndx, em.mdp, md_rep1..{args.nrep}.mdp ({args.ns:g} ns, {args.temp:g} K), "
+          f"{args.top}, kions.itp")
+
+
+if __name__ == "__main__":
+    main()
