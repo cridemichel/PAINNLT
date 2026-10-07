@@ -23,6 +23,8 @@ NREP=${NREP:-4}
 MAXH=${MAXH:-23.5}
 TOP=ibrido_noions_spce.top
 
+# ambiente pulito: il job eredita i moduli della shell da cui si lancia sbatch (es. il venv PaiNN, CUDA 12.2/12.6)
+module purge
 module load profile/chem-phys
 module load fftw/3.3.10--gcc--12.2.0
 module load openblas/0.3.24--gcc--12.2.0
