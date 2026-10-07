@@ -33,12 +33,23 @@ public:
         int ordered_geometry_copies = 1,
         bool tel22_shared_geometry = false,
         const std::string& device_str = "auto",
-        const std::string& precision_str = "float32");
+        const std::string& precision_str = "float32",
+        bool thermo_heads = false,
+        double thermo_T0 = 300.0,
+        double temperature_K = 0.0);
 
     // Evaluates the ML potential and adds forces to particles
     void calculate_forces(CellStructure& cell_structure, const VerletCriterion<>& verlet_criterion);
 
     double get_cutoff() const { return m_cutoff; }
+
+    // Teste termodinamiche (U(T) = H - T S, vedi PaiNN_Architecture.hpp):
+    // la temperatura del potenziale ML.  Con thermo_heads la si fissa al
+    // costruttore (temperature_K) e la si puo' cambiare fra un passo e l'altro
+    // (per esempio nel replica exchange in temperatura).
+    bool has_thermo_heads() const;
+    void set_temperature(double temperature_K);
+    double get_temperature() const;
 
     // Ritorna l'ultima energia potenziale calcolata dal modello.
     // Nel percorso "device" l'energia resta un tensore sul device e viene

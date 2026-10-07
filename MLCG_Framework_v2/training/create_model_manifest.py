@@ -78,6 +78,15 @@ def main() -> None:
                 raise ValueError(
                 "Ordered head-only architecture requires ordered_geometry_head_only=true"
                 )
+    if bool(config.get("thermo_heads", False)):
+        # Teste termodinamiche U(T) = H - T S: modello e runtime devono avere
+        # la stessa T0 (le teste sono definite rispetto a essa).
+        thermo_T0 = float(config.get("thermo_T0", 300.0))
+        if not math.isfinite(thermo_T0) or thermo_T0 <= 0.0:
+            raise ValueError("thermo_T0 must be a positive finite temperature (K)")
+        if variant != PAINN_ARCHITECTURE_VARIANT:
+            raise ValueError("thermo_heads requires the plain PaiNN architecture variant")
+        architecture.update({"thermo_heads": 1, "thermo_T0": thermo_T0})
     manifest_path = Path(f"{args.model}.manifest.json")
     manifest = {}
     if manifest_path.is_file():

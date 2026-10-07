@@ -107,7 +107,10 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
     int ordered_geometry_copies,
     bool tel22_shared_geometry,
     const std::string& device_str,
-    const std::string& precision_str)
+    const std::string& precision_str,
+    bool thermo_heads,
+    double thermo_T0,
+    double temperature_K)
     : m_cutoff(cutoff), m_num_species(num_species),
       m_tel22_shared_geometry(tel22_shared_geometry) {
     
@@ -125,11 +128,14 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
         ordered_geometry_energy_scale_kj_mol,
         ordered_geometry_head_only,
         ordered_geometry_copies,
-        tel22_shared_geometry);
+        tel22_shared_geometry,
+        thermo_heads,
+        thermo_T0);
     
     // Carica i pesi dal file .pt salvato durante il training
     try {
         torch::load(model, model_path);
+        model->validate_thermo_state();
         model->eval(); // Mette il modello in modalità inferenza
         for (auto& param : model->parameters()) {
             param.set_requires_grad(false);
@@ -178,6 +184,15 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
         // roundoff from the forward/autograd evaluation without retraining.
         model->to(m_dtype);
         model->to(m_device);
+        if (model->has_thermo_heads()) {
+            if (!(temperature_K > 0.0)) {
+                throw std::invalid_argument(
+                    "PaiNN model with thermodynamic heads: temperature_K must be given (> 0)");
+            }
+            model->set_temperature(temperature_K);
+            std::cerr << "[PaiNN] Teste termodinamiche: T = " << temperature_K
+                      << " K (T0 = " << thermo_T0 << " K)" << std::endl;
+        }
         // In MD le forze sono -grad E via autograd: con le matmul in TF32 anche
         // il passo all'indietro verrebbe arrotondato, e la forza non sarebbe
         // piu' il gradiente esatto dell'energia calcolata -- un'incoerenza che
@@ -364,6 +379,24 @@ PaiNN_ML_Potential::~PaiNN_ML_Potential() {
     } catch (...) {
         // Never throw from a destructor; at worst the CUDA runtime is gone.
     }
+}
+
+bool PaiNN_ML_Potential::has_thermo_heads() const {
+    return model->has_thermo_heads();
+}
+
+void PaiNN_ML_Potential::set_temperature(double temperature_K) {
+    // Il buffer thermo_dT e' modificato in place: anche un CUDA graph gia'
+    // catturato legge il nuovo valore.  Lo si rilascia comunque, per non
+    // dipendere da questo dettaglio.
+    model->set_temperature(temperature_K);
+    if (m_static_graph) {
+        release_static_graph();
+    }
+}
+
+double PaiNN_ML_Potential::get_temperature() const {
+    return model->temperature();
 }
 
 void PaiNN_ML_Potential::release_static_graph() {

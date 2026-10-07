@@ -7,8 +7,11 @@ from libcpp cimport bool as cpp_bool
 # Dichiara l'interfaccia C++
 cdef extern from "core/nonbonded_interactions/PaiNN_ML_Potential.hpp":
     cdef cppclass PaiNN_ML_Potential:
-        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, int ordered_geometry_nodes, int ordered_geometry_head_layers, int ordered_geometry_head_width, double ordered_geometry_energy_scale_kj_mol, cpp_bool ordered_geometry_head_only, int ordered_geometry_copies, cpp_bool tel22_shared_geometry, const string& device_str, const string& precision_str)
+        PaiNN_ML_Potential(const string& model_path, int num_species, int hidden_channels, int n_layers, int num_rbf, double cutoff, double toxvaerd_alpha, int ordered_geometry_nodes, int ordered_geometry_head_layers, int ordered_geometry_head_width, double ordered_geometry_energy_scale_kj_mol, cpp_bool ordered_geometry_head_only, int ordered_geometry_copies, cpp_bool tel22_shared_geometry, const string& device_str, const string& precision_str, cpp_bool thermo_heads, double thermo_T0, double temperature_K)
         double get_cutoff()
+        cpp_bool has_thermo_heads()
+        void set_temperature(double temperature_K) except +
+        double get_temperature()
         double get_last_energy()
         void configure_profiling(bint enabled, long long warmup_calls)
         void reset_profiling()
@@ -54,7 +57,7 @@ def get_painn_profile():
     cdef string payload = global_painn_potential.get().get_profile_json()
     return json.loads((<bytes>payload).decode("utf-8"))
 
-def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float, device: str = "auto", precision: str = "float32", ordered_geometry_nodes: int = 0, ordered_geometry_head_layers: int = 0, ordered_geometry_head_width: int = 0, ordered_geometry_energy_scale_kj_mol: float = 0.0, ordered_geometry_head_only: bool = False, ordered_geometry_copies: int = 1, tel22_shared_geometry: bool = False):
+def activate_painn_potential(model_path: str, num_species: int, hidden_channels: int, n_layers: int, num_rbf: int, cutoff: float, toxvaerd_alpha: float, device: str = "auto", precision: str = "float32", ordered_geometry_nodes: int = 0, ordered_geometry_head_layers: int = 0, ordered_geometry_head_width: int = 0, ordered_geometry_energy_scale_kj_mol: float = 0.0, ordered_geometry_head_only: bool = False, ordered_geometry_copies: int = 1, tel22_shared_geometry: bool = False, thermo_heads: bool = False, thermo_T0: float = 300.0, temperature_K: float = 0.0):
     """
     Attiva il potenziale globale PaiNN in ESPResSo.
     
@@ -66,6 +69,9 @@ def activate_painn_potential(model_path: str, num_species: int, hidden_channels:
     :param cutoff: cutoff radius
     :param device: "auto", "cpu", "cuda", "mps"
     :param precision: "float32" (production default) or "float64" (CPU diagnostic)
+    :param thermo_heads: model with thermodynamic heads, U(T) = H - T S
+    :param thermo_T0: reference temperature of the heads (K), as in training
+    :param temperature_K: temperature of the ML potential (K), required with thermo_heads
     """
     global global_painn_potential
     
@@ -85,9 +91,28 @@ def activate_painn_potential(model_path: str, num_species: int, hidden_channels:
     cdef cpp_bool c_ordered_geometry_head_only = ordered_geometry_head_only
     cdef int c_ordered_geometry_copies = ordered_geometry_copies
     cdef cpp_bool c_tel22_shared_geometry = tel22_shared_geometry
+    cdef cpp_bool c_thermo_heads = thermo_heads
+    cdef double c_thermo_T0 = thermo_T0
+    cdef double c_temperature_K = temperature_K
+    if thermo_heads and not temperature_K > 0.0:
+        raise ValueError("thermo_heads=True requires temperature_K > 0")
     
     global_painn_potential = make_shared[PaiNN_ML_Potential](
-        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, c_toxvaerd_alpha, c_ordered_geometry_nodes, c_ordered_geometry_head_layers, c_ordered_geometry_head_width, c_ordered_geometry_energy_scale_kj_mol, c_ordered_geometry_head_only, c_ordered_geometry_copies, c_tel22_shared_geometry, cpp_device, cpp_precision
+        cpp_path, c_num_species, c_hidden_channels, c_n_layers, c_num_rbf, c_cutoff, c_toxvaerd_alpha, c_ordered_geometry_nodes, c_ordered_geometry_head_layers, c_ordered_geometry_head_width, c_ordered_geometry_energy_scale_kj_mol, c_ordered_geometry_head_only, c_ordered_geometry_copies, c_tel22_shared_geometry, cpp_device, cpp_precision, c_thermo_heads, c_thermo_T0, c_temperature_K
     )
     
     print(f"PaiNN ML Potential attivato: {model_path} (cutoff={cutoff}, device={device}, precision={precision})")
+
+def set_painn_temperature(temperature_K: float):
+    """Change the temperature of a PaiNN potential with thermodynamic heads (K)."""
+    if global_painn_potential.get() == NULL:
+        raise RuntimeError("PaiNN potential is not active")
+    if not global_painn_potential.get().has_thermo_heads():
+        raise RuntimeError("the active PaiNN model has no thermodynamic heads")
+    global_painn_potential.get().set_temperature(temperature_K)
+
+def get_painn_temperature():
+    """Temperature (K) of the active PaiNN potential (T0 for models without thermodynamic heads)."""
+    if global_painn_potential.get() == NULL:
+        raise RuntimeError("PaiNN potential is not active")
+    return global_painn_potential.get().get_temperature()

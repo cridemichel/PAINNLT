@@ -744,6 +744,19 @@ if ml_active:
         device=args.device,
         precision=args.ml_precision,
     )
+    # Teste termodinamiche (U(T) = H - T S): la temperatura del potenziale ML e'
+    # quella del termostato.  I kwargs si passano solo ai modelli che le hanno,
+    # cosi' un plugin vecchio continua a funzionare con i modelli di sempre e
+    # rifiuta (TypeError non inerte, sotto) un modello termodinamico.
+    if bool(nn_config.get("thermo_heads", False)):
+        _painn_kwargs["thermo_heads"] = True
+        _painn_kwargs["thermo_T0"] = float(nn_config.get("thermo_T0", 300.0))
+        _painn_kwargs["temperature_K"] = float(args.kT) / 0.008314462618
+        print(
+            "[INFO] PaiNN con teste termodinamiche: T = "
+            f"{_painn_kwargs['temperature_K']:.2f} K (kT = {args.kT} kJ/mol), "
+            f"T0 = {_painn_kwargs['thermo_T0']:.2f} K"
+        )
     # Compatibilita' driver/plugin: il lato plugin di
     # PATCH_TEL22_SHARED_CGNET_HEAD.md puo' non essere applicato, quindi
     # espressomd.painn puo' non conoscere alcuni kwargs. Vengono scartati SOLO
@@ -1622,6 +1635,7 @@ if simulation_ok:
             "ordered_geometry_copies": int(
                 nn_config.get("ordered_geometry_copies", 1)
             ),
+            "thermo_heads": bool(nn_config.get("thermo_heads", False)),
         }
         report_path = os.path.abspath(args.painn_profile_report)
         report_dir = os.path.dirname(report_path)

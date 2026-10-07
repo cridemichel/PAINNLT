@@ -285,6 +285,8 @@ static void zero_readout_output(PaiNNModel& model) {
     last->bias.zero_();
 }
 
+static constexpr double R_KJ_MOL_K = 0.008314462618;  // kJ/(mol K)
+
 static void usage() {
     std::cerr <<
         "uso: train_relent --config C.json --aa AA.bin --out M.pt (--in M0.pt | --zero-init)\n"
@@ -293,7 +295,10 @@ static void usage() {
         "       [--ess-min 0.5] [--holdout-frac 0.2] [--monitor-frames 256]\n"
         "       [--eval-every 10] [--energy-scale kT] [--seed 42] [--device auto]\n"
         "       [--max-backtracks 6] [--residues-per-copy 0]\n"
-        "       [--report R.json] [--check-gradient]\n";
+        "       [--report R.json] [--check-gradient]\n"
+        "       piu' temperature (config con \"thermo_heads\": true):\n"
+        "       --system AA.bin,CG.bin,T_K[,peso] (ripetibile, al posto di --aa/--cg)\n"
+        "       [--trainable all|thermo]\n";
 }
 
 static int run(int argc, char* argv[]) {
@@ -307,6 +312,8 @@ static int run(int argc, char* argv[]) {
     int monitor_frames = 256, seed = 42, max_backtracks = 6, residues_per_copy = 0;
     double lr = 1e-3, weight_decay = 0.0, grad_clip = 0.0, kT = 2.49;
     double ess_min = 0.5, holdout_frac = 0.2, energy_scale = -1.0;
+    std::vector<std::string> system_specs;   // --system AA.bin,CG.bin,T_K[,peso]
+    std::string trainable = "all";            // all | thermo (solo readout_dT)
 
     for (int k = 1; k < argc; ++k) {
         const std::string a = argv[k];
@@ -339,9 +346,12 @@ static int run(int argc, char* argv[]) {
         else if (a == "--ess-min") ess_min = std::stod(next());
         else if (a == "--holdout-frac") holdout_frac = std::stod(next());
         else if (a == "--energy-scale") energy_scale = std::stod(next());
+        else if (a == "--system") system_specs.push_back(next());
+        else if (a == "--trainable") trainable = next();
         else { usage(); std::cerr << "[ERROR] opzione sconosciuta: " << a << "\n"; return 2; }
     }
-    if (config_path.empty() || aa_path.empty() || (out_path.empty() && !check_gradient)) {
+    if (config_path.empty() || (aa_path.empty() && system_specs.empty()) ||
+        (out_path.empty() && !check_gradient)) {
         usage();
         return 2;
     }
@@ -349,7 +359,11 @@ static int run(int argc, char* argv[]) {
         std::cerr << "[ERROR] serve esattamente una fra --in e --zero-init\n";
         return 2;
     }
-    if ((steps > 0 || check_gradient) && cg_path.empty()) {
+    if (!system_specs.empty() && (!aa_path.empty() || !cg_path.empty())) {
+        std::cerr << "[ERROR] --system esclude --aa/--cg\n";
+        return 2;
+    }
+    if ((steps > 0 || check_gradient) && system_specs.empty() && cg_path.empty()) {
         std::cerr << "[ERROR] --cg e' necessario per --steps > 0 e per --check-gradient\n";
         return 2;
     }
@@ -397,10 +411,19 @@ static int run(int argc, char* argv[]) {
     const double cutoff = cfg.at("cutoff").get<double>();
     const double toxvaerd_alpha = cfg.value("toxvaerd_alpha", 0.1);
 
-    PaiNNModel model(num_species, dim, layers, num_rbf, cutoff, toxvaerd_alpha);
+    const bool thermo = cfg.value("thermo_heads", false);
+    const double thermo_T0 = cfg.value("thermo_T0", 300.0);
+    PaiNNModel model(num_species, dim, layers, num_rbf, cutoff, toxvaerd_alpha,
+                     0, 5, 160, 0.0, false, 1, false, thermo, thermo_T0);
+    if (thermo) {
+        std::cout << "[INFO] teste termodinamiche: U(T) = U(T0) + (T - T0) dU/dT, T0 = "
+                  << thermo_T0 << " K\n";
+    }
     if (!in_path.empty()) {
-        torch::load(model, in_path);
-        std::cout << "[INFO] modello di partenza: " << in_path << "\n";
+        const bool promoted = load_painn_weights(model, in_path, dim);
+        std::cout << "[INFO] modello di partenza: " << in_path
+                  << (promoted ? " (senza teste termodinamiche: readout_dT inizializzata a zero)" : "")
+                  << "\n";
     } else {
         zero_readout_output(model);
         const double scale = energy_scale > 0.0 ? energy_scale : kT;
@@ -422,6 +445,7 @@ static int run(int argc, char* argv[]) {
         {"grad_clip", grad_clip}, {"ess_min", ess_min}, {"batch_aa", batch_aa},
         {"batch_cg", batch_cg}, {"holdout_frac", holdout_frac}, {"seed", seed},
         {"energy_scale", model->energy_scale.item<double>()},
+        {"thermo_heads", thermo}, {"thermo_T0_K", thermo_T0},
     };
     auto write_report = [&]() {
         if (report_path.empty()) return;
@@ -435,7 +459,63 @@ static int run(int argc, char* argv[]) {
         std::cout << "[INFO] modello scritto: " << out_path << "\n";
     };
 
-    PositionSet aa_raw = read_positions(aa_path, num_species);
+    // =================================================================
+    // Sistemi (AA, CG, T, peso).  Con --system ripetuto si allena su piu'
+    // temperature insieme -- serve un modello con teste termodinamiche, perche'
+    // con dati a una sola T solo U = H - T S e' determinata, non H e S
+    // separatamente.  Senza --system: un solo sistema da --aa/--cg/--kT,
+    // esattamente come prima.  L'obiettivo e' sum_k w_k S_rel,k: ogni sistema
+    // ha la sua ripesatura, il suo holdout e la sua soglia di ESS.
+    // =================================================================
+    struct System {
+        std::string aa_path, cg_path;
+        double T = 0.0, beta = 0.0, weight = 1.0;
+        DeviceSet aa, cg;
+        int64_t n_train = 0, n_hold = 0;
+        torch::Tensor aa_train_idx, aa_hold_idx, aa_mon_idx, cg_idx;
+        torch::Tensor u0_cg, u0_mon, u0_hold;
+    };
+    std::vector<System> systems;
+    if (system_specs.empty()) {
+        System s;
+        s.aa_path = aa_path; s.cg_path = cg_path;
+        s.T = kT / R_KJ_MOL_K; s.beta = beta;
+        systems.push_back(s);
+    } else {
+        for (const auto& spec : system_specs) {
+            std::vector<std::string> f;
+            std::size_t start = 0;
+            while (true) {
+                auto pos = spec.find(',', start);
+                f.push_back(spec.substr(start, pos == std::string::npos ? std::string::npos : pos - start));
+                if (pos == std::string::npos) break;
+                start = pos + 1;
+            }
+            if (f.size() < 3 || f.size() > 4) {
+                throw std::runtime_error("--system vuole AA.bin,CG.bin,T_K[,peso]: " + spec);
+            }
+            System s;
+            s.aa_path = f[0]; s.cg_path = f[1];
+            s.T = std::stod(f[2]);
+            s.weight = f.size() == 4 ? std::stod(f[3]) : 1.0;
+            if (!(s.T > 0.0) || !(s.weight > 0.0)) throw std::runtime_error("T e peso devono essere positivi: " + spec);
+            s.beta = 1.0 / (R_KJ_MOL_K * s.T);
+            systems.push_back(s);
+        }
+    }
+    if (!model->has_thermo_heads()) {
+        for (const auto& s : systems) {
+            if (std::abs(s.T - systems[0].T) > 1e-9 * systems[0].T) {
+                std::cerr << "[ERROR] sistemi a temperature diverse richiedono \"thermo_heads\": true nella config\n";
+                return 2;
+            }
+        }
+    }
+    report["systems"] = json::array();
+    for (const auto& s : systems) {
+        report["systems"].push_back({{"aa", s.aa_path}, {"cg", s.cg_path}, {"T_K", s.T},
+                                     {"beta_mol_kJ", s.beta}, {"weight", s.weight}});
+    }
     if (steps == 0 && !check_gradient) {
         report["steps_done"] = 0;
         report["stop_reason"] = "steps=0";
@@ -443,39 +523,46 @@ static int run(int argc, char* argv[]) {
         write_report();
         return 0;
     }
-    PositionSet cg_raw = read_positions(cg_path, num_species);
-    if (cg_raw.site_types != aa_raw.site_types || cg_raw.site_mol != aa_raw.site_mol) {
-        std::cerr << "[ERROR] AA e CG non hanno la stessa topologia di siti\n";
-        return 2;
+    for (auto& s : systems) {
+        if (s.cg_path.empty()) { std::cerr << "[ERROR] manca il CG del sistema " << s.aa_path << "\n"; return 2; }
+        PositionSet aa_raw = read_positions(s.aa_path, num_species);
+        PositionSet cg_raw = read_positions(s.cg_path, num_species);
+        if (cg_raw.site_types != aa_raw.site_types || cg_raw.site_mol != aa_raw.site_mol) {
+            std::cerr << "[ERROR] AA e CG non hanno la stessa topologia di siti: " << s.aa_path << "\n";
+            return 2;
+        }
+        s.aa = to_device(aa_raw, device, dtype, residues_per_copy);
+        s.cg = to_device(cg_raw, device, dtype, residues_per_copy);
+        std::cout << "[INFO] sistema T = " << s.T << " K (peso " << s.weight << "): "
+                  << s.aa.frames << " frame AA, " << s.cg.frames << " frame CG, "
+                  << s.cg.groups << " gruppi di ripesatura\n";
     }
-    DeviceSet aa = to_device(aa_raw, device, dtype, residues_per_copy);
-    DeviceSet cg = to_device(cg_raw, device, dtype, residues_per_copy);
-    report["groups"] = cg.groups;
-    if (cg.groups > 1) {
-        std::cout << "[INFO] ripesatura per copia: " << cg.groups << " gruppi da "
-                  << residues_per_copy << " corpi\n";
-    }
-    aa_raw.positions.clear(); aa_raw.positions.shrink_to_fit();
-    cg_raw.positions.clear(); cg_raw.positions.shrink_to_fit();
+    report["groups"] = systems[0].cg.groups;
+
+    auto set_T = [&](const System& s) {
+        if (model->has_thermo_heads()) model->set_temperature(s.T);
+    };
+    auto energy_g = [&](const System& s, const DeviceSet& set, const torch::Tensor& idx) {
+        set_T(s);
+        return batch_energy(model, set, idx, cutoff);
+    };
+    auto energy_ng = [&](const System& s, const DeviceSet& set, const torch::Tensor& idx, int64_t chunk) {
+        set_T(s);
+        return energies_no_grad(model, set, idx, cutoff, chunk);
+    };
 
     // =================================================================
-    // Verifica del gradiente: il surrogato beta(<U>_AA - sum_i w_i U_i), con
-    // w detached, deve avere come gradiente quello di
-    //   F(theta) = beta <U>_AA + ln <exp(-beta (U - U_0))>_CG
+    // Verifica del gradiente: il surrogato sum_k w_k beta_k(<U_k>_AA -
+    // sum_i w_ik U_ik), con w detached, deve avere come gradiente quello di
+    //   F(theta) = sum_k w_k [beta_k <U_k>_AA + ln <exp(-beta_k (U_k - U_k0))>_CG]
     // anche lontano da theta_0, dove i pesi non sono uniformi.
     // =================================================================
     if (check_gradient) {
-        const int64_t na = std::min<int64_t>(aa.frames, 6);
-        const int64_t nc = std::min<int64_t>(cg.frames, 6);
-        auto ia = torch::arange(na, torch::kInt64);
-        auto ic = torch::arange(nc, torch::kInt64);
-        // Perturbazione RELATIVA alla scala di ogni tensore: una perturbazione
-        // assoluta di 0.3 su pesi inizializzati a ~0.1 fa esplodere le feature
-        // strato dopo strato (fino a 1e9 con molti archi) e rende le SiLU dei
-        // gradini alla scala di theta 1/|feature|: le differenze finite non
-        // convergono piu' e il controllo misura quel modello patologico, non
-        // train_relent.  I tensori nulli (readout con --zero-init) ricevono
-        // una scala fissa 0.1.
+        std::vector<torch::Tensor> ia_k, ic_k;
+        for (const auto& s : systems) {
+            ia_k.push_back(torch::arange(std::min<int64_t>(s.aa.frames, 6), torch::kInt64));
+            ic_k.push_back(torch::arange(std::min<int64_t>(s.cg.frames, 6), torch::kInt64));
+        }
         auto perturb = [&](double amplitude) {
             torch::NoGradGuard no_grad;
             for (auto& p : model->parameters()) {
@@ -484,58 +571,73 @@ static int run(int argc, char* argv[]) {
                 p.add_(torch::randn_like(p) * (amplitude * scale));
             }
         };
-        // Un modello non banale (con --zero-init l'energia sarebbe nulla).
         perturb(0.3);
         {
-            // Scala l'energia a una dispersione di ~2 kT fra i frame: pesi di
-            // ripesatura informativi, ne' uniformi ne' degeneri.
-            auto u = energies_no_grad(model, cg, ic, cutoff, nc).sum(1);
+            const System& s = systems[0];
+            const int64_t nc = ic_k[0].size(0);
+            auto u = energy_ng(s, s.cg, ic_k[0], nc).sum(1);
             const double spread = u.std().item<double>();
             torch::NoGradGuard no_grad;
-            if (spread > 0.0) model->energy_scale.mul_(2.0 * kT / spread);
+            if (spread > 0.0) model->energy_scale.mul_(2.0 / (s.beta * spread));
         }
-        // Coerenza del batching: stessa energia a blocchi di 1 e tutti insieme.
-        auto u_one = energies_no_grad(model, cg, ic, cutoff, 1);
-        auto u_all = energies_no_grad(model, cg, ic, cutoff, nc);
-        const double batch_err = (u_one - u_all).abs().max().item<double>();
-        const double u_spread = u_all.sum(1).std().item<double>();
-        std::cout << "[CHECK] batching: max|U(1) - U(" << nc << ")| = " << batch_err
+        double batch_err = 0.0, u_spread = 0.0;
+        std::vector<torch::Tensor> u0_k;
+        for (std::size_t k = 0; k < systems.size(); ++k) {
+            const System& s = systems[k];
+            const int64_t nc = ic_k[k].size(0);
+            auto u_one = energy_ng(s, s.cg, ic_k[k], 1);
+            auto u_all = energy_ng(s, s.cg, ic_k[k], nc);
+            batch_err = std::max(batch_err, (u_one - u_all).abs().max().item<double>());
+            u_spread = std::max(u_spread, u_all.sum(1).std().item<double>());
+        }
+        std::cout << "[CHECK] batching: max|U(1) - U(tutti)| = " << batch_err
                   << " (dispersione di U fra i frame: " << u_spread << " kJ/mol)\n";
-
-        // theta_0 = questo modello; theta = theta_0 + perturbazione, cosi' i
-        // pesi di ripesatura non sono uniformi.
-        auto u0 = u_all;
+        for (std::size_t k = 0; k < systems.size(); ++k) {
+            u0_k.push_back(energy_ng(systems[k], systems[k].cg, ic_k[k], ic_k[k].size(0)));
+        }
         perturb(0.15);
         auto objective = [&]() {
-            auto ua = energies_no_grad(model, aa, ia, cutoff, na);
-            auto uc = energies_no_grad(model, cg, ic, cutoff, nc);
-            return beta * ua.sum(1).mean().item<double>() + log_mean_exp(-beta * (uc - u0));
+            double total = 0.0;
+            for (std::size_t k = 0; k < systems.size(); ++k) {
+                const System& s = systems[k];
+                auto ua = energy_ng(s, s.aa, ia_k[k], ia_k[k].size(0));
+                auto uc = energy_ng(s, s.cg, ic_k[k], ic_k[k].size(0));
+                total += s.weight * (s.beta * ua.sum(1).mean().item<double>() +
+                                     log_mean_exp(-s.beta * (uc - u0_k[k])));
+            }
+            return total;
         };
         model->zero_grad();
-        auto uc_now = energies_no_grad(model, cg, ic, cutoff, nc);
-        auto w = torch::softmax(-beta * (uc_now - u0), 0).to(dtype);
-        auto ua_g = batch_energy(model, aa, ia, cutoff);
-        auto uc_g = batch_energy(model, cg, ic, cutoff);
-        auto surrogate = beta * (ua_g.sum(1).mean() - (w * uc_g).sum());
-        surrogate.backward();
-        auto params = model->parameters();
-        // Due direzioni: il solo readout (l'energia vi dipende attraverso un
-        // solo MLP) e tutti i parametri.
-        std::vector<bool> in_readout(params.size(), false);
-        {
-            std::vector<const void*> readout_ptrs;
-            for (const auto& p : model->readout->parameters()) readout_ptrs.push_back(p.unsafeGetTensorImpl());
-            for (std::size_t k = 0; k < params.size(); ++k) {
-                in_readout[k] = std::find(readout_ptrs.begin(), readout_ptrs.end(),
-                                          params[k].unsafeGetTensorImpl()) != readout_ptrs.end();
-            }
+        double ess = 1.0;
+        for (std::size_t k = 0; k < systems.size(); ++k) {
+            const System& s = systems[k];
+            auto uc_now = energy_ng(s, s.cg, ic_k[k], ic_k[k].size(0));
+            auto w = torch::softmax(-s.beta * (uc_now - u0_k[k]), 0).to(dtype);
+            ess = std::min(ess, min_ess_fraction(w));
+            auto ua_g = energy_g(s, s.aa, ia_k[k]);
+            auto uc_g = energy_g(s, s.cg, ic_k[k]);
+            auto surrogate = s.weight * s.beta * (ua_g.sum(1).mean() - (w * uc_g).sum());
+            surrogate.backward();
         }
-        auto directional_check = [&](const std::string& label, bool readout_only) {
+        auto params = model->parameters();
+        auto mark = [&](torch::nn::Sequential seq) {
+            std::vector<bool> in(params.size(), false);
+            if (!seq) return in;
+            std::vector<const void*> ptrs;
+            for (const auto& p : seq->parameters()) ptrs.push_back(p.unsafeGetTensorImpl());
+            for (std::size_t k = 0; k < params.size(); ++k) {
+                in[k] = std::find(ptrs.begin(), ptrs.end(), params[k].unsafeGetTensorImpl()) != ptrs.end();
+            }
+            return in;
+        };
+        const auto in_readout = mark(model->readout);
+        const auto in_readout_dT = mark(model->readout_dT);
+        auto directional_check = [&](const std::string& label, const std::vector<bool>* subset) {
             std::vector<torch::Tensor> dir;
             double norm2 = 0.0;
             for (std::size_t k = 0; k < params.size(); ++k) {
                 auto d = torch::randn_like(params[k]);
-                if (readout_only && !in_readout[k]) d.zero_();
+                if (subset != nullptr && !(*subset)[k]) d.zero_();
                 norm2 += (d * d).sum().item<double>();
                 dir.push_back(d);
             }
@@ -551,8 +653,6 @@ static int run(int argc, char* argv[]) {
                 torch::NoGradGuard no_grad;
                 for (std::size_t k = 0; k < params.size(); ++k) params[k].add_(dir[k] * s);
             };
-            // Differenze centrali a piu' passi, con estrapolazione di Richardson
-            // fra eps ed eps/2 (l'errore di troncamento liscio va come eps^2).
             auto central = [&](double eps) {
                 shift(+eps); const double fp = objective();
                 shift(-2 * eps); const double fm = objective();
@@ -579,92 +679,104 @@ static int run(int argc, char* argv[]) {
                       << ", qualunque passo " << best_any << "\n";
             return std::make_pair(best_rich, best_any);
         };
-
-        const double ess = min_ess_fraction(w);
         std::cout << std::setprecision(10)
                   << "[CHECK] ESS/N = " << ess << " (pesi non uniformi se < 1)\n";
-
-        // Scala delle feature per strato: deve restare O(1-100).  Feature
-        // enormi rendono la rete non liscia alla scala dei passi delle
-        // differenze finite (vedi la perturbazione relativa sopra).
-        {
-            torch::NoGradGuard no_grad;
-            auto pos = cg.pos.index_select(0, ic.slice(0, 0, 1));
-            auto box = cg.box.index_select(0, ic.slice(0, 0, 1)).view({1, 1, 1, 3});
-            auto diff = pos.unsqueeze(2) - pos.unsqueeze(1);
-            diff = diff - box * torch::round(diff / box);
-            auto mask = ((diff * diff).sum(-1) <= cutoff * cutoff) & cg.inter_mol.unsqueeze(0);
-            auto nz = mask.nonzero();
-            auto ii = nz.select(1, 1), jj = nz.select(1, 2);
-            auto edge_index = torch::stack({ii, jj});
-            auto r_ij = diff.index({nz.select(1, 0), ii, jj});
-            auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
-            auto rbf = model->expansion_rbf(d_ij);
-            auto r_norm = r_ij / d_ij.unsqueeze(1);
-            auto s_feat = model->embedding->forward(cg.types);
-            auto v_feat = torch::zeros({s_feat.size(0), 3, s_feat.size(1)}, s_feat.options());
-            std::cout << "[CHECK] archi intermolecolari nel frame 0: " << nz.size(0) << "\n";
-            for (int layer = 0; layer < model->num_layers; ++layer) {
-                auto msg = model->messages[layer]->forward(s_feat, v_feat, edge_index, rbf, r_norm);
-                s_feat = s_feat + msg.first;
-                v_feat = v_feat + msg.second;
-                std::tie(s_feat, v_feat) = model->updates[layer]->forward(s_feat, v_feat);
-                std::cout << "[CHECK] strato " << layer << ": max|s| = "
-                          << s_feat.abs().max().item<double>() << ", max|v| = "
-                          << v_feat.abs().max().item<double>() << "\n";
-            }
+        const auto readout = directional_check("solo readout", &in_readout);
+        bool thermo_ok = true;
+        if (model->has_thermo_heads()) {
+            const auto th = directional_check("solo testa termodinamica (readout_dT)", &in_readout_dT);
+            thermo_ok = th.first < 1e-6;
         }
-
-        const auto readout = directional_check("solo readout", true);
-        const auto all = directional_check("tutti i parametri", false);
+        const auto all = directional_check("tutti i parametri", nullptr);
         const bool batching_ok = batch_err < 1e-9 * std::max(1.0, u_spread) && u_spread > 0.0;
-        const bool ok = batching_ok && readout.first < 1e-6 && all.first < 1e-6;
+        const bool ok = batching_ok && readout.first < 1e-6 && all.first < 1e-6 && thermo_ok;
         std::cout << (ok ? "[OK] gradiente dell'entropia relativa verificato\n"
                          : "[FAIL] gradiente o batching non coerenti\n");
         return ok ? 0 : 1;
     }
 
-    // --- divisione AA: la coda della traiettoria resta fuori (holdout) ---
-    const int64_t n_hold = static_cast<int64_t>(std::floor(holdout_frac * aa.frames));
-    const int64_t n_train = aa.frames - n_hold;
-    if (n_train < batch_aa) { std::cerr << "[ERROR] troppo pochi frame AA\n"; return 2; }
-    auto aa_train_idx = torch::arange(n_train, torch::kInt64);
-    auto aa_hold_idx = torch::arange(n_train, aa.frames, torch::kInt64);
-    torch::Tensor aa_mon_idx = std::get<0>(
-        torch::randperm(n_train, torch::kInt64)
-            .slice(0, 0, std::min<int64_t>(n_train, monitor_frames))
-            .sort());
-    auto cg_idx = torch::arange(cg.frames, torch::kInt64);
+    // --- per sistema: divisione AA (la coda resta fuori) ed energie di theta_0 ---
     auto on_dev = [&](const torch::Tensor& t) { return t.to(device); };
+    for (auto& s : systems) {
+        s.n_hold = static_cast<int64_t>(std::floor(holdout_frac * s.aa.frames));
+        s.n_train = s.aa.frames - s.n_hold;
+        if (s.n_train < batch_aa) { std::cerr << "[ERROR] troppo pochi frame AA in " << s.aa_path << "\n"; return 2; }
+        s.aa_train_idx = torch::arange(s.n_train, torch::kInt64);
+        s.aa_hold_idx = torch::arange(s.n_train, s.aa.frames, torch::kInt64);
+        s.aa_mon_idx = std::get<0>(
+            torch::randperm(s.n_train, torch::kInt64)
+                .slice(0, 0, std::min<int64_t>(s.n_train, monitor_frames))
+                .sort());
+        s.cg_idx = torch::arange(s.cg.frames, torch::kInt64);
+        s.u0_cg = energy_ng(s, s.cg, on_dev(s.cg_idx), eval_batch);
+        s.u0_mon = energy_ng(s, s.aa, on_dev(s.aa_mon_idx), eval_batch).sum(1);
+        s.u0_hold = s.n_hold > 0
+            ? energy_ng(s, s.aa, on_dev(s.aa_hold_idx), eval_batch).sum(1)
+            : torch::zeros({0}, torch::kFloat64);
+        std::cout << "[INFO] T = " << s.T << " K: frame AA " << s.n_train << " allenamento ("
+                  << s.aa_mon_idx.size(0) << " di controllo), " << s.n_hold
+                  << " holdout; frame CG: " << s.cg.frames << "\n";
+    }
 
-    auto u0_cg = energies_no_grad(model, cg, on_dev(cg_idx), cutoff, eval_batch);
-    auto u0_mon = energies_no_grad(model, aa, on_dev(aa_mon_idx), cutoff, eval_batch).sum(1);
-    auto u0_hold = n_hold > 0
-        ? energies_no_grad(model, aa, on_dev(aa_hold_idx), cutoff, eval_batch).sum(1)
-        : torch::zeros({0}, torch::kFloat64);
-    std::cout << "[INFO] frame AA: " << n_train << " allenamento (" << aa_mon_idx.size(0)
-              << " di controllo), " << n_hold << " holdout; frame CG: " << cg.frames << "\n";
-
+    // Parametri allenati: tutti, oppure la sola testa termodinamica (il resto
+    // del modello, per esempio quello allenato a 300 K, resta fermo).
+    std::vector<torch::Tensor> train_params;
+    if (trainable == "all") {
+        train_params = model->parameters();
+    } else if (trainable == "thermo") {
+        if (!model->has_thermo_heads()) { std::cerr << "[ERROR] --trainable thermo senza teste termodinamiche\n"; return 2; }
+        train_params = model->readout_dT->parameters();
+        for (auto& p : model->parameters()) p.set_requires_grad(false);
+        for (auto& p : train_params) p.set_requires_grad(true);
+    } else {
+        std::cerr << "[ERROR] --trainable vuole all oppure thermo\n";
+        return 2;
+    }
+    report["trainable"] = trainable;
     torch::optim::AdamW optimizer(
-        model->parameters(), torch::optim::AdamWOptions(lr).weight_decay(weight_decay));
+        train_params, torch::optim::AdamWOptions(lr).weight_decay(weight_decay));
 
     struct Eval { double ess, ds_train, ds_hold, gap; };
-    auto evaluate = [&](const torch::Tensor& u_cg) {
+    // Energie CG correnti per sistema (senza grafo).
+    auto current_cg = [&]() {
+        std::vector<torch::Tensor> u;
+        for (auto& s : systems) u.push_back(energy_ng(s, s.cg, on_dev(s.cg_idx), eval_batch));
+        return u;
+    };
+    auto evaluate_one = [&](System& s, const torch::Tensor& u_cg) {
         Eval e{};
-        auto du = u_cg - u0_cg;
-        auto w = torch::softmax(-beta * du, 0);
+        auto du = u_cg - s.u0_cg;
+        auto w = torch::softmax(-s.beta * du, 0);
         e.ess = min_ess_fraction(w);
-        const double z_term = log_mean_exp(-beta * du);
-        auto u_mon = energies_no_grad(model, aa, on_dev(aa_mon_idx), cutoff, eval_batch).sum(1);
-        e.ds_train = beta * (u_mon - u0_mon).mean().item<double>() + z_term;
+        const double z_term = log_mean_exp(-s.beta * du);
+        auto u_mon = energy_ng(s, s.aa, on_dev(s.aa_mon_idx), eval_batch).sum(1);
+        e.ds_train = s.beta * (u_mon - s.u0_mon).mean().item<double>() + z_term;
         e.ds_hold = std::numeric_limits<double>::quiet_NaN();
-        if (n_hold > 0) {
-            auto u_hold = energies_no_grad(model, aa, on_dev(aa_hold_idx), cutoff, eval_batch).sum(1);
-            e.ds_hold = beta * (u_hold - u0_hold).mean().item<double>() + z_term;
+        if (s.n_hold > 0) {
+            auto u_hold = energy_ng(s, s.aa, on_dev(s.aa_hold_idx), eval_batch).sum(1);
+            e.ds_hold = s.beta * (u_hold - s.u0_hold).mean().item<double>() + z_term;
         }
-        e.gap = beta * (u_mon.mean().item<double>() - (w * u_cg).sum().item<double>());
+        e.gap = s.beta * (u_mon.mean().item<double>() - (w * u_cg).sum().item<double>());
         return e;
     };
+    auto evaluate = [&](const std::vector<torch::Tensor>& u_cg, json* per_system) {
+        Eval tot{1.0, 0.0, 0.0, 0.0};
+        for (std::size_t k = 0; k < systems.size(); ++k) {
+            const Eval e = evaluate_one(systems[k], u_cg[k]);
+            const double w = systems[k].weight;
+            tot.ess = std::min(tot.ess, e.ess);
+            tot.ds_train += w * e.ds_train;
+            tot.ds_hold += w * e.ds_hold;
+            tot.gap += w * e.gap;
+            if (per_system) {
+                per_system->push_back({{"T_K", systems[k].T}, {"ess", e.ess}, {"dS_train", e.ds_train},
+                                       {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}});
+            }
+        }
+        return tot;
+    };
+    const bool has_hold = std::all_of(systems.begin(), systems.end(),
+                                      [](const System& s) { return s.n_hold > 0; });
 
     json history = json::array();
     double best_score = 0.0;  // Delta S di theta_0 e' zero per costruzione
@@ -675,12 +787,8 @@ static int run(int argc, char* argv[]) {
     int steps_done = 0;
     double last_ess = 1.0;
 
-    // Regione di fiducia con passo adattivo.  Un passo che porta ESS/N sotto
-    // la soglia viene annullato e il learning rate dimezzato, fino a
-    // --max-backtracks volte; solo allora si torna a simulare.  Senza questo,
-    // i primi passi di Adam (ampi ~lr per parametro qualunque sia il
-    // gradiente) superavano la regione di fiducia gia' al primo tentativo e
-    // l'iterazione non guadagnava nulla (TEL26 it04-it05, falsa convergenza).
+    // Regione di fiducia con passo adattivo (vedi la versione a un sistema):
+    // la soglia vale per il sistema con l'ESS piu' bassa.
     double current_lr = lr;
     int backtracks = 0;
     auto set_lr = [&](double value) {
@@ -690,21 +798,22 @@ static int run(int argc, char* argv[]) {
     };
     int updates = 0;
     int last_logged = -1;
-    double prev_ess = 1.0;          // ESS/N dello stato prima dell'ultimo passo
-    double last_step_lr = -1.0;     // lr dell'ultimo passo tentato
-    double accepted_lr = -1.0;      // lr dell'ultimo passo accettato
+    double prev_ess = 1.0;
+    double last_step_lr = -1.0;
+    double accepted_lr = -1.0;
     std::cout << "[INFO] passo      ESS/N      dS_train      dS_hold     beta*gap        lr\n";
     while (updates < steps) {
-        auto u_cg = energies_no_grad(model, cg, on_dev(cg_idx), cutoff, eval_batch);
-        auto w_cg = torch::softmax(-beta * (u_cg - u0_cg), 0);
-        const double ess = min_ess_fraction(w_cg);
+        auto u_cg = current_cg();
+        std::vector<torch::Tensor> w_cg;
+        double ess = 1.0;
+        for (std::size_t k = 0; k < systems.size(); ++k) {
+            w_cg.push_back(torch::softmax(-systems[k].beta * (u_cg[k] - systems[k].u0_cg), 0));
+            ess = std::min(ess, min_ess_fraction(w_cg.back()));
+        }
         last_ess = ess;
         if (ess < ess_min) {
-            // L'ultimo passo ha portato theta troppo lontano dai campioni.
             restore_parameters(model, prev_params);
             --updates;
-            // Se lo stato ripristinato e' gia' a ridosso della soglia, nessun
-            // passo, per quanto piccolo, porta lontano: inutile dimezzare.
             if (backtracks >= max_backtracks || prev_ess < 1.2 * ess_min) {
                 stop_reason = "ess";
                 std::cout << "[INFO] ESS/N = " << ess << " < " << ess_min << " anche con lr "
@@ -721,15 +830,24 @@ static int run(int argc, char* argv[]) {
         if (updates > 0 && last_step_lr > 0.0) accepted_lr = last_step_lr;
         if (updates % eval_every == 0 && updates != last_logged) {
             last_logged = updates;
-            const Eval e = evaluate(u_cg);
-            const double score = n_hold > 0 ? e.ds_hold : e.ds_train;
+            json per_system = json::array();
+            const Eval e = evaluate(u_cg, &per_system);
+            const double score = has_hold ? e.ds_hold : e.ds_train;
             std::cout << "[RELENT] " << std::setw(5) << updates << std::fixed
                       << std::setprecision(4) << std::setw(10) << e.ess
                       << std::setw(14) << e.ds_train << std::setw(13) << e.ds_hold
                       << std::setw(13) << e.gap << std::defaultfloat
                       << std::setw(10) << current_lr << "\n";
+            if (systems.size() > 1) {
+                for (const auto& ps : per_system) {
+                    std::cout << "[RELENT]   T = " << ps["T_K"].get<double>() << " K: ESS/N "
+                              << ps["ess"].get<double>() << ", dS_train " << ps["dS_train"].get<double>()
+                              << ", dS_hold " << ps["dS_hold"].get<double>() << "\n";
+                }
+            }
             history.push_back({{"step", updates}, {"ess", e.ess}, {"dS_train", e.ds_train},
-                               {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"lr", current_lr}});
+                               {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"lr", current_lr},
+                               {"systems", per_system}});
             if (score < best_score) {
                 best_score = score;
                 best_step = updates;
@@ -740,40 +858,39 @@ static int run(int argc, char* argv[]) {
         prev_ess = ess;
 
         optimizer.zero_grad();
-        auto ia = on_dev(aa_train_idx.index_select(
-            0, torch::randint(n_train, {batch_aa}, torch::kInt64)));
-        // Campionamento per importanza dai pesi: media semplice sul batch.
-        torch::Tensor loss_cg;
-        if (cg.groups == 1) {
-            // Un gruppo: campionamento per importanza dai pesi, media semplice.
-            auto ic = on_dev(torch::multinomial(w_cg.select(1, 0).to(torch::kFloat64), batch_cg, true));
-            loss_cg = batch_energy(model, cg, ic, cutoff).sum(1).mean();
-        } else {
-            // Piu' gruppi: frame uniformi e pesi per gruppo (stima non distorta
-            // di sum_c sum_i w_ic U_ic).
-            auto pick = torch::randint(cg.frames, {batch_cg}, torch::kInt64);
-            auto w_sel = w_cg.index_select(0, pick).to(dtype).to(device) *
-                         (static_cast<double>(cg.frames) / batch_cg);
-            loss_cg = (w_sel * batch_energy(model, cg, on_dev(pick), cutoff)).sum();
+        for (std::size_t k = 0; k < systems.size(); ++k) {
+            System& s = systems[k];
+            auto ia = on_dev(s.aa_train_idx.index_select(
+                0, torch::randint(s.n_train, {batch_aa}, torch::kInt64)));
+            torch::Tensor loss_cg;
+            if (s.cg.groups == 1) {
+                auto ic = on_dev(torch::multinomial(w_cg[k].select(1, 0).to(torch::kFloat64), batch_cg, true));
+                loss_cg = energy_g(s, s.cg, ic).sum(1).mean();
+            } else {
+                auto pick = torch::randint(s.cg.frames, {batch_cg}, torch::kInt64);
+                auto w_sel = w_cg[k].index_select(0, pick).to(dtype).to(device) *
+                             (static_cast<double>(s.cg.frames) / batch_cg);
+                loss_cg = (w_sel * energy_g(s, s.cg, on_dev(pick))).sum();
+            }
+            auto loss = s.weight * s.beta * (energy_g(s, s.aa, ia).sum(1).mean() - loss_cg);
+            loss.backward();
         }
-        auto loss = beta * (batch_energy(model, aa, ia, cutoff).sum(1).mean() - loss_cg);
-        loss.backward();
-        if (grad_clip > 0.0) torch::nn::utils::clip_grad_norm_(model->parameters(), grad_clip);
+        if (grad_clip > 0.0) torch::nn::utils::clip_grad_norm_(train_params, grad_clip);
         optimizer.step();
         last_step_lr = current_lr;
         ++updates;
     }
     steps_done = std::max(0, updates);
-    // Stato finale (dopo l'ultimo passo, o quello prima del crollo dell'ESS):
-    // lo si valuta sempre, perche' con eval_every > 1 potrebbe essere il migliore.
     {
-        auto u_cg = energies_no_grad(model, cg, on_dev(cg_idx), cutoff, eval_batch);
-        const Eval e = evaluate(u_cg);
+        auto u_cg = current_cg();
+        json per_system = json::array();
+        const Eval e = evaluate(u_cg, &per_system);
         last_ess = e.ess;
         if (e.ess >= ess_min) {
-            const double score = n_hold > 0 ? e.ds_hold : e.ds_train;
+            const double score = has_hold ? e.ds_hold : e.ds_train;
             history.push_back({{"step", steps_done}, {"ess", e.ess}, {"dS_train", e.ds_train},
-                               {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"final", true}});
+                               {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"final", true},
+                               {"systems", per_system}});
             std::cout << "[RELENT] " << std::setw(5) << steps_done << std::fixed
                       << std::setprecision(4) << std::setw(10) << e.ess
                       << std::setw(14) << e.ds_train << std::setw(13) << e.ds_hold
@@ -787,25 +904,27 @@ static int run(int argc, char* argv[]) {
     }
     restore_parameters(model, best_params);
     std::cout << "[INFO] miglior passo " << best_step << " (dS "
-              << (n_hold > 0 ? "holdout" : "train") << " = " << best_score
+              << (has_hold ? "holdout" : "train") << " = " << best_score
               << "), arresto: " << stop_reason << "\n";
     if (best_step == 0) {
         std::cout << "[WARNING] nessun passo abbassa S_rel: il modello resta theta_0\n";
     }
-
+    if (model->has_thermo_heads()) model->set_temperature(model->thermo_T0);
     save_model();
     report["steps_done"] = steps_done;
     report["stop_reason"] = stop_reason;
     report["ess_last"] = last_ess;
-    // lr dell'ultimo passo accettato: la scala giusta per l'iterazione dopo
-    // (i dimezzamenti finali a ridosso della soglia non dicono nulla).
     report["lr_final"] = accepted_lr > 0.0 ? accepted_lr : current_lr;
     report["backtracks"] = backtracks;
     report["best_step"] = best_step;
     report["best_dS"] = best_score;
-    report["best_dS_source"] = n_hold > 0 ? "holdout" : "train";
-    report["frames"] = {{"aa_train", n_train}, {"aa_holdout", n_hold},
-                        {"aa_monitor", aa_mon_idx.size(0)}, {"cg", cg.frames}};
+    report["best_dS_source"] = has_hold ? "holdout" : "train";
+    json frames = json::array();
+    for (const auto& s : systems) {
+        frames.push_back({{"T_K", s.T}, {"aa_train", s.n_train}, {"aa_holdout", s.n_hold},
+                          {"aa_monitor", s.aa_mon_idx.size(0)}, {"cg", s.cg.frames}});
+    }
+    report["frames"] = systems.size() == 1 ? frames[0] : frames;
     report["log"] = history;
     report["seconds"] = std::chrono::duration<double>(
         std::chrono::steady_clock::now() - t_start).count();

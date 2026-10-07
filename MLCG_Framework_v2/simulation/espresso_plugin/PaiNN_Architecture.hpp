@@ -5,6 +5,7 @@
 #include <vector>
 #include <string_view>
 #include <stdexcept>
+#include <string>
 
 inline constexpr std::string_view PAINN_ARCHITECTURE_VARIANT = "painn_canonical_context_silu_v2";
 inline constexpr std::string_view PAINN_ORDERED_GEOMETRY_VARIANT =
@@ -115,6 +116,9 @@ struct PaiNNModelImpl : torch::nn::Module {
     std::vector<PaiNNMessage> messages;
     std::vector<PaiNNUpdate> updates;
     torch::nn::Sequential readout{nullptr};
+    // Teste termodinamiche (opzionali, thermo = true): readout da' l'energia di
+    // sito a T0, readout_dT la sua pendenza in temperatura.  Vedi site_energies().
+    torch::nn::Sequential readout_dT{nullptr};
     torch::nn::Sequential ordered_geometry_head{nullptr};
     int num_layers;
     int num_embeddings;
@@ -132,6 +136,10 @@ struct PaiNNModelImpl : torch::nn::Module {
     torch::Tensor ordered_geometry_energy_scale;
     torch::Tensor ordered_geometry_mean;
     torch::Tensor ordered_geometry_std;
+    bool thermo_heads = false;
+    double thermo_T0 = 300.0;      // K, temperatura di riferimento delle teste
+    torch::Tensor thermo_T0_buf;   // copia salvata nel file del modello (controllo)
+    torch::Tensor thermo_dT;       // T - T0 (K), impostata da set_temperature()
     
     PaiNNModelImpl(
         int num_embeddings,
@@ -146,7 +154,9 @@ struct PaiNNModelImpl : torch::nn::Module {
         double ordered_energy_scale_kj_mol = 0.0,
         bool ordered_head_only = false,
         int ordered_copies = 1,
-        bool tel22_shared = false)
+        bool tel22_shared = false,
+        bool thermo = false,
+        double thermo_T0_K = 300.0)
         : num_layers(layers),
           num_embeddings(num_embeddings),
           cutoff_radius(cutoff),
@@ -158,7 +168,9 @@ struct PaiNNModelImpl : torch::nn::Module {
           ordered_geometry_head_width(ordered_head_width),
           ordered_geometry_head_only(ordered_head_only),
           ordered_geometry_copies(ordered_copies),
-          tel22_shared_geometry(tel22_shared) {
+          tel22_shared_geometry(tel22_shared),
+          thermo_heads(thermo),
+          thermo_T0(thermo_T0_K) {
         
         energy_scale = register_buffer("energy_scale", torch::ones({1}));
         if (!ordered_geometry_head_only) {
@@ -170,6 +182,26 @@ struct PaiNNModelImpl : torch::nn::Module {
             readout = register_module("readout", torch::nn::Sequential(
                 torch::nn::Linear(dim, dim / 2), torch::nn::SiLU(), torch::nn::Linear(dim / 2, 1)
             ));
+            if (thermo_heads) {
+                if (!(thermo_T0 > 0.0) || !std::isfinite(thermo_T0)) {
+                    throw std::invalid_argument("thermo_T0 must be a positive finite temperature (K)");
+                }
+                readout_dT = register_module("readout_dT", torch::nn::Sequential(
+                    torch::nn::Linear(dim, dim / 2), torch::nn::SiLU(), torch::nn::Linear(dim / 2, 1)
+                ));
+                // Ultimo strato a zero: un modello appena costruito (o caricato da
+                // uno a una sola temperatura) non dipende da T.
+                {
+                    torch::NoGradGuard no_grad;
+                    auto last = readout_dT->ptr<torch::nn::LinearImpl>(2);
+                    last->weight.zero_();
+                    last->bias.zero_();
+                }
+                thermo_T0_buf = register_buffer("thermo_T0", torch::full({1}, thermo_T0));
+                thermo_dT = register_buffer("thermo_dT", torch::zeros({1}));
+            }
+        } else if (thermo) {
+            throw std::invalid_argument("thermo heads require the PaiNN branch (not head-only mode)");
         }
         if (ordered_geometry_nodes > 0) {
             if (ordered_geometry_nodes < 4 || ordered_geometry_head_layers <= 0 ||
@@ -460,20 +492,90 @@ struct PaiNNModelImpl : torch::nn::Module {
     // We fix it by assigning zero energy to every isolated site type.  The
     // subtraction depends on model parameters and species, but not on
     // coordinates, so forces and force-training gradients are unchanged.
-    torch::Tensor isolated_species_reference_table(torch::Tensor atomic_numbers) {
+    torch::Tensor isolated_species_features(torch::Tensor atomic_numbers) {
         auto species = torch::arange(num_embeddings, atomic_numbers.options());
         torch::Tensor s = embedding->forward(species);
         torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
         for (int i = 0; i < num_layers; ++i) {
             std::tie(s, v) = updates[i]->forward(s, v);
         }
-        return readout->forward(s);
+        return s;
+    }
+
+    torch::Tensor isolated_species_reference_table(torch::Tensor atomic_numbers) {
+        return readout->forward(isolated_species_features(atomic_numbers));
     }
 
     torch::Tensor apply_isolated_species_gauge(
         torch::Tensor atomic_numbers, torch::Tensor raw_atom_energies) {
         auto references = isolated_species_reference_table(atomic_numbers);
         return (raw_atom_energies - references.index_select(0, atomic_numbers)) * energy_scale;
+    }
+
+    // ------------------------------------------------------------------
+    // Teste termodinamiche.  In solvente implicito il potenziale CG e' un PMF,
+    // cioe' un'energia libera dei gradi di liberta' eliminati a configurazione
+    // CG fissata: U(x;T) = H(x) - T S(x).  Con H e S indipendenti da T
+    // (Delta Cp condizionato nullo) U e' lineare in T.  Per sito i:
+    //
+    //   u_i(T) = eps [ a_i + (T - T0)/T0 * b_i ]
+    //
+    // a_i = readout(s_i), b_i = readout_dT(s_i), entrambe con il gauge degli
+    // isolati, eps = energy_scale.  Quindi, sommando sui siti (A = eps sum a,
+    // B = eps sum b):  U(T0) = A,  dU/dT = -S = B/T0,  H = U + T S = A - B.
+    // Il rapporto dei pesi di Boltzmann fra due temperature dipende solo da H:
+    // exp(-b2 U2)/exp(-b1 U1) = exp(-(b2 - b1) H).  Con thermo = false il
+    // percorso e' identico a quello storico (stesse operazioni, stesso ordine).
+    // ------------------------------------------------------------------
+    bool has_thermo_heads() const { return thermo_heads; }
+
+    void set_temperature(double temperature_K) {
+        if (!thermo_heads) {
+            throw std::logic_error("set_temperature: the model has no thermodynamic heads");
+        }
+        if (!(temperature_K > 0.0) || !std::isfinite(temperature_K)) {
+            throw std::invalid_argument("set_temperature: temperature must be positive and finite (K)");
+        }
+        torch::NoGradGuard no_grad;
+        thermo_dT.fill_(temperature_K - thermo_T0);
+    }
+
+    double temperature() const {
+        if (!thermo_heads) return thermo_T0;
+        return thermo_T0 + thermo_dT.to(torch::kCPU, torch::kFloat64).item<double>();
+    }
+
+    // Dopo torch::load: il T0 salvato nel file deve essere quello della config.
+    void validate_thermo_state() const {
+        if (!thermo_heads) return;
+        const double saved = thermo_T0_buf.to(torch::kCPU, torch::kFloat64).item<double>();
+        if (std::abs(saved - thermo_T0) > 1e-6 * thermo_T0) {
+            throw std::runtime_error(
+                "thermo_T0 in the model file (" + std::to_string(saved) +
+                " K) differs from the configuration (" + std::to_string(thermo_T0) + " K)");
+        }
+    }
+
+    // [N, 2]: colonne a, b (kJ/mol) per sito, gauge degli isolati compreso.
+    torch::Tensor site_energy_parts(torch::Tensor atomic_numbers, torch::Tensor s) {
+        if (!thermo_heads) {
+            throw std::logic_error("site_energy_parts: the model has no thermodynamic heads");
+        }
+        auto iso = isolated_species_features(atomic_numbers);
+        auto a = (readout->forward(s) -
+                  readout->forward(iso).index_select(0, atomic_numbers)) * energy_scale;
+        auto b = (readout_dT->forward(s) -
+                  readout_dT->forward(iso).index_select(0, atomic_numbers)) * energy_scale;
+        return torch::cat({a, b}, 1);
+    }
+
+    // [N, 1]: energia di sito alla temperatura corrente.
+    torch::Tensor site_energies(torch::Tensor atomic_numbers, torch::Tensor s) {
+        if (!thermo_heads) {
+            return apply_isolated_species_gauge(atomic_numbers, readout->forward(s));
+        }
+        auto parts = site_energy_parts(atomic_numbers, s);
+        return parts.narrow(1, 0, 1) + parts.narrow(1, 1, 1) * (thermo_dT / thermo_T0);
     }
 
     // Espansione RBF con Toxvaerd Cutoff (C3 smooth energy)
@@ -515,8 +617,7 @@ struct PaiNNModelImpl : torch::nn::Module {
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
-        torch::Tensor atom_energies = apply_isolated_species_gauge(
-            batch.atomic_numbers, readout->forward(s));
+        torch::Tensor atom_energies = site_energies(batch.atomic_numbers, s);
         torch::Tensor pred_energy = torch::zeros({batch.energy_true.size(0), 1}, s.options());
         pred_energy.index_add_(0, batch.batch_indices, atom_energies);
         if (has_ordered_geometry_head()) {
@@ -551,8 +652,7 @@ struct PaiNNModelImpl : torch::nn::Module {
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
-        torch::Tensor atom_energies = apply_isolated_species_gauge(
-            atomic_numbers, readout->forward(s));
+        torch::Tensor atom_energies = site_energies(atomic_numbers, s);
         
         int64_t num_molecules = batch_indices.max().cpu().item<int64_t>() + 1;
         torch::Tensor pred_energy = torch::zeros({num_molecules, 1}, s.options());
@@ -565,6 +665,35 @@ struct PaiNNModelImpl : torch::nn::Module {
         return pred_energy.squeeze(-1); 
     }
     
+    // --- PARTI TERMODINAMICHE PER MOLECOLA: [num_molecules, 2] = (A, B) ---
+    // U(T) = A + (T - T0)/T0 * B,  H = A - B,  S = -B/T0  (kJ/mol, kJ/mol/K).
+    // Per analisi e ripesatura in temperatura; non dipende da thermo_dT.
+    torch::Tensor forward_thermo_parts(torch::Tensor atomic_numbers,
+                                       torch::Tensor r_ij,
+                                       torch::Tensor edge_index,
+                                       torch::Tensor batch_indices) {
+        if (!thermo_heads || has_ordered_geometry_head()) {
+            throw std::logic_error(
+                "forward_thermo_parts requires thermodynamic heads and no ordered-geometry head");
+        }
+        auto d_ij = torch::sqrt(torch::sum(r_ij * r_ij, 1) + 1e-8);
+        torch::Tensor s = embedding->forward(atomic_numbers);
+        torch::Tensor v = torch::zeros({s.size(0), 3, s.size(1)}, s.options());
+        auto r_ij_norm = r_ij / d_ij.unsqueeze(1);
+        auto rbf = expansion_rbf(d_ij);
+        for (int i = 0; i < num_layers; ++i) {
+            auto msg_out = messages[i]->forward(s, v, edge_index, rbf, r_ij_norm);
+            s = s + msg_out.first;
+            v = v + msg_out.second;
+            std::tie(s, v) = updates[i]->forward(s, v);
+        }
+        auto parts = site_energy_parts(atomic_numbers, s);           // [N, 2]
+        int64_t num_molecules = batch_indices.max().cpu().item<int64_t>() + 1;
+        torch::Tensor out = torch::zeros({num_molecules, 2}, s.options());
+        out.index_add_(0, batch_indices, parts);
+        return out;
+    }
+
     // --- FORWARD PER ATOMO (PER MPI GHOST PARTICLE FILTERING) ---
     torch::Tensor forward_atom_energies(torch::Tensor atomic_numbers, 
                                         torch::Tensor r_ij,
@@ -594,8 +723,7 @@ struct PaiNNModelImpl : torch::nn::Module {
             std::tie(s, v) = updates[i]->forward(s, v);
         }
 
-        auto atom_energies = apply_isolated_species_gauge(
-            atomic_numbers, readout->forward(s));
+        auto atom_energies = site_energies(atomic_numbers, s);
         if (has_ordered_geometry_head()) {
             auto batch_indices = torch::zeros(
                 {atomic_numbers.size(0)}, atomic_numbers.options());
@@ -607,3 +735,42 @@ struct PaiNNModelImpl : torch::nn::Module {
     }
 };
 TORCH_MODULE(PaiNNModel);
+
+// Carica i pesi in un modello PaiNN.  Se il modello ha le teste
+// termodinamiche e il file no (modello allenato a una sola temperatura), i
+// parametri e i buffer comuni si copiano per nome e la testa readout_dT resta a
+// zero: il modello caricato coincide con quello del file a ogni T.  Restituisce
+// true se e' stata usata questa promozione.  Non supporta la testa a geometria
+// ordinata.  dim = hidden_channels.
+inline bool load_painn_weights(PaiNNModel& model, const std::string& path, int dim) {
+    try {
+        torch::load(model, path);
+        model->validate_thermo_state();
+        return false;
+    } catch (const c10::Error&) {
+        if (!model->has_thermo_heads() || model->has_ordered_geometry_head()) throw;
+    }
+    PaiNNModel base(model->num_embeddings, dim, model->num_layers, model->num_radial_basis,
+                    model->cutoff_radius, model->toxvaerd_alpha);
+    torch::load(base, path);
+    torch::NoGradGuard no_grad;
+    auto dst_params = model->named_parameters(true);
+    for (const auto& kv : base->named_parameters(true)) {
+        auto* dst = dst_params.find(kv.key());
+        if (dst == nullptr) {
+            throw std::runtime_error("load_painn_weights: parameter " + kv.key() +
+                                     " missing in the thermodynamic model");
+        }
+        dst->copy_(kv.value());
+    }
+    auto dst_buffers = model->named_buffers(true);
+    for (const auto& kv : base->named_buffers(true)) {
+        auto* dst = dst_buffers.find(kv.key());
+        if (dst == nullptr) {
+            throw std::runtime_error("load_painn_weights: buffer " + kv.key() +
+                                     " missing in the thermodynamic model");
+        }
+        dst->copy_(kv.value());
+    }
+    return true;
+}
