@@ -122,7 +122,7 @@ story = []
 story += [P("TEL26: confronto fra dinamica all-atom e CG-ML", "title"),
           P("G-quadruplex ibrido 3+1 (2JPZ, (TTAGGG)<sub>4</sub>TT), 10 copie × 26 nt. "
             "Struttura (P(r), g(r), R<sub>g</sub> e coordinate collettive) e dinamica (MSD traslazionale e "
-            "rotazionale, anche per ora di GPU). Progetto PaiNN-LT · MLCG_Framework_v2 · 5 ottobre 2026", "sub")]
+            "rotazionale, anche per ora di GPU), con la descrizione del modello. Progetto PaiNN-LT · MLCG_Framework_v2 · 7 ottobre 2026", "sub")]
 
 summary = [
     P("<b>Sintesi</b>", "body"),
@@ -152,8 +152,8 @@ rows = [
     ["Rappresentazione", "169 000 atomi, solvente esplicito",
      "10 × 86 = 860 beads (G: backbone S + basi B1–B5; T, A: un sito), solvente implicito"],
     ["Hamiltoniana", "campo di forze atomistico",
-     "prior fisici <i>lp2</i> (legami, angoli, tetradi, 16 contatti di loop per copia) + residuo PaiNN "
-     "(<i>re1_it30</i>: force matching, poi relative entropy)"],
+     "prior fisici <i>lp2</i> (legami, angoli, diedri, 54 contatti Morse per copia, WCA) + residuo PaiNN "
+     "(<i>re1_it30</i>, allenato a entropia relativa); sezione 2"],
     ["Dinamica", "dt 2 fs", "Langevin, dt 4 fs, γ = 2; ESPResSo + plugin PaiNN"],
     ["Traiettorie", f"1 × {it(meta['aa_frames'] * meta['aa_dt_ps'] / 1000, 1)} ns, 10 copie",
      "2 replicas × 20 ns (4 segmenti × 5 ns), 10 copie per replica"],
@@ -171,14 +171,115 @@ story += [table(rows, [3.0, 5.3, 8.7]), Spacer(1, 4),
             "seconda e prima metà della traiettoria AA: è il massimo accordo che si può chiedere con questa "
             "statistica di riferimento.")]
 
+# ── 2. Modello ──
+story += [PageBreak(), P("2. Il modello CG-ML: mappatura, prior e residuo PaiNN", "h1"),
+          P("L'energia potenziale del modello è la somma di due parti: U(R) = U<sub>prior</sub>(R) + "
+            "U<sub>ML</sub>(R). U<sub>prior</sub> contiene termini analitici con un significato fisico "
+            "(connettività, geometria locale, legami di Hoogsteen, impilamento, volume escluso), tarati sulla "
+            "struttura all-atom mappata a 300 K. U<sub>ML</sub> è un residuo appreso con una rete PaiNN e "
+            "corregge ciò che i prior non descrivono. Solvente e ioni sono impliciti: nel modello di produzione "
+            "non c'è un termine elettrostatico."),
+          fig("fig_model.png", 17.0,
+              "Figura 1. Il modello CG sulla struttura nativa 2JPZ (struttura di partenza delle simulazioni AA, "
+              "mappata sui siti CG; in grigio trasparente il DNA atomistico). <b>a</b>: siti colorati per tipo; "
+              "legami armonici del backbone e scheletro rigido delle guanine in grigio scuro; contatti Morse "
+              "tratteggiati per classe. <b>b</b>: la tetrade 1 (G4, G12, G16, G22) vista lungo l'asse del "
+              "quadruplex, con i sei Morse B3–B3 (lati e diagonali) e i quattro Morse di Hoogsteen B2–B4. "
+              "<b>c</b>: il grafo su cui agisce PaiNN per il sito B3 di G16; la sfera ha raggio r<sub>c</sub> = "
+              "1,26 nm e contiene 76 degli altri 85 siti della copia. Non sono disegnati angoli, diedri e WCA. "
+              "Figura generata con PyMOL.")]
+
+story += [P("2.1 Mappatura", "h2"),
+          P("Ogni copia di 26 nucleotidi è rappresentata da 86 siti di 8 tipi. Ogni sito è il centro di massa "
+            "di un gruppo di atomi:"),
+          B("<b>guanina</b>: sei siti uniti in un <b>corpo rigido</b>. S raccoglie zucchero e fosfato (P, O5′, "
+            "C5′, C4′, O4′, C1′, C3′, C2′, O3′). B1–B5 dividono la base: B1 = N9, C4; B2 = N3, C2, N2; "
+            "B3 = N1, C6, O6; B4 = C5, N7; B5 = C8. B3 porta l'O6 rivolto al canale, B2 e B4 i donatori e "
+            "accettori del secondo legame di Hoogsteen (N2–H···N7), B5 la faccia di impilamento;"),
+          B("<b>timina e adenina</b>: un solo sito, il centro di massa dell'intero nucleotide;"),
+          B("<b>dinamica</b>: Langevin in ESPResSo. Le 12 guanine sono corpi rigidi con massa e tensore "
+            "d'inerzia dal mapping (6 gradi di libertà); A e T sono punti materiali. In tutto ci sono 114 gradi "
+            "di libertà per copia."),
+          P("Nota: la definizione di S elenca anche gli ossigeni non pontanti con i nomi O1P/O2P, mentre il campo "
+            "di forze li chiama OP1/OP2. Non entrano quindi nel centro di massa, allo stesso modo nel riferimento "
+            "e in tutti i dataset.", "cap")]
+
+story += [P("2.2 Prior fisici (insieme <i>lp2</i>)", "h2"),
+          P("I parametri vengono dalla struttura AA mappata a 300 K (10 copie, 136 ns). Legami e angoli sono "
+            "ottenuti per inversione di Boltzmann. Per i Morse r<sub>0</sub> è la mediana della distanza, e "
+            "a = √(kT / 2Dσ<sup>2</sup>) usa la larghezza osservata σ, poi affinata iterativamente sulle "
+            "distribuzioni del riferimento. I contatti sono specifici per coppia: legano due siti precisi della "
+            "piega nativa. A runtime sono interazioni non legate su siti marcatori, con una coda smorzata fino a "
+            "zero a r<sub>cut</sub>, quindi si possono rompere senza errori di \"bond broken\".")]
+rows = [["termine", "forma", "siti", "per copia", "parametri"],
+        ["legami del backbone", "½ k (r − r<sub>0</sub>)<super>2</super>", "sito S, A o T di residui consecutivi",
+         "25", "k 136–3755 kJ mol<super>−1</super> nm<super>−2</super>; r<sub>0</sub> 0,58–0,70 nm"],
+        ["angoli del backbone", "½ k (θ − θ<sub>0</sub>)<super>2</super>", "tre residui consecutivi", "24",
+         "k 5–324 kJ mol<super>−1</super> rad<super>−2</super>; θ<sub>0</sub> 117–157°"],
+        ["diedri del backbone", "coseno (n = 1), smorzato quando un angolo tende a 180°", "quattro residui consecutivi",
+         "23", "K 2,4–74 kJ/mol"],
+        ["torsione di impilamento", "coseno (n = 1)", "B3–B5–B5–B3 di guanine sovrapposte", "8",
+         "K 391–774 kJ/mol (157–310 kT)"],
+        ["Morse nella tetrade", "D [1 − e<super>−a(r−r<sub>0</sub>)</super>]<super>2</super>",
+         "B3–B3, lati e diagonali (K<sub>4</sub>)", "18", "r<sub>0</sub> 0,38–0,65 nm; a 3,5–11,5 nm<super>−1</super>"],
+        ["Morse di Hoogsteen", "idem", "B2–B4 (N2–H···N7)", "12", "r<sub>0</sub> 0,31–0,57 nm; a 6,1–11,0 nm<super>−1</super>"],
+        ["Morse di impilamento", "idem", "B5–B5, stesso tratto, tetradi adiacenti", "8",
+         "r<sub>0</sub> 0,37–0,45 nm; a 5,9–8,9 nm<super>−1</super>"],
+        ["cappucci dei loop", "idem", "basi di loop/code contro la faccia delle tetradi esterne", "16",
+         "r<sub>0</sub> 0,45–0,89 nm; a 2,3–5,1 nm<super>−1</super>"],
+        ["volume escluso", "WCA, LJ 12-6 troncato e traslato a 2<super>1/6</super>σ", "tutte le coppie di tipi (esclusi 1-2 e 1-3)",
+         "36 coppie di tipi", "ε 3,15 kJ/mol; σ 0,24–0,68 nm"]]
+story += [table(rows, [3.1, 3.6, 4.1, 1.6, 4.6]), Spacer(1, 4),
+          P("Tutti i Morse hanno D = 50 kJ/mol (circa 20 kT a 300 K). In totale sono 2700 kJ/mol per copia: è un "
+            "modello del solo stato nativo, di tipo Gō, adatto a 300 K ma non all'unfolding (vedi sezione 9).", "cap")]
+
+story += [P("2.3 Residuo PaiNN", "h2"),
+          P("U<sub>ML</sub> è la somma di energie di sito, U<sub>ML</sub> = Σ<sub>i</sub> ε<sub>i</sub>, calcolate da "
+            "una rete PaiNN (polarizable atom interaction neural network, Schütt et al. 2021). La rete è "
+            "equivariante per rotazioni e invariante per traslazioni e per permutazioni di siti dello stesso tipo:"),
+          B("<b>ingresso</b>: tipo del sito (8 specie → embedding di dimensione D = 64) e posizioni. Il grafo "
+            "comprende tutte le coppie di siti entro r<sub>c</sub> = 1,2616 nm, anche fra copie diverse "
+            "(figura 1c);"),
+          B("<b>base radiale</b>: 32 gaussiane con centri fra 0 e r<sub>c</sub> e larghezza r<sub>c</sub>/32, "
+            "moltiplicate per la funzione di taglio di Toxvaerd x<super>4</super>/(x<super>4</super> + "
+            "α<super>4</super>), con x = (r<sub>c</sub> − r)/r<sub>c</sub> e α = 0,1. L'energia è liscia a "
+            "r<sub>c</sub> fino alla derivata terza;"),
+          B("<b>interazione</b>: 2 blocchi messaggio + aggiornamento sulle feature scalari s<sub>i</sub> ∈ "
+            "ℝ<super>64</super> e vettoriali v<sub>i</sub> ∈ ℝ<super>3×64</super> (forma canonica di PaiNN, "
+            "attivazioni SiLU);"),
+          B("<b>uscita</b>: MLP 64 → 32 → 1 sullo scalare finale di ogni sito. A ogni ε<sub>i</sub> si sottrae il "
+            "valore della stessa specie isolata, così U<sub>ML</sub> → 0 per siti lontani da tutto. "
+            "In tutto la rete ha 106 049 parametri;"),
+          B("<b>forze</b>: F = −∇U<sub>ML</sub> per differenziazione automatica sulle posizioni dei siti. Sulle "
+            "guanine si riducono a forza e momento del corpo rigido. La rete gira nel plugin ESPResSo in "
+            "libtorch, FP32 su GPU, e le forze sono conservative per costruzione."),
+          P("<b>Allenamento: entropia relativa, non force matching.</b> Le forze AA istantanee proiettate sui siti "
+            "CG sono dominate dal rumore: la parte che si può apprendere vale R<super>2</super> ≈ 0,5–1 %. Il "
+            "force matching sopra prior già tarati peggiorava la struttura (sovrapposizione intra da 0,976 a "
+            "0,94). Il residuo è stato quindi allenato minimizzando l'entropia relativa "
+            "S<sub>rel</sub> = ⟨ln p<sub>AA</sub>/p<sub>CG</sub>⟩<sub>AA</sub>, che usa solo le posizioni. Il "
+            "gradiente è β[⟨∂U/∂θ⟩<sub>AA</sub> − ⟨∂U/∂θ⟩<sub>CG</sub>]; i prior non vi compaiono perché non "
+            "dipendono da θ."),
+          B("ogni iterazione fa 25 ps di MD CG con il modello corrente; i campioni vengono riusati per "
+            "ripesatura finché la taglia efficiente per copia resta ≥ 50 %;"),
+          B("il passo è controllato da una regione di fiducia, e il 20 % finale della traiettoria AA è tenuto "
+            "fuori come controllo;"),
+          B("<b>re0</b>: 30 iterazioni sopra i prior lp1, partendo da U<sub>ML</sub> ≡ 0 (ultimo strato "
+            "dell'uscita a zero). <b>re1</b>: 30 iterazioni sopra lp2 (lp1 più i cappucci dei loop), partendo "
+            "da re0_it30. Il modello di produzione è re1_it30;"),
+          B("dati AA: posizioni mappate di prod-1 (136 ns, 10 copie, un frame ogni 20 ps) a 300 K."),
+          P("Effetto del residuo sulla sovrapposizione intra (tutti i siti), a parità di protocollo: prior lp2 "
+            "0,981 → lp2 + re1_it30 0,994, con un tetto AA contro AA di 0,9955. Il guadagno è maggiore sul "
+            "canale B3–B3 (0,84 → 0,97).", "cap")]
+
 # ── 2. P(r) ──
-story += [PageBreak(), P("2. Distribuzioni di coppia intramolecolari P(r)", "h1"),
+story += [PageBreak(), P("3. Distribuzioni di coppia intramolecolari P(r)", "h1"),
           P("Per ogni canale, P(r) è l'istogramma normalizzato delle distanze fra siti della stessa copia "
             "(stessi bin e stessa normalizzazione dello script 44). I canali separano i contributi principali "
             "della struttura: B3–B3 per gli appaiamenti di Hoogsteen nelle tetradi, B5–B5 per l'impilamento delle "
             "tetradi, S–S per il backbone; il canale \"tutti i siti\" li somma, loop compresi."),
           fig("fig_Pr_intra.png", 16.5,
-              "Figura 1. P(r) intramolecolari per canale. Blu: AA su 136 ns; arancione: CG-ML su 2 × 20 ns; grigio "
+              "Figura 2. P(r) intramolecolari per canale. Blu: AA su 136 ns; arancione: CG-ML su 2 × 20 ns; grigio "
               "tratteggiato e punteggiato: prima e seconda metà dell'AA. In alto a destra la sovrapposizione CG–AA e "
               "il tetto (metà 2 contro metà 1).")]
 rows = [["canale", "CG-ML contro AA", "tetto (metà 2 – metà 1 AA)", "differenza"]]
@@ -194,12 +295,12 @@ story += [table(rows, [4.4, 3.6, 5.0, 3.0]), Spacer(1, 6),
             "distribuzione, non solo in media.")]
 
 # ── 3. g(r) inter ──
-story += [PageBreak(), P("3. g(r) fra copie diverse (corto raggio)", "h1"),
+story += [PageBreak(), P("4. g(r) fra copie diverse (corto raggio)", "h1"),
           P(f"La g(r) intermolecolare conta le coppie di siti su copie diverse. Fino a {it(2.0, 1)} nm, la distanza "
             f"massima calcolata, descrive solo gli incontri ravvicinati fra copie: con R<sub>g</sub> ≈ 0,8 nm le "
             f"copie si toccano di rado e g(r) resta molto sotto 1, nella zona di volume escluso."),
           fig("fig_gr_inter.png", 16.5,
-              "Figura 2. g(r) fra siti di copie diverse, stessi colori della figura 1. Le due metà AA differiscono "
+              "Figura 3. g(r) fra siti di copie diverse, stessi colori della figura 2. Le due metà AA differiscono "
               "di un fattore ~5: gli incontri fra copie nell'AA sono pochi eventi lunghi.")]
 rows = [["canale", "CG-ML contro AA", "metà 2 – metà 1 AA"]]
 for c in CH:
@@ -215,9 +316,9 @@ story += [table(rows, [4.4, 3.6, 4.4]), Spacer(1, 6),
             "una sola box.")]
 
 # ── 4. Rg ──
-story += [PageBreak(), P("4. Raggio di girazione", "h1"),
+story += [PageBreak(), P("5. Raggio di girazione", "h1"),
           fig("fig_Rg.png", 16.5,
-              "Figura 3. Sinistra: distribuzione di R<sub>g</sub> (AA: singole copie in linea sottile, insieme in "
+              "Figura 4. Sinistra: distribuzione di R<sub>g</sub> (AA: singole copie in linea sottile, insieme in "
               "linea spessa; CG-ML: tutte le copie e replicas). Destra: serie temporali con media mobile di 1 ns, "
               "AA su 136 ns e CG-ML (replica r0) su 20 ns, stessa scala verticale.")]
 rows = [["", "AA", "CG-ML"],
@@ -238,9 +339,9 @@ story += [table(rows, [6.0, 5.0, 5.0]), Spacer(1, 6),
             f"(~{round(alpha['tau_Rg'], -2):.0f}) misura processi diversi e non è un'accelerazione.")]
 
 # ── 5. CV ──
-story += [KeepTogether([P("5. Altre coordinate collettive", "h1"),
+story += [KeepTogether([P("6. Altre coordinate collettive", "h1"),
           fig("fig_cv.png", 16.5,
-              "Figura 4. Distribuzioni di rmsd del nucleo, rmsd dei loop e frazione di contatti nativi Q (grigio: "
+              "Figura 5. Distribuzioni di rmsd del nucleo, rmsd dei loop e frazione di contatti nativi Q (grigio: "
               "metà AA). Nei titoli la sovrapposizione CG–AA e il tetto.")])]
 rows = [["coordinata", "AA media ± std", "CG-ML media ± std", "sovrapposizione", "tetto"]]
 names = {"Rg": "R<sub>g</sub> (nm)", "rmsd_core": "rmsd nucleo (nm)", "rmsd_loops": "rmsd loop (nm)", "Q": "Q"}
@@ -257,18 +358,18 @@ story += [table(rows, [3.4, 3.5, 3.5, 3.2, 1.9]), Spacer(1, 6),
             "loop 3, stato minore del loop 2) e a un registro di appaiamenti in parte sbagliato (T2–A15 in "
             "eccesso)."),
           fig("fig_fes.png", 15.0,
-              "Figura 5. Energia libera F = −kT ln p(rmsd nucleo, Q), AA e CG-ML. La JSD fra le FES (script 46) è "
+              "Figura 6. Energia libera F = −kT ln p(rmsd nucleo, Q), AA e CG-ML. La JSD fra le FES (script 46) è "
               "0,0787, uguale al tetto AA contro sé stesso (0,0786); il CG è più rumoroso per il numero minore di "
               "frame (20 080 contro 67 880 copie-frame).")]
 
 # ── 6. MSD ──
-story += [PageBreak(), P("6. Dinamica: MSD traslazionale e rotazionale", "h1"),
+story += [PageBreak(), P("7. Dinamica: MSD traslazionale e rotazionale", "h1"),
           P("MSD del centro di massa di ogni copia e MSD angolare dell'orientazione del nucleo (allineamento di "
             "Kabsch, rotazioni fra frame successivi sommate come vettori di rotazione nel sistema del laboratorio; "
             "script 48). Le curve si fermano a un quarto della durata di ogni traiettoria. Nella riga in basso "
             "l'asse dei tempi è convertito in ore di GPU con il throughput misurato."),
           fig("fig_msd.png", 16.5,
-              "Figura 6. In alto: MSD in funzione del tempo simulato; tratteggiato 6Dt con D dal tratto lineare. "
+              "Figura 7. In alto: MSD in funzione del tempo simulato; tratteggiato 6Dt con D dal tratto lineare. "
               "In basso: le stesse curve in funzione delle ore di GPU A100 (AA 137 ns/day; CG-ML 54,2 ns/day "
               "aggregati su 2 replicas).")]
 rows = [["", "AA", "CG-ML", "rapporto CG/AA"],
@@ -299,7 +400,7 @@ story += [table(rows, [7.0, 2.6, 2.6, 3.8]), Spacer(1, 6),
             f"{ms['AA']['tau_P2'] / ms['prod']['tau_P2'] * R:.0f}×.")]
 
 # ── 7. efficienza ──
-story += [P("7. Efficienza per GPU", "h1"),
+story += [P("8. Efficienza per GPU", "h1"),
           P("Efficienza = α × (ns/day<sub>CG</sub> / ns/day<sub>AA</sub>), con α = τ<sub>AA</sub>/τ<sub>CG</sub> "
             f"(tempi a 1/e dello script 47) oppure il rapporto dei D; ns/day<sub>CG</sub>/ns/day<sub>AA</sub> = "
             f"{it(CG_NSDAY, 1)}/{AA_NSDAY:.0f} = {it(R, 3)}.")]
@@ -323,7 +424,7 @@ story += [table(rows, [4.2, 2.6, 2.6, 3.4, 4.2]), Spacer(1, 4),
             "throughput AA con 8 core per GPU per fissarlo.")]
 
 # ── 8. limiti ──
-story += [P("8. Limiti e avvertenze", "h1"),
+story += [P("9. Limiti e avvertenze", "h1"),
           B("<b>Loop</b>: un solo bacino al posto degli stati metastabili AA. Mancano lo stato 1 del loop 3 (26 %) "
             "e lo stato minore del loop 2; la coda 5' è troppo mobile; il contatto T2–A15 è in eccesso "
             "(0,56 contro 0,24 ± 0,09). I contatti dipendenti dallo stato (lp2c0) sono stati provati e non adottati: "
@@ -331,6 +432,11 @@ story += [P("8. Limiti e avvertenze", "h1"),
           B("<b>Riferimento AA non ergodico sui loop</b>: il 17–61 % della varianza dei loop è fra copie e i tempi "
             "lenti sono 4–10 ns su 136 ns. Le popolazioni AA degli stati dei loop hanno errori grandi, e i tetti "
             "su loop e R<sub>g</sub> sono ottimistici: le due metà condividono le stesse copie bloccate."),
+          B("<b>Solo stato nativo</b>: i 54 Morse a 50 kJ/mol per copia tengono il quadruplex chiuso a qualunque "
+            "temperatura accessibile. Con i soli prior, su una copia, nessuna tetrade si apre fra 300 e 600 K in "
+            "250 ns, e l'energia potenziale cresce come quella di un sistema armonico. Il modello serve per la "
+            "struttura e la dinamica attorno al nativo; per la termodinamica di unfolding le profondità dei contatti "
+            "vanno ricalibrate (lavoro in corso, cartella <font name='DV-I'>tel26_unfold</font>)."),
           B("<b>g(r) fra copie</b>: verificata solo a corto raggio (≤ 2 nm), dove anche l'AA non converge."),
           B("<b>Efficienza</b>: per GPU A100, a parità di hardware; il rapporto per GPU-ora dipende dal throughput "
             "del nodo, che varia di ~20 % fra nodi a parità di codice."),
