@@ -17,7 +17,7 @@
 #      copie (il mapping del sito S elenca O1P/O2P; nomi diversi vengono saltati
 #      in silenzio dal builder: va saputo se i due sistemi sono coerenti)
 #   4. build_cg_dataset.py con --priors (niente ristima) e
-#      --allow-guard-violations: dataset di posizioni, un frame ogni 10 ps
+#      --positions-only (forze AA assenti nel trr): dataset di sole posizioni per RE, un frame ogni 10 ps
 #
 # USO (Leonardo):  sbatch $U/06_build_t400_dataset.sh     [STRIDE=2 per un frame ogni 20 ps]
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
@@ -50,7 +50,7 @@ PY
 python3 $R/preprocessing/build_cg_dataset.py \
     --topology $A/dnak/equil_dna_k.gro --trajectory prod_dna_k.xtc \
     --config tel26_topology.lp2_1c.json --priors cg_priors.lp2_1c.json \
-    --allow-guard-violations --stride $STRIDE \
+    --positions-only --stride $STRIDE \
     --output tel26_lp2_1c_t400_dataset.bin \
     --priors-output cg_priors.lp2_1c.t400.json --rb-info-output rigid_bodies_info.lp2_1c.t400.json
 python3 -c "import struct; print('[DONE] frame:', struct.unpack('i', open('tel26_lp2_1c_t400_dataset.bin','rb').read(4))[0])"

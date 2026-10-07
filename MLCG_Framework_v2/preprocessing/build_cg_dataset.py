@@ -133,8 +133,17 @@ parser.add_argument("--allow-guard-violations", dest="allow_guard_violations", a
                          "avviso invece di un errore.  Per dataset usati solo per le POSIZIONI "
                          "(entropia relativa, g(r)); le forze residue di quei frame NON sono "
                          "affidabili per il force matching.")
+parser.add_argument("--positions-only", dest="positions_only", action="store_true",
+                    help="Solo con --priors: traiettoria SENZA forze (xtc), dataset usato solo per le "
+                         "posizioni (entropia relativa, g(r), coordinate collettive).  Accetta forze "
+                         "di riferimento tutte nulle (i bersagli F_ref - F_prior NON sono utilizzabili "
+                         "per il force matching) e implica --allow-guard-violations.")
 parser.add_argument("--clip_forces", type=float, default=None, help="Valore massimo per il modulo delle forze residue. Se non specificato, nessun clip viene applicato (raccomandato per priors analitici dolci).")
 args = parser.parse_args()
+if args.positions_only:
+    if not args.priors:
+        parser.error("--positions-only richiede --priors (i prior non si stimano da un dataset senza forze)")
+    args.allow_guard_violations = True
 
 output_path = os.path.abspath(args.output)
 output_dir = os.path.dirname(output_path) or os.getcwd()
@@ -979,7 +988,10 @@ _reference_force_max = max(
     (float(np.max(np.abs(np.asarray(frame, dtype=float)))) for frame in cg_forces_history),
     default=0.0,
 )
-if _reference_force_max <= 1.0e-12:
+if _reference_force_max <= 1.0e-12 and args.positions_only:
+    print("[INFO] --positions-only: forze di riferimento assenti (tutte nulle); il dataset "
+          "vale solo per le posizioni, i bersagli di forza non sono utilizzabili.")
+elif _reference_force_max <= 1.0e-12:
     raise RuntimeError(
         "All mapped reference forces are zero. The trajectory likely does not "
         "contain usable force records; refusing to build F_ref - F_prior targets."
