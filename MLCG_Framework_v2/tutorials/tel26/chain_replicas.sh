@@ -19,7 +19,8 @@
 #   NS_PER_SEG (5), MODEL (tel26_lp2_re1_it30.pt), REPLICAS (2),
 #   LOG_INTERVAL (250 = 1 ps a dt 4 fs), TIME (07:00:00), ACCOUNT
 #   (IscrB_G4MES), PARTITION (boost_usr_prod), AFTER (job id da attendere
-#   prima del primo segmento), DRY_RUN=1 per stampare i comandi senza sottometterli.
+#   prima del primo segmento), DRY_RUN=1 per stampare i comandi senza sottometterli,
+#   DISABLE_ML=1 per la stessa catena con i soli prior (modello solo per provenienza).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,7 +57,7 @@ for ((k = FIRST_SEG; k < FIRST_SEG + NSEG; k++)); do
     name="$(printf '%s_s%02d' "${PREFIX}" "${k}")"
     dep=()
     [[ -n "${prev_job}" ]] && dep=(--dependency="afterok:${prev_job}")
-    wrap="cd ${SCRIPT_DIR} && NAME=${name} CONTINUE_FROM=${prev_name} MODEL=${MODEL} REPLICAS=${REPLICAS} CG_STEPS=${CG_STEPS} LOG_INTERVAL=${LOG_INTERVAL} bash ${SCRIPT_DIR}/run_replicas_per_gpu.sh"
+    wrap="cd ${SCRIPT_DIR} && NAME=${name} CONTINUE_FROM=${prev_name} MODEL=${MODEL} REPLICAS=${REPLICAS} CG_STEPS=${CG_STEPS} LOG_INTERVAL=${LOG_INTERVAL} ${DISABLE_ML:+DISABLE_ML=1} bash ${SCRIPT_DIR}/run_replicas_per_gpu.sh"
     cmd=(sbatch --parsable -A "${ACCOUNT}" -p "${PARTITION}" --gres=gpu:1 --cpus-per-task=8
          --time="${TIME}" -J "tel26_${name}" ${dep[@]+"${dep[@]}"}
          -o "${LOG_DIR}/slurm-tel26_${name}-%j.out" --wrap "${wrap}")
