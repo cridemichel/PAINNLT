@@ -133,6 +133,31 @@ if [[ ! -f "$ESPRESSO_SRC/build/CMakeCache.txt" ]]; then
     exit 2
 fi
 
+# ── 2b. sorgenti del plugin allineati ──────────────────────────────────────
+# L'innesto completo (copy_plugin_files.sh) gira solo con STEP=configure|all.
+# Con STEP=build i sorgenti PaiNN modificati nel framework restavano fuori
+# dall'albero ESPResSo e cmake --build trovava tutto aggiornato: painn.so
+# restava quello vecchio senza alcun errore.  Qui si riallineano i quattro
+# file del plugin (gia' elencati in target_sources, nessuna riconfigurazione).
+plugin_dir="$FRAMEWORK_ROOT/simulation/espresso_plugin"
+plugin_pairs=(
+    "$FRAMEWORK_ROOT/training/PaiNN_Architecture.hpp|$ESPRESSO_SRC/src/core/nonbonded_interactions/PaiNN_Architecture.hpp"
+    "$plugin_dir/PaiNN_ML_Potential.hpp|$ESPRESSO_SRC/src/core/nonbonded_interactions/PaiNN_ML_Potential.hpp"
+    "$plugin_dir/PaiNN_ML_Potential.cpp|$ESPRESSO_SRC/src/core/nonbonded_interactions/PaiNN_ML_Potential.cpp"
+    "$plugin_dir/painn.pyx|$ESPRESSO_SRC/src/python/espressomd/painn.pyx"
+)
+for pair in "${plugin_pairs[@]}"; do
+    src="${pair%%|*}"; dst="${pair##*|}"
+    if [[ ! -e "$dst" ]]; then
+        echo "[ERROR] $dst assente: il plugin non e' innestato, esegui STEP=configure" >&2
+        exit 2
+    fi
+    if ! cmp -s "$src" "$dst"; then
+        cp -f "$src" "$dst"
+        echo "  aggiornato  ${dst#$ESPRESSO_SRC/}"
+    fi
+done
+
 say "compilo ESPResSo (${JOBS} core)"
 cmake --build "$ESPRESSO_SRC/build" -j "$JOBS"
 
@@ -183,6 +208,15 @@ if [[ -e "$ESPRESSO_SRC/build/src/python/espressomd/painn.so" ]]; then
     else
         echo "  [NOTA]    painn.so senza ordered-geometry: PaiNN puro funziona,"
         echo "            un modello shared-geometry no.  Riapplica il plugin e ricompila."
+    fi
+    # Teste termodinamiche (thermo_heads): un painn.so precedente non le
+    # conosce e run_cg_md.py non potrebbe fissare la temperatura del modello.
+    if grep -aq set_painn_temperature \
+       "$ESPRESSO_SRC/build/src/python/espressomd/painn.so"; then
+        echo "  ok        painn.so include le teste termodinamiche"
+    else
+        echo "  ASSENTE   painn.so senza set_painn_temperature: plugin non aggiornato"
+        ok=0
     fi
 fi
 
