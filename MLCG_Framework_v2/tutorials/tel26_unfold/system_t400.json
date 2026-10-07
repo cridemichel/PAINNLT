@@ -1,0 +1,115 @@
+{
+  "name": "tel26_t400",
+  "description": "TEL26 ibrido 3+1 (2JPZ), UNA copia, AA a 400 K di GiuliaT (prod-1..3, ~746 ns, frame ogni 10 ps), solo controioni K+; tetrade 3 aperta dopo l'equilibratura",
+  "sequence": "TTAGGGTTAGGGTTAGGGTTAGGGTT",
+  "residues_per_copy": 26,
+  "copies": 1,
+  "sites": {
+    "G": [
+      "S",
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "B5"
+    ],
+    "A": [
+      "S"
+    ],
+    "T": [
+      "S"
+    ]
+  },
+  "tetrads": [
+    [
+      4,
+      12,
+      16,
+      22
+    ],
+    [
+      5,
+      11,
+      17,
+      23
+    ],
+    [
+      6,
+      10,
+      18,
+      24
+    ]
+  ],
+  "outer_tetrads": [
+    [
+      4,
+      12,
+      16,
+      22
+    ],
+    [
+      6,
+      10,
+      18,
+      24
+    ]
+  ],
+  "hoogsteen_site": "B3",
+  "loop_groups": [
+    [
+      "coda 5' T1-A3",
+      [
+        1,
+        2,
+        3
+      ]
+    ],
+    [
+      "loop 1 T7-A9",
+      [
+        7,
+        8,
+        9
+      ]
+    ],
+    [
+      "loop 2 T13-A15",
+      [
+        13,
+        14,
+        15
+      ]
+    ],
+    [
+      "loop 3 T19-A21",
+      [
+        19,
+        20,
+        21
+      ]
+    ],
+    [
+      "coda 3' T25-T26",
+      [
+        25,
+        26
+      ]
+    ]
+  ],
+  "contact_pairs": "1-15,1-21,2-15,9-18,19-21,20-18",
+  "file_prefix": "tel26_t400",
+  "reference_dataset": "/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold/cg/tel26_lp2_1c_t400_dataset.bin",
+  "aa": {
+    "frame_dt_ps": 10.0,
+    "ns_day": 250
+  },
+  "md": {
+    "dt_ps": 0.004,
+    "gamma": 2.0,
+    "kT": 3.326
+  },
+  "production": {
+    "model": "tel26_lp2_re1_it30.pt",
+    "prior_set": "lp2_1c"
+  }
+}
