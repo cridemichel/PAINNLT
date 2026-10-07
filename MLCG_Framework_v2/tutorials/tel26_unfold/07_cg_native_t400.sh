@@ -23,6 +23,7 @@
 #   controllo con i soli prior:   sbatch --export=ALL,DISABLE_ML=1,NAME=pri_t400 $U/07_cg_native_t400.sh
 #   continuazione:                sbatch --export=ALL,CONTINUE_FROM=nat_t400,NAME=nat_t400_b $U/07_cg_native_t400.sh
 # Variabili: NAME (nat_t400), T_K (400), REPLICAS (2), CG_STEPS (2500000 = 10 ns a 4 fs),
+#            LOG_INTERVAL (125 passi = 0.5 ps; per corse lunghe 1250 = 5 ps),
 #            MODEL, OUTDIR ($A/cgmd_t400), DISABLE_ML, CONTINUE_FROM, SEED_BASE (1000)
 set -uo pipefail
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
@@ -35,6 +36,8 @@ T_K=${T_K:-400}
 REPLICAS=${REPLICAS:-2}
 CG_STEPS=${CG_STEPS:-2500000}
 SEED_BASE=${SEED_BASE:-1000}
+LOG_INTERVAL=${LOG_INTERVAL:-125}
+export PYTHONUNBUFFERED=1   # log leggibile durante la corsa
 MODEL=${MODEL:-$T26/tel26_lp2_re1_it30.pt}
 OUTDIR=${OUTDIR:-$A/cgmd_t400}
 CONTINUE_FROM=${CONTINUE_FROM:-}
@@ -50,7 +53,7 @@ for f in "$MODEL" "$CONFIG" "$PRIORS" "$RBINFO" "$DATASET" "$PYPRESSO"; do
     [[ -e "$f" ]] || { echo "[ERROR] manca $f" >&2; exit 1; }
 done
 mkdir -p "$OUTDIR" && cd "$OUTDIR" || exit 1
-echo "[cg_t400] $NAME: T=${T_K} K (kT ${KT}), ${REPLICAS} repliche x ${CG_STEPS} passi, modello $(basename $MODEL), config $(basename $CONFIG), DISABLE_ML=${DISABLE_ML:-0}"
+echo "[cg_t400] $NAME: T=${T_K} K (kT ${KT}), ${REPLICAS} repliche x ${CG_STEPS} passi (log ogni ${LOG_INTERVAL}), modello $(basename $MODEL), config $(basename $CONFIG), DISABLE_ML=${DISABLE_ML:-0}"
 
 # core effettivamente assegnati dal job (non 0..N-1: dipende dal nodo)
 mapfile -t CPUS < <(python3 -c 'import os; print("\n".join(map(str, sorted(os.sched_getaffinity(0)))))')
@@ -62,7 +65,7 @@ for ((i = 0; i < REPLICAS; i++)); do
     done
     args=(--model "$MODEL" --config "$CONFIG" --priors "$PRIORS" --rb_info "$RBINFO" --dataset "$DATASET"
           --steps "$CG_STEPS" --dt 0.004 --gamma 2 --kT "$KT" --device cuda --neighbor_search verlet
-          --thermostat_seed $((SEED_BASE + i)) --log_interval 125 --energy_interval 10 --no_vtf
+          --thermostat_seed $((SEED_BASE + i)) --log_interval "$LOG_INTERVAL" --energy_interval 10 --no_vtf
           --sample_npz ${NAME}_r$i.samples.npz --energy_file ${NAME}_r$i.energy.csv
           --out_checkpoint ${NAME}_r$i.state.npz)
     [[ -n "${DISABLE_ML:-}" ]] && args+=(--disable_ml)
