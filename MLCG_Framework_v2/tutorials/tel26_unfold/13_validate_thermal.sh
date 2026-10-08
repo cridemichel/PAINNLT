@@ -24,6 +24,11 @@
 #            BRANCHES ("chiuso aperto"), START_OPEN ($A/sweep2/lt0.08_lo0.08/T450.state.npz),
 #            CG_STEPS (25000000 = 100 ns), LOG_INTERVAL (1250), OUTDIR ($A/thermo_val),
 #            FITDIR ($A/sweep2: fit_thermal.json / fit_thermal_f.json per il confronto), ANALYZE_ONLY=1.
+# Su piu' job (es. Booster, 32 core per nodo): un job per insieme e ramo, 28 corse ciascuno:
+#   for s in "f1:f1:..." "f:f:..."; do for b in chiuso aperto; do
+#     sbatch -p boost_usr_prod -A IscrB_G4MES --cpus-per-task=32 --mem=200G \
+#         --export=ALL,SETS="$s",BRANCHES=$b $U/13_validate_thermal.sh; done; done
+#   poi ANALYZE_ONLY=1 con i SETS e i BRANCHES completi (sbatch o srun breve) per la tabella finale.
 set -uo pipefail
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
 R=/leonardo_work/IscrB_G4MES/cdemiche/PAINNLT/MLCG_Framework_v2
@@ -66,8 +71,11 @@ if [[ -z "${ANALYZE_ONLY:-}" ]]; then
     for s in $SETS; do
         IFS=: read -r name map ht t0t ho t0o <<< "$s"
         mkdir -p $name
-        python3 $U/09_scale_contacts.py --in $BASE --out $name/cg_priors.json \
-            --h-tet $ht --t0-tet $t0t --h-oth $ho --t0-oth $t0o --report-T 295,310,325,340,355 > $name/scale.txt || exit 1
+        # scrittura atomica: piu' job (un ramo ciascuno) possono generare lo stesso file insieme
+        tmp=$name/cg_priors.json.tmp.${SLURM_JOB_ID:-$$}
+        python3 $U/09_scale_contacts.py --in $BASE --out $tmp \
+            --h-tet $ht --t0-tet $t0t --h-oth $ho --t0-oth $t0o --report-T 295,310,325,340,355 > $tmp.txt || exit 1
+        mv -f $tmp $name/cg_priors.json && mv -f $tmp.txt $name/scale.txt
         echo "== $name (mappa $map)"; cat $name/scale.txt
         bi=0
         for b in $BRANCHES; do
@@ -85,11 +93,11 @@ if [[ -z "${ANALYZE_ONLY:-}" ]]; then
     # prova breve (ramo aperto se c'e': controlla anche checkpoint + prior termici)
     set -- ${jobs_list[-1]}
     st=""; [[ $2 == aperto ]] && st=$START_OPEN
-    mkdir -p $OUTDIR/$1/wd_smoke
-    ( cd $OUTDIR/$1/wd_smoke && "$PYPRESSO" $R/simulation/run_cg_md.py \
-        $(run_args $OUTDIR/$1/cg_priors.json $3 $OUTDIR/$1/smoke 2000 $5 $st) ) > $1/smoke.log 2>&1 \
-        || { echo "[ERROR] prova breve fallita: vedi $OUTDIR/$1/smoke.log" >&2; tail -20 $1/smoke.log; exit 1; }
-    grep -m1 "prior termici" $1/smoke.log || { echo "[ERROR] prior termici non risolti nella prova breve" >&2; exit 1; }
+    mkdir -p $OUTDIR/$1/$2/wd_smoke
+    ( cd $OUTDIR/$1/$2/wd_smoke && "$PYPRESSO" $R/simulation/run_cg_md.py \
+        $(run_args $OUTDIR/$1/cg_priors.json $3 $OUTDIR/$1/$2/smoke 2000 $5 $st) ) > $1/$2/smoke.log 2>&1 \
+        || { echo "[ERROR] prova breve fallita: vedi $OUTDIR/$1/$2/smoke.log" >&2; tail -20 $1/$2/smoke.log; exit 1; }
+    grep -m1 "prior termici" $1/$2/smoke.log || { echo "[ERROR] prior termici non risolti nella prova breve" >&2; exit 1; }
 
     pids=(); i=0
     for item in "${jobs_list[@]}"; do
