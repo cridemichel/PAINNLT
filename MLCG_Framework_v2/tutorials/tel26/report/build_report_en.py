@@ -41,7 +41,7 @@ S = {
                           bulletIndent=2, spaceAfter=3),
 }
 
-d = np.load("report_data.npz")
+d = np.load("report_data_v2.npz")
 meta = json.loads(str(d["meta_json"]))
 st = json.load(open("fig_stats_en.json"))
 OV = meta["overlaps"]
@@ -123,11 +123,18 @@ story = []
 story += [P("TEL26: all-atom vs CG-ML dynamics", "title"),
           P("Hybrid-2 (3+1) G-quadruplex (2JPZ, (TTAGGG)<sub>4</sub>TT), 10 copies × 26 nt. "
             "Structure (P(r), g(r), R<sub>g</sub> and collective variables), dynamics (translational and "
-            "rotational MSD, also per GPU hour) and a description of the model. Project PaiNN-LT · "
-            "MLCG_Framework_v2 · 7 October 2026", "sub")]
+            "rotational MSD, also per GPU hour), a description of the model and a priors-only control. Project "
+            "PaiNN-LT · MLCG_Framework_v2 · 8 October 2026", "sub")]
 
+OVP = {c: OV[c]["lp2"]["intra"] for c in CH}
 summary = [
     P("<b>Summary</b>", "body"),
+    B(f"<b>The PaiNN residual brings the structure to the AA ceiling.</b> With the same protocol (2 × 20 ns, same "
+      f"initial state) and the lp2 priors alone, the intramolecular all-sites overlap is {it(OVP[CH[0]])}; with "
+      f"PaiNN {it(OV[CH[0]]['CG-ML']['intra'])}, against a ceiling of {it(CEIL[0])}. In the B3–B3 channel "
+      f"(Hoogsteen bonds) it goes from {it(OVP[CH[1]])} to {it(OV[CH[1]]['CG-ML']['intra'])}; the core rmsd drops "
+      f"from {it(cv['rmsd_core']['pri_mean'])} to {it(cv['rmsd_core']['cg_mean'])} nm "
+      f"(AA {it(cv['rmsd_core']['aa_mean'])}).", "box"),
     B(f"<b>Core and local structure reproduced within the noise of the reference.</b> The intramolecular "
       f"P(r) per channel overlap with the AA ones by {it(ov_min_cg)}–{it(ov_max_cg)}, against a ceiling "
       f"(half vs half of the AA trajectory) of {it(min(CEIL))}–{it(max(CEIL))}; "
@@ -161,6 +168,7 @@ rows = [
     ["Analysed frames", f"{meta['aa_frames']} frames every {meta['aa_dt_ps']:.0f} ps (P(r): one every "
      f"{meta['aa_stride']})", f"structure: every {meta['cg_stride']} ps ({meta['runs'][0]['frames_used']} frames); "
      "MSD and times: every 1 ps"],
+    ["Control", "–", "lp2 priors only (PaiNN off), same 2 × 20 ns chain from the same initial state"],
     ["Throughput", f"{AA_NSDAY:.0f} ns/day (1 A100 + 32 cores)",
      f"{it(CG_NSDAY, 1)} ns/day aggregate (2 replicas on 1 A100 + 8 cores)"],
 ]
@@ -270,25 +278,40 @@ story += [P("2.3 PaiNN residual", "h2"),
             "layer set to zero). <b>re1</b>: 30 iterations on top of lp2 (lp1 plus the loop caps), starting from "
             "re0_it30. The production model is re1_it30;"),
           B("AA data: mapped positions of prod-1 (136 ns, 10 copies, one frame every 20 ps) at 300 K."),
-          P("Effect of the residual on the intramolecular overlap (all sites), with the same protocol: lp2 priors "
-            "0.981 → lp2 + re1_it30 0.994, against an AA vs AA ceiling of 0.9955. The largest gain is in the "
-            "B3–B3 channel (0.84 → 0.97).", "cap")]
+          P(f"Effect of the residual on the intramolecular overlap (all sites), with the same protocol: lp2 priors only "
+            f"{it(OVP[CH[0]])} → lp2 + re1_it30 {it(OV[CH[0]]['CG-ML']['intra'])}, against an AA vs AA ceiling of "
+            f"{it(CEIL[0])}. The largest gain is in the B3–B3 channel "
+            f"({it(OVP[CH[1]], 2)} → {it(OV[CH[1]]['CG-ML']['intra'], 2)}); see section 3.", "cap")]
 
 # ── 3. P(r) ──
 story += [PageBreak(), P("3. Intramolecular pair distributions P(r)", "h1"),
           P("For each channel, P(r) is the normalised histogram of the distances between sites of the same copy "
             "(same bins and normalisation as script 44). The channels separate the main contributions to the "
             "structure: B3–B3 for the Hoogsteen pairing in the tetrads, B5–B5 for tetrad stacking, S–S for the "
-            "backbone; the \"all sites\" channel sums them, loops included."),
+            "backbone; the \"all sites\" channel sums them, loops included. To isolate the contribution of the PaiNN "
+            "residual we also compare a run with the <b>lp2 priors only</b>: same chain (2 × 20 ns), same initial "
+            "state, same thermostat, PaiNN switched off."),
+          fig("fig_Pr_all_en.png", 15.5,
+              "Figure 2. All-sites P(r) (top) and deviation from the AA, P(r) − P<sub>AA</sub>(r) (bottom). Blue: AA; "
+              "green: lp2 priors only; orange: lp2 + PaiNN. The grey band is the difference between the two halves of "
+              "the AA trajectory, i.e. the noise of the reference. With the priors alone the deviation reaches "
+              "±0.1 nm<super>−1</super> around 0.4, 0.6 and 0.75 nm (tetrad geometry and stacking) and stays "
+              "systematic up to 2 nm; with PaiNN it falls within the band almost everywhere."),
           fig("fig_Pr_intra_en.png", 16.5,
-              "Figure 2. Intramolecular P(r) per channel. Blue: AA over 136 ns; orange: CG-ML over 2 × 20 ns; grey "
-              "dashed and dotted: first and second half of the AA. Top right: the CG–AA overlap and the ceiling "
-              "(half 2 vs half 1).")]
-rows = [["channel", "CG-ML vs AA", "ceiling (AA half 2 – half 1)", "difference"]]
+              "Figure 3. Intramolecular P(r) per channel. Blue: AA over 136 ns; orange: CG-ML (lp2 + PaiNN) over "
+              "2 × 20 ns; green: lp2 priors only over 2 × 20 ns; grey dashed and dotted: first and second half of the "
+              "AA. The titles report the overlaps with the AA and the ceiling (half 2 vs half 1).")]
+rows = [["channel", "lp2 priors only", "CG-ML (lp2 + PaiNN)", "ceiling (AA half 2 – half 1)", "CG-ML − ceiling",
+         "gap closed by PaiNN"]]
 for c in CH:
-    a, h = OV[c]["CG-ML"]["intra"], OV[c]["AA meta' 2"]["intra"]
-    rows.append([CH_EN.get(c, c), it(a), it(h), f"{a - h:+.3f}"])
-story += [table(rows, [4.4, 3.6, 5.0, 3.0]), Spacer(1, 6),
+    a, h, p0 = OV[c]["CG-ML"]["intra"], OV[c]["AA meta' 2"]["intra"], OV[c]["lp2"]["intra"]
+    rows.append([CH_EN.get(c, c), it(p0), it(a), it(h), f"{a - h:+.3f}", f"{100 * (a - p0) / (h - p0):.0f} %"])
+story += [table(rows, [3.3, 2.4, 2.8, 3.3, 2.2, 3.0]), Spacer(1, 6),
+          P("PaiNN closes 91–98 % of the distance between the priors alone and the ceiling. The largest gain is in "
+            "the B3–B3 channel: with the priors alone the second peak (tetrad diagonal, 0.65 nm) is low and broad "
+            "(2.2 vs 3.3 nm<super>−1</super>) and there is a tail up to 1.2 nm, i.e. distorted tetrads; with PaiNN "
+            "both peaks return to the AA height. In the B5–B5 channel the priors blur the peaks at 0.75, 1.0 and "
+            "1.27 nm (relative orientation of the stacked tetrads), which PaiNN rebuilds."),
           P("In every channel the CG-ML reaches the ceiling: the gap is at most 0.004, within the variation between "
             "the two halves of the reference. Peak positions and heights coincide: for B3–B3 0.34, 0.445, 0.65 and "
             "0.84 nm; for S–S the first neighbour at 0.595 nm. The remaining differences, for instance the S–S "
@@ -302,12 +325,12 @@ story += [PageBreak(), P("4. g(r) between different copies (short range)", "h1")
             f"distance computed, it describes only close encounters between copies: with R<sub>g</sub> ≈ 0.8 nm the "
             f"copies rarely touch and g(r) stays well below 1, in the excluded-volume region."),
           fig("fig_gr_inter_en.png", 16.5,
-              "Figure 3. g(r) between sites of different copies, same colours as figure 2. The two AA halves "
+              "Figure 4. g(r) between sites of different copies, same colours as figure 3. The two AA halves "
               "differ by a factor of ~5: the encounters between copies in the AA are few long events.")]
-rows = [["channel", "CG-ML vs AA", "AA half 2 – half 1"]]
+rows = [["channel", "lp2 priors only", "CG-ML vs AA", "AA half 2 – half 1"]]
 for c in CH:
-    rows.append([CH_EN.get(c, c), it(OV[c]["CG-ML"]["inter"]), it(OV[c]["AA meta' 2"]["inter"])])
-story += [table(rows, [4.4, 3.6, 4.4]), Spacer(1, 6),
+    rows.append([CH_EN.get(c, c), it(OV[c]["lp2"]["inter"]), it(OV[c]["CG-ML"]["inter"]), it(OV[c]["AA meta' 2"]["inter"])])
+story += [table(rows, [4.4, 3.0, 3.6, 4.4]), Spacer(1, 6),
           P("In the AA the first half has almost no contacts between copies, the second half many more: these "
             "contacts are rare, non-ergodic events over 136 ns, and the reference does not sample them. The CG–AA "
             "overlap (0.68–0.93) exceeds that between the two AA halves (0–0.85), so here the metric does not "
@@ -320,17 +343,18 @@ story += [table(rows, [4.4, 3.6, 4.4]), Spacer(1, 6),
 # ── 5. Rg ──
 story += [PageBreak(), P("5. Radius of gyration", "h1"),
           fig("fig_Rg_en.png", 16.5,
-              "Figure 4. Left: R<sub>g</sub> distribution (AA: single copies as thin lines, all copies as a thick "
-              "line; CG-ML: all copies and replicas). Right: time series with a 1 ns running mean, AA over 136 ns "
+              "Figure 5. Left: R<sub>g</sub> distribution (AA: single copies as thin lines, all copies as a thick "
+              "line; CG-ML: all copies and replicas; green: lp2 priors only). Right: time series with a 1 ns running mean, AA over 136 ns "
               "and CG-ML (replica r0) over 20 ns, same vertical scale.")]
-rows = [["", "AA", "CG-ML"],
+rows = [["", "AA", "CG-ML", "lp2 priors only"],
         ["mean ± standard deviation (nm)", f"{it(cv['Rg']['aa_mean'])} ± {it(cv['Rg']['aa_std'])}",
-         f"{it(cv['Rg']['cg_mean'])} ± {it(cv['Rg']['cg_std'])}"],
+         f"{it(cv['Rg']['cg_mean'])} ± {it(cv['Rg']['cg_std'])}", f"{it(cv['Rg']['pri_mean'])} ± {it(cv['Rg']['pri_std'])}"],
         ["means of the single copies (nm)", f"{it(cv['Rg']['aa_copy_min'])}–{it(cv['Rg']['aa_copy_max'])}",
-         "all ≈ 0.800"],
-        ["τ at 1/e (script 47)", f"{it(tauAA['tau_Rg'] / 1000, 1)} ns", f"{it(tauCG['tau_Rg'], 1)} ps"],
-        ["overlap with the AA (ceiling)", "–", f"{it(cv['Rg']['ov'], 2)} ({it(cv['Rg']['ceil'], 2)})"]]
-story += [table(rows, [6.0, 5.0, 5.0]), Spacer(1, 6),
+         "all ≈ 0.800", ""],
+        ["τ at 1/e (script 47)", f"{it(tauAA['tau_Rg'] / 1000, 1)} ns", f"{it(tauCG['tau_Rg'], 1)} ps", ""],
+        ["overlap with the AA (ceiling)", "–", f"{it(cv['Rg']['ov'], 2)} ({it(cv['Rg']['ceil'], 2)})",
+         it(cv['Rg']['pri_ov'], 2)]]
+story += [table(rows, [5.4, 3.8, 3.8, 3.8]), Spacer(1, 6),
           P("The mean value is correct within 0.002 nm. The CG distribution is somewhat wider than the overall AA "
             "one and much wider than that of a single AA copy. The reason is in the time series: in the AA each "
             "copy stays for tens of ns on its own R<sub>g</sub> (the most compact copy at 0.78 nm for most of the "
@@ -343,15 +367,18 @@ story += [table(rows, [6.0, 5.0, 5.0]), Spacer(1, 6),
 # ── 6. CV ──
 story += [KeepTogether([P("6. Other collective variables", "h1"),
           fig("fig_cv_en.png", 16.5,
-              "Figure 5. Distributions of core rmsd, loop rmsd and fraction of native contacts Q (grey: AA halves). "
-              "The titles report the CG–AA overlap and the ceiling.")])]
-rows = [["variable", "AA mean ± std", "CG-ML mean ± std", "overlap", "ceiling"]]
+              "Figure 6. Distributions of core rmsd, loop rmsd and fraction of native contacts Q (grey: AA halves). "
+              "Green: lp2 priors only. The titles report the CG–AA overlap and the ceiling.")])]
+rows = [["variable", "AA mean ± std", "CG-ML mean ± std", "overlap CG-ML", "priors only mean ± std", "overlap priors only", "ceiling"]]
 names = {"Rg": "R<sub>g</sub> (nm)", "rmsd_core": "core rmsd (nm)", "rmsd_loops": "loop rmsd (nm)", "Q": "Q"}
 for v in ["Rg", "rmsd_core", "rmsd_loops", "Q"]:
     s = cv[v]
     rows.append([names[v], f"{it(s['aa_mean'])} ± {it(s['aa_std'])}", f"{it(s['cg_mean'])} ± {it(s['cg_std'])}",
-                 it(s["ov"], 2), it(s["ceil"], 2)])
-story += [table(rows, [3.4, 3.5, 3.5, 3.2, 1.9]), Spacer(1, 6),
+                 it(s["ov"], 2), f"{it(s['pri_mean'])} ± {it(s['pri_std'])}", it(s["pri_ov"], 2), it(s["ceil"], 2)])
+story += [table(rows, [2.6, 2.6, 2.6, 1.8, 2.8, 2.0, 1.4]), Spacer(1, 6),
+          P("With the priors alone the core rmsd is doubled (0.088 vs 0.044 nm) and its distribution barely overlaps "
+            "the AA one (0.04): the tetrads stay formed (Q is even slightly higher) but are distorted and more mobile. "
+            "PaiNN brings the core to the ceiling and also reduces the loop rmsd (0.31 → 0.27 nm)."),
           P("The core is at the ceiling: rmsd 0.044 nm in both, overlap 0.93 vs 0.94. Q has the same mean but a "
             "somewhat narrower distribution in the CG (std 0.009 vs 0.013). The loops are the only clear "
             "discrepancy: in the CG they are more mobile and further from the mean structure (0.27 vs 0.22 nm), and "
@@ -359,7 +386,8 @@ story += [table(rows, [3.4, 3.5, 3.5, 3.2, 1.9]), Spacer(1, 6),
             "missing. The diagnostics of scripts 49–52 attribute the gap to metastable states absent in the CG "
             "(state 1 of loop 3, minor state of loop 2) and to a partly wrong pairing register (T2–A15 in excess)."),
           fig("fig_fes_en.png", 15.0,
-              "Figure 6. Free energy F = −kT ln p(core rmsd, Q), AA and CG-ML. The JSD between the FES (script 46) "
+              "Figure 7. Free energy F = −kT ln p(core rmsd, Q): AA, lp2 priors only, CG-ML. The minimum of the priors "
+              "only is shifted to rmsd ≈ 0.09 nm. The JSD between the AA and CG-ML FES (script 46) "
               "is 0.0787, equal to the AA vs AA ceiling (0.0786); the CG is noisier because of the smaller number "
               "of frames (20 080 vs 67 880 copy-frames).")]
 
@@ -370,7 +398,7 @@ story += [PageBreak(), P("7. Dynamics: translational and rotational MSD", "h1"),
             "The curves stop at a quarter of the length of each trajectory. In the bottom row the time axis is "
             "converted into GPU hours with the measured throughput."),
           fig("fig_msd_en.png", 16.5,
-              "Figure 7. Top: MSD vs simulated time; dashed 6Dt with D from the linear regime. Bottom: the same "
+              "Figure 8. Top: MSD vs simulated time; dashed 6Dt with D from the linear regime. Bottom: the same "
               "curves vs A100 GPU hours (AA 137 ns/day; CG-ML 54.2 ns/day aggregate over 2 replicas).")]
 rows = [["", "AA", "CG-ML", "CG/AA ratio"],
         ["D (nm<super>2</super>/ns), linear fit", it(ms["AA"]["D_trans"]), it(ms["prod"]["D_trans"], 1),
@@ -450,7 +478,8 @@ story += [P("Appendix: data provenance", "h2"),
             "collective variables with script 46; MSD curves from <font name='DV-I'>msd_wall_prod.json</font>, "
             "script 48; times from <font name='DV-I'>ts_prod.json</font>, script 47). AA reference: "
             "<font name='DV-I'>tel26_lp1_dataset.bin</font>. CG-ML: <font name='DV-I'>prod_re1_s0{1..4}_r{0,1}"
-            ".samples.npz</font> (chain prod_re1, model lp2 + re1_it30). Figures and PDF: "
+            ".samples.npz</font> (chain prod_re1, model lp2 + re1_it30); priors only: <font name='DV-I'>pri_lp2_s0{1..4}_r{0,1}"
+            ".samples.npz</font> (same chain with DISABLE_ML=1); data in <font name='DV-I'>report_data_v2.npz</font>. Figures and PDF: "
             "<font name='DV-I'>make_figs_en.py</font>, <font name='DV-I'>build_report_en.py</font> and "
             "<font name='DV-I'>model_fig/</font> in the folder <font name='DV-I'>tutorials/tel26/report</font>. "
             f"Parameters: P(r) with one AA frame every {meta['aa_stride']}, CG every {meta['cg_stride']} ps, "
