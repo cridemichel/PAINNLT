@@ -6,7 +6,16 @@ Due classi, riconosciute dalla geometria (system.json di tel26):
        30 per copia in lp2;
   oth  tutti gli altri contatti Morse (stacking fra tetradi, loop): 24 per copia.
 D -> lam_tet * D e D -> lam_oth * D; a, r0, r_cut invariati (la coda smorzata a r_cut
-resta la stessa forma).  Bond armonici, angoli, diedri e WCA non vengono toccati.
+resta la stessa forma).
+
+Torsione di impilamento (diedri B3-B5-B5-B3, ruolo "twist", 8 per copia, K 157-310 kT):
+  - passa alla forma smorzata CBT ("cbt": true).  Nel nativo gli angoli B3-B5-B5 sono
+    70-98 gradi, g = 1 e nulla cambia; quando due guanine si separano un angolo puo' andare
+    verso 0/180 gradi e il diedro a coseno da' forze ~K/sin(t): e' la causa dei crash della
+    prima scansione (max_f > 10^4 ed E_kin a 10^4 in un intervallo di log, solo dove le
+    tetradi si aprono);
+  - K -> lam_twist * K, con lam_twist = lam_oth per default (e' un termine di impilamento).
+Bond armonici, angoli, diedri di backbone e WCA non vengono toccati.
 
 Uso:
   python3 09_scale_contacts.py --in cg_priors.lp2_1c.json --out cg_priors.lp2_1c.lt0.15_lo0.20.json \\
@@ -31,7 +40,12 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--lam-tet", type=float, required=True)
     ap.add_argument("--lam-oth", type=float, required=True)
+    ap.add_argument("--lam-twist", type=float, default=None,
+                    help="scala di K delle torsioni di impilamento (default: --lam-oth)")
+    ap.add_argument("--no-twist-cbt", action="store_true", help="lascia le torsioni a coseno puro")
     args = ap.parse_args()
+    if args.lam_twist is None:
+        args.lam_twist = args.lam_oth
     if args.lam_tet < 0 or args.lam_oth < 0:
         raise SystemExit("[ERROR] fattori di scala negativi")
 
@@ -54,17 +68,30 @@ def main():
         s[2] += e["D"]
     if not stats:
         raise SystemExit("[ERROR] nessun contatto Morse nei bond: insieme di prior inatteso")
+    ntw, k0, k1 = 0, 0.0, 0.0
+    for d in pri.get("dihedrals", []):
+        if d.get("role") != "twist":
+            continue
+        ntw += 1; k0 += d["k"]
+        d["k"] = float(d["k"]) * args.lam_twist
+        k1 += d["k"]
+        if not args.no_twist_cbt:
+            d["cbt"] = True
     if pri.get("morse_type_pairs"):
         print("[WARN] morse_type_pairs non vuoto: NON scalato (solo i contatti pair-specific)")
     ncopy = max(e["mol_i"] for e in pri["bonds"]) // nuc + 1
     meta = pri.setdefault("derived_prior_set", {})
     meta.setdefault("base", pathlib.Path(args.inp).name)
-    meta["contact_scaling"] = {"lam_tet": args.lam_tet, "lam_oth": args.lam_oth,
+    meta["contact_scaling"] = {"lam_tet": args.lam_tet, "lam_oth": args.lam_oth, "lam_twist": args.lam_twist,
+                               "twist_cbt": not args.no_twist_cbt,
                                "classes": "tet = stessa tetrade (B3-B3, Hoogsteen); oth = stacking, loop"}
     json.dump(pri, open(args.out, "w"), indent=1)
     for cls in ("tet", "oth"):
         n, d0, d1 = stats.get(cls, [0, 0.0, 0.0])
         print(f"  {cls}: {n // ncopy} contatti per copia, sum D {d0 / ncopy:7.1f} -> {d1 / ncopy:7.1f} kJ/mol per copia")
+    if ntw:
+        print(f"  twist: {ntw // ncopy} torsioni per copia, sum K {k0 / ncopy:7.1f} -> {k1 / ncopy:7.1f} kJ/mol per copia, "
+              f"{'CBT' if not args.no_twist_cbt else 'coseno puro'}")
     tot = sum(s[2] for s in stats.values()) / ncopy
     print(f"  totale {tot:.1f} kJ/mol per copia ({tot / 4.184:.1f} kcal/mol; dH sperimentale 352 kJ/mol)  -> {args.out}")
 

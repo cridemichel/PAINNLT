@@ -16,9 +16,14 @@
 # 08_tetrad_melt.py per ogni coppia (etichette = T) e una tabella riassuntiva con P(F), P(U)
 # contro T e la temperatura a cui P(F) scende sotto 1/2.
 #
+# Prima scansione ($A/sweep, 7/10): le corse dove le tetradi si aprivano morivano per il
+# controllo di sicurezza (max_f > 10^4): torsioni di impilamento a coseno puro, singolari
+# con tre siti allineati.  Da sweep2 09_scale_contacts.py le passa a CBT e ne scala K con
+# lam_oth.  Ogni corsa ha la sua cartella di lavoro wd_T<T> (crash_checkpoint.npz).
+#
 # USO (Leonardo):  sbatch $U/10_contact_sweep.sh
-# Variabili: LT ("0.08 0.12 0.16 0.24"), LO ("0.08 0.16 0.24"), TS ("300 330 360 400 450"),
-#            CG_STEPS (25000000 = 100 ns), LOG_INTERVAL (1250 = 5 ps), OUTDIR ($A/sweep),
+# Variabili: LT ("0.08 0.10 0.12 0.14 0.16"), LO ("0.08 0.16 0.24"), TS ("300 330 360 400 450"),
+#            CG_STEPS (25000000 = 100 ns), LOG_INTERVAL (1250 = 5 ps), OUTDIR ($A/sweep2),
 #            ANALYZE_ONLY=1 per rifare solo l'analisi.
 set -uo pipefail
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
@@ -28,12 +33,12 @@ T26=$R/tutorials/tel26
 source $R/hpc/env_leonardo.sh
 export PYTHONUNBUFFERED=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 
-LT=${LT:-"0.08 0.12 0.16 0.24"}
+LT=${LT:-"0.08 0.10 0.12 0.14 0.16"}
 LO=${LO:-"0.08 0.16 0.24"}
 TS=${TS:-"300 330 360 400 450"}
 CG_STEPS=${CG_STEPS:-25000000}
 LOG_INTERVAL=${LOG_INTERVAL:-1250}
-OUTDIR=${OUTDIR:-$A/sweep}
+OUTDIR=${OUTDIR:-$A/sweep2}
 MODEL=$T26/tel26_lp2_re1_it30.pt          # solo provenienza: PaiNN e' disattivato
 CONFIG=$T26/$(python3 -c 'import json,sys,os;print(os.path.basename(json.load(open(sys.argv[1]))["config_path"]))' "$MODEL.manifest.json") || exit 1
 BASE=$A/cg/cg_priors.lp2_1c.json
@@ -65,17 +70,20 @@ if [[ -z "${ANALYZE_ONLY:-}" ]]; then
 
     # prova breve sul primo elemento: se pypresso non parte su questo nodo, ci si ferma subito
     set -- ${jobs_list[0]}
-    "$PYPRESSO" $R/simulation/run_cg_md.py $(run_args $1/cg_priors.json $2 $1/smoke 2000) > $1/smoke.log 2>&1 \
+    mkdir -p $OUTDIR/$1/wd_smoke
+    ( cd $OUTDIR/$1/wd_smoke && "$PYPRESSO" $R/simulation/run_cg_md.py $(run_args $OUTDIR/$1/cg_priors.json $2 $OUTDIR/$1/smoke 2000) ) > $1/smoke.log 2>&1 \
         || { echo "[ERROR] prova breve fallita: vedi $OUTDIR/$1/smoke.log" >&2; tail -20 $1/smoke.log; exit 1; }
     echo "[csweep] prova breve ok: $(grep -c 'Step' $1/smoke.log) righe di log"
 
     pids=(); i=0
     for item in "${jobs_list[@]}"; do
         set -- $item
-        name=$1/T$2
+        name=$OUTDIR/$1/T$2
         [[ -e $name.samples.npz ]] && { echo "[csweep] $name gia' fatto, salto"; continue; }
-        taskset -c ${CPUS[$i]} "$PYPRESSO" $R/simulation/run_cg_md.py $(run_args $1/cg_priors.json $2 $name $CG_STEPS) \
-            > $name.log 2>&1 &
+        # cartella di lavoro propria: run_cg_md scrive crash_checkpoint.npz e crash.vtf nella cwd
+        mkdir -p $OUTDIR/$1/wd_T$2
+        ( cd $OUTDIR/$1/wd_T$2 && exec taskset -c ${CPUS[$i]} "$PYPRESSO" $R/simulation/run_cg_md.py \
+            $(run_args $OUTDIR/$1/cg_priors.json $2 $name $CG_STEPS) ) > $name.log 2>&1 &
         pids+=($!); i=$((i + 1))
     done
     fail=0
