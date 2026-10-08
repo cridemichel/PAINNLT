@@ -24,7 +24,9 @@
 # USO (Leonardo):  sbatch $U/10_contact_sweep.sh
 # Variabili: LT ("0.08 0.10 0.12 0.14 0.16"), LO ("0.08 0.16 0.24"), TS ("300 330 360 400 450"),
 #            CG_STEPS (25000000 = 100 ns), LOG_INTERVAL (1250 = 5 ps), OUTDIR ($A/sweep2),
-#            ANALYZE_ONLY=1 per rifare solo l'analisi.
+#            ANALYZE_ONLY=1 per rifare solo l'analisi,
+#            START=<stato .state.npz> per partire da quello stato invece che dal nativo
+#            (velocita' rigenerate a T): isteresi, partendo da uno stato aperto.
 set -uo pipefail
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
 R=/leonardo_work/IscrB_G4MES/cdemiche/PAINNLT/MLCG_Framework_v2
@@ -39,6 +41,8 @@ TS=${TS:-"300 330 360 400 450"}
 CG_STEPS=${CG_STEPS:-25000000}
 LOG_INTERVAL=${LOG_INTERVAL:-1250}
 OUTDIR=${OUTDIR:-$A/sweep2}
+START=${START:-}     # stato iniziale diverso dal nativo (es. uno stato aperto, per l'isteresi)
+[[ -z "$START" || -s "$START" ]] || { echo "[ERROR] START=$START non esiste" >&2; exit 1; }
 MODEL=$T26/tel26_lp2_re1_it30.pt          # solo provenienza: PaiNN e' disattivato
 CONFIG=$T26/$(python3 -c 'import json,sys,os;print(os.path.basename(json.load(open(sys.argv[1]))["config_path"]))' "$MODEL.manifest.json") || exit 1
 BASE=$A/cg/cg_priors.lp2_1c.json
@@ -54,7 +58,8 @@ run_args() {   # priors T nome passi
          --steps "$4" --dt 0.004 --gamma 2 --kT "$kt" --init_kT "$kt" --device cpu --neighbor_search verlet \
          --thermostat_seed $(( $2 * 7 + 11 )) --velocity_seed $(( $2 * 13 + 5 )) \
          --log_interval "$LOG_INTERVAL" --energy_interval 10 --no_vtf \
-         --sample_npz "$3.samples.npz" --energy_file "$3.energy.csv" --out_checkpoint "$3.state.npz"
+         --sample_npz "$3.samples.npz" --energy_file "$3.energy.csv" --out_checkpoint "$3.state.npz" \
+         ${START:+--checkpoint "$START" --allow_checkpoint_mismatch}
 }
 
 if [[ -z "${ANALYZE_ONLY:-}" ]]; then
