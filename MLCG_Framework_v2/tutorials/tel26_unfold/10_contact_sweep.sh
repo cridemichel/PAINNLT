@@ -91,21 +91,27 @@ for lt in $LT; do for lo in $LO; do
     echo; echo "=== $tag ==="; cat $tag/scale.txt
     python3 $U/08_tetrad_melt.py "${specs[@]}" --plot $tag/melt --json $tag/melt.json
 done; done
-python3 - "$OUTDIR" <<'PY'
+python3 - "$OUTDIR" "$TS" <<'PY'
 import glob, json, os, sys
+Ts = [float(t) for t in sys.argv[2].split()]
 rows = []
-for f in sorted(glob.glob(os.path.join(sys.argv[1], "lt*_lo*", "melt.json"))):
-    tag = os.path.basename(os.path.dirname(f))
-    runs = json.load(open(f))["runs"]
-    T = sorted((float(k), v) for k, v in runs.items())
-    tf = next((f"{a:.0f}-{b:.0f}" for (a, va), (b, vb) in zip(T, T[1:]) if va["P_F"] >= 0.5 > vb["P_F"]),
-              "<" + f"{T[0][0]:.0f}" if T[0][1]["P_F"] < 0.5 else ">" + f"{T[-1][0]:.0f}")
-    rows.append((tag, T, tf))
-if rows:
-    Ts = [t for t, _ in rows[0][1]]
-    print("\n  P(F) / P(U) contro T (seconda meta' di ogni corsa);  T_F = intervallo dove P(F) passa 1/2")
-    print(f"  {'insieme':16s}" + "".join(f"{t:>12.0f}" for t in Ts) + "      T_F (K)")
-    for tag, T, tf in rows:
-        print(f"  {tag:16s}" + "".join(f"   {v['P_F']:4.2f}/{v['P_U']:4.2f}" for _, v in T) + f"   {tf:>10s}")
-    print("  Tm sperimentale (U al 50%): 328 K;  F al 50%: 307 K")
+for d in sorted(glob.glob(os.path.join(sys.argv[1], "lt*_lo*"))):
+    tag = os.path.basename(d)
+    f = os.path.join(d, "melt.json")
+    runs = json.load(open(f))["runs"] if os.path.exists(f) else {}
+    have = {float(k): v for k, v in runs.items()}
+    T = sorted(have.items())
+    if T:
+        tf = next((f"{a:.0f}-{b:.0f}" for (a, va), (b, vb) in zip(T, T[1:]) if va["P_F"] >= 0.5 > vb["P_F"]),
+                  ("<" if T[0][1]["P_F"] < 0.5 else ">") + f"{T[0 if T[0][1]['P_F'] < 0.5 else -1][0]:.0f}")
+    else:
+        tf = "-"
+    missing = [f"{t:.0f}" for t in Ts if t not in have]
+    rows.append((tag, have, tf, missing))
+print("\n  P(F) / P(U) contro T (seconda meta' di ogni corsa);  '--' = corsa assente o fallita (vedi T<T>.log)")
+print(f"  {'insieme':16s}" + "".join(f"{t:>12.0f}" for t in Ts) + "      T_F (K)")
+for tag, have, tf, missing in rows:
+    cells = "".join(f"   {have[t]['P_F']:4.2f}/{have[t]['P_U']:4.2f}" if t in have else f"{'--':>12s}" for t in Ts)
+    print(f"  {tag:16s}{cells}   {tf:>10s}")
+print("  Tm sperimentale (U al 50%): 328 K;  F al 50%: 307 K")
 PY
