@@ -20,6 +20,12 @@ COSA FA (solo numpy; gli input sono le copie in AA_unfold/input)
       C-rescale, --ns ns, xtc del solo DNA_K ogni 10 ps, niente trr;
     - copia .top e kions.itp nella cartella di lavoro.
 
+    --cation Li: tutti i 25 K+ diventano Li+ (Joung-Cheatham per SPC/E, come il K+ della
+    topologia: R_min/2 = 0,791 A, eps = 0,3367344 kcal/mol, frcmod.ionsjc_spce), nelle stesse
+    posizioni; nessuno spostamento dal canale.  Il Li+ non stabilizza il G-quadruplex: lo
+    stato aperto a 400 K senza che un K+ della soluzione rientri nel canale (pilota K+, 8/10).
+    Il gruppo dell'xtc si chiama ancora DNA_K (DNA + cationi) per 04 e 12.
+
 USO (Leonardo, login, dopo source hpc/env_leonardo.sh)
     python3 03_make_pilot_inputs.py --input /leonardo_work/IscrB_G4MES/cdemiche/AA_unfold/input \\
         --out /leonardo_work/IscrB_G4MES/cdemiche/AA_unfold/pilot_noK400
@@ -88,6 +94,8 @@ def main():
     ap.add_argument("--ns", type=float, default=200.0)
     ap.add_argument("--temp", type=float, default=400.0)
     ap.add_argument("--seed0", type=int, default=4001)
+    ap.add_argument("--cation", choices=("K", "Li"), default="K",
+                    help="K: toglie il K+ --k-resid dal canale; Li: tutti i K+ diventano Li+")
     args = ap.parse_args()
     inp, out = pathlib.Path(args.input), pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -96,7 +104,17 @@ def main():
     n = len(rows)
     dna = np.array([r in DNA_RES for r in resn])
     isk = np.array([r == "K" for r in resn])
-    kidx = np.where(isk & (resid == args.k_resid))[0]
+    if args.cation == "Li":
+        lines = []
+        for l in rows:
+            if l[5:10].strip() == "K":
+                l = l[:5] + f"{'LI':<5s}" + f"{'LI':>5s}" + l[15:]
+            lines.append(l)
+        write_gro(out / "start.gro", L, lines, xyz, f"TEL26 400 K, {int(isk.sum())} K+ -> Li+")
+        rows_out = lines
+        print(f"[INFO] {int(isk.sum())} K+ -> Li+ (stesse posizioni)")
+        new = xyz
+    kidx = np.where(isk & (resid == args.k_resid))[0] if args.cation == "K" else np.array([0])
     if len(kidx) != 1:
         raise SystemExit(f"[ERROR] K+ resid {args.k_resid} non trovato")
     k = kidx[0]
@@ -106,26 +124,27 @@ def main():
         d -= box * np.round(d / box)
         return np.sqrt((d ** 2).sum(1)).min()
 
-    ow = np.where((np.array(resn) == "SOL") & (np.array(name) == "OW"))[0]
-    others = np.where(isk & (np.arange(n) != k))[0]
-    best = None
-    for o in ow[np.random.default_rng(0).permutation(len(ow))]:
-        dd, dk = mind(xyz[o], dna), mind(xyz[o], others)
-        if dd > args.min_dna and dk > args.min_k:
-            score = min(dd, 2 * dk)
-            if best is None or score > best[0]:
-                best = (score, o, dd, dk)
-    if best is None:
-        raise SystemExit("[ERROR] nessuna acqua abbastanza lontana: ridurre --min-dna / --min-k")
-    _, o, dd, dk = best
-    wat = np.where(resid == resid[o])[0]                      # OW, HW1, HW2 della stessa molecola
-    new = xyz.copy()
-    shift = xyz[k] - xyz[o]
-    new[wat] = xyz[wat] + shift
-    new[k] = xyz[o]
-    print(f"[INFO] K+ resid {args.k_resid} (atomo {k + 1}) dal canale a {xyz[o].round(3)}: "
-          f"{dd:.2f} nm dal DNA, {dk:.2f} nm dal K+ piu' vicino; acqua resid {resid[o]} nel canale")
-    write_gro(out / "start.gro", L, rows, new, f"TEL26 400 K senza K+ {args.k_resid} nel canale")
+    if args.cation == "K":
+        ow = np.where((np.array(resn) == "SOL") & (np.array(name) == "OW"))[0]
+        others = np.where(isk & (np.arange(n) != k))[0]
+        best = None
+        for o in ow[np.random.default_rng(0).permutation(len(ow))]:
+            dd, dk = mind(xyz[o], dna), mind(xyz[o], others)
+            if dd > args.min_dna and dk > args.min_k:
+                score = min(dd, 2 * dk)
+                if best is None or score > best[0]:
+                    best = (score, o, dd, dk)
+        if best is None:
+            raise SystemExit("[ERROR] nessuna acqua abbastanza lontana: ridurre --min-dna / --min-k")
+        _, o, dd, dk = best
+        wat = np.where(resid == resid[o])[0]                      # OW, HW1, HW2 della stessa molecola
+        new = xyz.copy()
+        shift = xyz[k] - xyz[o]
+        new[wat] = xyz[wat] + shift
+        new[k] = xyz[o]
+        print(f"[INFO] K+ resid {args.k_resid} (atomo {k + 1}) dal canale a {xyz[o].round(3)}: "
+              f"{dd:.2f} nm dal DNA, {dk:.2f} nm dal K+ piu' vicino; acqua resid {resid[o]} nel canale")
+        write_gro(out / "start.gro", L, rows, new, f"TEL26 400 K senza K+ {args.k_resid} nel canale")
 
     # indice: System e DNA_K (numerazione 1-based)
     def block(title, idx):
@@ -150,10 +169,36 @@ def main():
                            "nstxout": "0", "nstvout": "0", "nstfout": "0", "nstlog": "50000",
                            "nstenergy": "5000", "nstxout-compressed": "5000", "compressed-x-grps": "DNA_K"})
         (out / f"md_rep{r}.mdp").write_text(txt)
-    for f in (args.top, "kions.itp"):
-        shutil.copy2(inp / f, out / f)
+    if args.cation == "K":
+        for f in (args.top, "kions.itp"):
+            shutil.copy2(inp / f, out / f)
+    else:
+        # Li+ di Joung-Cheatham (SPC/E): sigma = 2 R_min/2 / 2^(1/6), eps in kJ/mol
+        sig = 2 * 0.0791 / 2 ** (1 / 6)
+        eps = 0.3367344 * 4.184
+        top = (inp / args.top).read_text().splitlines()
+        out_top, in_mol = [], False
+        for ln in top:
+            if ln.split() and ln.split()[0] == "K" and len(ln.split()) >= 6 and not in_mol:
+                out_top.append(ln)
+                out_top.append(f" LI        LI          6.94      0.0000    A    {sig:.5e}   {eps:.5e} ; Li+ JC/SPC/E")
+                continue
+            if ln.strip() == '#include "./kions.itp"':
+                ln = '#include "./liions.itp"'
+            if ln.strip().startswith("[ molecules ]"):
+                in_mol = True
+            if in_mol and ln.split()[:1] == ["K"]:
+                ln = ln.replace("K", "LI", 1)
+            out_top.append(ln)
+        if not any(" LI " in ln for ln in out_top) or '#include "./liions.itp"' not in out_top:
+            raise SystemExit("[ERROR] topologia inattesa: tipo K o include di kions.itp non trovati")
+        (out / args.top).write_text("\n".join(out_top) + "\n")
+        (out / "liions.itp").write_text("[ moleculetype ]\n; molname       nrexcl\nLI              1\n\n[ atoms ]\n"
+                                        "; id    at type         res nr  residu name     at name  cg nr  charge\n"
+                                        "1       LI              1       LI              LI       1      1.00000\n")
+        print(f"[INFO] Li+: sigma {sig:.6f} nm, eps {eps:.6f} kJ/mol, massa 6.94 -> {args.top}, liions.itp")
     print(f"[DONE] {out}: start.gro, index.ndx, em.mdp, md_rep1..{args.nrep}.mdp ({args.ns:g} ns, {args.temp:g} K), "
-          f"{args.top}, kions.itp")
+          f"{args.top}, {'kions' if args.cation == 'K' else 'liions'}.itp")
 
 
 if __name__ == "__main__":

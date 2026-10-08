@@ -11,17 +11,19 @@
 # Tetradi e K+ lungo le repliche del pilota AA senza K+ nel canale (04_run_pilot.sh).
 #
 # Per ogni replica: tpr ridotto al gruppo DNA_K (convert-tpr), traiettoria con le molecole
-# intere (trjconv -pbc mol) e 02_tetrads_k.py con $A/dnak/equil_dna_k.gro come topologia
-# (stessi 868 atomi nello stesso ordine: DNA + 25 K+).  La struttura di partenza (em.gro
-# ridotta a DNA_K) fa da "equilibratura" di un frame, cosi' il tempo della produzione parte da 0.
+# intere (trjconv -pbc mol) e 02_tetrads_k.py con la struttura di partenza ridotta a DNA_K
+# (em.gro) come topologia: stessi atomi e stessi nomi della corsa.  La stessa struttura fa da
+# "equilibratura" di un frame (non ricomposta: quella riga del riassunto va ignorata), cosi' il
+# tempo della produzione parte da 0.
 # Uscite in $P/ana: rep<r>_dnak.xtc, tetrads_rep<r>.{npz,png} e il riassunto nel log.
 #
 # USO (Leonardo):  sbatch $U/12_pilot_tetrads.sh      (si puo' rilanciare: rifa' tutto da capo)
-# Variabili: P (cartella del pilota), NREP (4), STRIDE (1 = un frame ogni 10 ps)
+# Variabili: P (cartella del pilota), NREP (4), STRIDE (1 = un frame ogni 10 ps), ION (K o LI)
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
 P=${P:-$A/pilot_noK400}
 NREP=${NREP:-4}
 STRIDE=${STRIDE:-1}
+ION=${ION:-K}         # LI per il pilota con Li+ (03 --cation Li)
 R=/leonardo_work/IscrB_G4MES/cdemiche/PAINNLT/MLCG_Framework_v2
 U=$R/tutorials/tel26_unfold
 mkdir -p $P/ana
@@ -42,6 +44,6 @@ source $R/hpc/env_leonardo.sh
 cd $P/ana
 for r in $(seq 1 $NREP); do
     echo; echo "=== rep$r"
-    python3 $U/02_tetrads_k.py $A/dnak/equil_dna_k.gro start_dnak.gro rep${r}_dnak.xtc \
-        --stride $STRIDE --out tetrads_rep$r
+    python3 $U/02_tetrads_k.py start_dnak.gro start_dnak.gro rep${r}_dnak.xtc \
+        --stride $STRIDE --ion-resname $ION --out tetrads_rep$r
 done

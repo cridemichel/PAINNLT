@@ -57,6 +57,7 @@ def main():
     ap.add_argument("--rho", type=float, default=0.25)
     ap.add_argument("--stride", type=int, default=1)
     ap.add_argument("--out", default="tetrads_k")
+    ap.add_argument("--ion-resname", default="K", help="nome di residuo dei cationi (K, LI)")
     args = ap.parse_args()
     warnings.filterwarnings("ignore")
     import MDAnalysis as mda
@@ -64,7 +65,7 @@ def main():
     u = mda.Universe(args.top, *args.xtc, continuous=False)
     dna = u.select_atoms("resname DT5 DT DA DG DT3")
     heavy = dna.select_atoms("not name H*")
-    K = u.select_atoms("resname K")
+    K = u.select_atoms(f"resname {args.ion_resname}")
 
     def at(res, name):
         sel = dna.select_atoms(f"resid {res} and name {name}")
