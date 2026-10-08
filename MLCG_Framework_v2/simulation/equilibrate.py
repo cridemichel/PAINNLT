@@ -26,6 +26,9 @@ from framework_utils import (
 from conservative_spline_runtime import create_conservative_spline_interaction
 
 from espresso_interactions import (
+    R_KJ_MOL_K,
+    resolve_thermal_priors,
+    thermal_priors_summary,
     configure_pair_specific_morse,
     pair_contact_summary,
     create_pair_specific_morse_markers,
@@ -76,6 +79,10 @@ with open(args.config, "r") as f:
     nn_config = json.load(f)
 with open(args.priors, "r") as f:
     priors = json.load(f)
+# Prior con D_H/D_S (k_H/k_S): parametri alla temperatura del termostato.
+_thermal_info = resolve_thermal_priors(priors, args.kT / R_KJ_MOL_K)
+if _thermal_info["morse"] or _thermal_info["dihedral"]:
+    print("[INFO] " + thermal_priors_summary(_thermal_info))
 with open(args.rb_info, "r") as f:
     rb_info = json.load(f)
 

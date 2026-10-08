@@ -24,7 +24,7 @@
 #   continuazione:                sbatch --export=ALL,CONTINUE_FROM=nat_t400,NAME=nat_t400_b $U/07_cg_native_t400.sh
 # Variabili: NAME (nat_t400), T_K (400), REPLICAS (2), CG_STEPS (2500000 = 10 ns a 4 fs),
 #            LOG_INTERVAL (125 passi = 0.5 ps; per corse lunghe 1250 = 5 ps),
-#            MODEL, OUTDIR ($A/cgmd_t400), DISABLE_ML, CONTINUE_FROM, SEED_BASE (1000)
+#            MODEL, OUTDIR ($A/cgmd_t400), PRIORS, DISABLE_ML, CONTINUE_FROM, SEED_BASE (1000)
 set -uo pipefail
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
 R=/leonardo_work/IscrB_G4MES/cdemiche/PAINNLT/MLCG_Framework_v2
@@ -41,7 +41,7 @@ export PYTHONUNBUFFERED=1   # log leggibile durante la corsa
 MODEL=${MODEL:-$T26/tel26_lp2_re1_it30.pt}
 OUTDIR=${OUTDIR:-$A/cgmd_t400}
 CONTINUE_FROM=${CONTINUE_FROM:-}
-PRIORS=$A/cg/cg_priors.lp2_1c.json
+PRIORS=${PRIORS:-$A/cg/cg_priors.lp2_1c.json}   # anche prior termici (09 --h-* --t0-*)
 RBINFO=$A/cg/rigid_bodies_info.lp2_1c.t400.json
 DATASET=$A/cg/tel26_lp2_1c_t400_dataset.bin
 PYPRESSO=$R/espresso/build/pypresso

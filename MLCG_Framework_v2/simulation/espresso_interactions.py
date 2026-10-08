@@ -317,6 +317,67 @@ def _normalize_lj_contact(prior: dict[str, Any], index: int) -> dict[str, Any]:
     }
 
 
+R_KJ_MOL_K = 0.008314462618
+
+
+def resolve_thermal_priors(priors: dict[str, Any], temperature_K: float) -> dict[str, Any]:
+    """Prior con parti entalpica ed entropica: fissa i parametri alla temperatura del termostato.
+
+    In solvente implicito i parametri dei contatti sono energie libere.  Un contatto Morse
+    pair-specific con ``D_H`` (kJ/mol) e ``D_S`` (kJ/mol/K) ha profondita'
+        D(T) = max(D_H - T D_S, 0),
+    e un diedro con ``k_H`` e ``k_S`` ha K(T) = max(k_H - T k_S, 0).  Con T fissa per tutta la
+    corsa l'Hamiltoniana e' quella di sempre: qui si scrivono solo ``D`` e ``k``, in place.
+    I file prodotti da tel26_unfold/09_scale_contacts.py hanno ``D`` = null proprio perche'
+    un consumatore che non passa di qui fallisca invece di usare un valore non suo.
+    L'energia resta lineare nei parametri: U(x; T) = U_H(x) - T U_S(x) (per MBAR).
+    """
+    T = float(temperature_K)
+    if not (T > 0.0):
+        raise ValueError(f"temperatura non valida per i prior termici: {temperature_K}")
+    out = {"T_K": T, "morse": 0, "morse_zero": 0, "dihedral": 0, "dihedral_zero": 0,
+           "sum_D": 0.0, "sum_k": 0.0}
+    for e in priors.get("bonds", []):
+        has_h, has_s = "D_H" in e, "D_S" in e
+        if not (has_h or has_s):
+            continue
+        if not (has_h and has_s) or e.get("type") != "morse":
+            raise ValueError(f"contatto termico incompleto o non Morse: {e}")
+        D = float(e["D_H"]) - T * float(e["D_S"])
+        if D <= 0.0:
+            out["morse_zero"] += 1
+            D = 0.0
+        e["D"] = D
+        out["morse"] += 1
+        out["sum_D"] += D
+    for d in priors.get("dihedrals", []):
+        has_h, has_s = "k_H" in d, "k_S" in d
+        if not (has_h or has_s):
+            continue
+        if not (has_h and has_s):
+            raise ValueError(f"diedro termico incompleto: {d}")
+        k = float(d["k_H"]) - T * float(d["k_S"])
+        if k <= 0.0:
+            out["dihedral_zero"] += 1
+            k = 0.0
+        d["k"] = k
+        out["dihedral"] += 1
+        out["sum_k"] += k
+    for e in priors.get("bonds", []):
+        if e.get("type") == "morse" and e.get("D") is None:
+            raise ValueError(f"Morse senza D e senza D_H/D_S: {e}")
+    for d in priors.get("dihedrals", []):
+        if d.get("type", "cosine") == "cosine" and d.get("k") is None:
+            raise ValueError(f"diedro a coseno senza k e senza k_H/k_S: {d}")
+    return out
+
+
+def thermal_priors_summary(info: dict[str, Any]) -> str:
+    return (f"prior termici a T = {info['T_K']:.2f} K: {info['morse']} Morse (sum D {info['sum_D']:.1f} kJ/mol, "
+            f"{info['morse_zero']} a D = 0), {info['dihedral']} diedri (sum K {info['sum_k']:.1f} kJ/mol, "
+            f"{info['dihedral_zero']} a K = 0)")
+
+
 def pair_contact_summary(contact: dict[str, Any]) -> str:
     """One-line description of a pair-specific contact for the run log."""
     if contact.get("kind") == "lj":
