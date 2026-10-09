@@ -25,10 +25,21 @@ COSA FA (solo numpy; gli input sono le copie in AA_unfold/input)
     posizioni; nessuno spostamento dal canale.  Il Li+ non stabilizza il G-quadruplex: lo
     stato aperto a 400 K senza che un K+ della soluzione rientri nel canale (pilota K+, 8/10).
     Il gruppo dell'xtc si chiama ancora DNA_K (DNA + cationi) per 04 e 12.
+    Esito (9/10): anche il Li+ JC rientra nel sito fra le tetradi 1 e 2 in ~20 ns (occupazione
+    0,94-0,97): con ioni a carica fissa la desolvatazione dei cationi piccoli e' sottostimata.
+
+    --exclude-r R (nm): canale vietato ai cationi.  Per ogni catione una coordinata di pull
+    (distanza dal baricentro dei 12 O6 del core, tetradi 1-3) con potenziale flat-bottom-high:
+    zero per r >= R, armonico (--exclude-k) per r < R.  I siti del canale stanno entro ~0,5 nm
+    dal baricentro (sopra 1 e sotto 3 compresi), i fosfati oltre 1,0 nm: con R = 0,8 il legame
+    nei solchi e sui fosfati resta libero.  Scrive in index.ndx i gruppi O6core e CAT01..CATnn
+    e la sezione pull in em.mdp e md_rep*.mdp.  Dopo l'apertura il baricentro degli O6 resta
+    definito: il vincolo tiene solo i cationi fuori da una sfera di raggio R attorno ad esso.
 
 USO (Leonardo, login, dopo source hpc/env_leonardo.sh)
     python3 03_make_pilot_inputs.py --input /leonardo_work/IscrB_G4MES/cdemiche/AA_unfold/input \\
         --out /leonardo_work/IscrB_G4MES/cdemiche/AA_unfold/pilot_noK400
+    python3 03_make_pilot_inputs.py --input ... --out .../pilot_excl400 --exclude-r 0.8   # canale vietato
 """
 from __future__ import annotations
 
@@ -96,6 +107,9 @@ def main():
     ap.add_argument("--seed0", type=int, default=4001)
     ap.add_argument("--cation", choices=("K", "Li"), default="K",
                     help="K: toglie il K+ --k-resid dal canale; Li: tutti i K+ diventano Li+")
+    ap.add_argument("--exclude-r", type=float, default=0.0,
+                    help="raggio (nm) della sfera attorno al baricentro O6 vietata ai cationi (0 = niente)")
+    ap.add_argument("--exclude-k", type=float, default=5000.0, help="costante del muro (kJ/mol/nm^2)")
     args = ap.parse_args()
     inp, out = pathlib.Path(args.input), pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -152,14 +166,42 @@ def main():
         for i in range(0, len(idx), 15):
             lines.append(" ".join(f"{j + 1:6d}" for j in idx[i:i + 15]))
         return "\n".join(lines)
-    (out / "index.ndx").write_text(block("System", np.arange(n)) + "\n" +
-                                   block("DNA_K", np.where(dna | isk)[0]) + "\n")
-    print(f"[INFO] index.ndx: System {n} atomi, DNA_K {int((dna | isk).sum())} atomi")
+    ndx = block("System", np.arange(n)) + "\n" + block("DNA_K", np.where(dna | isk)[0]) + "\n"
+    pull = {}
+    if args.exclude_r > 0:
+        core = {4, 5, 6, 10, 11, 12, 16, 17, 18, 22, 23, 24}
+        o6 = np.array([i for i in range(n) if dna[i] and name[i] == "O6" and resid[i] in core])
+        cat = np.where(isk)[0]
+        if len(o6) != 12:
+            raise SystemExit(f"[ERROR] {len(o6)} O6 del core invece di 12")
+        c = new[o6].mean(0)
+        d = new[cat] - c
+        d -= box * np.round(d / box)
+        r = np.sqrt((d ** 2).sum(1))
+        if args.exclude_r >= box.min() / 2:
+            raise SystemExit("[ERROR] --exclude-r maggiore di meta' scatola")
+        ndx += block("O6core", o6) + "\n" + "".join(block(f"CAT{j + 1:02d}", [i]) + "\n" for j, i in enumerate(cat))
+        pull = {"pull": "yes", "pull-ncoords": str(len(cat)), "pull-ngroups": str(len(cat) + 1),
+                "pull-group1-name": "O6core", "pull-nstxout": "50000", "pull-nstfout": "0"}
+        for j in range(len(cat)):
+            g = j + 1
+            pull.update({f"pull-group{g + 1}-name": f"CAT{g:02d}",
+                         f"pull-coord{g}-type": "flat-bottom-high", f"pull-coord{g}-geometry": "distance",
+                         f"pull-coord{g}-groups": f"1 {g + 1}", f"pull-coord{g}-dim": "Y Y Y",
+                         f"pull-coord{g}-start": "no", f"pull-coord{g}-init": f"{args.exclude_r:g}",
+                         f"pull-coord{g}-rate": "0", f"pull-coord{g}-k": f"{args.exclude_k:g}"})
+        inside = np.sort(r)[:4]
+        print(f"[INFO] canale vietato: sfera di {args.exclude_r:g} nm attorno al baricentro dei 12 O6, "
+              f"k {args.exclude_k:g} kJ/mol/nm^2, {len(cat)} cationi; nella partenza i piu' vicini a "
+              + ", ".join(f"{x:.3f}" for x in inside) + f" nm ({int((r < args.exclude_r).sum())} dentro)")
+    (out / "index.ndx").write_text(ndx)
+    print(f"[INFO] index.ndx: System {n} atomi, DNA_K {int((dna | isk).sum())} atomi"
+          + (", O6core e CAT01..CAT%02d" % int(isk.sum()) if pull else ""))
 
     md = (inp / "MD.mdp").read_text()
     em = set_mdp(md, {"integrator": "steep", "nsteps": "5000", "emtol": "500", "emstep": "0.01",
                       "Tcoupl": "no", "pcoupl": "no", "gen_vel": "no", "constraints": "none",
-                      "nstxout": "0", "nstvout": "0", "nstxout-compressed": "0", "nstenergy": "100"})
+                      "nstxout": "0", "nstvout": "0", "nstxout-compressed": "0", "nstenergy": "100", **pull})
     (out / "em.mdp").write_text(em)
     nsteps = int(round(args.ns * 1000 / 0.002))
     for r in range(1, args.nrep + 1):
@@ -167,7 +209,8 @@ def main():
                            "gen_vel": "yes", "gen_temp": f"{args.temp:g}", "gen_seed": str(args.seed0 + r),
                            "ref_t": f"{args.temp:g}", "pcoupl": "C-rescale", "tau_p": "2",
                            "nstxout": "0", "nstvout": "0", "nstfout": "0", "nstlog": "50000",
-                           "nstenergy": "5000", "nstxout-compressed": "5000", "compressed-x-grps": "DNA_K"})
+                           "nstenergy": "5000", "nstxout-compressed": "5000", "compressed-x-grps": "DNA_K",
+                           **pull})
         (out / f"md_rep{r}.mdp").write_text(txt)
     if args.cation == "K":
         for f in (args.top, "kions.itp"):

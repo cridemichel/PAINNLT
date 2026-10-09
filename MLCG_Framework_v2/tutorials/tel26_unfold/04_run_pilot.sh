@@ -9,6 +9,7 @@
 #SBATCH -J aa_pilot
 #SBATCH -o /leonardo_work/IscrB_G4MES/cdemiche/PAINNLT/logs/slurm-aa_pilot-%j.out
 # Pilota AA: NREP copie del TEL26 a 400 K senza K+ nel canale, una per GPU sullo stesso nodo.
+# Con 03 --exclude-r il canale resta vietato ai cationi per tutta la corsa (pull flat-bottom-high).
 #
 # Alla prima esecuzione (nessun rep1.tpr): grompp + minimizzazione (em) + grompp delle copie.
 # Poi mdrun in parallelo, 8 core e 1 GPU per copia; ogni esecuzione successiva riparte dai
@@ -33,6 +34,12 @@ set -euo pipefail     # dopo i module load (Lmod non regge set -u)
 export GMX_GPU_DD_COMMS=true GMX_GPU_PME_PP_COMMS=true GMX_FORCE_UPDATE_DEFAULT_GPU=true
 cd $P
 echo "[INFO] $(date)  cartella $P  copie $NREP  maxh $MAXH"
+# canale vietato (03 --exclude-r): pull code attivo.  Update su GPU con il pull non e' garantito
+# in tutte le versioni: lo si lascia scegliere a mdrun (-update auto) invece di forzarlo.
+if grep -qiE '^[[:space:]]*pull[[:space:]]*=[[:space:]]*yes' md_rep1.mdp; then
+    unset GMX_FORCE_UPDATE_DEFAULT_GPU
+    echo "[INFO] pull attivo ($(grep -iE '^[[:space:]]*pull-ncoords' md_rep1.mdp | awk '{print $3}') coordinate): update scelto da mdrun"
+fi
 
 if [ ! -f rep1.tpr ]; then
     gmx grompp -f em.mdp -c start.gro -p $TOP -n index.ndx -o em.tpr
