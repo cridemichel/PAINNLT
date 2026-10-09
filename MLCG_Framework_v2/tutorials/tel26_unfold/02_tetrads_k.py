@@ -58,6 +58,9 @@ def main():
     ap.add_argument("--stride", type=int, default=1)
     ap.add_argument("--out", default="tetrads_k")
     ap.add_argument("--ion-resname", default="K", help="nome di residuo dei cationi (K, LI)")
+    ap.add_argument("--excl-r", type=float, default=0.4,
+                    help="soglia (nm) del canale vietato (03 --exclude-r): si riporta quanto spesso un "
+                         "catione scende sotto, rispetto agli O6 del core")
     args = ap.parse_args()
     warnings.filterwarnings("ignore")
     import MDAnalysis as mda
@@ -85,7 +88,8 @@ def main():
         n = len(mda.Universe(args.top, f).trajectory) if f.endswith(".xtc") else 1
         starts.append(off)
         off += n
-    T, Q, Rt, kin, ksite, rg, ee, part = [], [], [], [], [], [], [], []
+    T, Q, Rt, kin, ksite, rg, ee, part, ko6 = [], [], [], [], [], [], [], [], []
+    o6_all = np.array(idx["O6"]).ravel()
     t_shift = 0.0
     last_t = None
     for fi, ts in enumerate(u.trajectory[::args.stride]):
@@ -125,6 +129,8 @@ def main():
         site[inside & (z >= z_t[1]) & (z <= z_t[2])] = 2
         site[inside & (z > z_t[2])] = 3
         kin.append(inside.sum()); ksite.append(site)
+        dko = mic(X[K.indices][:, None, :] - X[o6_all][None, :, :], box)
+        ko6.append(np.sqrt((dko ** 2).sum(-1)).min())          # catione-O6 del core piu' vicini
         H = X[heavy.indices]
         rg.append(np.sqrt(((H - H.mean(0)) ** 2).sum(1).mean()))
         ee.append(np.linalg.norm(X[p5] - X[p3]))
@@ -134,10 +140,10 @@ def main():
     tt = T.copy()
     if (part == 0).any():
         tt[part == 0] = teq - teq.max()
-    Q = np.array(Q); Rt = np.array(Rt); kin = np.array(kin); ksite = np.array(ksite)
+    Q = np.array(Q); Rt = np.array(Rt); kin = np.array(kin); ksite = np.array(ksite); ko6 = np.array(ko6)
     rg = np.array(rg); ee = np.array(ee)
     np.savez_compressed(args.out + ".npz", t_ns=tt, part=part, Q=Q, r_tetrad=Rt, k_in=kin, k_site=ksite,
-                        rg=rg, ee=ee)
+                        rg=rg, ee=ee, k_o6_min=ko6)
 
     print(f"\n  {'':<16s}{'Q t1':>7s}{'Q t2':>7s}{'Q t3':>7s}{'r t1':>7s}{'r t2':>7s}{'r t3':>7s}{'K nel canale':>14s}{'Rg':>7s}")
     for lab, m in [("equilibratura", part == 0), ("produzione", part > 0)]:
@@ -158,11 +164,28 @@ def main():
         below = np.where(qs < 0.5)[0]
         print(f"  tetrade {k + 1}: Q < 0,5 (media 1 ns) per il {np.mean(qs < 0.5):.2f} del tempo"
               + (f", la prima volta a t = {tt[below[0]]:.2f} ns" if below.size else ""))
+    # stati come nel CG: tetrade intatta se Q (media 1 ns) >= 0,5; F = 3, I = 1-2, U = 0
+    nint = sum((smooth(Q[:, k], w) >= 0.5).astype(int) for k in range(3))
+    mp = part > 0 if (part > 0).any() else part >= 0
+    pF, pU = np.mean(nint[mp] == 3), np.mean(nint[mp] == 0)
+    pI = 1.0 - pF - pU
+    tp = tt[mp]
+    first = lambda cond: (f"{tp[np.where(cond)[0][0]]:.1f}" if cond.any() else "-")
+    t_le1, t_u = first(nint[mp] <= 1), first(nint[mp] == 0)
+    print(f"  stati (Q >= 0,5 = intatta): F {pF:.2f}  I {pI:.2f}  U {pU:.2f};  primo n_int <= 1 a {t_le1} ns, "
+          f"primo U a {t_u} ns")
+    kp = ko6[mp]
+    below_r = np.mean(kp < args.excl_r)
+    print(f"  catione-O6 del core, distanza minima: min {kp.min():.3f} nm, 1% {np.percentile(kp, 1):.3f}, "
+          f"mediana {np.median(kp):.3f};  sotto {args.excl_r:g} nm nel {below_r:.3f} dei frame")
+    print(f"[riassunto] {args.out}  t_max {tp.max():.1f} ns  Q {' '.join(f'{x:.2f}' for x in Q[mp].mean(0))}  "
+          f"canale {kin[mp].mean():.2f}  F {pF:.2f} I {pI:.2f} U {pU:.2f}  n<=1 {t_le1}  U {t_u}  "
+          f"dKO6min {kp.min():.3f}  <{args.excl_r:g} {below_r:.3f}")
 
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    fig, axs = plt.subplots(4, 1, figsize=(8.5, 8.5), sharex=True)
+    fig, axs = plt.subplots(5, 1, figsize=(8.5, 10.2), sharex=True)
     cols = ["#2a78d6", "#1baf7a", "#eb6834"]
     for k in range(3):
         axs[0].plot(tt, smooth(Q[:, k], w), color=cols[k], lw=1, label=f"tetrade {k + 1}")
@@ -174,8 +197,11 @@ def main():
         axs[2].fill_between(tt, s - 0.4 * occ, s + 0.4 * occ, color="#4a3aa7", lw=0, step="mid")
     axs[2].set_yticks(range(4)); axs[2].set_yticklabels(SITES); axs[2].invert_yaxis()
     axs[2].set_ylabel("K+ nel canale")
-    axs[3].plot(tt, rg, color="#52514e", lw=0.6); axs[3].set_ylabel("Rg DNA (nm)")
-    axs[3].set_xlabel("t (ns; equilibratura < 0)")
+    axs[3].plot(tt, ko6, color="#4a3aa7", lw=0.5)
+    axs[3].axhline(args.excl_r, color="#eb6834", lw=0.8, ls=":")
+    axs[3].set_ylabel("min d(K+, O6 core) (nm)"); axs[3].set_ylim(0, max(1.0, float(np.percentile(ko6, 99))))
+    axs[4].plot(tt, rg, color="#52514e", lw=0.6); axs[4].set_ylabel("Rg DNA (nm)")
+    axs[4].set_xlabel("t (ns; equilibratura < 0)")
     for a in axs:
         a.spines[["top", "right"]].set_visible(False); a.grid(alpha=0.3)
         a.axvline(0, color="grey", lw=0.8, ls="--")
