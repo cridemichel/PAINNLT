@@ -25,8 +25,10 @@ COSA FA (solo numpy; gli input sono le copie in AA_unfold/input)
     posizioni; nessuno spostamento dal canale.  Il Li+ non stabilizza il G-quadruplex: lo
     stato aperto a 400 K senza che un K+ della soluzione rientri nel canale (pilota K+, 8/10).
     Il gruppo dell'xtc si chiama ancora DNA_K (DNA + cationi) per 04 e 12.
-    Esito (9/10): anche il Li+ JC rientra nel sito fra le tetradi 1 e 2 in ~20 ns (occupazione
-    0,94-0,97): con ioni a carica fissa la desolvatazione dei cationi piccoli e' sottostimata.
+    Esito (9/10, ~21 ns per copia): il Li+ resid 28120, convertito NEL canale, non ne esce:
+    occupazione del sito fra le tetradi 1 e 2 0,64-0,97, tetradi 1 e 2 chiuse.  Non e' un
+    rientro dalla soluzione (come nel pilota K+), ma con ioni a carica fissa il Li+ JC
+    resta legato fra le tetradi come il K+.
 
     --exclude-r R (nm): canale vietato ai cationi.  Per ogni catione una coordinata di pull
     (distanza dal baricentro dei 12 O6 del core, tetradi 1-3) con potenziale flat-bottom-high:
