@@ -29,6 +29,7 @@ NREP=${NREP:-4}
 STRIDE=${STRIDE:-1}
 ION=${ION:-K}         # LI per il pilota con Li+ (03 --cation Li)
 EXCL_R=${EXCL_R:-0.4}  # soglia del canale vietato (03 --exclude-r)
+TOP=${TOP:-ibrido_noions_spce.top}
 R=/leonardo_work/IscrB_G4MES/cdemiche/PAINNLT/MLCG_Framework_v2
 U=$R/tutorials/tel26_unfold
 mkdir -p $P/ana
@@ -37,8 +38,18 @@ mkdir -p $P/ana
   module load profile/chem-phys fftw/3.3.10--gcc--12.2.0 openblas/0.3.24--gcc--12.2.0 gromacs/2023.3--gcc--12.2.0-cuda-12.1
   set -e
   cd $P
-  echo DNA_K | gmx convert-tpr -s rep1.tpr -n index.ndx -o ana/dnak.tpr
-  echo DNA_K | gmx trjconv -s rep1.tpr -f em.gro -n index.ndx -o ana/start_dnak.gro
+  # con il canale vietato (03 --exclude-r) la topologia ha [ intermolecular_interactions ]:
+  # convert-tpr fonde DNA e cationi in un'unica molecola legata dai restraint e trjconv -pbc mol
+  # si rifiuta (catione a > meta' scatola dal DNA).  Per l'analisi serve solo la topologia
+  # delle molecole: tpr da una copia della topologia senza quella sezione.
+  TPR_SRC=rep1.tpr
+  if grep -q "intermolecular_interactions" $TOP; then
+      sed '/^\[ *intermolecular_interactions *\]/,$d' $TOP > top_norestr.top
+      gmx grompp -f em.mdp -c em.gro -p top_norestr.top -n index.ndx -o ana/norestr.tpr -po ana/norestr_mdout.mdp -maxwarn 2
+      TPR_SRC=ana/norestr.tpr
+  fi
+  echo DNA_K | gmx convert-tpr -s $TPR_SRC -n index.ndx -o ana/dnak.tpr
+  echo DNA_K | gmx trjconv -s $TPR_SRC -f em.gro -n index.ndx -o ana/start_dnak.gro
   for r in $(seq 1 $NREP); do
       xtc=$(ls rep$r/rep$r*.xtc | head -1)
       echo "[pil_tet] rep$r: $xtc"
