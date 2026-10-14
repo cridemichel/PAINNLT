@@ -95,6 +95,9 @@ def main():
     ap.add_argument("--native-stride", type=int, default=5)
     ap.add_argument("--window", default="0.5:1", help="frazione della corsa su cui fare le medie (A:B)")
     ap.add_argument("--qcut", type=float, default=0.5)
+    ap.add_argument("--smooth-ns", type=float, default=0.0,
+                    help="media mobile di q_k su questa finestra (ns) prima della soglia: stati a vita lunga "
+                         "invece del q istantaneo (0 = per frame, come prima)")
     ap.add_argument("--beta", type=float, default=25.0)
     ap.add_argument("--lam", type=float, default=1.2)
     ap.add_argument("--bin-dt", type=float, default=10.0, help="ps fra frame di un '@bin:'")
@@ -118,6 +121,13 @@ def main():
             d = b3_pair_distances(S, L, nc)
             q = (1.0 / (1.0 + np.exp(args.beta * (d - args.lam * r_nat[None])))).mean(axis=2)  # (T*C, 3)
             q = q.reshape(S.shape[0], nc, 3)
+            if args.smooth_ns > 0 and S.shape[0] > 1:
+                dt_ps = float(np.median(np.diff(t)))
+                w = max(1, int(round(args.smooth_ns * 1000.0 / dt_ps)))
+                k = np.ones(w) / w
+                norm = np.convolve(np.ones(S.shape[0]), k, mode="same")
+                q = np.stack([np.stack([np.convolve(q[:, c, j], k, mode="same") / norm for j in range(3)], 1)
+                              for c in range(nc)], 1)
             n_int = (q > args.qcut).sum(axis=2)                                   # (T, C)
             rg = radius_of_gyration(S, L, nc).reshape(S.shape[0], nc)
             a, b = int(round(w0 * S.shape[0])), int(round(w1 * S.shape[0]))
@@ -144,7 +154,7 @@ def main():
               + " ".join(f"{x:5.2f}" for x in r["P_n_intact"]) + f"   {r['Rg_mean']:6.3f}  {fu}")
 
     if args.json:
-        json.dump({"native": args.native, "window": args.window, "qcut": args.qcut,
+        json.dump({"native": args.native, "window": args.window, "qcut": args.qcut, "smooth_ns": args.smooth_ns,
                    "r_nat_nm": r_nat.tolist(), "runs": res}, open(args.json, "w"), indent=1)
         print(f"  json: {args.json}")
     if args.plot:

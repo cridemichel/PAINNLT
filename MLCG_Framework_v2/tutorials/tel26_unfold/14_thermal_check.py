@@ -44,10 +44,10 @@ def target(T, mp):
     return np.stack([ex[:, 0], ex[:, 1] + ex[:, 2], ex[:, 3]], 1)
 
 
-def load_set(d):
+def load_set(d, melt_name="melt.json"):
     """-> {ramo: {T: (F, I, U), ...}}"""
     out = {}
-    for f in sorted(glob.glob(os.path.join(d, "*", "melt.json"))):
+    for f in sorted(glob.glob(os.path.join(d, "*", melt_name))):
         b = os.path.basename(os.path.dirname(f))
         runs = json.load(open(f))["runs"]
         out[b] = {float(k): np.array([v["P_n_intact"][3], v["P_n_intact"][1] + v["P_n_intact"][2],
@@ -76,6 +76,7 @@ def vant_hoff(T, pF, pU, lo=0.02):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--set", action="append", required=True, metavar="NOME=CARTELLA:MAPPA[:FIT_JSON]")
+    ap.add_argument("--melt-name", default="melt.json", help="file di 08 in <insieme>/<ramo>/ (es. melt_s1.json)")
     ap.add_argument("--plot", default=None)
     ap.add_argument("--json", default=None)
     args = ap.parse_args()
@@ -86,7 +87,7 @@ def main():
         parts = rest.split(":")
         d, mp = parts[0], parts[1]
         fj = parts[2] if len(parts) > 2 else None
-        br = load_set(d)
+        br = load_set(d, args.melt_name)
         if not br:
             print(f"[WARN] {name}: nessun melt.json in {d}"); continue
         Ts = sorted(set.intersection(*[set(v) for v in br.values()]))

@@ -23,7 +23,8 @@
 # Variabili: SETS ("nome:mappa:h_tet:T0_tet:h_oth:T0_oth ..."), TS (295..360 ogni 5 K), REPS (2),
 #            BRANCHES ("chiuso aperto"), START_OPEN ($A/sweep2/lt0.08_lo0.08/T450.state.npz),
 #            CG_STEPS (25000000 = 100 ns), LOG_INTERVAL (1250), OUTDIR ($A/thermo_val),
-#            FITDIR ($A/sweep2: fit_thermal.json / fit_thermal_f.json per il confronto), ANALYZE_ONLY=1.
+#            FITDIR ($A/sweep2: fit_thermal.json / fit_thermal_f.json per il confronto), ANALYZE_ONLY=1,
+#            SMOOTH_NS (0): stati da q_k mediato su una finestra (ns) invece che per frame.
 # Su piu' job (es. Booster, 32 core per nodo): un job per insieme e ramo, 28 corse ciascuno:
 #   for s in "f1:f1:..." "f:f:..."; do for b in chiuso aperto; do
 #     sbatch -p boost_usr_prod -A IscrB_G4MES --cpus-per-task=32 --mem=200G \
@@ -46,6 +47,8 @@ CG_STEPS=${CG_STEPS:-25000000}
 LOG_INTERVAL=${LOG_INTERVAL:-1250}
 OUTDIR=${OUTDIR:-$A/thermo_val}
 FITDIR=${FITDIR:-$A/sweep2}
+SMOOTH_NS=${SMOOTH_NS:-0}     # media mobile di q_k (ns) prima della soglia in 08; >0 -> melt_s<ns>.json, thermal_check_s<ns>.*
+MS=""; [[ "$SMOOTH_NS" != "0" ]] && MS="_s$SMOOTH_NS"
 MODEL=$T26/tel26_lp2_re1_it30.pt          # solo provenienza: PaiNN e' disattivato
 CONFIG=$T26/$(python3 -c 'import json,sys,os;print(os.path.basename(json.load(open(sys.argv[1]))["config_path"]))' "$MODEL.manifest.json") || exit 1
 BASE=$A/cg/cg_priors.lp2_1c.json
@@ -127,9 +130,9 @@ for s in $SETS; do
         done
         (( ${#specs[@]} )) || continue
         echo; echo "=== $name / $b ==="
-        python3 $U/08_tetrad_melt.py "${specs[@]}" --plot $name/$b/melt --json $name/$b/melt.json
+        python3 $U/08_tetrad_melt.py "${specs[@]}" --smooth-ns $SMOOTH_NS --plot $name/$b/melt$MS --json $name/$b/melt$MS.json
     done
     fj=$FITDIR/fit_thermal.json; [[ $map == f ]] && fj=$FITDIR/fit_thermal_f.json
     check_args+=(--set "$name=$OUTDIR/$name:$map${fj:+:$fj}")
 done
-python3 $U/14_thermal_check.py "${check_args[@]}" --plot $OUTDIR/thermal_check --json $OUTDIR/thermal_check.json
+python3 $U/14_thermal_check.py "${check_args[@]}" --melt-name melt$MS.json --plot $OUTDIR/thermal_check$MS --json $OUTDIR/thermal_check$MS.json
