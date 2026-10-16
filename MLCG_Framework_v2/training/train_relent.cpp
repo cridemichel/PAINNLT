@@ -298,7 +298,9 @@ static void usage() {
         "       [--report R.json] [--check-gradient]\n"
         "       piu' temperature (config con \"thermo_heads\": true):\n"
         "       --system AA.bin,CG.bin,T_K[,peso] (ripetibile, al posto di --aa/--cg)\n"
-        "       [--trainable all|thermo]\n";
+        "       [--trainable all|thermo]\n"
+        "       testa entropica proporzionale a quella entalpica (con --steps 0):\n"
+        "       --thermo-scale KAPPA   readout_dT = -KAPPA * readout, U(T) = U(T0) [1 - KAPPA (T - T0)/T0]\n";
 }
 
 static int run(int argc, char* argv[]) {
@@ -314,6 +316,8 @@ static int run(int argc, char* argv[]) {
     double ess_min = 0.5, holdout_frac = 0.2, energy_scale = -1.0;
     std::vector<std::string> system_specs;   // --system AA.bin,CG.bin,T_K[,peso]
     std::string trainable = "all";            // all | thermo (solo readout_dT)
+    double thermo_scale = 0.0;                // --thermo-scale: readout_dT = -kappa * readout
+    bool thermo_scale_set = false;
 
     for (int k = 1; k < argc; ++k) {
         const std::string a = argv[k];
@@ -348,6 +352,7 @@ static int run(int argc, char* argv[]) {
         else if (a == "--energy-scale") energy_scale = std::stod(next());
         else if (a == "--system") system_specs.push_back(next());
         else if (a == "--trainable") trainable = next();
+        else if (a == "--thermo-scale") { thermo_scale = std::stod(next()); thermo_scale_set = true; }
         else { usage(); std::cerr << "[ERROR] opzione sconosciuta: " << a << "\n"; return 2; }
     }
     if (config_path.empty() || (aa_path.empty() && system_specs.empty()) ||
@@ -431,6 +436,32 @@ static int run(int argc, char* argv[]) {
         model->energy_scale.fill_(scale);
         std::cout << "[INFO] inizializzazione a zero: U_ML == 0, energy_scale = "
                   << scale << " kJ/mol\n";
+    }
+    // --thermo-scale: la testa entropica copia quella entalpica con fattore -kappa.
+    // Siccome l'ultimo strato e' lineare e il gauge degli isolati si sottrae
+    // dopo, b_i = -kappa a_i esattamente: u_i(T) = eps a_i [1 - kappa (T - T0)/T0].
+    // A T0 il modello e' identico a quello di partenza; il fattore si annulla a
+    // T = T0 (1 + 1/kappa) e oltre cambia segno.
+    if (thermo_scale_set) {
+        if (!thermo || in_path.empty() || steps != 0 || check_gradient) {
+            std::cerr << "[ERROR] --thermo-scale vuole una config con \"thermo_heads\": true, --in e --steps 0\n";
+            return 2;
+        }
+        if (!std::isfinite(thermo_scale)) { std::cerr << "[ERROR] --thermo-scale non finito\n"; return 2; }
+        torch::NoGradGuard no_grad;
+        auto src = model->readout->parameters();
+        auto dst = model->readout_dT->parameters();
+        if (src.size() != dst.size()) { std::cerr << "[ERROR] readout e readout_dT diversi\n"; return 2; }
+        for (std::size_t i = 0; i < src.size(); ++i) {
+            if (src[i].sizes() != dst[i].sizes()) { std::cerr << "[ERROR] forme diverse in readout_dT\n"; return 2; }
+            dst[i].copy_(src[i]);
+        }
+        auto last = model->readout_dT->ptr<torch::nn::LinearImpl>(2);
+        last->weight.mul_(-thermo_scale);
+        last->bias.mul_(-thermo_scale);
+        std::cout << "[INFO] --thermo-scale " << thermo_scale << ": U(T) = U(T0) [1 - " << thermo_scale
+                  << " (T - T0)/T0], fattore nullo a T = "
+                  << (thermo_scale != 0.0 ? thermo_T0 * (1.0 + 1.0 / thermo_scale) : 0.0) << " K\n";
     }
     const torch::Dtype dtype = check_gradient ? torch::kFloat64 : torch::kFloat32;
     model->to(dtype);
@@ -516,6 +547,7 @@ static int run(int argc, char* argv[]) {
         report["systems"].push_back({{"aa", s.aa_path}, {"cg", s.cg_path}, {"T_K", s.T},
                                      {"beta_mol_kJ", s.beta}, {"weight", s.weight}});
     }
+    if (thermo_scale_set) report["thermo_scale_kappa"] = thermo_scale;
     if (steps == 0 && !check_gradient) {
         report["steps_done"] = 0;
         report["stop_reason"] = "steps=0";
