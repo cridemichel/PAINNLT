@@ -32,7 +32,9 @@ CONFIG=tel26_training_config.d64th.json
 RELENT=$R/training/build/train_relent
 cd $T26
 for f in $BASE.pt $CONFIG tel26_lp2th_dataset.bin $RELENT; do [[ -e $f ]] || { echo "[ERROR] manca $f" >&2; exit 1; }; done
-$RELENT 2>&1 | grep -q -- "--thermo-scale" || { echo "[ERROR] train_relent non ha --thermo-scale: ricompilalo" >&2; exit 1; }
+# senza argomenti train_relent stampa l'uso ed esce con 2: con pipefail niente pipe, si cattura il testo
+usage_txt=$($RELENT 2>&1 || true)
+grep -q -- "--thermo-scale" <<< "$usage_txt" || { echo "[ERROR] train_relent non ha --thermo-scale: ricompilalo" >&2; exit 1; }
 for k in $KAPPAS; do
     tag=${BASE}_k$k
     for T in $TS; do
@@ -41,7 +43,9 @@ for k in $KAPPAS; do
     done
     if [[ ! -s $tag.pt ]]; then
         $RELENT --config $CONFIG --aa tel26_lp2th_dataset.bin --in $BASE.pt --out $tag.pt \
-            --steps 0 --thermo-scale $k --device cpu --report $tag.make.json | grep -E "thermo-scale|modello" 
+            --steps 0 --thermo-scale $k --device cpu --report $tag.make.json > $tag.make.log 2>&1 \
+            || { echo "[ERROR] train_relent per KAPPA $k: vedi $T26/$tag.make.log" >&2; tail -5 $tag.make.log; exit 1; }
+        grep -E "thermo-scale|modello" $tag.make.log
         python3 $R/training/create_model_manifest.py --model $tag.pt --config $CONFIG --dataset tel26_lp2th_dataset.bin
     fi
     ls -l $tag.pt $tag.pt.manifest.json
