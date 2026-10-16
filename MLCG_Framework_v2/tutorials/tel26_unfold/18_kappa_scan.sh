@@ -10,12 +10,14 @@
 # scansione devono restare sotto.
 #
 # COSA FA (Leonardo)
-#   1. sul login, per ogni KAPPA: modello termico tel26_lp2th_th0_it60_k<KAPPA>.pt (train_relent
+#   1. per ogni KAPPA (su un nodo con GPU: il modello di partenza ha tensori CUDA e sul login
+#      torch::load fallisce): modello termico tel26_lp2th_th0_it60_k<KAPPA>.pt (train_relent
 #      --steps 0 --thermo-scale, config d64th) e il suo manifest;
 #   2. se SUBMIT=1, un job 17_melt_painn.sh per KAPPA su 1 GPU + 8 core (6 corse: TS x chiuso/aperto),
 #      con A nell'area dati indicata.
 #
-# USO:  bash $U/18_kappa_scan.sh                      (solo modelli: controllo)
+# USO:  sbatch -p boost_usr_prod -A IscrB_G4MES --gres=gpu:1 --cpus-per-task=8 -t 00:20:00 \
+#           --wrap "source $R/hpc/env_leonardo.sh && bash $U/18_kappa_scan.sh"   (solo modelli)
 #       SUBMIT=1 bash $U/18_kappa_scan.sh             (modelli + job)
 # Variabili: KAPPAS ("2 4 6"), BASE (tel26_lp2th_th0_it60), TS ("315 330 345"), CG_STEPS (6250000),
 #            A (/leonardo_work/IscrC_G4UNFOLD/cdemiche/AA_unfold), SUBMIT
@@ -32,9 +34,9 @@ CONFIG=tel26_training_config.d64th.json
 RELENT=$R/training/build/train_relent
 cd $T26
 for f in $BASE.pt $CONFIG tel26_lp2th_dataset.bin $RELENT; do [[ -e $f ]] || { echo "[ERROR] manca $f" >&2; exit 1; }; done
-# senza argomenti train_relent stampa l'uso ed esce con 2: con pipefail niente pipe, si cattura il testo
-usage_txt=$($RELENT 2>&1 || true)
-grep -q -- "--thermo-scale" <<< "$usage_txt" || { echo "[ERROR] train_relent non ha --thermo-scale: ricompilalo" >&2; exit 1; }
+# la stringa dell'opzione e' nel binario: niente esecuzione (sul login, senza GPU, train_relent
+# puo' bloccarsi nell'inizializzazione di CUDA)
+grep -aq -- "--thermo-scale" "$RELENT" || { echo "[ERROR] train_relent non ha --thermo-scale: ricompilalo" >&2; exit 1; }
 for k in $KAPPAS; do
     tag=${BASE}_k$k
     for T in $TS; do
