@@ -33,6 +33,7 @@
 # USO (Leonardo, dopo il pull e la ricompilazione di train_relent):
 #     sbatch $U/19_relent_pop.sh
 #     sbatch --dependency=afterany:<jobid> $U/19_relent_pop.sh      # continuazione
+# POP_TS si puo' cambiare a catena avviata: le T nuove partono da START_F / START_U.
 # Variabili: TAG (pop1), START_MODEL ($T26/tel26_lp2th_th0_it60_k6.pt), NITER (15), POP_TS ("322 328 334"),
 #            POP_NS (3), POP_SKIP_PS (500), POP_STRIDE (1), POP_LAMBDA (1), POP_HUBER (2), POP_DELTA (0.05),
 #            START_F, START_U (stati k6 a 330 K chiuso e 345 K aperto), START_RE (stato a 300 K della catena th0),
@@ -140,11 +141,13 @@ simulate() {
             off=0; [[ $b == U ]] && off=50000
             seed=$(( T * 7 + 13 + 100 * k + off ))
             extra=()
-            if (( k == 0 )); then
+            # stato finale dell'iterazione precedente; per una T aggiunta a catena avviata
+            # (o alla prima iterazione) si parte da START_F / START_U con velocita' nuove
+            if (( k > 0 )) && [[ -s $P/${b}_T$T.state.npz ]]; then
+                ck=$P/${b}_T$T.state.npz
+            else
                 if [[ $b == F ]]; then ck=$START_F; else ck=$START_U; fi
                 extra=(--init_kT $kt --velocity_seed $(( seed + 7919 )))
-            else
-                ck=$P/${b}_T$T.state.npz
             fi
             mkdir -p $D/wd_${b}_T$T
             ( cd $D/wd_${b}_T$T && CUDA_VISIBLE_DEVICES=$(( i % NGPU )) exec taskset -c ${CPUS[$i]} \
