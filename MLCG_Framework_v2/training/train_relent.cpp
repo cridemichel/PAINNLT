@@ -41,6 +41,28 @@
 // i soli prior.  E' il punto di partenza giusto quando i prior sono gia' buoni
 // sulla struttura: ogni passo puo' solo abbassare S_rel.
 //
+// VINCOLO SULLE POPOLAZIONI (--pop, 19/10/2026).  L'entropia relativa a 300 K
+// vede solo lo stato nativo e non vincola Delta G fra F e U: il residuo
+// allenato cosi' tiene il TEL26 piegato fino a 380 K.  Con --pop si aggiunge
+// all'obiettivo, per ogni temperatura T_k con campioni CG di theta_0,
+//
+//   P_k(theta) = lambda_k h( L_k(theta) - L_k* ),   L_k = ln P_U / P_N,
+//   L_k(theta) = ln sum_i w_i p_i - ln sum_i w_i (1 - p_i),
+//   w_i ~ exp(-beta_k [U_theta(x_i; T_k) - U_theta0(x_i; T_k)]),
+//
+// con p_i in [0, 1] la probabilita' che il frame i sia nello stato U (file di
+// etichette: 0/1, oppure una sigmoide di q per avere gradiente anche quando
+// lo stato U non e' stato visitato), L_k* dal dato sperimentale e h la
+// quadratica raccordata a lineare oltre --pop-huber (passi limitati lontano
+// dal bersaglio).  Gradiente:
+//
+//   dL_k/dtheta = -beta_k ( <dU/dtheta>_wU - <dU/dtheta>_wN ),
+//   wU_i ~ w_i p_i,  wN_i ~ w_i (1 - p_i).
+//
+// Ogni stato ha la sua soglia di ESS (relativa a quella di theta_0, che con
+// etichette morbide e' gia' < N).  Il modello migliore minimizza
+// Delta S_holdout + sum_k [P_k(theta) - P_k(theta_0)].
+//
 // Uso:
 //   train_relent --config C.json --aa AA.bin --out M1.pt (--in M0.pt | --zero-init)
 //                [--cg CG.bin] [--steps 100] [--lr 1e-3] ...
@@ -287,6 +309,31 @@ static void zero_readout_output(PaiNNModel& model) {
 
 static constexpr double R_KJ_MOL_K = 0.008314462618;  // kJ/(mol K)
 
+// Penalita' sulle popolazioni: lambda d^2 fino a |d| = c, poi lineare (Huber).
+static double pop_pen(double d, double lambda, double c) {
+    const double a = std::abs(d);
+    return (c > 0.0 && a > c) ? lambda * (2.0 * c * a - c * c) : lambda * d * d;
+}
+static double pop_dpen(double d, double lambda, double c) {
+    return 2.0 * lambda * (c > 0.0 ? std::clamp(d, -c, c) : d);
+}
+
+// Probabilita' per frame di essere nello stato U (una per riga, '#' = commento).
+static std::vector<double> read_labels(const std::string& path) {
+    std::ifstream f(path);
+    if (!f.is_open()) throw std::runtime_error("impossibile aprire le etichette " + path);
+    std::vector<double> out;
+    std::string line;
+    while (std::getline(f, line)) {
+        const auto first = line.find_first_not_of(" \t\r");
+        if (first == std::string::npos || line[first] == '#') continue;
+        const double v = std::stod(line.substr(first));
+        if (!(v >= 0.0 && v <= 1.0)) throw std::runtime_error("etichetta fuori da [0, 1] in " + path);
+        out.push_back(v);
+    }
+    return out;
+}
+
 static void usage() {
     std::cerr <<
         "uso: train_relent --config C.json --aa AA.bin --out M.pt (--in M0.pt | --zero-init)\n"
@@ -300,7 +347,10 @@ static void usage() {
         "       --system AA.bin,CG.bin,T_K[,peso] (ripetibile, al posto di --aa/--cg)\n"
         "       [--trainable all|thermo]\n"
         "       testa entropica proporzionale a quella entalpica (con --steps 0):\n"
-        "       --thermo-scale KAPPA   readout_dT = -KAPPA * readout, U(T) = U(T0) [1 - KAPPA (T - T0)/T0]\n";
+        "       --thermo-scale KAPPA   readout_dT = -KAPPA * readout, U(T) = U(T0) [1 - KAPPA (T - T0)/T0]\n"
+        "       vincolo sulle popolazioni (ripetibile, una temperatura per volta):\n"
+        "       --pop CG.bin,ETICHETTE.txt,T_K,L_bersaglio[,lambda]   L = ln(P_U/P_N), etichette p_U per frame\n"
+        "       [--batch-pop 8] [--pop-huber 2]\n";
 }
 
 static int run(int argc, char* argv[]) {
@@ -318,6 +368,9 @@ static int run(int argc, char* argv[]) {
     std::string trainable = "all";            // all | thermo (solo readout_dT)
     double thermo_scale = 0.0;                // --thermo-scale: readout_dT = -kappa * readout
     bool thermo_scale_set = false;
+    std::vector<std::string> pop_specs;       // --pop CG.bin,labels,T_K,target[,lambda]
+    int batch_pop = 8;
+    double pop_huber = 2.0;
 
     for (int k = 1; k < argc; ++k) {
         const std::string a = argv[k];
@@ -353,6 +406,9 @@ static int run(int argc, char* argv[]) {
         else if (a == "--system") system_specs.push_back(next());
         else if (a == "--trainable") trainable = next();
         else if (a == "--thermo-scale") { thermo_scale = std::stod(next()); thermo_scale_set = true; }
+        else if (a == "--pop") pop_specs.push_back(next());
+        else if (a == "--batch-pop") batch_pop = std::stoi(next());
+        else if (a == "--pop-huber") pop_huber = std::stod(next());
         else { usage(); std::cerr << "[ERROR] opzione sconosciuta: " << a << "\n"; return 2; }
     }
     if (config_path.empty() || (aa_path.empty() && system_specs.empty()) ||
@@ -374,7 +430,7 @@ static int run(int argc, char* argv[]) {
     }
     if (!(kT > 0.0) || !(ess_min > 0.0 && ess_min < 1.0) ||
         !(holdout_frac >= 0.0 && holdout_frac < 1.0) || batch_aa <= 0 || batch_cg <= 0 ||
-        eval_batch <= 0 || eval_every <= 0 || steps < 0) {
+        eval_batch <= 0 || eval_every <= 0 || steps < 0 || batch_pop <= 0 || pop_huber < 0.0) {
         std::cerr << "[ERROR] parametri fuori intervallo\n";
         return 2;
     }
@@ -582,6 +638,101 @@ static int run(int argc, char* argv[]) {
         set_T(s);
         return energies_no_grad(model, set, idx, cutoff, chunk);
     };
+    auto energy_g_at = [&](double T, const DeviceSet& set, const torch::Tensor& idx) {
+        if (model->has_thermo_heads()) model->set_temperature(T);
+        return batch_energy(model, set, idx, cutoff);
+    };
+    auto energy_ng_at = [&](double T, const DeviceSet& set, const torch::Tensor& idx, int64_t chunk) {
+        if (model->has_thermo_heads()) model->set_temperature(T);
+        return energies_no_grad(model, set, idx, cutoff, chunk);
+    };
+
+    // =================================================================
+    // Sistemi di popolazione (--pop): campioni CG di theta_0 a T_k con la
+    // probabilita' p_i di stato U per frame e il bersaglio L* = ln(P_U/P_N).
+    // L'energia di un frame e' quella dell'intero sistema (somma sui gruppi).
+    // =================================================================
+    struct PopSystem {
+        std::string cg_path, labels_path;
+        double T = 0.0, beta = 0.0, target = 0.0, lambda = 1.0;
+        DeviceSet cg;
+        torch::Tensor idx, log_pU, log_pN, u0;   // [F]; log e u0 double su CPU
+        double ess0_U = 1.0, ess0_N = 1.0, L0 = 0.0, pen0 = 0.0;
+    };
+    struct PopEval { double L = 0.0, pen = 0.0, essU = 1.0, essN = 1.0; torch::Tensor wU, wN; };
+    std::vector<PopSystem> pops;
+    for (const auto& spec : pop_specs) {
+        std::vector<std::string> f;
+        std::size_t start = 0;
+        while (true) {
+            auto pos = spec.find(',', start);
+            f.push_back(spec.substr(start, pos == std::string::npos ? std::string::npos : pos - start));
+            if (pos == std::string::npos) break;
+            start = pos + 1;
+        }
+        if (f.size() < 4 || f.size() > 5) {
+            throw std::runtime_error("--pop vuole CG.bin,ETICHETTE,T_K,L_bersaglio[,lambda]: " + spec);
+        }
+        PopSystem p;
+        p.cg_path = f[0]; p.labels_path = f[1];
+        p.T = std::stod(f[2]); p.target = std::stod(f[3]);
+        p.lambda = f.size() == 5 ? std::stod(f[4]) : 1.0;
+        if (!(p.T > 0.0) || !(p.lambda > 0.0) || !std::isfinite(p.target)) {
+            throw std::runtime_error("T, lambda e bersaglio di --pop non validi: " + spec);
+        }
+        p.beta = 1.0 / (R_KJ_MOL_K * p.T);
+        PositionSet raw = read_positions(p.cg_path, num_species);
+        const auto lab = read_labels(p.labels_path);
+        if (static_cast<int64_t>(lab.size()) != raw.num_frames) {
+            throw std::runtime_error(p.labels_path + ": " + std::to_string(lab.size()) +
+                                     " etichette per " + std::to_string(raw.num_frames) + " frame");
+        }
+        p.cg = to_device(raw, device, dtype, residues_per_copy);
+        auto pu = torch::tensor(lab, torch::kFloat64);
+        const double sU = pu.sum().item<double>(), sN = (1.0 - pu).sum().item<double>();
+        if (!(sU > 0.0) || !(sN > 0.0)) {
+            throw std::runtime_error(p.labels_path + ": serve peso positivo in entrambi gli stati "
+                                     "(usare etichette morbide se U o N non sono mai visitati)");
+        }
+        p.log_pU = torch::log(pu.clamp_min(1e-300));
+        p.log_pN = torch::log((1.0 - pu).clamp_min(1e-300));
+        p.ess0_U = sU * sU / (pu * pu).sum().item<double>();
+        p.ess0_N = sN * sN / ((1.0 - pu) * (1.0 - pu)).sum().item<double>();
+        p.idx = torch::arange(p.cg.frames, torch::kInt64);
+        pops.push_back(std::move(p));
+    }
+    auto pop_eval = [&](const PopSystem& p, const torch::Tensor& u) {
+        PopEval e;
+        auto lw = -p.beta * (u - p.u0);
+        auto lU = lw + p.log_pU, lN = lw + p.log_pN;
+        e.L = (torch::logsumexp(lU, 0) - torch::logsumexp(lN, 0)).item<double>();
+        e.wU = torch::softmax(lU, 0);
+        e.wN = torch::softmax(lN, 0);
+        e.essU = (1.0 / (e.wU * e.wU).sum()).item<double>() / p.ess0_U;
+        e.essN = (1.0 / (e.wN * e.wN).sum()).item<double>() / p.ess0_N;
+        e.pen = pop_pen(e.L - p.target, p.lambda, pop_huber);
+        return e;
+    };
+    auto pop_energies = [&](const PopSystem& p) {
+        return energy_ng_at(p.T, p.cg, p.idx.to(device), eval_batch).sum(1);
+    };
+    report["pop"] = json::array();
+    for (auto& p : pops) {
+        if (!check_gradient) {
+            p.u0 = pop_energies(p);
+            const PopEval e0 = pop_eval(p, p.u0);
+            p.L0 = e0.L;
+            p.pen0 = e0.pen;
+            std::cout << "[INFO] popolazioni T = " << p.T << " K: " << p.cg.frames << " frame, ESS di theta_0 U "
+                      << p.ess0_U << " / N " << p.ess0_N << ", L = ln(P_U/P_N) " << p.L0
+                      << " (P_U " << 1.0 / (1.0 + std::exp(-p.L0)) << "), bersaglio " << p.target
+                      << " (P_U " << 1.0 / (1.0 + std::exp(-p.target)) << "), lambda " << p.lambda << "\n";
+        }
+        report["pop"].push_back({{"cg", p.cg_path}, {"labels", p.labels_path}, {"T_K", p.T},
+                                 {"target_L", p.target}, {"lambda", p.lambda}, {"frames", p.cg.frames},
+                                 {"ess0_U", p.ess0_U}, {"ess0_N", p.ess0_N}, {"L0", p.L0}, {"pen0", p.pen0}});
+    }
+    report["pop_huber"] = pop_huber;
 
     // =================================================================
     // Verifica del gradiente: il surrogato sum_k w_k beta_k(<U_k>_AA -
@@ -627,6 +778,21 @@ static int run(int argc, char* argv[]) {
         for (std::size_t k = 0; k < systems.size(); ++k) {
             u0_k.push_back(energy_ng(systems[k], systems[k].cg, ic_k[k], ic_k[k].size(0)));
         }
+        // popolazioni: i 6 frame con p_U piu' alto e i 6 con p_U piu' basso
+        std::vector<torch::Tensor> ip_k, u0p_k, lpU_k, lpN_k;
+        for (const auto& p : pops) {
+            auto order = std::get<1>(p.log_pU.sort(0, true));
+            const int64_t m = std::min<int64_t>(6, p.cg.frames / 2);
+            auto idx = torch::cat({order.slice(0, 0, m), order.slice(0, order.size(0) - m)});
+            ip_k.push_back(idx);
+            lpU_k.push_back(p.log_pU.index_select(0, idx));
+            lpN_k.push_back(p.log_pN.index_select(0, idx));
+            u0p_k.push_back(energy_ng_at(p.T, p.cg, idx, idx.size(0)).sum(1));
+        }
+        auto pop_L = [&](std::size_t k, const torch::Tensor& u) {
+            auto lw = -pops[k].beta * (u - u0p_k[k]);
+            return (torch::logsumexp(lw + lpU_k[k], 0) - torch::logsumexp(lw + lpN_k[k], 0)).item<double>();
+        };
         perturb(0.15);
         auto objective = [&]() {
             double total = 0.0;
@@ -636,6 +802,11 @@ static int run(int argc, char* argv[]) {
                 auto uc = energy_ng(s, s.cg, ic_k[k], ic_k[k].size(0));
                 total += s.weight * (s.beta * ua.sum(1).mean().item<double>() +
                                      log_mean_exp(-s.beta * (uc - u0_k[k])));
+            }
+            for (std::size_t k = 0; k < pops.size(); ++k) {
+                const auto& p = pops[k];
+                auto u = energy_ng_at(p.T, p.cg, ip_k[k], ip_k[k].size(0)).sum(1);
+                total += pop_pen(pop_L(k, u) - p.target, p.lambda, pop_huber);
             }
             return total;
         };
@@ -650,6 +821,19 @@ static int run(int argc, char* argv[]) {
             auto uc_g = energy_g(s, s.cg, ic_k[k]);
             auto surrogate = s.weight * s.beta * (ua_g.sum(1).mean() - (w * uc_g).sum());
             surrogate.backward();
+        }
+        for (std::size_t k = 0; k < pops.size(); ++k) {
+            const auto& p = pops[k];
+            auto u_now = energy_ng_at(p.T, p.cg, ip_k[k], ip_k[k].size(0)).sum(1);
+            auto lw = -p.beta * (u_now - u0p_k[k]);
+            auto wU = torch::softmax(lw + lpU_k[k], 0).to(dtype);
+            auto wN = torch::softmax(lw + lpN_k[k], 0).to(dtype);
+            const double g = pop_dpen(pop_L(k, u_now) - p.target, p.lambda, pop_huber);
+            auto up = energy_g_at(p.T, p.cg, ip_k[k]).sum(1);
+            auto surrogate = -g * p.beta * ((wU * up).sum() - (wN * up).sum());
+            surrogate.backward();
+            std::cout << "[CHECK] popolazioni T = " << p.T << " K: L = " << pop_L(k, u_now)
+                      << ", bersaglio " << p.target << ", dP/dL = " << g << "\n";
         }
         auto params = model->parameters();
         auto mark = [&](torch::nn::Sequential seq) {
@@ -842,6 +1026,11 @@ static int run(int argc, char* argv[]) {
             w_cg.push_back(torch::softmax(-systems[k].beta * (u_cg[k] - systems[k].u0_cg), 0));
             ess = std::min(ess, min_ess_fraction(w_cg.back()));
         }
+        std::vector<PopEval> pe;
+        for (const auto& p : pops) {
+            pe.push_back(pop_eval(p, pop_energies(p)));
+            ess = std::min({ess, pe.back().essU, pe.back().essN});
+        }
         last_ess = ess;
         if (ess < ess_min) {
             restore_parameters(model, prev_params);
@@ -864,7 +1053,14 @@ static int run(int argc, char* argv[]) {
             last_logged = updates;
             json per_system = json::array();
             const Eval e = evaluate(u_cg, &per_system);
-            const double score = has_hold ? e.ds_hold : e.ds_train;
+            double pop_delta = 0.0;
+            json pop_log = json::array();
+            for (std::size_t k = 0; k < pops.size(); ++k) {
+                pop_delta += pe[k].pen - pops[k].pen0;
+                pop_log.push_back({{"T_K", pops[k].T}, {"L", pe[k].L}, {"pen", pe[k].pen},
+                                   {"essU", pe[k].essU}, {"essN", pe[k].essN}});
+            }
+            const double score = (has_hold ? e.ds_hold : e.ds_train) + pop_delta;
             std::cout << "[RELENT] " << std::setw(5) << updates << std::fixed
                       << std::setprecision(4) << std::setw(10) << e.ess
                       << std::setw(14) << e.ds_train << std::setw(13) << e.ds_hold
@@ -877,9 +1073,16 @@ static int run(int argc, char* argv[]) {
                               << ", dS_hold " << ps["dS_hold"].get<double>() << "\n";
                 }
             }
+            for (std::size_t k = 0; k < pops.size(); ++k) {
+                std::cout << "[POP]   T = " << pops[k].T << " K: L " << std::setprecision(4) << pe[k].L
+                          << " (P_U " << 1.0 / (1.0 + std::exp(-pe[k].L)) << ", bersaglio "
+                          << 1.0 / (1.0 + std::exp(-pops[k].target)) << "), penalita' " << pe[k].pen
+                          << ", ESS U/N " << pe[k].essU << " / " << pe[k].essN << std::defaultfloat << "\n";
+            }
+            if (!pops.empty()) std::cout << "[POP]   punteggio dS + dP = " << score << "\n";
             history.push_back({{"step", updates}, {"ess", e.ess}, {"dS_train", e.ds_train},
                                {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"lr", current_lr},
-                               {"systems", per_system}});
+                               {"systems", per_system}, {"pop", pop_log}, {"score", score}});
             if (score < best_score) {
                 best_score = score;
                 best_step = updates;
@@ -907,6 +1110,17 @@ static int run(int argc, char* argv[]) {
             auto loss = s.weight * s.beta * (energy_g(s, s.aa, ia).sum(1).mean() - loss_cg);
             loss.backward();
         }
+        for (std::size_t k = 0; k < pops.size(); ++k) {
+            const auto& p = pops[k];
+            const double g = pop_dpen(pe[k].L - p.target, p.lambda, pop_huber);
+            if (g == 0.0) continue;
+            auto iU = torch::multinomial(pe[k].wU, batch_pop, true).to(device);
+            auto iN = torch::multinomial(pe[k].wN, batch_pop, true).to(device);
+            auto uU = energy_g_at(p.T, p.cg, iU).sum(1).mean();
+            auto uN = energy_g_at(p.T, p.cg, iN).sum(1).mean();
+            auto loss = -g * p.beta * (uU - uN);
+            loss.backward();
+        }
         if (grad_clip > 0.0) torch::nn::utils::clip_grad_norm_(train_params, grad_clip);
         optimizer.step();
         last_step_lr = current_lr;
@@ -918,8 +1132,15 @@ static int run(int argc, char* argv[]) {
         json per_system = json::array();
         const Eval e = evaluate(u_cg, &per_system);
         last_ess = e.ess;
-        if (e.ess >= ess_min) {
-            const double score = has_hold ? e.ds_hold : e.ds_train;
+        double pop_delta = 0.0, pop_ess = 1.0;
+        for (const auto& p : pops) {
+            const PopEval q = pop_eval(p, pop_energies(p));
+            pop_delta += q.pen - p.pen0;
+            pop_ess = std::min({pop_ess, q.essU, q.essN});
+        }
+        last_ess = std::min(last_ess, pop_ess);
+        if (last_ess >= ess_min) {
+            const double score = (has_hold ? e.ds_hold : e.ds_train) + pop_delta;
             history.push_back({{"step", steps_done}, {"ess", e.ess}, {"dS_train", e.ds_train},
                                {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"final", true},
                                {"systems", per_system}});
@@ -935,11 +1156,23 @@ static int run(int argc, char* argv[]) {
         }
     }
     restore_parameters(model, best_params);
-    std::cout << "[INFO] miglior passo " << best_step << " (dS "
+    std::cout << "[INFO] miglior passo " << best_step << " (" << (pops.empty() ? "dS " : "dS + dP, dS ")
               << (has_hold ? "holdout" : "train") << " = " << best_score
               << "), arresto: " << stop_reason << "\n";
     if (best_step == 0) {
         std::cout << "[WARNING] nessun passo abbassa S_rel: il modello resta theta_0\n";
+    }
+    if (!pops.empty()) {
+        json pf = json::array();
+        for (const auto& p : pops) {
+            const PopEval q = pop_eval(p, pop_energies(p));
+            std::cout << "[POP] modello scelto, T = " << p.T << " K: L " << p.L0 << " -> " << q.L
+                      << " (P_U " << 1.0 / (1.0 + std::exp(-p.L0)) << " -> " << 1.0 / (1.0 + std::exp(-q.L))
+                      << ", bersaglio " << 1.0 / (1.0 + std::exp(-p.target)) << ")\n";
+            pf.push_back({{"T_K", p.T}, {"L0", p.L0}, {"L", q.L}, {"target_L", p.target},
+                          {"pen", q.pen}, {"essU", q.essU}, {"essN", q.essN}});
+        }
+        report["pop_final"] = pf;
     }
     if (model->has_thermo_heads()) model->set_temperature(model->thermo_T0);
     save_model();
