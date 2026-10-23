@@ -77,6 +77,8 @@ I documenti del Project restano anche su claude.ai (Project "PaiNN-LT"); qui son
 
 ## Stato e prossimi passi (al 23/10/2026)
 
+**Aggiornamento 23/10 sera**: commit `--order tract` (b1fc0e8) e checkpoint (02b695f) fatti e pullati su Leonardo; prova delle etichette per tratto riuscita (k6 330 K: P_U 0, c 0,73–0,81; 345 K: P_U 0,97, c 0,04–0,06). **pop3 lanciata: job 61944829 + 61944832** (in dipendenza). Il passo successivo è quindi il 4 (controllo dei log, poi validazione).
+
 **Fatto ma non ancora committato**: `--order tract` in `19_pop_labels.py` e `POP_ORDER`/`POP_TRACT_CUT` in `19_relent_pop.sh` (md5 `fad38faa…`, `9ed93fec…`; messaggio pronto `.git/MLCG_COMMIT_MSG_tract`). pop2 (job 61929739/61929743) cancellato.
 
 **Prossimi passi, in ordine:**

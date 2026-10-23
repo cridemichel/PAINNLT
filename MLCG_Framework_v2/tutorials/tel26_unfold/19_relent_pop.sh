@@ -56,6 +56,12 @@ POP_F_TS=${POP_F_TS:-}
 POP_F_MAP=${POP_F_MAP:-f1}
 POP_ORDER=${POP_ORDER:-tetrad}     # tract: U = bacino senza tratti G appaiati (c_a < POP_TRACT_CUT), 23/10
 POP_TRACT_CUT=${POP_TRACT_CUT:-0.2}
+# POP_MIN_FRAMES (23/10): una T entra nel vincolo solo se nei campioni dell'iterazione ci sono almeno
+# POP_MIN_FRAMES frame nello stato e altrettanti fuori (etichette nette).  Senza frame di uno dei due
+# stati la ripesatura non puo' spostare il loro peso relativo, e il gradiente delle code delle
+# etichette morbide sposta il bacino campionato (pop1, pop3 it01-04: allentamento invece di fusione).
+# Se nessuna T qualifica, l'iterazione non allena (modello copiato) e la MD prosegue.  0 = tutte le T.
+POP_MIN_FRAMES=${POP_MIN_FRAMES:-0}
 MD_TS=$(echo $POP_TS $POP_F_TS | tr ' ' '\n' | sort -n -u | tr '\n' ' ')
 POP_NS=${POP_NS:-3}
 POP_SKIP_PS=${POP_SKIP_PS:-500}
@@ -104,8 +110,17 @@ NGPU=$(nvidia-smi -L 2>/dev/null | wc -l); (( NGPU > 0 )) || NGPU=1
 mapfile -t CPUS < <(python3 -c 'import os; print("\n".join(map(str, sorted(os.sched_getaffinity(0)))))')
 T_START=$(date +%s)
 echo "[relpop] $TAG in $OUTDIR: partenza $START_MODEL, T pop: U $POP_TS${POP_F_TS:+, F $POP_F_TS ($POP_F_MAP)}, $POP_NS ns per corsa, 300 K: $MD_PS ps"
-echo "[relpop] lambda $POP_LAMBDA, Huber $POP_HUBER, delta $POP_DELTA, ordine $POP_ORDER (soglia per tratto $POP_TRACT_CUT), lr max $RE_LR, $NGPU GPU, ${#CPUS[@]} core"
+echo "[relpop] T con almeno $POP_MIN_FRAMES frame per stato; lambda $POP_LAMBDA, Huber $POP_HUBER, delta $POP_DELTA, ordine $POP_ORDER (soglia per tratto $POP_TRACT_CUT), lr max $RE_LR, $NGPU GPU, ${#CPUS[@]} core"
 
+both_states() {   # json di 19_pop_labels.py -> vero se ci sono >= POP_MIN_FRAMES frame dentro e fuori lo stato
+    (( POP_MIN_FRAMES > 0 )) || return 0
+    python3 -c "
+import json, sys
+s = json.load(open(sys.argv[1])); m = int(sys.argv[2])
+n_in = sum(r['P_U_hard'] * r['frames'] for r in s['runs'] if r['frames'])
+n_out = sum(r['frames'] for r in s['runs']) - n_in
+sys.exit(0 if n_in >= m and n_out >= m else 1)" "$1" "$POP_MIN_FRAMES"
+}
 model_of() { printf "%s/%s_it%02d.pt" "$OUTDIR" "$TAG" "$1"; }
 md_of()    { printf "%s/md_it%02d" "$OUTDIR" "$1"; }
 manifest() { python3 $R/training/create_model_manifest.py --model "$1" --config $CONFIG --dataset $DATA_RE >/dev/null; }
@@ -206,7 +221,11 @@ for n in $(seq 1 $NITER); do
                 || { cat $D/pop_T$T.txt; exit 1; }
         fi
         grep -v POPSPEC $D/pop_T$T.txt
-        specs+=(--pop "$(grep '^\[POPSPEC\]' $D/pop_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
+        if both_states $D/pop_T$T.json; then
+            specs+=(--pop "$(grep '^\[POPSPEC\]' $D/pop_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
+        else
+            echo "  T $T: esclusa (meno di $POP_MIN_FRAMES frame in uno dei due stati)"
+        fi
     done
     for T in $POP_F_TS; do
         if [[ ! -s $D/popF_T$T.labels ]]; then
@@ -216,8 +235,21 @@ for n in $(seq 1 $NITER); do
                 --delta $POP_DELTA --out-prefix $D/popF_T$T > $D/popF_T$T.txt || { cat $D/popF_T$T.txt; exit 1; }
         fi
         grep -v POPSPEC $D/popF_T$T.txt
-        specs+=(--pop "$(grep '^\[POPSPEC\]' $D/popF_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
+        if both_states $D/popF_T$T.json; then
+            specs+=(--pop "$(grep '^\[POPSPEC\]' $D/popF_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
+        else
+            echo "  T $T (F): esclusa (meno di $POP_MIN_FRAMES frame in uno dei due stati)"
+        fi
     done
+    if (( ${#specs[@]} == 0 )); then
+        echo "[relpop] $(date '+%F %T') it$(printf %02d $n): nessuna T con entrambi gli stati campionati, modello copiato senza allenamento"
+        cp $(model_of $prev) $mn.tmp.pt && mv $mn.tmp.pt $mn
+        manifest $mn
+        echo '{"skipped": true}' > ${mn%.pt}.relent.json
+        echo "[POP-ITER] it$(printf %02d $n) saltata (nessuna T con entrambi gli stati)"
+        last_dur=$(( $(date +%s) - t0 ))
+        continue
+    fi
     common=(--config $CONFIG --aa $DATA_RE --cg $D/re.bin "${specs[@]}" --pop-huber $POP_HUBER
             --residues-per-copy 26 --batch-aa 8 --batch-cg 8 --batch-pop 8)
     if [[ "$CHECK" == 1 && ! -e $OUTDIR/check.ok ]]; then
