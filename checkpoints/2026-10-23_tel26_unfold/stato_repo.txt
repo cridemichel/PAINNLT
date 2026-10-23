@@ -1,0 +1,137 @@
+# Stato del repo PAINNLT al 2026-10-23 09:49:14
+
+## git log (ultimi 40)
+fb4f5e6 21_gtracts.py: stati di Buscaglia nel CG (quadruplex, tripla elica, U) per tratto G
+5c14d5a 20_intermediates.py: gli intermedi della fusione CG sono popolati o di passaggio?
+9fb4b23 Vincolo anche su P_F (tre tetradi intatte): 19_pop_labels.py --state F, 19_relent_pop.sh POP_F_TS
+39e9a34 19_relent_pop.sh: T aggiunte a catena avviata partono da START_F / START_U
+9511743 train_relent --pop: vincolo sulle popolazioni sperimentali; 19_pop_labels.py e 19_relent_pop.sh
+64a14fc tel26_unfold: scheda run AA pilot per Giulia
+0757410 18_kappa_scan.sh: controllo di --thermo-scale sul binario (grep -a), modelli da creare su GPU
+1ea57d2 18_kappa_scan.sh: controllo di --thermo-scale senza pipe (pipefail + uso che esce con 2)
+bfc6507 Testa entropica proporzionale (train_relent --thermo-scale) e scansione di kappa (18)
+07ad755 tel26_unfold: 17_melt_painn.sh, curva di fusione con PaiNN attivo sui prior termici
+4bad5bd tel26_unfold: 16_check_relent.sh, controllo intermedio della catena sui prior termici
+b242497 tel26_unfold: 15_thermal_prior_set.sh, insieme di prior termici per l'entropia relativa
+399f644 tel26_unfold: stati da q_k mediato nel tempo (08 --smooth-ns, 13 SMOOTH_NS, 14 --melt-name)
+02f9605 12_pilot_tetrads.sh: tpr di analisi senza i restraint intermolecolari
+4292192 tel26_unfold: analisi del pilota con il canale vietato (02, 12)
+422a6c2 03: canale vietato con restraint catione-O6 di tipo 10 invece del pull code
+1dd3c97 03_make_pilot_inputs.py: esito corretto del pilota Li+ nella docstring
+ddeeffe tel26_unfold: pilota AA con il canale vietato ai cationi (03 --exclude-r, 04)
+5c8f90e 13_validate_thermal.sh: eseguibile come piu' job (un insieme e un ramo per job)
+47c05de tel26_unfold: validazione diretta dei prior termici (13, 14)
+765d5bb tel26_unfold: pilota AA con Li+ al posto dei K+ (03 --cation Li)
+6131c04 tel26_unfold: 12_pilot_tetrads.sh, tetradi e K+ lungo le repliche del pilota AA
+12d7fb4 tel26_unfold: 11_fit_thermal.py, D(T) dalla scansione sulle popolazioni sperimentali
+8e1f17d tel26_unfold/10: START per partire da uno stato diverso dal nativo
+c92de2f prior dipendenti da T: D(T) = D_H - T D_S per i Morse, K(T) per i diedri
+7473a54 report TEL26: confronto con i soli prior lp2 (contributo di PaiNN)
+0501b05 tel26_unfold: torsioni di impilamento CBT e scalate, scansione sweep2
+fc5635b upd
+b129277 tel26_unfold/10: tabella riassuntiva allineata per temperatura
+255b21f chain_replicas.sh: DISABLE_ML=1 passato esplicitamente ai segmenti
+0abd870 report TEL26: versione inglese
+a56b427 report TEL26: sezione sul modello CG-ML e figura PyMOL di mappatura e prior
+86e77a6 tel26_unfold: scala dei contatti Morse (09) e scansione lam_tet x lam_oth x T (10)
+85ad7cb tel26_unfold: 08_tetrad_melt.py, tetradi intatte contro tempo e temperatura
+b8024b2 tel26_unfold/07: LOG_INTERVAL configurabile e log non bufferizzato
+9075db0 tel26_unfold: 07_cg_native_t400.sh, modello nativo su una copia a 400 K
+51540fb bootstrap_leonardo: STEP=build riallinea i sorgenti del plugin PaiNN
+e8642ca build_cg_dataset: opzione --positions-only per traiettorie senza forze
+f03f316 PaiNN: teste termodinamiche U(x;T) = H(x) - T S(x) (training RE multi-T, plugin, manifest)
+6c5c1b0 tel26_unfold: mappatura CG delle corse AA a 400 K (una copia)
+
+## git status
+ M MLCG_Framework_v2/tutorials/tel26_unfold/19_pop_labels.py
+ M MLCG_Framework_v2/tutorials/tel26_unfold/19_relent_pop.sh
+?? MLCG_Framework_v2/tutorials/tel26_unfold/results/TEL26_pilot_excl400_unfolding.pdf
+?? MLCG_Framework_v2/tutorials/tel26_unfold/results/fit_thermal.json
+?? MLCG_Framework_v2/tutorials/tel26_unfold/results/fit_thermal_f.json
+?? checkpoints/
+?? log
+
+## md5 dei file chiave
+83e554b6a7acf60cecef5ab4b98c2b88  MLCG_Framework_v2/training/train_relent.cpp
+6a672b9393e60cf5f5c7b75d67ca9190  MLCG_Framework_v2/training/PaiNN_Architecture.hpp
+d07bf3e4bd0229d38ec518e9a12bc6ef  MLCG_Framework_v2/tutorials/tel26_unfold/02_tetrads_k.py
+3e3c4e89334f3e6707f092909a2a7840  MLCG_Framework_v2/tutorials/tel26_unfold/03_make_pilot_inputs.py
+676fb6d0a1f0f56403cb8c1191d8d1fc  MLCG_Framework_v2/tutorials/tel26_unfold/05_slice_copy.py
+97acc26c4b7568f6d4a1c85929aa37e8  MLCG_Framework_v2/tutorials/tel26_unfold/08_tetrad_melt.py
+49f4d805e00c18666303f9df4a550759  MLCG_Framework_v2/tutorials/tel26_unfold/09_scale_contacts.py
+dbb3d0d3fe261129181a65036ece1532  MLCG_Framework_v2/tutorials/tel26_unfold/11_fit_thermal.py
+950f15971d949ee744223a261d2bc11e  MLCG_Framework_v2/tutorials/tel26_unfold/14_thermal_check.py
+fad38faa8be64c9e1daca5f50f517de5  MLCG_Framework_v2/tutorials/tel26_unfold/19_pop_labels.py
+c4517d5676d683af82434fd24b48914d  MLCG_Framework_v2/tutorials/tel26_unfold/20_intermediates.py
+904a64a79decfa781bc715f0be4d0a9b  MLCG_Framework_v2/tutorials/tel26_unfold/21_gtracts.py
+3d171f18fb100863265ffcb22a86cebd  MLCG_Framework_v2/tutorials/tel26_unfold/00_inventory_aa.sh
+f5ba7ad3b8c48f93a29bf50b5f4626fa  MLCG_Framework_v2/tutorials/tel26_unfold/01_extract_dna_k.sh
+0ed676bf304f634232435c5faed819a4  MLCG_Framework_v2/tutorials/tel26_unfold/04_run_pilot.sh
+dc4825269ec647b5767ef68f5b3f05c8  MLCG_Framework_v2/tutorials/tel26_unfold/06_build_t400_dataset.sh
+77f979aec0295b13fad391909bdb5ce0  MLCG_Framework_v2/tutorials/tel26_unfold/07_cg_native_t400.sh
+7679dc465ff220217c848907551a406d  MLCG_Framework_v2/tutorials/tel26_unfold/10_contact_sweep.sh
+775ade6817b6a831c004f24412024917  MLCG_Framework_v2/tutorials/tel26_unfold/12_pilot_tetrads.sh
+7c6da8af6c4cb7f6c5eee5e141564556  MLCG_Framework_v2/tutorials/tel26_unfold/13_validate_thermal.sh
+1f97cb777de7958b32bcf49f32f90ebd  MLCG_Framework_v2/tutorials/tel26_unfold/15_thermal_prior_set.sh
+7f85b99c8b498729edaf7eb0f7e736ba  MLCG_Framework_v2/tutorials/tel26_unfold/16_check_relent.sh
+8dd50b5bf9d44c7e34dbf454b884ce14  MLCG_Framework_v2/tutorials/tel26_unfold/17_melt_painn.sh
+fc48a1a3362e5421311d6cd18e712b62  MLCG_Framework_v2/tutorials/tel26_unfold/18_kappa_scan.sh
+9ed93fec8895778936e4209ab765c5f3  MLCG_Framework_v2/tutorials/tel26_unfold/19_relent_pop.sh
+892ad440f325b21fbf7266ec38ca87ee  MLCG_Framework_v2/tutorials/tel26_unfold/finish_postprocess.sh
+84fac7d9dce32c4e1540733dc607dad2  MLCG_Framework_v2/tutorials/tel26_unfold/job1.sh
+9509f79087aa947dc8c2902201c908c1  MLCG_Framework_v2/tutorials/tel26_unfold/postprocess.sh
+a3217e42f8b93e81a2010c699a1c5911  MLCG_Framework_v2/tutorials/tel26/06_relent.sh
+d52e64fc8b9ed538c3bea0083708c9cb  MLCG_Framework_v2/tutorials/tel26/tel26_training_config.d64th.json
+
+## risultati (tutorials/tel26_unfold/results)
+total 7472
+drwx------ 33 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw    1056 Oct 23 08:52 .
+drwx------ 48 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw    1536 Oct 23 08:48 ..
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   66184 Oct 16 11:59 TEL26_AA_unfold_pilot_runs.pdf
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw 1143172 Oct 16 14:15 TEL26_pilot_excl400_unfolding.pdf
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  232848 Oct 14 10:06 excl_rep1.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  229543 Oct 14 10:06 excl_rep2.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  237564 Oct 14 10:06 excl_rep3.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  238766 Oct 14 10:06 excl_rep4.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw    4261 Oct  8 16:56 fit_thermal.json
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  118907 Oct  8 16:56 fit_thermal.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw    4257 Oct  8 16:56 fit_thermal_f.json
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  124300 Oct  8 16:56 fit_thermal_f.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   41613 Oct 23 08:52 gtracts_k6.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  118799 Oct 23 08:52 gtracts_pop1_it45.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   72105 Oct 23 08:52 gtracts_priors_f.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  196274 Oct 23 08:43 intermediates_pop1_it45.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw 1440259 Oct 14 08:45 melt_f1_chiuso.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw 1522252 Oct 14 08:45 melt_f_chiuso.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   70210 Oct 15 15:46 melt_painn_it60_25ns.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   70421 Oct 19 07:19 melt_painn_k2.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   70607 Oct 19 07:19 melt_painn_k4.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   70748 Oct 19 07:19 melt_painn_k6.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   71999 Oct 23 07:42 melt_painn_pop1_it45.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw    9762 Oct  7 12:22 struct_pri_t400.json
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  361960 Oct  7 12:22 struct_pri_t400.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  127772 Oct  8 16:56 tetrads_rep1.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  139471 Oct  8 16:56 tetrads_rep2.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  121793 Oct  8 16:56 tetrads_rep3.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  165077 Oct  8 16:56 tetrads_rep4.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   85513 Oct 14 19:50 tetrads_tel26_lp2th_th0_it30.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw   83962 Oct 14 19:50 tetrads_tel26_lp2th_th0_it60.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  174838 Oct 14 08:45 thermal_check.png
+-rw-------  1 rcw-01qg7a4yuiunvbwwg4wbbwsw rcw-01qg7a4yuiunvbwwg4wbbwsw  158883 Oct 14 09:01 thermal_check_s1.png
+
+## messaggi di commit pronti in .git (piu' recenti)
+.git/MLCG_COMMIT_MSG_tract
+.git/MLCG_COMMIT_MSG_gtracts
+.git/MLCG_COMMIT_MSG_interm
+.git/MLCG_COMMIT_MSG_relpop3
+.git/MLCG_COMMIT_MSG_relpop2
+.git/MLCG_COMMIT_MSG_relpop
+.git/MLCG_COMMIT_MSG_kappa3
+.git/MLCG_COMMIT_MSG_kappa2
+.git/MLCG_COMMIT_MSG_kappa
+.git/MLCG_COMMIT_MSG_melt17
+.git/MLCG_COMMIT_MSG_chk16
+.git/MLCG_COMMIT_MSG_th15
+.git/MLCG_COMMIT_MSG_smooth
+.git/MLCG_COMMIT_MSG_ana12b
+.git/MLCG_COMMIT_MSG_ana12
