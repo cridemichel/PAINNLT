@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Campioni CG a una temperatura -> dataset + etichette di stato per train_relent --pop.
 
+STATO (--state, 23/10): U (default) = nessuna tetrade intatta; F = tutte e tre intatte.  Con
+F il vincolo e' ln(P_F/(1-P_F)): insieme ai vincoli su U fissa anche I (1-2 tetrade intatte),
+quindi le larghezze di entrambe le transizioni.  Bersaglio di F nella mappa --map (default f1:
+F+I1 di Buscaglia; I1 ha dH di soli 33 kJ/mol, non e' perdita di una tetrade, e con la mappa f
+a 300 K il 40 % sarebbe "I" mentre l'AA a 300 K ha le tre tetradi intatte).
+
 PERCHE' (19/10)
     Il residuo PaiNN allenato a entropia relativa a 300 K vede solo lo stato nativo e tiene il
     TEL26 piegato fino a 380 K (17); la scansione di kappa (18) mostra che nessun riscalamento
@@ -85,6 +91,10 @@ def main():
     ap.add_argument("--beta", type=float, default=25.0)
     ap.add_argument("--lam", type=float, default=1.2)
     ap.add_argument("--out-prefix", required=True)
+    ap.add_argument("--state", choices=("U", "F"), default="U",
+                    help="U: nessuna tetrade intatta; F: tutte e tre intatte")
+    ap.add_argument("--map", choices=("f", "f1"), default="f1",
+                    help="mappa sperimentale per F: f = F di Buscaglia, f1 = F + I1 (U e' lo stesso nelle due)")
     args = ap.parse_args()
     cv.set_nuc(melt.NUC)
 
@@ -110,9 +120,10 @@ def main():
         q = smooth_q(q.reshape(S.shape[0], nc, 3), t, args.smooth_ns)[:, 0, :]        # (T, 3)
         keep = np.flatnonzero(t >= t[0] + args.skip_ps)[::args.stride]               # come samples_to_cg_bin
         qk = q[keep]
-        hard = (qk <= args.qcut).all(axis=1).astype(float)
+        sign = 1.0 if args.state == "U" else -1.0           # U: q sotto soglia; F: q sopra
+        hard = (sign * (args.qcut - qk) >= 0).all(axis=1).astype(float)
         if args.delta > 0:
-            soft = np.prod(1.0 / (1.0 + np.exp(-(args.qcut - qk) / args.delta)), axis=1)
+            soft = np.prod(1.0 / (1.0 + np.exp(-sign * (args.qcut - qk) / args.delta)), axis=1)
         else:
             soft = hard
         labels.append(soft)
@@ -132,23 +143,28 @@ def main():
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
     tmp = out_lab.with_suffix(".labels.tmp")
     with open(tmp, "w") as f:
-        f.write(f"# p_U per frame, T = {args.T} K, smooth {args.smooth_ns} ns, qcut {args.qcut}, delta {args.delta}\n")
+        f.write(f"# p_{args.state} per frame, T = {args.T} K, smooth {args.smooth_ns} ns, qcut {args.qcut}, delta {args.delta}\n")
         f.writelines(f"{x:.6e}\n" for x in p)
     tmp.rename(out_lab)
 
-    pu_exp = float(fit.exp_pops([args.T])[0, 3])
+    ex = fit.exp_pops([args.T])[0]
+    if args.state == "U":
+        pu_exp = float(ex[3])
+    else:
+        pu_exp = float(ex[0] + ex[1]) if args.map == "f1" else float(ex[0])
     target = float(np.log(pu_exp / (1.0 - pu_exp)))
     pu_cg = float(np.clip(p.mean(), 1e-12, 1 - 1e-12))
-    summary = {"T_K": args.T, "frames": int(p.size), "P_U_exp": pu_exp, "L_target": target,
+    summary = {"T_K": args.T, "state": args.state, "map": args.map if args.state == "F" else "f/f1",
+               "frames": int(p.size), "P_U_exp": pu_exp, "L_target": target,
                "p_U_mean": pu_cg, "L_uniform": float(np.log(pu_cg / (1 - pu_cg))), "runs": per_run,
                "smooth_ns": args.smooth_ns, "qcut": args.qcut, "delta": args.delta, "skip_ps": args.skip_ps,
                "stride": args.stride, "bin": str(out_bin), "labels": str(out_lab)}
     json.dump(summary, open(out_json, "w"), indent=1)
     for r in per_run:
         print(f"  T {args.T:5.1f}  {pathlib.Path(r['samples']).name.split('.')[0]:>8s}  {r['frames']:5d} frame  "
-              f"P_U {r['P_U_hard']:.3f} (morbida {r['p_U_soft_mean']:.3g})  "
+              f"P_{args.state} {r['P_U_hard']:.3f} (morbida {r['p_U_soft_mean']:.3g})  "
               f"P(n) {' '.join(f'{x:.2f}' for x in r['P_n_intact'])}  q {' '.join(f'{x:.2f}' for x in r['q_mean'])}")
-    print(f"  T {args.T:5.1f}  bersaglio P_U {pu_exp:.3f}  L* {target:+.3f};  modello <p_U> {pu_cg:.3g}")
+    print(f"  T {args.T:5.1f}  bersaglio P_{args.state} {pu_exp:.3f}  L* {target:+.3f};  modello <p_{args.state}> {pu_cg:.3g}")
     print(f"[POPSPEC] {out_bin},{out_lab},{args.T:g},{target:.6f}")
 
 

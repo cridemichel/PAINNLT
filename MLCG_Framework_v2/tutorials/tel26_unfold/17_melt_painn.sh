@@ -23,6 +23,7 @@
 # Variabili: MODEL ($T26/tel26_lp2th_th0_it60.pt), TS ("300 315 325 330 335 340 350 365 380"),
 #            BRANCHES ("chiuso aperto"), CG_STEPS (12500000 = 50 ns), LOG_INTERVAL (1250 = 5 ps),
 #            OUTDIR ($A/melt_painn/<modello>), PRIORS, START_OPEN, ANALYZE_ONLY=1
+#            MAP (f: F / I1+I2 / U; f1: F+I1 / I2 / U, dal 23/10 la mappa di riferimento per F)
 set -uo pipefail
 A=${A:-/leonardo_work/IscrB_G4MES/cdemiche/AA_unfold}
 R=/leonardo_work/IscrB_G4MES/cdemiche/PAINNLT/MLCG_Framework_v2
@@ -101,5 +102,7 @@ for b in $BRANCHES; do
     echo; echo "=== $TAG / $b"
     python3 $U/08_tetrad_melt.py "${specs[@]}" --smooth-ns 1 --plot $b/melt_s1 --json $b/melt_s1.json
 done
-python3 $U/14_thermal_check.py --set "$TAG=$OUTDIR:f" --melt-name melt_s1.json \
-    --plot $OUTDIR/thermal_check_s1 --json $OUTDIR/thermal_check_s1.json
+MAP=${MAP:-f}
+MS=""; [[ $MAP != f ]] && MS="_$MAP"
+python3 $U/14_thermal_check.py --set "$TAG=$OUTDIR:$MAP" --melt-name melt_s1.json \
+    --plot $OUTDIR/thermal_check_s1$MS --json $OUTDIR/thermal_check_s1$MS.json

@@ -34,6 +34,8 @@
 #     sbatch $U/19_relent_pop.sh
 #     sbatch --dependency=afterany:<jobid> $U/19_relent_pop.sh      # continuazione
 # POP_TS si puo' cambiare a catena avviata: le T nuove partono da START_F / START_U.
+# POP_F_TS (23/10): T a cui si vincola anche P_F (tre tetradi intatte; bersaglio nella mappa
+# POP_F_MAP, default f1 = F + I1).  Le MD girano sull'unione di POP_TS e POP_F_TS.
 # Variabili: TAG (pop1), START_MODEL ($T26/tel26_lp2th_th0_it60_k6.pt), NITER (15), POP_TS ("322 328 334"),
 #            POP_NS (3), POP_SKIP_PS (500), POP_STRIDE (1), POP_LAMBDA (1), POP_HUBER (2), POP_DELTA (0.05),
 #            START_F, START_U (stati k6 a 330 K chiuso e 345 K aperto), START_RE (stato a 300 K della catena th0),
@@ -50,6 +52,9 @@ TAG=${TAG:-pop1}
 START_MODEL=${START_MODEL:-$T26/tel26_lp2th_th0_it60_k6.pt}
 NITER=${NITER:-15}
 POP_TS=${POP_TS:-"322 328 334"}
+POP_F_TS=${POP_F_TS:-}
+POP_F_MAP=${POP_F_MAP:-f1}
+MD_TS=$(echo $POP_TS $POP_F_TS | tr ' ' '\n' | sort -n -u | tr '\n' ' ')
 POP_NS=${POP_NS:-3}
 POP_SKIP_PS=${POP_SKIP_PS:-500}
 POP_STRIDE=${POP_STRIDE:-1}
@@ -96,7 +101,7 @@ POP_LOG=1250                                # 5 ps
 NGPU=$(nvidia-smi -L 2>/dev/null | wc -l); (( NGPU > 0 )) || NGPU=1
 mapfile -t CPUS < <(python3 -c 'import os; print("\n".join(map(str, sorted(os.sched_getaffinity(0)))))')
 T_START=$(date +%s)
-echo "[relpop] $TAG in $OUTDIR: partenza $START_MODEL, T pop: $POP_TS, $POP_NS ns per corsa, 300 K: $MD_PS ps"
+echo "[relpop] $TAG in $OUTDIR: partenza $START_MODEL, T pop: U $POP_TS${POP_F_TS:+, F $POP_F_TS ($POP_F_MAP)}, $POP_NS ns per corsa, 300 K: $MD_PS ps"
 echo "[relpop] lambda $POP_LAMBDA, Huber $POP_HUBER, delta $POP_DELTA, lr max $RE_LR, $NGPU GPU, ${#CPUS[@]} core"
 
 model_of() { printf "%s/%s_it%02d.pt" "$OUTDIR" "$TAG" "$1"; }
@@ -133,7 +138,7 @@ simulate() {
             --out_checkpoint $D/re.state.npz ) > $D/re.log 2>&1 &
         pids+=($!); i=$((i + 1))
     fi
-    for T in $POP_TS; do
+    for T in $MD_TS; do
         kt=$(python3 -c "print(f'{0.008314462618*$T:.6f}')")
         for b in F U; do
             name=$D/${b}_T$T
@@ -164,7 +169,7 @@ simulate() {
     local fail=0
     for p in "${pids[@]}"; do wait $p || fail=$((fail + 1)); done
     (( fail == 0 )) || { echo "[ERROR] $fail corse fallite in $D (vedi *.log)" >&2; return 1; }
-    for f in $D/re.samples.npz $(for T in $POP_TS; do echo $D/F_T$T.samples.npz $D/U_T$T.samples.npz; done); do
+    for f in $D/re.samples.npz $(for T in $MD_TS; do echo $D/F_T$T.samples.npz $D/U_T$T.samples.npz; done); do
         [[ -s $f ]] || { echo "[ERROR] manca $f" >&2; return 1; }
     done
     touch $D/done
@@ -200,6 +205,16 @@ for n in $(seq 1 $NITER); do
         grep -v POPSPEC $D/pop_T$T.txt
         specs+=(--pop "$(grep '^\[POPSPEC\]' $D/pop_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
     done
+    for T in $POP_F_TS; do
+        if [[ ! -s $D/popF_T$T.labels ]]; then
+            rm -f $D/popF_T$T.bin
+            python3 $U/19_pop_labels.py --T $T --state F --map $POP_F_MAP --template $DATA_POP \
+                --samples $D/F_T$T.samples.npz $D/U_T$T.samples.npz --skip-ps $POP_SKIP_PS --stride $POP_STRIDE \
+                --delta $POP_DELTA --out-prefix $D/popF_T$T > $D/popF_T$T.txt || { cat $D/popF_T$T.txt; exit 1; }
+        fi
+        grep -v POPSPEC $D/popF_T$T.txt
+        specs+=(--pop "$(grep '^\[POPSPEC\]' $D/popF_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
+    done
     common=(--config $CONFIG --aa $DATA_RE --cg $D/re.bin "${specs[@]}" --pop-huber $POP_HUBER
             --residues-per-copy 26 --batch-aa 8 --batch-cg 8 --batch-pop 8)
     if [[ "$CHECK" == 1 && ! -e $OUTDIR/check.ok ]]; then
@@ -223,20 +238,25 @@ for n in $(seq 1 $NITER); do
 import json, math, sys
 r = json.load(open(sys.argv[1]))
 sig = lambda x: 1.0 / (1.0 + math.exp(-x))
-pops = "  ".join(f"{p['T_K']:g} K: P_U {sig(p['L0']):.3f} -> {sig(p['L']):.3f} (esp {sig(p['target_L']):.3f})"
-                 for p in r.get("pop_final", []))
+st = ["F" if "/popF_" in q["labels"] else "U" for q in r.get("pop", [])]
+pops = "  ".join(f"{p['T_K']:g} K: P_{s} {sig(p['L0']):.3f} -> {sig(p['L']):.3f} (esp {sig(p['target_L']):.3f})"
+                 for s, p in zip(st, r.get("pop_final", [])))
 print(f"[POP-ITER] it{int(sys.argv[2]):02d} passo {r['best_step']} punteggio {r['best_dS']:.3f} "
       f"arresto {r['stop_reason']} ESS {r['ess_last']:.3f} lr {r['lr_final']:.3g} ({round(r['seconds'])} s)  {pops}")
 PYEOF
     last_dur=$(( $(date +%s) - t0 ))
 done
 
-echo; echo "[relpop] riepilogo (P_U del modello sui campioni di MD dell'iterazione; morbida = <p_U>):"
+echo; echo "[relpop] riepilogo (popolazione del modello sui campioni di MD dell'iterazione, per lignaggio):"
 for D in $OUTDIR/md_it*; do
     [[ -e $D/done ]] || continue
-    for T in $POP_TS; do [[ -s $D/pop_T$T.json ]] && python3 -c "
+    for T in $MD_TS; do for pre in pop popF; do
+        [[ -s $D/${pre}_T$T.json ]] || continue
+        python3 -c "
 import json, sys
 s = json.load(open(sys.argv[1]))
-print(f\"  {sys.argv[2]}  T {s['T_K']:g}  \" + '  '.join(f\"{r['samples'].split('/')[-1].split('.')[0]} P_U {r['P_U_hard']:.2f}\" for r in s['runs'])
-      + f\"   esp {s['P_U_exp']:.2f}\")" $D/pop_T$T.json $(basename $D); done
+st = s.get('state', 'U')
+print(f\"  {sys.argv[2]}  T {s['T_K']:g}  P_{st}  \" + '  '.join(f\"{r['samples'].split('/')[-1].split('.')[0]} {r['P_U_hard']:.2f}\" for r in s['runs'])
+      + f\"   esp {s['P_U_exp']:.2f}\")" $D/${pre}_T$T.json $(basename $D)
+    done; done
 done
