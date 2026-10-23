@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """Campioni CG a una temperatura -> dataset + etichette di stato per train_relent --pop.
 
+PARAMETRO D'ORDINE PER TRATTO (--order tract, 23/10).  Con --order tetrad (default) U e' "nessuna
+tetrade con q > qcut": nella fusione di pop1_it45 questo si e' soddisfatto allentando
+uniformemente il quadruplex (q ~0.4-0.5 per tutte le tetradi), senza popolare il vero stato
+srotolato (21_gtracts.py).  Con --order tract U e' il bacino in cui nessuno dei quattro tratti
+G e' appaiato: c_a < --tract-cut (0.2) per ogni tratto, c_a = frazione formata delle 9 coppie
+B3-B3 native fra il tratto a e gli altri; morbida p_U = prod_a sigmoid((cut - c_a)/delta).  Gli
+stati allentati contano come "non U".  Solo con --state U.
+
 STATO (--state, 23/10): U (default) = nessuna tetrade intatta; F = tutte e tre intatte.  Con
 F il vincolo e' ln(P_F/(1-P_F)): insieme ai vincoli su U fissa anche I (1-2 tetrade intatte),
 quindi le larghezze di entrambe le transizioni.  Bersaglio di F nella mappa --map (default f1:
@@ -76,6 +84,20 @@ def smooth_q(q, t_ps, smooth_ns):
     return out
 
 
+def smooth2(x, t_ps, smooth_ns):
+    """media mobile centrata, corretta ai bordi; x (T, K)"""
+    if smooth_ns <= 0 or x.shape[0] < 2:
+        return x
+    w = max(1, int(round(smooth_ns * 1000.0 / float(np.median(np.diff(t_ps))))))
+    k = np.ones(w) / w
+    norm = np.convolve(np.ones(x.shape[0]), k, mode="same")
+    return np.stack([np.convolve(x[:, j], k, mode="same") / norm for j in range(x.shape[1])], 1)
+
+
+POS_PAIRS = [(a, b) for a in range(4) for b in range(a + 1, 4)]      # ordine delle 6 coppie di 08
+TRACT_MASK = np.array([[a in pr for pr in POS_PAIRS] for a in range(4)])   # (4, 6)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--T", type=float, required=True)
@@ -95,7 +117,12 @@ def main():
                     help="U: nessuna tetrade intatta; F: tutte e tre intatte")
     ap.add_argument("--map", choices=("f", "f1"), default="f1",
                     help="mappa sperimentale per F: f = F di Buscaglia, f1 = F + I1 (U e' lo stesso nelle due)")
+    ap.add_argument("--order", choices=("tetrad", "tract"), default="tetrad",
+                    help="tetrad: q per tetrade con --qcut; tract: c per tratto G con --tract-cut (solo U)")
+    ap.add_argument("--tract-cut", type=float, default=0.2)
     args = ap.parse_args()
+    if args.order == "tract" and args.state != "U":
+        raise SystemExit("[ERROR] --order tract vale solo per --state U")
     cv.set_nuc(melt.NUC)
 
     out_bin = pathlib.Path(args.out_prefix + ".bin")
@@ -116,22 +143,26 @@ def main():
         if nc != 1:
             raise SystemExit(f"[ERROR] {path}: {nc} copie, serve una copia per corsa")
         d = melt.b3_pair_distances(S, L, nc)
-        q = (1.0 / (1.0 + np.exp(args.beta * (d - args.lam * r_nat[None])))).mean(axis=2)
-        q = smooth_q(q.reshape(S.shape[0], nc, 3), t, args.smooth_ns)[:, 0, :]        # (T, 3)
+        sp = 1.0 / (1.0 + np.exp(args.beta * (d - args.lam * r_nat[None])))          # (T, 3, 6)
         keep = np.flatnonzero(t >= t[0] + args.skip_ps)[::args.stride]               # come samples_to_cg_bin
-        qk = q[keep]
-        sign = 1.0 if args.state == "U" else -1.0           # U: q sotto soglia; F: q sopra
-        hard = (sign * (args.qcut - qk) >= 0).all(axis=1).astype(float)
+        if args.order == "tetrad":
+            q = smooth_q(sp.mean(axis=2).reshape(S.shape[0], nc, 3), t, args.smooth_ns)[:, 0, :]   # (T, 3)
+            qk, cut = q[keep], args.qcut
+        else:
+            c = np.stack([sp[:, :, TRACT_MASK[a]].mean(axis=(1, 2)) for a in range(4)], 1)     # (T, 4)
+            qk, cut = smooth2(c, t, args.smooth_ns)[keep], args.tract_cut
+        sign = 1.0 if args.state == "U" else -1.0           # U: sotto soglia; F: sopra
+        hard = (sign * (cut - qk) >= 0).all(axis=1).astype(float)
         if args.delta > 0:
-            soft = np.prod(1.0 / (1.0 + np.exp(-sign * (args.qcut - qk) / args.delta)), axis=1)
+            soft = np.prod(1.0 / (1.0 + np.exp(-sign * (cut - qk) / args.delta)), axis=1)
         else:
             soft = hard
         labels.append(soft)
-        n_int = (qk > args.qcut).sum(axis=1)
+        n_int = (qk > cut).sum(axis=1)
         per_run.append({"samples": path, "frames": int(keep.size), "t_ps": [float(t[keep[0]]), float(t[keep[-1]])]
                         if keep.size else None, "P_U_hard": float(hard.mean()) if keep.size else None,
                         "p_U_soft_mean": float(soft.mean()) if keep.size else None,
-                        "P_n_intact": [float((n_int == k).mean()) for k in range(4)] if keep.size else None,
+                        "P_n_intact": [float((n_int == k).mean()) for k in range(qk.shape[1] + 1)] if keep.size else None,
                         "q_mean": qk.mean(0).tolist() if keep.size else None})
     p = np.concatenate(labels)
     if p.size == 0:
@@ -143,7 +174,8 @@ def main():
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
     tmp = out_lab.with_suffix(".labels.tmp")
     with open(tmp, "w") as f:
-        f.write(f"# p_{args.state} per frame, T = {args.T} K, smooth {args.smooth_ns} ns, qcut {args.qcut}, delta {args.delta}\n")
+        f.write(f"# p_{args.state} per frame, T = {args.T} K, ordine {args.order}, smooth {args.smooth_ns} ns, "
+                f"soglia {args.qcut if args.order == 'tetrad' else args.tract_cut}, delta {args.delta}\n")
         f.writelines(f"{x:.6e}\n" for x in p)
     tmp.rename(out_lab)
 
@@ -157,13 +189,15 @@ def main():
     summary = {"T_K": args.T, "state": args.state, "map": args.map if args.state == "F" else "f/f1",
                "frames": int(p.size), "P_U_exp": pu_exp, "L_target": target,
                "p_U_mean": pu_cg, "L_uniform": float(np.log(pu_cg / (1 - pu_cg))), "runs": per_run,
+               "order": args.order, "tract_cut": args.tract_cut,
                "smooth_ns": args.smooth_ns, "qcut": args.qcut, "delta": args.delta, "skip_ps": args.skip_ps,
                "stride": args.stride, "bin": str(out_bin), "labels": str(out_lab)}
     json.dump(summary, open(out_json, "w"), indent=1)
     for r in per_run:
         print(f"  T {args.T:5.1f}  {pathlib.Path(r['samples']).name.split('.')[0]:>8s}  {r['frames']:5d} frame  "
               f"P_{args.state} {r['P_U_hard']:.3f} (morbida {r['p_U_soft_mean']:.3g})  "
-              f"P(n) {' '.join(f'{x:.2f}' for x in r['P_n_intact'])}  q {' '.join(f'{x:.2f}' for x in r['q_mean'])}")
+              f"P(n) {' '.join(f'{x:.2f}' for x in r['P_n_intact'])}  {'q' if args.order == 'tetrad' else 'c'} "
+              f"{' '.join(f'{x:.2f}' for x in r['q_mean'])}")
     print(f"  T {args.T:5.1f}  bersaglio P_{args.state} {pu_exp:.3f}  L* {target:+.3f};  modello <p_{args.state}> {pu_cg:.3g}")
     print(f"[POPSPEC] {out_bin},{out_lab},{args.T:g},{target:.6f}")
 

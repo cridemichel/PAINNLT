@@ -54,6 +54,8 @@ NITER=${NITER:-15}
 POP_TS=${POP_TS:-"322 328 334"}
 POP_F_TS=${POP_F_TS:-}
 POP_F_MAP=${POP_F_MAP:-f1}
+POP_ORDER=${POP_ORDER:-tetrad}     # tract: U = bacino senza tratti G appaiati (c_a < POP_TRACT_CUT), 23/10
+POP_TRACT_CUT=${POP_TRACT_CUT:-0.2}
 MD_TS=$(echo $POP_TS $POP_F_TS | tr ' ' '\n' | sort -n -u | tr '\n' ' ')
 POP_NS=${POP_NS:-3}
 POP_SKIP_PS=${POP_SKIP_PS:-500}
@@ -102,7 +104,7 @@ NGPU=$(nvidia-smi -L 2>/dev/null | wc -l); (( NGPU > 0 )) || NGPU=1
 mapfile -t CPUS < <(python3 -c 'import os; print("\n".join(map(str, sorted(os.sched_getaffinity(0)))))')
 T_START=$(date +%s)
 echo "[relpop] $TAG in $OUTDIR: partenza $START_MODEL, T pop: U $POP_TS${POP_F_TS:+, F $POP_F_TS ($POP_F_MAP)}, $POP_NS ns per corsa, 300 K: $MD_PS ps"
-echo "[relpop] lambda $POP_LAMBDA, Huber $POP_HUBER, delta $POP_DELTA, lr max $RE_LR, $NGPU GPU, ${#CPUS[@]} core"
+echo "[relpop] lambda $POP_LAMBDA, Huber $POP_HUBER, delta $POP_DELTA, ordine $POP_ORDER (soglia per tratto $POP_TRACT_CUT), lr max $RE_LR, $NGPU GPU, ${#CPUS[@]} core"
 
 model_of() { printf "%s/%s_it%02d.pt" "$OUTDIR" "$TAG" "$1"; }
 md_of()    { printf "%s/md_it%02d" "$OUTDIR" "$1"; }
@@ -199,7 +201,8 @@ for n in $(seq 1 $NITER); do
         if [[ ! -s $D/pop_T$T.labels ]]; then
             rm -f $D/pop_T$T.bin
             python3 $U/19_pop_labels.py --T $T --template $DATA_POP --samples $D/F_T$T.samples.npz $D/U_T$T.samples.npz \
-                --skip-ps $POP_SKIP_PS --stride $POP_STRIDE --delta $POP_DELTA --out-prefix $D/pop_T$T > $D/pop_T$T.txt \
+                --skip-ps $POP_SKIP_PS --stride $POP_STRIDE --delta $POP_DELTA --order $POP_ORDER --tract-cut $POP_TRACT_CUT \
+                --out-prefix $D/pop_T$T > $D/pop_T$T.txt \
                 || { cat $D/pop_T$T.txt; exit 1; }
         fi
         grep -v POPSPEC $D/pop_T$T.txt
