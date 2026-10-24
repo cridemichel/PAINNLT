@@ -140,7 +140,8 @@ m0=$(model_of 0)
 if [[ ! -s $m0 ]]; then
     if [[ $START_MODEL == zero ]]; then
         rm -f $m0.tmp.pt
-        $RELENT --config $CONFIG --aa $DATA_RE --zero-init --steps 0 --out $m0.tmp.pt \
+        # --device cpu: un modello salvato con tensori CUDA non si carica nella verifica del gradiente (CPU, senza GPU)
+        CUDA_VISIBLE_DEVICES= $RELENT --config $CONFIG --aa $DATA_RE --zero-init --steps 0 --device cpu --out $m0.tmp.pt \
             --report ${m0%.pt}.relent.json > ${m0%.pt}.relent.log 2>&1 || { tail -5 ${m0%.pt}.relent.log; exit 1; }
         mv $m0.tmp.pt $m0
         echo "[relpop] modello di partenza nullo ($(basename $CONFIG)): $m0"
