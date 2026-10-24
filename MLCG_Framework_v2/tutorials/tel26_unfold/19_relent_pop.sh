@@ -36,7 +36,7 @@
 # POP_TS si puo' cambiare a catena avviata: le T nuove partono da START_F / START_U.
 # POP_F_TS (23/10): T a cui si vincola anche P_F (tre tetradi intatte; bersaglio nella mappa
 # POP_F_MAP, default f1 = F + I1).  Le MD girano sull'unione di POP_TS e POP_F_TS.
-# Variabili: TAG (pop1), START_MODEL ($T26/tel26_lp2th_th0_it60_k6.pt), NITER (15), POP_TS ("322 328 334"),
+# Variabili: TAG (pop1), START_MODEL ($T26/tel26_lp2th_th0_it60_k6.pt; zero = residuo nullo), CONFIG (d64th), NITER (15), POP_TS ("322 328 334"),
 #            POP_NS (3), POP_SKIP_PS (500), POP_STRIDE (1), POP_LAMBDA (1), POP_HUBER (2), POP_DELTA (0.05),
 #            START_F, START_U (stati k6 a 330 K chiuso e 345 K aperto), START_RE (stato a 300 K della catena th0),
 #            MD_PS (50), SKIP_PS (5), RE_STEPS (200), RE_LR (2e-5), RE_ESS_MIN (0.5), CHECK (1), MAX_HOURS (23.3)
@@ -82,7 +82,10 @@ CHECK=${CHECK:-1}
 MAX_HOURS=${MAX_HOURS:-23.3}
 OUTDIR=${OUTDIR:-$A/relent_pop/$TAG}
 
-CONFIG=$T26/tel26_training_config.d64th.json
+# CONFIG (24/10): d64th = PaiNN con teste termiche (U dipende da T); d64 = PaiNN indipendente da T.
+# Con le teste termiche e il vincolo solo ad alta T il residuo puo' restare stretto a 300 K e
+# allentare F ad alta T (pop4: fusione graduale); senza, la cooperativita' resta quella dei prior.
+CONFIG=${CONFIG:-$T26/tel26_training_config.d64th.json}
 PRI_RE=$T26/cg_priors.lp2th.json
 RB_RE=$T26/rigid_bodies_info.lp2th.json
 DATA_RE=$T26/tel26_lp2th_dataset.bin
@@ -91,7 +94,9 @@ RB_POP=$A/cg/rigid_bodies_info.lp2_1c.t400.json
 DATA_POP=$A/cg/tel26_lp2_1c_t400_dataset.bin
 PYPRESSO=$R/espresso/build/pypresso
 RELENT=$R/training/build/train_relent
-for f in "$START_MODEL" "$START_MODEL.manifest.json" $CONFIG $PRI_RE $RB_RE $DATA_RE $PRI_POP $RB_POP $DATA_POP \
+# START_MODEL=zero: residuo nullo (train_relent --zero-init) con la CONFIG data: la prima MD riproduce i soli prior
+START_FILES=("$START_MODEL" "$START_MODEL.manifest.json"); [[ $START_MODEL == zero ]] && START_FILES=()
+for f in "${START_FILES[@]}" $CONFIG $PRI_RE $RB_RE $DATA_RE $PRI_POP $RB_POP $DATA_POP \
          "$START_F" "$START_U" "$START_RE" $PYPRESSO $RELENT $T26/tel26_lp2_dataset.bin; do
     [[ -e $f ]] || { echo "[ERROR] manca $f" >&2; exit 1; }
 done
@@ -132,7 +137,17 @@ except Exception: lr = cap
 print(f'{lr:.6g}')" "$1" "$RE_LR"; }
 
 m0=$(model_of 0)
-if [[ ! -s $m0 ]]; then cp "$START_MODEL" $m0.tmp && mv $m0.tmp $m0; fi
+if [[ ! -s $m0 ]]; then
+    if [[ $START_MODEL == zero ]]; then
+        rm -f $m0.tmp.pt
+        $RELENT --config $CONFIG --aa $DATA_RE --zero-init --steps 0 --out $m0.tmp.pt \
+            --report ${m0%.pt}.relent.json > ${m0%.pt}.relent.log 2>&1 || { tail -5 ${m0%.pt}.relent.log; exit 1; }
+        mv $m0.tmp.pt $m0
+        echo "[relpop] modello di partenza nullo ($(basename $CONFIG)): $m0"
+    else
+        cp "$START_MODEL" $m0.tmp && mv $m0.tmp $m0
+    fi
+fi
 [[ -s $m0.manifest.json ]] || manifest $m0
 
 # MD col modello it(k) in md_it<k>: 300 K + coppie (T, lignaggio)
