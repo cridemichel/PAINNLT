@@ -62,6 +62,10 @@ POP_TRACT_CUT=${POP_TRACT_CUT:-0.2}
 # etichette morbide sposta il bacino campionato (pop1, pop3 it01-04: allentamento invece di fusione).
 # Se nessuna T qualifica, l'iterazione non allena (modello copiato) e la MD prosegue.  0 = tutte le T.
 POP_MIN_FRAMES=${POP_MIN_FRAMES:-0}
+# POP_ESS_MIN (24/10): soglia di ESS per le popolazioni (train_relent --pop-ess-min), separata da RE_ESS_MIN.
+# pop5 it05-07: l'ESS delle popolazioni (una copia, poche decine di frame per stato) crollava dopo 1-2 passi
+# mentre quello a 300 K restava 0,7-0,9.  0 = stessa soglia di RE_ESS_MIN.
+POP_ESS_MIN=${POP_ESS_MIN:-0}
 MD_TS=$(echo $POP_TS $POP_F_TS | tr ' ' '\n' | sort -n -u | tr '\n' ' ')
 POP_NS=${POP_NS:-3}
 POP_SKIP_PS=${POP_SKIP_PS:-500}
@@ -101,6 +105,7 @@ for f in "${START_FILES[@]}" $CONFIG $PRI_RE $RB_RE $DATA_RE $PRI_POP $RB_POP $D
     [[ -e $f ]] || { echo "[ERROR] manca $f" >&2; exit 1; }
 done
 grep -aq -- "--pop-huber" $RELENT || { echo "[ERROR] train_relent non ha --pop: ricompilalo" >&2; exit 1; }
+[[ ${POP_ESS_MIN:-0} == 0 ]] || grep -aq -- "--pop-ess-min" $RELENT || { echo "[ERROR] train_relent non ha --pop-ess-min: ricompilalo" >&2; exit 1; }
 mkdir -p $OUTDIR && cd $OUTDIR || exit 1
 exec 9> .lock
 flock -n 9 || { echo "[ERROR] la catena $TAG e' gia' in corso in $OUTDIR" >&2; exit 1; }
@@ -268,6 +273,7 @@ for n in $(seq 1 $NITER); do
     fi
     common=(--config $CONFIG --aa $DATA_RE --cg $D/re.bin "${specs[@]}" --pop-huber $POP_HUBER
             --residues-per-copy 26 --batch-aa 8 --batch-cg 8 --batch-pop 8)
+    [[ $POP_ESS_MIN != 0 ]] && common+=(--pop-ess-min $POP_ESS_MIN)
     if [[ "$CHECK" == 1 && ! -e $OUTDIR/check.ok ]]; then
         echo "[relpop] verifica del gradiente (CPU, float64)"
         CUDA_VISIBLE_DEVICES= OMP_NUM_THREADS=16 $RELENT "${common[@]}" --in $(model_of $prev) --check-gradient > $OUTDIR/check.log 2>&1

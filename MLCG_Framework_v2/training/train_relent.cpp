@@ -350,7 +350,7 @@ static void usage() {
         "       --thermo-scale KAPPA   readout_dT = -KAPPA * readout, U(T) = U(T0) [1 - KAPPA (T - T0)/T0]\n"
         "       vincolo sulle popolazioni (ripetibile, una temperatura per volta):\n"
         "       --pop CG.bin,ETICHETTE.txt,T_K,L_bersaglio[,lambda]   L = ln(P_U/P_N), etichette p_U per frame\n"
-        "       [--batch-pop 8] [--pop-huber 2]\n";
+        "       [--batch-pop 8] [--pop-huber 2] [--pop-ess-min (= --ess-min)]\n";
 }
 
 static int run(int argc, char* argv[]) {
@@ -371,6 +371,7 @@ static int run(int argc, char* argv[]) {
     std::vector<std::string> pop_specs;       // --pop CG.bin,labels,T_K,target[,lambda]
     int batch_pop = 8;
     double pop_huber = 2.0;
+    double pop_ess_min = -1.0;                // --pop-ess-min: soglia di ESS per le popolazioni (default = --ess-min)
 
     for (int k = 1; k < argc; ++k) {
         const std::string a = argv[k];
@@ -409,6 +410,7 @@ static int run(int argc, char* argv[]) {
         else if (a == "--pop") pop_specs.push_back(next());
         else if (a == "--batch-pop") batch_pop = std::stoi(next());
         else if (a == "--pop-huber") pop_huber = std::stod(next());
+        else if (a == "--pop-ess-min") pop_ess_min = std::stod(next());
         else { usage(); std::cerr << "[ERROR] opzione sconosciuta: " << a << "\n"; return 2; }
     }
     if (config_path.empty() || (aa_path.empty() && system_specs.empty()) ||
@@ -436,6 +438,11 @@ static int run(int argc, char* argv[]) {
     }
     if (!out_path.empty() && std::filesystem::exists(out_path)) {
         std::cerr << "[ERROR] il modello di uscita esiste gia': " << out_path << "\n";
+        return 2;
+    }
+    if (pop_ess_min <= 0.0) pop_ess_min = ess_min;
+    if (!(pop_ess_min > 0.0 && pop_ess_min < 1.0)) {
+        std::cerr << "[ERROR] --pop-ess-min fuori da (0, 1)\n";
         return 2;
     }
     const double beta = 1.0 / kT;
@@ -733,6 +740,7 @@ static int run(int argc, char* argv[]) {
                                  {"ess0_U", p.ess0_U}, {"ess0_N", p.ess0_N}, {"L0", p.L0}, {"pen0", p.pen0}});
     }
     report["pop_huber"] = pop_huber;
+    report["pop_ess_min"] = pop_ess_min;
 
     // =================================================================
     // Verifica del gradiente: il surrogato sum_k w_k beta_k(<U_k>_AA -
@@ -1014,7 +1022,7 @@ static int run(int argc, char* argv[]) {
     };
     int updates = 0;
     int last_logged = -1;
-    double prev_ess = 1.0;
+    double prev_ess = 1e9;   // rapporto ESS/soglia del passo precedente
     double last_step_lr = -1.0;
     double accepted_lr = -1.0;
     std::cout << "[INFO] passo      ESS/N      dS_train      dS_hold     beta*gap        lr\n";
@@ -1026,26 +1034,33 @@ static int run(int argc, char* argv[]) {
             w_cg.push_back(torch::softmax(-systems[k].beta * (u_cg[k] - systems[k].u0_cg), 0));
             ess = std::min(ess, min_ess_fraction(w_cg.back()));
         }
+        // Due soglie: entropia relativa (--ess-min) e popolazioni (--pop-ess-min).  Le stime
+        // di P_U si rifanno con la MD a ogni iterazione e possono tollerare una ripesatura piu'
+        // spinta; quella a 300 K no.  ratio < 1: una delle due soglie e' violata.
         std::vector<PopEval> pe;
+        double ess_pop = 1.0;
         for (const auto& p : pops) {
             pe.push_back(pop_eval(p, pop_energies(p)));
-            ess = std::min({ess, pe.back().essU, pe.back().essN});
+            ess_pop = std::min({ess_pop, pe.back().essU, pe.back().essN});
         }
-        last_ess = ess;
-        if (ess < ess_min) {
+        const double ratio = std::min(ess / ess_min, ess_pop / pop_ess_min);
+        last_ess = std::min(ess, ess_pop);
+        if (ratio < 1.0) {
             restore_parameters(model, prev_params);
             --updates;
-            if (backtracks >= max_backtracks || prev_ess < 1.2 * ess_min) {
+            if (backtracks >= max_backtracks || prev_ess < 1.2) {
                 stop_reason = "ess";
-                std::cout << "[INFO] ESS/N = " << ess << " < " << ess_min << " anche con lr "
-                          << current_lr << ": serve una nuova simulazione\n";
+                std::cout << "[INFO] ESS/N = " << ess << " (soglia " << ess_min << "), popolazioni " << ess_pop
+                          << " (soglia " << pop_ess_min << ") anche con lr " << current_lr
+                          << ": serve una nuova simulazione\n";
                 break;
             }
             ++backtracks;
             current_lr *= 0.5;
             set_lr(current_lr);
-            std::cout << "[INFO] ESS/N = " << ess << " < " << ess_min << " dopo il passo "
-                      << (updates + 1) << ": annullato, lr -> " << current_lr << "\n";
+            std::cout << "[INFO] ESS/N = " << ess << " (soglia " << ess_min << "), popolazioni " << ess_pop
+                      << " (soglia " << pop_ess_min << ") dopo il passo " << (updates + 1)
+                      << ": annullato, lr -> " << current_lr << "\n";
             continue;
         }
         if (updates > 0 && last_step_lr > 0.0) accepted_lr = last_step_lr;
@@ -1090,7 +1105,7 @@ static int run(int argc, char* argv[]) {
             }
         }
         prev_params = snapshot_parameters(model);
-        prev_ess = ess;
+        prev_ess = ratio;
 
         optimizer.zero_grad();
         for (std::size_t k = 0; k < systems.size(); ++k) {
@@ -1138,8 +1153,9 @@ static int run(int argc, char* argv[]) {
             pop_delta += q.pen - p.pen0;
             pop_ess = std::min({pop_ess, q.essU, q.essN});
         }
+        const bool final_ok = last_ess >= ess_min && pop_ess >= pop_ess_min;
         last_ess = std::min(last_ess, pop_ess);
-        if (last_ess >= ess_min) {
+        if (final_ok) {
             const double score = (has_hold ? e.ds_hold : e.ds_train) + pop_delta;
             history.push_back({{"step", steps_done}, {"ess", e.ess}, {"dS_train", e.ds_train},
                                {"dS_hold", e.ds_hold}, {"beta_gap", e.gap}, {"final", true},
