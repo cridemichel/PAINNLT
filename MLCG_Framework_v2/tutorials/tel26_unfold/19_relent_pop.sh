@@ -62,6 +62,7 @@ POP_TRACT_CUT=${POP_TRACT_CUT:-0.2}
 # etichette morbide sposta il bacino campionato (pop1, pop3 it01-04: allentamento invece di fusione).
 # Se nessuna T qualifica, l'iterazione non allena (modello copiato) e la MD prosegue.  0 = tutte le T.
 POP_MIN_FRAMES=${POP_MIN_FRAMES:-0}
+POP_COEXIST=${POP_COEXIST:-lineage}   # lineage | union: come si verifica la coesistenza dei due stati (vedi both_states)
 # POP_ESS_MIN (24/10): soglia di ESS per le popolazioni (train_relent --pop-ess-min), separata da RE_ESS_MIN.
 # pop5 it05-07: l'ESS delle popolazioni (una copia, poche decine di frame per stato) crollava dopo 1-2 passi
 # mentre quello a 300 K restava 0,7-0,9.  0 = stessa soglia di RE_ESS_MIN.
@@ -122,14 +123,24 @@ T_START=$(date +%s)
 echo "[relpop] $TAG in $OUTDIR: partenza $START_MODEL, T pop: U $POP_TS${POP_F_TS:+, F $POP_F_TS ($POP_F_MAP)}, $POP_NS ns per corsa, 300 K: $MD_PS ps"
 echo "[relpop] T con almeno $POP_MIN_FRAMES frame per stato; lambda $POP_LAMBDA, Huber $POP_HUBER, delta $POP_DELTA, ordine $POP_ORDER (soglia per tratto $POP_TRACT_CUT), lr max $RE_LR, $NGPU GPU, ${#CPUS[@]} core"
 
-both_states() {   # json di 19_pop_labels.py -> vero se ci sono >= POP_MIN_FRAMES frame dentro e fuori lo stato
+both_states() {   # json di 19_pop_labels.py -> vero se lo stato e il suo complemento coesistono davvero
+    # POP_COEXIST=lineage (default): almeno un lignaggio contiene >= POP_MIN_FRAMES frame in entrambi gli stati,
+    #   cioe' ha attraversato la barriera; esclude le T dove i lignaggi restano bloccati ciascuno nel proprio stato
+    #   (isteresi: la P stimata sarebbe solo la media dei punti di partenza).
+    # POP_COEXIST=union: conteggio sull'unione dei lignaggi (comportamento precedente).
     (( POP_MIN_FRAMES > 0 )) || return 0
     python3 -c "
 import json, sys
-s = json.load(open(sys.argv[1])); m = int(sys.argv[2])
-n_in = sum(r['P_U_hard'] * r['frames'] for r in s['runs'] if r['frames'])
-n_out = sum(r['frames'] for r in s['runs']) - n_in
-sys.exit(0 if n_in >= m and n_out >= m else 1)" "$1" "$POP_MIN_FRAMES"
+s = json.load(open(sys.argv[1])); m = int(sys.argv[2]); mode = sys.argv[3]
+runs = [r for r in s['runs'] if r['frames']]
+def io(rs):
+    n_in = sum(r['P_U_hard'] * r['frames'] for r in rs)
+    return n_in, sum(r['frames'] for r in rs) - n_in
+if mode == 'union':
+    a, b = io(runs); ok = a >= m and b >= m
+else:
+    ok = any(min(io([r])) >= m for r in runs)
+sys.exit(0 if ok else 1)" "$1" "$POP_MIN_FRAMES" "$POP_COEXIST"
 }
 model_of() { printf "%s/%s_it%02d.pt" "$OUTDIR" "$TAG" "$1"; }
 md_of()    { printf "%s/md_it%02d" "$OUTDIR" "$1"; }
@@ -245,7 +256,7 @@ for n in $(seq 1 $NITER); do
         if both_states $D/pop_T$T.json; then
             specs+=(--pop "$(grep '^\[POPSPEC\]' $D/pop_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
         else
-            echo "  T $T: esclusa (meno di $POP_MIN_FRAMES frame in uno dei due stati)"
+            echo "  T $T: esclusa (nessuna coesistenza: meno di $POP_MIN_FRAMES frame in uno dei due stati, criterio $POP_COEXIST)"
         fi
     done
     for T in $POP_F_TS; do
@@ -259,7 +270,7 @@ for n in $(seq 1 $NITER); do
         if both_states $D/popF_T$T.json; then
             specs+=(--pop "$(grep '^\[POPSPEC\]' $D/popF_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
         else
-            echo "  T $T (F): esclusa (meno di $POP_MIN_FRAMES frame in uno dei due stati)"
+            echo "  T $T (F): esclusa (nessuna coesistenza: meno di $POP_MIN_FRAMES frame in uno dei due stati, criterio $POP_COEXIST)"
         fi
     done
     if (( ${#specs[@]} == 0 )); then
