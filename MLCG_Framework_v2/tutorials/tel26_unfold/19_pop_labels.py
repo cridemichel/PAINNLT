@@ -163,7 +163,10 @@ def main():
                         if keep.size else None, "P_U_hard": float(hard.mean()) if keep.size else None,
                         "p_U_soft_mean": float(soft.mean()) if keep.size else None,
                         "P_n_intact": [float((n_int == k).mean()) for k in range(qk.shape[1] + 1)] if keep.size else None,
-                        "q_mean": qk.mean(0).tolist() if keep.size else None})
+                        "q_mean": qk.mean(0).tolist() if keep.size else None,
+                        # stato dell'ultimo frame (26/10): 19_relent_pop.sh POP_RESEED riparte dallo stato
+                        # iniziale del lignaggio se questo ha lasciato il proprio bacino
+                        "last_U_hard": float(hard[-1]) if keep.size else None})
     p = np.concatenate(labels)
     if p.size == 0:
         raise SystemExit("[ERROR] nessun frame dopo --skip-ps")

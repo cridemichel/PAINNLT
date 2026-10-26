@@ -59,6 +59,16 @@
 //   dL_k/dtheta = -beta_k ( <dU/dtheta>_wU - <dU/dtheta>_wN ),
 //   wU_i ~ w_i p_i,  wN_i ~ w_i (1 - p_i).
 //
+// L0 ASSOLUTO (sesto campo di --pop, 26/10/2026).  Con una barriera F/U alta
+// i campioni di theta_0 vengono da lignaggi bloccati ciascuno nel proprio
+// bacino: la ripesatura dentro ogni bacino resta esatta, ma il conteggio
+// ln(sum p / sum (1 - p)) riflette solo quanti frame ha ciascun lignaggio.
+// Dato L0_abs = L(theta_0) stimato altrove (catena di perturbazioni ancorata
+// al modello dei soli prior, 19_relent_pop.sh POP_CHAIN=1), si usa
+//   L(theta) = L_conteggi(theta) - L_conteggi(theta_0) + L0_abs,
+// con L_conteggi(theta_0) = ln(sum p / sum (1 - p)) (pesi uniformi): basta
+// aggiungere la costante a ln p_U, e gradiente, pesi ed ESS restano quelli.
+//
 // Ogni stato ha la sua soglia di ESS (relativa a quella di theta_0, che con
 // etichette morbide e' gia' < N).  Il modello migliore minimizza
 // Delta S_holdout + sum_k [P_k(theta) - P_k(theta_0)].
@@ -349,7 +359,8 @@ static void usage() {
         "       testa entropica proporzionale a quella entalpica (con --steps 0):\n"
         "       --thermo-scale KAPPA   readout_dT = -KAPPA * readout, U(T) = U(T0) [1 - KAPPA (T - T0)/T0]\n"
         "       vincolo sulle popolazioni (ripetibile, una temperatura per volta):\n"
-        "       --pop CG.bin,ETICHETTE.txt,T_K,L_bersaglio[,lambda]   L = ln(P_U/P_N), etichette p_U per frame\n"
+        "       --pop CG.bin,ETICHETTE.txt,T_K,L_bersaglio[,lambda[,L0_abs]]   L = ln(P_U/P_N), etichette p_U per frame;\n"
+        "             L0_abs: valore di L per theta_0 da usare al posto del conteggio dei frame\n"
         "       [--batch-pop 8] [--pop-huber 2] [--pop-ess-min (= --ess-min)]\n";
 }
 
@@ -665,6 +676,8 @@ static int run(int argc, char* argv[]) {
         DeviceSet cg;
         torch::Tensor idx, log_pU, log_pN, u0;   // [F]; log e u0 double su CPU
         double ess0_U = 1.0, ess0_N = 1.0, L0 = 0.0, pen0 = 0.0;
+        bool has_L0_abs = false;
+        double L0_abs = 0.0, L_counts0 = 0.0;   // L_counts0 = ln(sum p / sum (1 - p))
     };
     struct PopEval { double L = 0.0, pen = 0.0, essU = 1.0, essN = 1.0; torch::Tensor wU, wN; };
     std::vector<PopSystem> pops;
@@ -677,13 +690,18 @@ static int run(int argc, char* argv[]) {
             if (pos == std::string::npos) break;
             start = pos + 1;
         }
-        if (f.size() < 4 || f.size() > 5) {
-            throw std::runtime_error("--pop vuole CG.bin,ETICHETTE,T_K,L_bersaglio[,lambda]: " + spec);
+        if (f.size() < 4 || f.size() > 6) {
+            throw std::runtime_error("--pop vuole CG.bin,ETICHETTE,T_K,L_bersaglio[,lambda[,L0_abs]]: " + spec);
         }
         PopSystem p;
         p.cg_path = f[0]; p.labels_path = f[1];
         p.T = std::stod(f[2]); p.target = std::stod(f[3]);
-        p.lambda = f.size() == 5 ? std::stod(f[4]) : 1.0;
+        p.lambda = f.size() >= 5 ? std::stod(f[4]) : 1.0;
+        if (f.size() == 6) {
+            p.has_L0_abs = true;
+            p.L0_abs = std::stod(f[5]);
+            if (!std::isfinite(p.L0_abs)) throw std::runtime_error("L0_abs di --pop non valido: " + spec);
+        }
         if (!(p.T > 0.0) || !(p.lambda > 0.0) || !std::isfinite(p.target)) {
             throw std::runtime_error("T, lambda e bersaglio di --pop non validi: " + spec);
         }
@@ -702,6 +720,8 @@ static int run(int argc, char* argv[]) {
                                      "(usare etichette morbide se U o N non sono mai visitati)");
         }
         p.log_pU = torch::log(pu.clamp_min(1e-300));
+        p.L_counts0 = std::log(sU / sN);
+        if (p.has_L0_abs) p.log_pU = p.log_pU + (p.L0_abs - p.L_counts0);   // L = L_conteggi + costante
         p.log_pN = torch::log((1.0 - pu).clamp_min(1e-300));
         p.ess0_U = sU * sU / (pu * pu).sum().item<double>();
         p.ess0_N = sN * sN / ((1.0 - pu) * (1.0 - pu)).sum().item<double>();
@@ -732,12 +752,15 @@ static int run(int argc, char* argv[]) {
             p.pen0 = e0.pen;
             std::cout << "[INFO] popolazioni T = " << p.T << " K: " << p.cg.frames << " frame, ESS di theta_0 U "
                       << p.ess0_U << " / N " << p.ess0_N << ", L = ln(P_U/P_N) " << p.L0
-                      << " (P_U " << 1.0 / (1.0 + std::exp(-p.L0)) << "), bersaglio " << p.target
+                      << " (P_U " << 1.0 / (1.0 + std::exp(-p.L0)) << ")"
+                      << (p.has_L0_abs ? " [L0 assoluto; dal conteggio dei frame " + std::to_string(p.L_counts0) + "]" : "")
+                      << ", bersaglio " << p.target
                       << " (P_U " << 1.0 / (1.0 + std::exp(-p.target)) << "), lambda " << p.lambda << "\n";
         }
         report["pop"].push_back({{"cg", p.cg_path}, {"labels", p.labels_path}, {"T_K", p.T},
                                  {"target_L", p.target}, {"lambda", p.lambda}, {"frames", p.cg.frames},
-                                 {"ess0_U", p.ess0_U}, {"ess0_N", p.ess0_N}, {"L0", p.L0}, {"pen0", p.pen0}});
+                                 {"ess0_U", p.ess0_U}, {"ess0_N", p.ess0_N}, {"L0", p.L0}, {"pen0", p.pen0},
+                                 {"L_counts0", p.L_counts0}, {"L0_abs", p.has_L0_abs ? json(p.L0_abs) : json(nullptr)}});
     }
     report["pop_huber"] = pop_huber;
     report["pop_ess_min"] = pop_ess_min;

@@ -67,6 +67,27 @@ POP_COEXIST=${POP_COEXIST:-lineage}   # lineage | union: come si verifica la coe
 # pop5 it05-07: l'ESS delle popolazioni (una copia, poche decine di frame per stato) crollava dopo 1-2 passi
 # mentre quello a 300 K restava 0,7-0,9.  0 = stessa soglia di RE_ESS_MIN.
 POP_ESS_MIN=${POP_ESS_MIN:-0}
+# RE_ONLY_IF_NO_POP (26/10): se nessuna T qualifica, l'iterazione allena comunque l'entropia relativa a 300 K
+# senza termine di popolazione (1, default), invece di copiare il modello (0).  pop5 it20-36: con le
+# iterazioni saltate anche la struttura a 300 K restava ferma per ~20 h.
+RE_ONLY_IF_NO_POP=${RE_ONLY_IF_NO_POP:-1}
+# POP_CHAIN (26/10): L(theta_n, T) da una catena di perturbazioni ancorata al modello dei soli prior
+# (19_pop_chain.py, ancora di 22_anchor_L0.py in POP_ANCHOR), invece che dal conteggio dei frame.
+# Con una barriera F/U alta i lignaggi restano ciascuno nel proprio bacino (pop5 it20-36: due
+# transizioni in ~500 ns) e la frazione di frame U non stima P_U; la ripesatura dentro i bacini
+# resta esatta, e train_relent riceve L(theta_n-1) come sesto campo di --pop.  Richiede
+# START_MODEL=zero alla prima iterazione.  POP_RESEED (default = POP_CHAIN): un lignaggio che
+# finisce l'iterazione fuori dal proprio bacino riparte da START_F / START_U, cosi' entrambi i
+# bacini restano campionati.  Con POP_CHAIN=1: criterio union, niente allenamento senza T valide
+# (la catena non saprebbe di quanto cambia L), niente POP_F_TS.
+POP_CHAIN=${POP_CHAIN:-0}
+POP_ANCHOR=${POP_ANCHOR:-}
+POP_RESEED=${POP_RESEED:-$POP_CHAIN}
+if [[ $POP_CHAIN == 1 ]]; then
+    [[ -z ${POP_F_TS:-} ]] || { echo "[ERROR] POP_CHAIN=1 non supporta POP_F_TS" >&2; exit 1; }
+    POP_COEXIST=union
+    RE_ONLY_IF_NO_POP=0
+fi
 MD_TS=$(echo $POP_TS $POP_F_TS | tr ' ' '\n' | sort -n -u | tr '\n' ' ')
 POP_NS=${POP_NS:-3}
 POP_SKIP_PS=${POP_SKIP_PS:-500}
@@ -110,6 +131,18 @@ grep -aq -- "--pop-huber" $RELENT || { echo "[ERROR] train_relent non ha --pop: 
 mkdir -p $OUTDIR && cd $OUTDIR || exit 1
 exec 9> .lock
 flock -n 9 || { echo "[ERROR] la catena $TAG e' gia' in corso in $OUTDIR" >&2; exit 1; }
+CHAIN=$OUTDIR/L_chain.json
+CHAINPY="python3 $U/19_pop_chain.py"
+if [[ $POP_CHAIN == 1 ]]; then
+    grep -aq "L0_abs" $RELENT || { echo "[ERROR] train_relent non accetta L0_abs in --pop: ricompilalo" >&2; exit 1; }
+    if [[ ! -s $CHAIN ]]; then
+        [[ $START_MODEL == zero ]] || { echo "[ERROR] POP_CHAIN=1 senza $CHAIN richiede START_MODEL=zero" >&2; exit 1; }
+        [[ -s $POP_ANCHOR ]] || { echo "[ERROR] POP_CHAIN=1: manca l'ancora POP_ANCHOR=$POP_ANCHOR (22_anchor_L0.py)" >&2; exit 1; }
+        $CHAINPY init --chain $CHAIN --anchor $POP_ANCHOR --ts "$POP_TS" || exit 1
+    fi
+    $CHAINPY show --chain $CHAIN --it 0 --ts "$POP_TS"
+fi
+chain_has() { python3 -c "import json,sys; sys.exit(0 if sys.argv[2] in json.load(open(sys.argv[1]))['L'] else 1)" $CHAIN $1; }
 
 DT=0.004
 RE_MD_STEPS=$(python3 -c "print(int(round($MD_PS / $DT)))")
@@ -141,6 +174,16 @@ if mode == 'union':
 else:
     ok = any(min(io([r])) >= m for r in runs)
 sys.exit(0 if ok else 1)" "$1" "$POP_MIN_FRAMES" "$POP_COEXIST"
+}
+left_basin() {    # json di 19_pop_labels.py, lignaggio F|U -> vero se l'ultimo frame e' nell'altro stato
+    [[ $POP_RESEED == 1 && -s $1 ]] || return 1
+    python3 -c "
+import json, os, sys
+s = json.load(open(sys.argv[1])); b = sys.argv[2]
+for r in s['runs']:
+    if os.path.basename(r['samples']).startswith(b + '_T') and r.get('last_U_hard') is not None:
+        sys.exit(0 if (r['last_U_hard'] == 1.0) == (b == 'F') else 1)
+sys.exit(1)" "$1" "$2"
 }
 model_of() { printf "%s/%s_it%02d.pt" "$OUTDIR" "$TAG" "$1"; }
 md_of()    { printf "%s/md_it%02d" "$OUTDIR" "$1"; }
@@ -197,9 +240,10 @@ simulate() {
             extra=()
             # stato finale dell'iterazione precedente; per una T aggiunta a catena avviata
             # (o alla prima iterazione) si parte da START_F / START_U con velocita' nuove
-            if (( k > 0 )) && [[ -s $P/${b}_T$T.state.npz ]]; then
+            if (( k > 0 )) && [[ -s $P/${b}_T$T.state.npz ]] && ! left_basin $P/pop_T$T.json $b; then
                 ck=$P/${b}_T$T.state.npz
             else
+                (( k > 0 )) && [[ -s $P/${b}_T$T.state.npz ]] && echo "[relpop] T $T: il lignaggio $b ha lasciato il proprio bacino, riparte da START_$b"
                 if [[ $b == F ]]; then ck=$START_F; else ck=$START_U; fi
                 extra=(--init_kT $kt --velocity_seed $(( seed + 7919 )))
             fi
@@ -231,6 +275,13 @@ for n in $(seq 1 $NITER); do
     mn=$(model_of $n)
     if [[ -s $mn && -s $mn.manifest.json ]]; then
         [[ -s ${mn%.pt}.relent.json ]] && cur_lr=$(next_lr ${mn%.pt}.relent.json)
+        if [[ $POP_CHAIN == 1 ]] && ! chain_has $n; then     # job interrotto fra modello e catena
+            if grep -q '"skipped"' ${mn%.pt}.relent.json 2>/dev/null; then
+                $CHAINPY update --chain $CHAIN --prev $prev --it $n --ts "$POP_TS" || exit 1
+            else
+                $CHAINPY update --chain $CHAIN --prev $prev --it $n --report ${mn%.pt}.relent.json --ts "$POP_TS" || exit 1
+            fi
+        fi
         continue
     fi
     now=$(date +%s)
@@ -254,7 +305,9 @@ for n in $(seq 1 $NITER); do
         fi
         grep -v POPSPEC $D/pop_T$T.txt
         if both_states $D/pop_T$T.json; then
-            specs+=(--pop "$(grep '^\[POPSPEC\]' $D/pop_T$T.txt | awk '{print $2}'),$POP_LAMBDA")
+            spec="$(grep '^\[POPSPEC\]' $D/pop_T$T.txt | awk '{print $2}'),$POP_LAMBDA"
+            [[ $POP_CHAIN == 1 ]] && spec+=",$($CHAINPY get --chain $CHAIN --it $prev --T $T)"
+            specs+=(--pop "$spec")
         else
             echo "  T $T: esclusa (nessuna coesistenza: meno di $POP_MIN_FRAMES frame in uno dei due stati, criterio $POP_COEXIST)"
         fi
@@ -273,15 +326,20 @@ for n in $(seq 1 $NITER); do
             echo "  T $T (F): esclusa (nessuna coesistenza: meno di $POP_MIN_FRAMES frame in uno dei due stati, criterio $POP_COEXIST)"
         fi
     done
-    if (( ${#specs[@]} == 0 )); then
+    if (( ${#specs[@]} == 0 )) && [[ $RE_ONLY_IF_NO_POP != 1 ]]; then
         echo "[relpop] $(date '+%F %T') it$(printf %02d $n): nessuna T con entrambi gli stati campionati, modello copiato senza allenamento"
         cp $(model_of $prev) $mn.tmp.pt && mv $mn.tmp.pt $mn
         manifest $mn
         echo '{"skipped": true}' > ${mn%.pt}.relent.json
         echo "[POP-ITER] it$(printf %02d $n) saltata (nessuna T con entrambi gli stati)"
+        if [[ $POP_CHAIN == 1 ]]; then
+            $CHAINPY update --chain $CHAIN --prev $prev --it $n --ts "$POP_TS" || exit 1
+            $CHAINPY show --chain $CHAIN --it $n --ts "$POP_TS"
+        fi
         last_dur=$(( $(date +%s) - t0 ))
         continue
     fi
+    (( ${#specs[@]} == 0 )) && echo "[relpop] $(date '+%F %T') it$(printf %02d $n): nessuna T con entrambi gli stati, allenamento solo a 300 K"
     common=(--config $CONFIG --aa $DATA_RE --cg $D/re.bin "${specs[@]}" --pop-huber $POP_HUBER
             --residues-per-copy 26 --batch-aa 8 --batch-cg 8 --batch-pop 8)
     [[ $POP_ESS_MIN != 0 ]] && common+=(--pop-ess-min $POP_ESS_MIN)
@@ -308,10 +366,14 @@ r = json.load(open(sys.argv[1]))
 sig = lambda x: 1.0 / (1.0 + math.exp(-x))
 st = ["F" if "/popF_" in q["labels"] else "U" for q in r.get("pop", [])]
 pops = "  ".join(f"{p['T_K']:g} K: P_{s} {sig(p['L0']):.3f} -> {sig(p['L']):.3f} (esp {sig(p['target_L']):.3f})"
-                 for s, p in zip(st, r.get("pop_final", [])))
+                 for s, p in zip(st, r.get("pop_final", []))) or "solo 300 K"
 print(f"[POP-ITER] it{int(sys.argv[2]):02d} passo {r['best_step']} punteggio {r['best_dS']:.3f} "
       f"arresto {r['stop_reason']} ESS {r['ess_last']:.3f} lr {r['lr_final']:.3g} ({round(r['seconds'])} s)  {pops}")
 PYEOF
+    if [[ $POP_CHAIN == 1 ]]; then
+        $CHAINPY update --chain $CHAIN --prev $prev --it $n --report $rep --ts "$POP_TS" || exit 1
+        $CHAINPY show --chain $CHAIN --it $n --ts "$POP_TS"
+    fi
     last_dur=$(( $(date +%s) - t0 ))
 done
 
