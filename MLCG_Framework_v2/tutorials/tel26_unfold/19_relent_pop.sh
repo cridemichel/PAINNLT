@@ -95,6 +95,9 @@ POP_STRIDE=${POP_STRIDE:-1}
 POP_LAMBDA=${POP_LAMBDA:-1}
 POP_HUBER=${POP_HUBER:-2}
 POP_DELTA=${POP_DELTA:-0.05}
+# POP_SMOOTH_NS (28/10): media mobile dei parametri d'ordine prima della soglia (19_pop_labels --smooth-ns).
+# 1 ns sfuma permanenze in F di pochi decimi di ns (pop6: lignaggi F a 322-338 K tutti "U" con 1 ns).
+POP_SMOOTH_NS=${POP_SMOOTH_NS:-1}
 K6=$A/melt_painn/tel26_lp2th_th0_it60_k6
 START_F=${START_F:-$K6/chiuso/T330.state.npz}
 START_U=${START_U:-$K6/aperto/T345.state.npz}
@@ -311,6 +314,7 @@ for n in $(seq 1 $NITER); do
             rm -f $D/pop_T$T.bin
             python3 $U/19_pop_labels.py --T $T --template $DATA_POP --samples $D/F_T$T.samples.npz $D/U_T$T.samples.npz \
                 --skip-ps $POP_SKIP_PS --stride $POP_STRIDE --delta $POP_DELTA --order $POP_ORDER --tract-cut $POP_TRACT_CUT \
+                --smooth-ns $POP_SMOOTH_NS \
                 --out-prefix $D/pop_T$T > $D/pop_T$T.txt \
                 || { cat $D/pop_T$T.txt; exit 1; }
         fi
