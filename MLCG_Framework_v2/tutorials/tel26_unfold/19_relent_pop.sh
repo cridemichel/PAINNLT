@@ -243,8 +243,19 @@ simulate() {
             if (( k > 0 )) && [[ -s $P/${b}_T$T.state.npz ]] && ! left_basin $P/pop_T$T.json $b; then
                 ck=$P/${b}_T$T.state.npz
             else
-                (( k > 0 )) && [[ -s $P/${b}_T$T.state.npz ]] && echo "[relpop] T $T: il lignaggio $b ha lasciato il proprio bacino, riparte da START_$b"
                 if [[ $b == F ]]; then ck=$START_F; else ck=$START_U; fi
+                if (( k > 0 )) && [[ -s $P/${b}_T$T.state.npz ]]; then
+                    # 28/10: riparte dallo stato finale del lignaggio $b alla T vicina rimasto nel proprio bacino
+                    # (F: T piu' bassa, U: T piu' alta), equilibrato col modello corrente; START_$b se non c'e'
+                    local Tn src=START_$b
+                    for Tn in $(echo $MD_TS | tr ' ' '\n' | sort -n $([[ $b == U ]] && echo -r)); do
+                        if [[ $b == F ]]; then (( Tn < T )) || continue; else (( Tn > T )) || continue; fi
+                        if [[ -s $P/${b}_T$Tn.state.npz ]] && ! left_basin $P/pop_T$Tn.json $b; then
+                            ck=$P/${b}_T$Tn.state.npz; src="${b}_T$Tn"
+                        fi
+                    done
+                    echo "[relpop] T $T: il lignaggio $b ha lasciato il proprio bacino, riparte da $src"
+                fi
                 extra=(--init_kT $kt --velocity_seed $(( seed + 7919 )))
             fi
             mkdir -p $D/wd_${b}_T$T
