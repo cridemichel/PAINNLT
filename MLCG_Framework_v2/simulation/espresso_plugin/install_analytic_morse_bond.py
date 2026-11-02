@@ -300,6 +300,26 @@ def _python_enum_count(path: Path) -> int:
     )
 
 
+def _upgrade_block(path: Path, start_marker: str, end_marker: str, new_block: str,
+                   needle: str) -> bool:
+    """Replace an already installed block that predates ``needle`` (switch_start, 2/11/2026)."""
+    text = _read(path)
+    i = text.find(start_marker)
+    if i < 0:
+        return False
+    j = text.find(end_marker, i)
+    if j < 0:
+        if needle in text[i:i + 4000]:      # already upgraded (the old end marker is gone)
+            return False
+        raise RuntimeError(f"Could not find the end of the installed block in {path}")
+    j += len(end_marker)                     # end marker included: neighbouring blocks untouched
+    block = text[i:j]
+    if needle in block:
+        return False
+    path.write_text(text[:i] + new_block + text[j:])
+    return True
+
+
 def required_paths(espresso_root: Path) -> dict[str, Path]:
     return {
         "bond_data": espresso_root / "src/core/bonded_interactions/bonded_interaction_data.hpp",
@@ -377,6 +397,8 @@ class MorseBond : public BondedInteractionImpl<::MorseBond> {
         {"r_0", AutoParameter::read_only, [this]() { return get_struct().r0; }},
         {"r_cut", AutoParameter::read_only,
          [this]() { return get_struct().r_cut; }},
+        {"switch_start", AutoParameter::read_only,
+         [this]() { return get_struct().switch_start; }},
     });
   }
 
@@ -386,7 +408,8 @@ class MorseBond : public BondedInteractionImpl<::MorseBond> {
         std::make_shared<::Bonded_IA_Parameters>(CoreBondedInteraction(
             get_value<double>(params, "D"), get_value<double>(params, "a"),
             get_value<double>(params, "r_0"),
-            get_value<double>(params, "r_cut")));
+            get_value<double>(params, "r_cut"),
+            get_value_or<double>(params, "switch_start", -1.0)));
   }
 };
 
@@ -398,6 +421,14 @@ class MorseBond : public BondedInteractionImpl<::MorseBond> {
         "// MLCG analytic MorseBond",
     ):
         changed.append("BondedInteraction.hpp")
+    elif _upgrade_block(
+        paths["script_header"],
+        "// MLCG analytic MorseBond\nclass MorseBond",
+        "\n};\n",
+        script_class[: script_class.index("\n};\n") + len("\n};\n")],
+        '"switch_start"',
+    ):
+        changed.append("BondedInteraction.hpp (switch_start)")
 
     if _ensure_script_registration(paths["script_init"]):
         changed.append("initialize.cpp")
@@ -413,14 +444,17 @@ class MorseBond : public BondedInteractionImpl<::MorseBond> {
 class MorseBond(BondedInteraction):
     """Conservative bonded Morse potential.
 
-    U(r) = D * (1 - exp(-a * (r-r_0)))**2
+    switch_start < 0 (default): U(r) = D * (1 - exp(-a * (r-r_0)))**2,
+    broken at r >= r_cut.  switch_start >= 0: reversible switched contact,
+    U(r) = D (y**2 - 2 y) with the quintic switch between switch_start and
+    r_cut, zero (inert, not broken) beyond r_cut.
     """
 
     _so_name = "Interactions::MorseBond"
     _type_number = BONDED_IA.MORSE_BOND
 
     def get_default_params(self):
-        return {"r_cut": 15.0}
+        return {"r_cut": 15.0, "switch_start": -1.0}
 
 
 '''
@@ -431,6 +465,15 @@ class MorseBond(BondedInteraction):
         "# MLCG analytic MorseBond Python class",
     ):
         changed.append("interactions.py class")
+    elif _upgrade_block(
+        paths["python"],
+        "# MLCG analytic MorseBond Python class",
+        'return {"r_cut": 15.0}',
+        python_class[: python_class.index('return {"r_cut": 15.0, "switch_start": -1.0}')
+                     + len('return {"r_cut": 15.0, "switch_start": -1.0}')],
+        '"switch_start"',
+    ):
+        changed.append("interactions.py class (switch_start)")
 
     return changed
 
@@ -450,6 +493,9 @@ def check(espresso_root: Path, source_header: Path) -> None:
             paths["bond_data"], paths["python"]
         ),
         "python class": "class MorseBond(BondedInteraction):" in _read(paths["python"]),
+        "script switch_start": 'get_value_or<double>(params, "switch_start", -1.0)'
+        in _read(paths["script_header"]),
+        "python switch_start": '"switch_start": -1.0' in _read(paths["python"]),
     }
     failed = [name for name, ok in checks.items() if not ok]
     if failed:

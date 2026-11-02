@@ -69,6 +69,123 @@ int main() {
                 check=True, capture_output=True, text=True)
             subprocess.run([str(exe)], check=True)
 
+    def test_switched_kernel_matches_production_contact(self):
+        """switch_start >= 0: same energy/force as the switched non-bonded contact, inert beyond r_cut."""
+        import sys
+        compiler = shutil.which("c++") or shutil.which("clang++") or shutil.which("g++")
+        if compiler is None:
+            self.skipTest("No C++ compiler available")
+        sys.path.insert(0, str(ROOT / "simulation"))
+        try:
+            from espresso_interactions import switched_morse_energy_radial_force as ref
+        finally:
+            sys.path.pop(0)
+        D, a, r0, rs, rc = 8.5, 3.2, 0.37, 0.95, 1.6
+        rs_list = [0.30, 0.37, 0.50, 0.94, 0.95, 0.96, 1.20, 1.59, 1.60, 1.70, 15.1]
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            (td / "utils").mkdir()
+            (td / "utils/Vector.hpp").write_text(r'''#pragma once
+#include <cmath>
+namespace Utils {
+struct Vector3d {
+  double x=0., y=0., z=0.;
+  Vector3d() = default;
+  Vector3d(double x, double y, double z) : x{x}, y{y}, z{z} {}
+  double norm() const { return std::sqrt(x*x+y*y+z*z); }
+  double operator[](int i) const { return i == 0 ? x : (i == 1 ? y : z); }
+};
+inline Vector3d operator*(double s, Vector3d const &v) {
+  return {s*v.x, s*v.y, s*v.z};
+}
+}
+''')
+            source = td / "test.cpp"
+            source.write_text(r'''#include "morse_bond.hpp"
+#include <cstdio>
+#include <cstdlib>
+int main(int argc, char **argv) {
+  MorseBond b(8.5, 3.2, 0.37, 1.6, 0.95);
+  if (b.cutoff() != 0.0) return 9;
+  for (int i = 1; i < argc; ++i) {
+    double const r = std::atof(argv[i]);
+    auto const e = b.energy(Utils::Vector3d{r, 0, 0});
+    auto const f = b.force(Utils::Vector3d{r, 0, 0});
+    if (!e || !f) return 10;                       // never broken
+    double const h = 1e-6;
+    double const ep = *b.energy(Utils::Vector3d{r + h, 0, 0});
+    double const em = *b.energy(Utils::Vector3d{r - h, 0, 0});
+    std::printf("%.17g %.17g %.17g %.17g\n", r, *e, (*f)[0], -(ep - em) / (2 * h));
+  }
+  try { MorseBond bad(8.5, 3.2, 0.37, 1.6, 2.0); return 11; } catch (std::domain_error const &) {}
+  return 0;
+}
+''')
+            exe = td / "test"
+            subprocess.run(
+                [compiler, "-std=c++20", "-O2", "-I", str(td), "-I", str(PLUGIN), str(source), "-o", str(exe)],
+                check=True, capture_output=True, text=True)
+            out = subprocess.run([str(exe), *map(str, rs_list)], check=True, capture_output=True, text=True).stdout
+        for line in out.strip().splitlines():
+            r, e, f, fd = map(float, line.split())
+            e_ref, f_ref = ref(r, D=D, a=a, r0=r0, r_switch=rs, r_cut=rc)
+            self.assertAlmostEqual(e, e_ref, places=12, msg=f"energy at r={r}")
+            self.assertAlmostEqual(f, f_ref, places=12, msg=f"force at r={r}")
+            if abs(r - rc) > 1e-5 and abs(r - rs) > 1e-5:
+                self.assertAlmostEqual(f, fd, places=5, msg=f"-dU/dr at r={r}")
+            if r >= rc:
+                self.assertEqual((e, f), (0.0, 0.0))
+        self.assertAlmostEqual(ref(r0, D=D, a=a, r0=r0, r_switch=rs, r_cut=rc)[0], -D)
+
+    def test_installer_upgrades_pre_switch_installation(self):
+        """A tree installed before switch_start is upgraded in place, neighbours untouched, then idempotent."""
+        installer = load_installer()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            old_script = (
+                "// MLCG analytic MorseBond\n"
+                "class MorseBond : public BondedInteractionImpl<::MorseBond> {\n"
+                " public:\n  MorseBond() {}\n};\n\n"
+                "// other plugin class\nclass Foreign : public BondedInteractionImpl<::Foreign> {\n};\n\n"
+                "class BondedCoulomb : public BondedInteractionImpl<::BondedCoulomb> {\n"
+            )
+            old_python = (
+                "class BONDED_IA(enum.IntEnum):\n    VIRTUAL_BOND = enum.auto()\n"
+                "    MORSE_BOND = enum.auto()  # MLCG analytic MorseBond\n\n"
+                "# MLCG analytic MorseBond Python class\n@script_interface_register\n"
+                "class MorseBond(BondedInteraction):\n    def get_default_params(self):\n"
+                "        return {\"r_cut\": 15.0}\n\n\n"
+                "# other plugin python class\n\n"
+                "@script_interface_register\nclass BondedInteractions(ScriptObjectMap):\n"
+            )
+            files = {
+                "src/core/bonded_interactions/bonded_interaction_data.hpp": '#include "harmonic.hpp"\n#include "morse_bond.hpp" // MLCG analytic MorseBond\nusing Bonded_IA_Parameters = std::variant<FeneBond, VirtualBond, MorseBond>;\n',
+                "src/core/forces_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n  // MLCG analytic MorseBond\n  if (auto const *iap = std::get_if<MorseBond>(&iaparams)) {\n    return iap->force(dx);\n  }\n',
+                "src/core/energy_inline.hpp": '  if (auto const *iap = std::get_if<QuarticBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n  // MLCG analytic MorseBond\n  if (auto const *iap = std::get_if<MorseBond>(&iaparams)) {\n    return iap->energy(dx);\n  }\n',
+                "src/script_interface/interactions/BondedInteraction.hpp": old_script,
+                "src/script_interface/interactions/initialize.cpp": '  om->register_new<QuarticBond>("Interactions::QuarticBond");\n  om->register_new<MorseBond>("Interactions::MorseBond"); // MLCG analytic MorseBond\n',
+                "src/python/espressomd/interactions.py": old_python,
+            }
+            for rel, data in files.items():
+                path = root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(data)
+            changed = installer.install(root, PLUGIN / "morse_bond.hpp")
+            self.assertIn("BondedInteraction.hpp (switch_start)", changed)
+            self.assertIn("interactions.py class (switch_start)", changed)
+            installer.check(root, PLUGIN / "morse_bond.hpp")
+            script = (root / "src/script_interface/interactions/BondedInteraction.hpp").read_text()
+            python = (root / "src/python/espressomd/interactions.py").read_text()
+            self.assertEqual(script.count("class MorseBond"), 1)
+            self.assertIn("// other plugin class\nclass Foreign", script)
+            self.assertIn('get_value_or<double>(params, "switch_start", -1.0)', script)
+            self.assertEqual(python.count("class MorseBond(BondedInteraction)"), 1)
+            self.assertIn("# other plugin python class", python)
+            self.assertIn('"switch_start": -1.0', python)
+            snapshot = {rel: (root / rel).read_text() for rel in files}
+            self.assertEqual(installer.install(root, PLUGIN / "morse_bond.hpp"), [])
+            self.assertEqual(snapshot, {rel: (root / rel).read_text() for rel in files})
+
     def test_installer_is_idempotent_on_espresso_5_style_tree(self):
         installer = load_installer()
         with tempfile.TemporaryDirectory() as td:
@@ -327,6 +444,8 @@ int main() {
 
         bond = make_analytic_morse_bond(WithMorse, {"D": 4.0, "a": 5.0, "r0": 0.3})
         self.assertEqual(bond.kwargs, {"D": 4.0, "a": 5.0, "r_0": 0.3, "r_cut": 15.0})
+        bond = make_analytic_morse_bond(WithMorse, {"D": 4.0, "a": 5.0, "r0": 0.3}, 0.9)
+        self.assertEqual(bond.kwargs, {"D": 4.0, "a": 5.0, "r_0": 0.3, "r_cut": 15.0, "switch_start": 0.9})
         with self.assertRaisesRegex(RuntimeError, "no espressomd.interactions.MorseBond"):
             make_analytic_morse_bond(object(), {"D": 4.0, "a": 5.0, "r0": 0.3})
 

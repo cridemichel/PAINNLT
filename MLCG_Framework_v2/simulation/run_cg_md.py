@@ -82,12 +82,16 @@ parser.add_argument("--neighbor_search", choices=("verlet", "link-cell", "nsquar
 parser.add_argument("--morse_switch_mode", choices=("switched", "stock-shifted"), default="switched", help="Pair-specific/type-pair Morse runtime branch; stock-shifted is a diagnostic control that keeps markers/cutoff but disables the C2 tail switch")
 parser.add_argument(
     "--pair_specific_morse_runtime",
-    choices=("marker-nonbonded", "bonded-analytic"),
+    choices=("marker-nonbonded", "bonded-analytic", "bonded-switched"),
     default="marker-nonbonded",
     help=(
         "Runtime realization for explicit pair-specific Morse contacts. "
         "marker-nonbonded is production behavior; bonded-analytic is a diagnostic "
-        "control that applies the same D/a/r0/r_cut to the physical endpoints via MorseBond."
+        "control that applies the same D/a/r0/r_cut to the physical endpoints via MorseBond. "
+        "bonded-switched (2/11/2026) applies the production switched Morse (same energy "
+        "and forces as marker-nonbonded) as a reversible MorseBond on the physical "
+        "endpoints, without markers: the number of particle types does not grow with "
+        "the number of copies (many-copy systems)."
     ),
 )
 parser.add_argument("--kT", type=float, default=2.49, help="Simulation temperature in kJ/mol (default 2.49 for 300K)")
@@ -120,7 +124,7 @@ args = parser.parse_args()
 
 if args.disable_ml and not args.model:
     raise ValueError("--disable_ml requires --model so the disabled branch remains bound to the same model provenance")
-if args.pair_specific_morse_runtime == "bonded-analytic" and args.morse_switch_mode != "switched":
+if args.pair_specific_morse_runtime in ("bonded-analytic", "bonded-switched") and args.morse_switch_mode != "switched":
     raise ValueError(
         "--pair_specific_morse_runtime bonded-analytic requires --morse_switch_mode switched; "
         "the bonded diagnostic has no switch branch"
@@ -202,6 +206,10 @@ morse_marker_types, morse_contacts = prepare_pair_specific_morse(
     priors, nn_config["num_species"]
 )
 morse_type_pairs = prepare_type_pair_morse(priors, nn_config["num_species"])
+if args.pair_specific_morse_runtime == "bonded-switched":
+    # Niente marcatori: i contatti sono legami sui siti fisici.  I checkpoint scritti con
+    # i marcatori si caricano con --allow_checkpoint_mismatch (si ripristinano i corpi rigidi).
+    morse_marker_types = {}
 # Debye-Hueckel fra siti carichi (ioni impliciti): cariche sui siti fisici,
 # nessuna esclusione (ESPResSo non le applica all'elettrostatica).
 debye_huckel = prepare_debye_huckel(priors)
@@ -211,9 +219,9 @@ if debye_huckel:
         f"prefactor={debye_huckel['prefactor']:.4f} kJ/mol nm, "
         f"lambda_D={1.0 / debye_huckel['kappa']:.3f} nm, r_cut={debye_huckel['r_cut']:.3f} nm"
     )
-if args.pair_specific_morse_runtime == "bonded-analytic" and morse_type_pairs:
+if args.pair_specific_morse_runtime in ("bonded-analytic", "bonded-switched") and morse_type_pairs:
     raise ValueError(
-        "bonded-analytic diagnostic supports explicit pair-specific Morse contacts only; "
+        "bonded runtimes support explicit pair-specific Morse contacts only; "
         "morse_type_pairs must be empty"
     )
 if morse_contacts and morse_type_pairs:
@@ -232,6 +240,12 @@ system.time_step = args.dt
 system.cell_system.skin = 0.4
 if args.model:
     ensure_single_rank(system, allow_unsafe_mpi=args.allow_unsafe_mpi)
+if args.pair_specific_morse_runtime == "bonded-switched":
+    # I legami di contatto dichiarano raggio d'interazione nullo (morse_bond.hpp): validi
+    # solo con un processo, dove ESPResSo trova sempre il partner fra le particelle locali.
+    _ranks = int(np.prod([int(v) for v in system.cell_system.node_grid]))
+    if _ranks > 1:
+        raise RuntimeError(f"bonded-switched richiede un solo processo MPI (node_grid {list(system.cell_system.node_grid)})")
 # Certification/production invariant: no force capping and explicit Velocity Verlet.
 # Force capping changes forces without changing the reported energy and therefore
 # invalidates an NVE conservation test.
@@ -713,6 +727,16 @@ if args.pair_specific_morse_runtime == "marker-nonbonded":
             f"{contact['mol_j']}:{contact['site_j']} "
             f"(site=-1 means COM; runtime=marker-nonbonded, mode={args.morse_switch_mode}, "
             f"{pair_contact_summary(contact)})"
+        )
+elif args.pair_specific_morse_runtime == "bonded-switched":
+    configure_pair_specific_morse_bonds(
+        system, morse_contacts, mol_com_parts, mol_vs_parts, espressomd.interactions,
+        switch_mode=args.morse_switch_mode,
+    )
+    if morse_contacts:
+        print(
+            f"[INFO] Added {len(morse_contacts)} pair-specific reversible switched Morse bonds "
+            "on physical endpoints (runtime=bonded-switched, no markers)."
         )
 else:
     configure_pair_specific_morse_bonds(

@@ -37,7 +37,8 @@ def switched_morse_energy_radial_force(
     return switch * base_energy, switch * base_force - base_energy * d_switch_dr
 
 
-def make_analytic_morse_bond(interactions: Any, prior: dict[str, Any]):
+def make_analytic_morse_bond(interactions: Any, prior: dict[str, Any],
+                             switch_start: float | None = None):
     """Construct the legacy conservative MLCG Morse bonded interaction.
 
     This helper is intentionally retained for the breakage regression diagnostic.
@@ -66,7 +67,11 @@ def make_analytic_morse_bond(interactions: Any, prior: dict[str, Any]):
         raise ValueError("Morse r0 must be >= 0")
     if r_cut <= 0.0:
         raise ValueError("Morse r_cut must be > 0")
-    return cls(D=D, a=a, r_0=r0, r_cut=r_cut)
+    if switch_start is None:
+        return cls(D=D, a=a, r_0=r0, r_cut=r_cut)
+    # Contatto reversibile (2/11/2026): stessa funzione del Morse non legato con raccordo
+    # (morse_switched.hpp), inerte oltre r_cut invece che "rotto".
+    return cls(D=D, a=a, r_0=r0, r_cut=r_cut, switch_start=float(switch_start))
 
 
 def _normalize_switched_morse_parameters(
@@ -495,6 +500,7 @@ def configure_pair_specific_morse_bonds(
     mol_com_parts: dict[int, int],
     mol_vs_parts: dict[tuple[int, int], int],
     interactions: Any,
+    switch_mode: str | None = None,
 ) -> None:
     """Activate pair-specific Morse terms as analytic ESPResSo bonds.
 
@@ -531,7 +537,10 @@ def configure_pair_specific_morse_bonds(
 
         p_i = endpoint_pid(endpoint_i)
         p_j = endpoint_pid(endpoint_j)
-        bond = make_analytic_morse_bond(interactions, contact)
+        bond = make_analytic_morse_bond(
+            interactions, contact,
+            None if switch_mode is None else _runtime_morse_switch_start(contact, switch_mode),
+        )
         system.bonded_inter.add(bond)
         system.part.by_id(p_i).add_bond((bond, p_j))
 
