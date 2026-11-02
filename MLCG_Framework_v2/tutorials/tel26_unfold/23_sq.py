@@ -171,9 +171,11 @@ def main():
     ap.add_argument("--beta", type=float, default=25.0)
     ap.add_argument("--lam", type=float, default=1.2)
     ap.add_argument("--kmin", type=float, default=0.1, help="nm^-1")
-    ap.add_argument("--kmax", type=float, default=20.0, help="nm^-1")
-    ap.add_argument("--nk", type=int, default=200)
-    ap.add_argument("--dr", type=float, default=0.002, help="larghezza dei bin delle distanze (nm)")
+    ap.add_argument("--kmax", type=float, default=300.0,
+                    help="nm^-1; i siti di un nucleotide sono rigidi: S(k) arriva a 1 solo per k >> 2 pi / 0.1 nm")
+    ap.add_argument("--nk", type=int, default=300)
+    ap.add_argument("--dr", type=float, default=0.0005,
+                    help="larghezza dei bin delle distanze (nm); errore relativo ~ (k dr)^2 / 24")
     ap.add_argument("--rmax", type=float, default=30.0)
     ap.add_argument("--blocks", type=int, default=5, help="blocchi per corsa per l'errore")
     ap.add_argument("--pu-json", help="json di 22_anchor_L0.py: P_U(T) dal fit per la media di equilibrio")
@@ -303,19 +305,26 @@ def main():
         for i, T in enumerate(Ts):
             key = f"S_eq_T{T:g}" if f"S_eq_T{T:g}" in out else f"S_all_T{T:g}"
             col = cmap(i / max(1, len(Ts) - 1))
-            ax[0].loglog(k, out[key] / N, color=col, label=f"{T:g} K")
-            ax[1].plot(k, k ** 2 * out[key] / N, color=col)
+            ax[0].loglog(k, out[key], color=col, label=f"{T:g} K")
+            kk = k <= 10.0                                   # Kratky solo nella regione SAXS
+            ax[1].plot(k[kk], k[kk] ** 2 * out[key][kk], color=col)
         if "S_ref" in out:
-            ax[0].loglog(k, out["S_ref"] / N, "k--", label="AA 300 K")
-            ax[1].plot(k, k ** 2 * out["S_ref"] / N, "k--")
+            ax[0].loglog(k, out["S_ref"], "k--", label="AA 300 K")
+            kk = k <= 10.0
+            ax[1].plot(k[kk], k[kk] ** 2 * out["S_ref"][kk], "k--")
         Tmid = Ts[len(Ts) // 2]
         for st, ls in (("F", "-"), ("I", ":"), ("U", "--")):
             key = f"S_{st}_T{Tmid:g}"
             if key in out:
-                ax[2].loglog(k, out[key] / N, ls, label=f"{st}, {Tmid:g} K")
-        ax[0].set(xlabel="k (nm$^{-1}$)", ylabel="S(k) / N", title="S(k)" + (" di equilibrio" if args.pu_json else ""))
-        ax[1].set(xlabel="k (nm$^{-1}$)", ylabel="k$^2$ S(k) / N", title="Kratky")
-        ax[2].set(xlabel="k (nm$^{-1}$)", ylabel="S(k) / N", title="per stato")
+                ax[2].loglog(k, out[key], ls, label=f"{st}, {Tmid:g} K")
+        for a in (ax[0], ax[2]):
+            a.axhline(N, color="0.6", lw=0.8, ls=":")       # S(k -> 0) = N
+            a.axhline(1.0, color="0.6", lw=0.8, ls=":")     # S(k -> inf) = 1
+            a.text(k[0], N * 1.1, f"N = {N}", fontsize=7, color="0.4")
+            a.text(k[0], 1.1, "1", fontsize=7, color="0.4")
+        ax[0].set(xlabel="k (nm$^{-1}$)", ylabel="S(k)", title="S(k)" + (" di equilibrio" if args.pu_json else ""))
+        ax[1].set(xlabel="k (nm$^{-1}$)", ylabel="k$^2$ S(k) (nm$^{-2}$)", title="Kratky")
+        ax[2].set(xlabel="k (nm$^{-1}$)", ylabel="S(k)", title="per stato")
         ax[0].legend(fontsize=7, ncol=2)
         ax[2].legend(fontsize=8)
         fig.tight_layout()
