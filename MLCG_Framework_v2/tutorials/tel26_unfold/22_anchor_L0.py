@@ -24,6 +24,10 @@ STIMA
     corsa (frame correlati: conta il numero di visite indipendenti, non i frame).  Le T in cui
     i due rami restano separati senza transizioni pesano ~1 e non spostano il fit.
 
+VALIDAZIONE (2/11): lo stesso script misura Tm, dH, isteresi e transizioni di un modello allenato
+    sulle corse di 17_melt_painn.sh (cartelle chiuso/ e aperto/ con T<T>.samples.npz): criteri R2-R3
+    di claude/unfold-tel26-fase3.md (larghezza T90 - T10 = 4.39 R Tm^2 / dH).
+
 USO (Leonardo)
     python3 22_anchor_L0.py --dirs $A/thermo_val/f/chiuso $A/thermo_val/f/aperto \\
         --template $A/cg/tel26_lp2_1c_t400_dataset.bin --out $A/relent_pop/anchor_f.json
@@ -119,7 +123,8 @@ def fit_two_state(Ts, P, n_eff):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dirs", nargs="+", required=True, help="cartelle con T<T>_r<k>.samples.npz (un ramo ciascuna)")
+    ap.add_argument("--dirs", nargs="+", required=True,
+                    help="cartelle con T<T>_r<k>.samples.npz (13) o T<T>.samples.npz (17), un ramo ciascuna")
     ap.add_argument("--template", required=False, help="(non usato; per simmetria con 19_pop_labels)")
     ap.add_argument("--native", default=str(HERE.parent / "tel26" / "tel26_lp2_dataset.bin"))
     ap.add_argument("--native-stride", type=int, default=5)
@@ -141,8 +146,9 @@ def main():
     runs = {}
     for dd in args.dirs:
         branch = pathlib.Path(dd).name
-        for f in sorted(glob.glob(str(pathlib.Path(dd) / "T*_r*.samples.npz"))):
-            m = re.match(r"T(\d+(?:\.\d+)?)_r(\d+)\.samples\.npz$", pathlib.Path(f).name)
+        for f in sorted(glob.glob(str(pathlib.Path(dd) / "T*.samples.npz"))):
+            # T<T>_r<k>.samples.npz (13) oppure T<T>.samples.npz (17, una corsa per ramo)
+            m = re.match(r"T(\d+(?:\.\d+)?)(?:_r(\d+))?\.samples\.npz$", pathlib.Path(f).name)
             if not m:
                 continue
             T = float(m.group(1))
@@ -180,6 +186,9 @@ def main():
     Tm, dH, err = fit_two_state(Ts, Ps, ns)
     print(f"\n[ANCHOR] fit a due stati: Tm = {Tm:.2f} +- {err[0]:.2f} K, dH = {dH:.1f} +- {err[1]:.1f} kJ/mol "
           f"(Buscaglia: Tm 328.4 K, dH totale 352 kJ/mol)")
+    w = 2.0 * np.log(9.0) * R_KJ * Tm * Tm / dH
+    print(f"[ANCHOR] larghezza T90 - T10 = {w:.1f} K (T10 {Tm - w / 2:.1f}, T90 {Tm + w / 2:.1f}; "
+          f"curva U(T) di Buscaglia: ~20 K, 320-340 K)")
     print(f"{'T':>6s} {'P_U oss':>8s} {'P_U fit':>8s} {'L fit':>8s}")
     for row in per_T:
         Lf = -(dH / R_KJ) * (1.0 / row["T_K"] - 1.0 / Tm)
