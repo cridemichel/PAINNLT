@@ -226,6 +226,21 @@ PaiNN_ML_Potential::PaiNN_ML_Potential(
                 throw std::invalid_argument(
                     "MLCG_PAINN_CUDA_GRAPH must be '0' or '1', got '" + static_mode + "'");
             }
+            const char* skin_env = std::getenv("MLCG_PAINN_VERLET_SKIN");
+            if (skin_env) {
+                m_verlet_skin = std::stod(std::string(skin_env));
+                if (!(m_verlet_skin >= 0.0)) {
+                    throw std::invalid_argument("MLCG_PAINN_VERLET_SKIN must be >= 0");
+                }
+                if (m_verlet_skin > 0.0 && !m_device_graph) {
+                    throw std::invalid_argument(
+                        "MLCG_PAINN_VERLET_SKIN requires MLCG_PAINN_GRAPH=device");
+                }
+                if (m_verlet_skin > 0.0) {
+                    std::cerr << "[PaiNN] Device graph: Verlet list, skin " << m_verlet_skin
+                              << " nm" << std::endl;
+                }
+            }
             std::cerr << "[PaiNN] Graph path: "
                       << (m_device_graph
                               ? "device (pair search + node forces on the model device)"
@@ -836,11 +851,12 @@ void PaiNN_ML_Potential::rebuild_device_graph_cache(
     CellStructure& cell_structure, std::vector<Particle*> const& particles) {
     const auto n = static_cast<std::int64_t>(particles.size());
     constexpr std::int64_t max_nodes = 20000;
-    if (n > max_nodes) {
+    if (n > max_nodes && m_verlet_skin <= 0.0) {
         throw std::runtime_error(
             "MLCG_PAINN_GRAPH=device uses an O(N^2) candidate pair list; " +
             std::to_string(n) + " ML sites exceed the supported " +
-            std::to_string(max_nodes) + ". Use MLCG_PAINN_GRAPH=legacy.");
+            std::to_string(max_nodes) +
+            ". Set MLCG_PAINN_VERLET_SKIN (e.g. 0.3) or use MLCG_PAINN_GRAPH=legacy.");
     }
 
     std::vector<int64_t> species;
@@ -879,12 +895,20 @@ void PaiNN_ML_Potential::rebuild_device_graph_cache(
     const auto long_dev = long_cpu.device(m_device);
     m_graph_species = torch::tensor(species, long_cpu).to(m_device);
     auto mol = torch::tensor(molecules, long_cpu).to(m_device);
-    auto tri = torch::triu_indices(n, n, 1, long_dev);
-    auto ti = tri.index({0});
-    auto tj = tri.index({1});
-    auto keep = mol.index_select(0, ti) != mol.index_select(0, tj);
-    m_pair_i = ti.masked_select(keep).contiguous();
-    m_pair_j = tj.masked_select(keep).contiguous();
+    if (m_verlet_skin > 0.0) {
+        // Verlet mode: the pair list is built from positions at the first step.
+        m_graph_mol = mol;
+        m_pair_i = torch::empty({0}, long_dev);
+        m_pair_j = torch::empty({0}, long_dev);
+        m_verlet_valid = false;
+    } else {
+        auto tri = torch::triu_indices(n, n, 1, long_dev);
+        auto ti = tri.index({0});
+        auto tj = tri.index({1});
+        auto keep = mol.index_select(0, ti) != mol.index_select(0, tj);
+        m_pair_i = ti.masked_select(keep).contiguous();
+        m_pair_j = tj.masked_select(keep).contiguous();
+    }
 
     // Plain (pageable) host memory on purpose.  The buffer is N x 3 doubles
     // (~20 KB for TEL26), so pinning gains nothing measurable, while a pinned
@@ -900,8 +924,53 @@ void PaiNN_ML_Potential::rebuild_device_graph_cache(
     m_static_nodes = 0;
 
     std::cerr << "[PaiNN] Device graph cache built: N=" << n
-              << " candidate intermolecular pairs=" << m_pair_i.size(0)
+              << (m_verlet_skin > 0.0 ? " (Verlet list built at the first step)"
+                                        : " candidate intermolecular pairs=")
+              << (m_verlet_skin > 0.0 ? std::string() : std::to_string(m_pair_i.size(0)))
               << " device=" << m_device.str() << std::endl;
+}
+
+void PaiNN_ML_Potential::build_verlet_pairs(torch::Tensor const& x) {
+    // Intermolecular pairs i<j within cutoff + skin, in (low, high) order like
+    // the full candidate list; rows in blocks so that a block of distances
+    // stays below ~2^25 entries.
+    torch::NoGradGuard no_grad;
+    const auto n = x.size(0);
+    const double rv = m_cutoff + m_verlet_skin;
+    const double rv2 = rv * rv;
+    for (unsigned axis = 0; axis < 3; ++axis) {
+        if (m_periodic_cached[axis] && !(rv < 0.5 * m_box_cached[axis])) {
+            throw std::runtime_error(
+                "PaiNN Verlet list requires cutoff + skin < L/2 on periodic axes");
+        }
+    }
+    const auto long_dev = torch::TensorOptions().dtype(torch::kInt64).device(m_device);
+    const std::int64_t block = std::max<std::int64_t>(1, (std::int64_t{1} << 25) / std::max<std::int64_t>(n, 1));
+    std::vector<torch::Tensor> parts_i, parts_j;
+    for (std::int64_t i0 = 0; i0 < n; i0 += block) {
+        const auto i1 = std::min(n, i0 + block);
+        auto xi = x.narrow(0, i0, i1 - i0);                              // [B,3]
+        auto d = xi.unsqueeze(1) - x.unsqueeze(0);                       // [B,N,3]
+        d = d - torch::round(d * m_box_inv_t.unsqueeze(0)) * m_box_t.unsqueeze(0);
+        auto d2 = (d * d).sum(2);                                        // [B,N]
+        auto rows = torch::arange(i0, i1, long_dev).unsqueeze(1);        // [B,1]
+        auto cols = torch::arange(0, n, long_dev).unsqueeze(0);          // [1,N]
+        auto mi = m_graph_mol.narrow(0, i0, i1 - i0).unsqueeze(1);
+        auto mj = m_graph_mol.unsqueeze(0);
+        auto keep = (cols > rows) & (mi != mj) & (d2 <= rv2);
+        auto idx = torch::nonzero(keep);                                 // row-major: (i, j) sorted
+        parts_i.push_back(idx.select(1, 0) + i0);
+        parts_j.push_back(idx.select(1, 1));
+    }
+    m_pair_i = torch::cat(parts_i).contiguous();
+    m_pair_j = torch::cat(parts_j).contiguous();
+    m_x_ref = x.detach().clone();
+    m_verlet_valid = true;
+    ++m_verlet_builds;
+    if (m_verlet_builds <= 3 || (m_verlet_builds % 1000) == 0) {
+        std::cerr << "[PaiNN] Verlet list #" << m_verlet_builds << ": " << m_pair_i.size(0)
+                  << " intermolecular pairs within " << rv << " nm (N=" << n << ")" << std::endl;
+    }
 }
 
 void PaiNN_ML_Potential::calculate_forces_device_graph(CellStructure& cell_structure) {
@@ -1021,9 +1090,24 @@ void PaiNN_ML_Potential::calculate_forces_device_graph(CellStructure& cell_struc
             const auto dbl = torch::TensorOptions().dtype(torch::kFloat64);
             m_box_t = torch::tensor(box, dbl).reshape({1, 3}).to(m_device);
             m_box_inv_t = torch::tensor(inv, dbl).reshape({1, 3}).to(m_device);
+            m_verlet_valid = false;
         }
     }
     stage(m_profile.tensor_inputs_ms);
+
+    if (m_verlet_skin > 0.0) {
+        torch::NoGradGuard no_grad;
+        bool rebuild_list = !m_verlet_valid || rebuild;
+        if (!rebuild_list) {
+            auto d = x - m_x_ref;
+            d = d - torch::round(d * m_box_inv_t) * m_box_t;
+            auto max_d2 = (d * d).sum(1).max().item<double>();
+            rebuild_list = max_d2 > 0.25 * m_verlet_skin * m_verlet_skin;
+        }
+        if (rebuild_list) {
+            build_verlet_pairs(x);
+        }
+    }
 
     // --- pair search on the device (no autograd) ---
     torch::Tensor pair_i, pair_j, shift;

@@ -127,3 +127,12 @@ Ancora (`$A/relent_pop/anchor_f.json`, 22 su thermo_val/f 305–350 K, U per tra
 ## Job storici utili (Leonardo)
 
 - κ: 60697412 / 60697448 / 60697450. pop1: 61360433, 61390905, 61512785, 61512786. Validazione pop1_it45: 17 → 61741503, 16 → 61741504. pop2 (cancellato): 61929739, 61929743.
+
+## S(q) e scatole con molti TEL26 (2/11)
+
+- Obiettivo concordato: S(q) = (1/N)<rho(q) rho*(q)> sui siti CG (fattore di forma incluso) prima, durante e dopo la fusione, da confrontare con SAXS pianificati; cariche trascurate (Cristiano: S(q -> 0) -> compressibilita'; Rosi et al. JACS 2023: Tel22 0,5 mM, 150 mM KCl, q 0,0044-0,521 A^-1). Servono qualche centinaio di molecole per scatola.
+- `23_sq.py`: S(k) intramolecolare di una copia (Debye, per stato F/I/U, media di equilibrio con P_U della validazione, riferimento AA); grafici senza divisione per N, kmax 300 nm^-1 (S -> N a k -> 0, -> 1 a k grande).
+- Limite 1, memoria: i contatti nativi come marcatori costano un tipo per estremo e per copia (54 Morse per copia), ESPResSo tiene i parametri per ogni coppia di tipi. Risolto con `MorseBond(switch_start)` reversibile e `run_cg_md --pair_specific_morse_runtime bonded-switched` (niente marcatori). **Verifica 24_bonded_parity.sh (job 63224857): OK** su 1 copia F, 1 copia aperta, 10 copie lp2th: forze/coppie per corpo entro ~2e-7 relativo, energie potenziali uguali (1e-13 su una copia, 1,5e-8 relativo su 10), 5000 passi dallo stato aperto senza errori, stessa velocita' (4,8 ms/passo a una copia). ESPResSo ricompilato (63222881).
+- Limite 2, grafo PaiNN sulla GPU: tutte le coppie a ogni passo, O(N^2), tetto 20 000 siti (300 copie = 25 800). Lista di Verlet opzionale `MLCG_PAINN_VERLET_SKIN` (nm) in PaiNN_ML_Potential: verificata con una replica PyTorch, da compilare.
+- `25_build_box.py`: prior a N copie + configurazione con la miscela F/U a P_U(T). `26_bench_box.sh`: benchmark 10/30/100/300 copie a 0,5 mM.
+

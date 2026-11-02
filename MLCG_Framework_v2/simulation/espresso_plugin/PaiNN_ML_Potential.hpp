@@ -79,6 +79,7 @@ private:
     void calculate_forces_device_graph(CellStructure& cell_structure);
     void rebuild_device_graph_cache(
         CellStructure& cell_structure, std::vector<Particle*> const& particles);
+    void build_verlet_pairs(torch::Tensor const& x);
     void ensure_static_graph(std::int64_t num_nodes, std::int64_t num_pairs);
     void run_static_body();
     void validate_tel22_layout(
@@ -107,6 +108,21 @@ private:
     torch::Tensor m_box_inv_t;       // [1,3] float64, device (0 = non periodic)
     std::array<double, 3> m_box_cached{{-1.0, -1.0, -1.0}};
     std::array<bool, 3> m_periodic_cached{{false, false, false}};
+
+    // Verlet skin for the device graph (MLCG_PAINN_VERLET_SKIN, nm; 0 = off,
+    // default).  Off: m_pair_i/m_pair_j hold every intermolecular pair i<j,
+    // O(N^2) memory and per-step work, capped at 20000 sites.  On: they hold
+    // the intermolecular pairs within cutoff + skin at the last build, rebuilt
+    // on the device (blocked, O(N^2) work only at rebuild) when a site has
+    // moved more than skin/2 (minimum image).  Each step filters this list by
+    // the cutoff exactly as before, in the same (low, high) order, so the
+    // edges -- and the arithmetic -- are those of the full list as long as the
+    // list is valid.  Needed for many-copy systems (hundreds of TEL26).
+    double m_verlet_skin = 0.0;
+    torch::Tensor m_graph_mol;       // [N] int64, device (Verlet mode)
+    torch::Tensor m_x_ref;           // [N,3] float64, device: positions at last build
+    bool m_verlet_valid = false;
+    std::int64_t m_verlet_builds = 0;
 
     // Static-graph mode (MLCG_PAINN_CUDA_GRAPH=1, device graph path only).
     // The pair list is padded to a fixed capacity with self-edges on node 0 at
