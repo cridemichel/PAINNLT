@@ -119,8 +119,10 @@ class Hist:
         idx = range(len(self.h)) if blocks is None else blocks
         h = sum(self.h[b] for b in idx)
         n = sum(self.n[b] for b in idx)
-        sinc = np.sinc(np.outer(k, self.r) / np.pi)                 # sin(kr)/(kr)
-        return 1.0 + (2.0 / self.N) * (sinc @ h) / n
+        nz = np.flatnonzero(h)
+        top = int(nz[-1]) + 1 if nz.size else 1               # solo fino alla distanza massima osservata
+        sinc = np.sinc(np.outer(k, self.r[:top]) / np.pi)      # sin(kr)/(kr)
+        return 1.0 + (2.0 / self.N) * (sinc @ h[:top]) / n
 
     def sk_err(self, k):
         good = [b for b in range(len(self.h)) if self.n[b] > 0]
