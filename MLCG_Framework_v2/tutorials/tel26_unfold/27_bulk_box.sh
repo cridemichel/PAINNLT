@@ -21,7 +21,7 @@
 # Analisi: 28_sq_box.py sulle cartelle di uscita.
 #
 # USO (Leonardo):  sbatch --export=ALL,T=322,SEED=1 $U/27_bulk_box.sh
-# Variabili: T (obbligatoria), N (300), CONC_mM (0.5), SEED (1), NS_TOTAL (20), CHUNK_NS (2), LOG_PS (10),
+# Variabili: T (obbligatoria), N (300), CONC_mM (0.5), SEED (1), NS_TOTAL (20), CHUNK_NS (1), LOG_PS (10),
 #            SKIN (0.3), MODEL ($A/relent_pop/pop6/pop6_it21.pt), VALID ($A/melt_painn/pop6_it21),
 #            MAX_HOURS (23.3), OUTDIR ($A/bulk/N<N>_c<CONC>_T<T>_s<SEED>)
 set -uo pipefail
@@ -36,7 +36,7 @@ N=${N:-300}
 CONC_mM=${CONC_mM:-0.5}
 SEED=${SEED:-1}
 NS_TOTAL=${NS_TOTAL:-20}
-CHUNK_NS=${CHUNK_NS:-2}
+CHUNK_NS=${CHUNK_NS:-1}            # 300 copie: ~2-3 ns/giorno su una A100 (26_bench_box.sh), un blocco < 12 h
 LOG_PS=${LOG_PS:-10}
 SKIN=${SKIN:-0.3}
 MODEL=${MODEL:-$A/relent_pop/pop6/pop6_it21.pt}

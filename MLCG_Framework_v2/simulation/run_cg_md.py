@@ -1444,6 +1444,12 @@ def _light_energies(fast):
     return nan, e_trans + e_rot, e_trans, e_rot, nan, e_ml, nan, nan
 
 
+# Soglia sull'energia cinetica totale (3/11/2026): 5000 kJ/mol era pensata per <= 10 copie di TEL26
+# (260 corpi rigidi, ~19 kJ/mol per corpo); con centinaia di copie l'equipartizione (3 kT per corpo,
+# traslazione + rotazione) la supera da sola.  Stessa soglia per corpo, mai sotto 5000.
+EKIN_GUARD = max(5000.0, 5000.0 / 260.0 * len(mol_com_parts))
+
+
 def record_state(step, energy_writer, energy_handle, vtf_handle):
     fast = _fast_log_cache(step)
     state = _fast_log_state
@@ -1501,7 +1507,7 @@ def record_state(step, energy_writer, energy_handle, vtf_handle):
 
     record_structured_sample(step, fast)
     record_state_sample(step, fast)
-    unsafe = max_f > 10000.0 or e_kin > 5000.0 or g_dist < 0.15
+    unsafe = max_f > 10000.0 or e_kin > EKIN_GUARD or g_dist < 0.15
     return unsafe
 
 
@@ -1588,7 +1594,7 @@ with ExitStack() as stack:
         record_wall_seconds += time.perf_counter() - record_start
         record_count += 1
         if unsafe_state:
-            print("[CRITICAL] Safety abort triggered! max_f > 10000, E_kin > 5000, or min_dist < 0.15")
+            print(f"[CRITICAL] Safety abort triggered! max_f > 10000, E_kin > {EKIN_GUARD:.0f}, or min_dist < 0.15")
             system.integrator.run(0, recalc_forces=True)
             with open("crash.vtf", "w") as crash_vtf:
                 espressomd.io.writer.vtf.writevsf(system, crash_vtf)
