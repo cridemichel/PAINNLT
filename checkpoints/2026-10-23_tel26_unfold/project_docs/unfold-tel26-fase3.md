@@ -1,4 +1,4 @@
-# TEL26 unfoldable — fase 3: barriera F/U, catena di perturbazioni, criterio di chiusura (23–26/10/2026)
+# TEL26 unfoldable — fase 3: barriera F/U, catena di perturbazioni, chiusura e sistemi bulk (23/10–3/11/2026)
 
 Seguito di `claude/unfold-tel26-fase2.md` (fino alla decisione del 23/10: bersaglio U(T) di Buscaglia, U per tratto). Script in `MLCG_Framework_v2/tutorials/tel26_unfold`, dati in `/leonardo_work/IscrC_G4UNFOLD/cdemiche/AA_unfold/relent_pop/`. Stato operativo e comandi in `checkpoints/2026-10-23_tel26_unfold/CHECKPOINT.md` (repo PAINNLT).
 
@@ -68,8 +68,30 @@ Le indicazioni che ne derivano per il criterio:
 - **R3 o R4 falliscono**: **niente pop7**. Si sceglie il miglior modello esistente secondo la tabella (pop6 migliore, k6; k6 va misurato su R2 e R3 con 17 + 22), si dichiarano i limiti e si passa ai ligandi.
 - **Fuori portata in ogni caso**: intermedi I1/I2 (tripla elica) e cambi di topologia indotti dal ligando. Richiedono prior nuovi, in una fase successiva.
 
+## Esito di pop6 e chiusura dello sviluppo (27/10–3/11)
+
+- **pop6** (fino a it26, poi fermata): con i lignaggi ripartiti dalla T vicina (non da START_F/START_U, che non stanno nel bacino del modello allenato) tutte e sei le T entrano nel vincolo; a it19–21 la catena dava una curva sovrapposta a Buscaglia. it22: salto di ΔL ≈ +1 a 326 K con POP_ESS_MIN 0,15; it23–26 senza passi accettati.
+- **Validazione indipendente di pop6_it21** (3/11):
+  - **R1 passa** (16): intra 0,9926 / 0,9622 / 0,9470 / 0,9227 contro soglie 0,946 / 0,930 / 0,922 / 0,913.
+  - **Curva di fusione** (17: 318–342 K ogni 4 K, rami chiuso/aperto, 20 ns; 22 con 5 ns scartati): P_U 0,005 / 0,39 / 0,79 / 1 / 1 / 1 / 1; fit a due stati **Tm 323,0 ± 1,3 K, T90 − T10 = 6,9 K** (ΔH ≈ 550 kJ/mol). **R2 fallisce di ~3 K, R3 fallisce** (6,9 contro 15–25 K). Rami non del tutto concordi a 322–326 K (0–3 transizioni per T).
+  - **La catena era distorta di ~+2 su L verso F**: per it21 prevedeva 0,03 / 0,08 / 0,39 / 0,65 a 318–330 K. Causa probabile: gli incrementi sono stimati sugli stessi campioni con cui si sceglie il passo, e l'ottimizzazione sfrutta il rumore della ripesatura; rimedio (per un'eventuale fase futura): incrementi su campioni tenuti da parte.
+- **Decisione (3/11, regola del criterio: R3 fallisce → niente pop7)**: **il modello unfoldable è pop6_it21** (`$A/relent_pop/pop6/pop6_it21.pt`, config d64, prior termici f). Limiti dichiarati:
+  - Tm 5 K sotto Buscaglia (12 K sotto le condizioni del lavoro su NAR): i confronti con l'esperimento si fanno in temperatura ridotta (T − Tm o T/Tm), non in T assoluta;
+  - transizione larga ~1/3 di quella sperimentale (fusione più cooperativa: ΔH efficace ~550 contro ~200 kJ/mol): per ligandi che legano F i ΔTm del modello sono sottostimati di un fattore ~2,9; l'ordine dei ligandi si conserva;
+  - nessun intermedio (I1, tripla elica) e nessun cambio di topologia.
+  Il limite della larghezza è comune a tutti i candidati (soli prior: 8 K): viene dai prior, non dal residuo.
+
+## Sistemi bulk e S(q) (2–3/11)
+
+- **Obiettivo**: S(q) = (1/N)⟨ρ(q)ρ*(q)⟩ sui siti CG (fattore di forma incluso) prima, durante e dopo la fusione, da confrontare con SAXS pianificati; qualche centinaio di TEL26 alla concentrazione sperimentale (Rosi et al., JACS 2023: Tel22 0,5 mM, 150 mM KCl, q 0,0044–0,521 Å⁻¹). **Cariche trascurate** (decisione di Cristiano): S(q → 0) = ρ k_BT κ_T del modello (volume escluso + residuo PaiNN a corto raggio); lo scarto dall'esperimento a basso q misura il contributo elettrostatico.
+- **`23_sq.py`**: S(k) intramolecolare di una copia (Debye dall'istogramma delle distanze, errori a blocchi, per stato F/I/U, media di equilibrio con P_U del fit di 22, riferimento AA); S → N a k → 0 e → 1 a k grande (con i siti rigidi di un nucleotide solo per k ≫ 60 nm⁻¹).
+- **Limite 1, memoria (risolto)**: i contatti nativi come marcatori costano un tipo di particella per estremo e per copia (54 Morse per copia) e ESPResSo tiene i parametri per ogni coppia di tipi. `MorseBond(switch_start)`: stesso Morse con raccordo della produzione, inerte (non rotto) oltre r_cut; `run_cg_md --pair_specific_morse_runtime bonded-switched`, senza marcatori. **Verificato** (`24_bonded_parity.sh`): forze e coppie per corpo entro ~2·10⁻⁷ relativo, energie uguali, 5000 passi dallo stato aperto senza errori, stessa velocità.
+- **Limite 2, grafo PaiNN (risolto)**: il percorso GPU filtrava tutte le coppie a ogni passo (O(N²), tetto 20 000 siti). Lista di Verlet opzionale `MLCG_PAINN_VERLET_SKIN` (nm), verificata con una replica PyTorch (stesse coppie, ordine, immagini) e compilata.
+- **`25_build_box.py`**: prior a N copie e configurazione iniziale con la miscela F/U a P_U(T) da corse a una copia. **`26_bench_box.sh`**: costo per 10/30/100/300 copie a 0,5 mM.
+
 ## Riferimenti
 
 - Buscaglia R., Gray R. D., Chaires J. B., *Biopolymers* **99**(12), 1006–1018 (2013), doi:10.1002/bip.22247: Tm 328,4 K, ΔH totale 352 kJ/mol, modello F ⇌ I1 ⇌ I2 ⇌ U (2JPZ, 25 mM KCl).
 - Gray R. D., Buscaglia R., Chaires J. B., *JACS* **134**(40), 16834–16844 (2012), doi:10.1021/ja307543z: I2 = tripla elica G.
 - Bertini L., Libera V. *et al.*, *Nucleic Acids Research* **54**, gkag403 (2026), doi:10.1093/nar/gkag403 ([pdf](https://cristiano-de-michele.netlify.app/publication/nar-2026/nar-2026.pdf)): Tel26/Tel50 con BRACO-19, PhenDC3, RHPS4, SYUIQ-5; Tm del Tel26 libero ≈ 62 °C in 20 mM KCl con 5 mM di tampone fosfato; ΔTm numerici nelle tabelle supplementari S3 e S4.
+- Rosi B. P. *et al.*, *J. Am. Chem. Soc.* (2023), doi:10.1021/jacs.3c04810 ([pdf](https://cristiano-de-michele.netlify.app/publication/rosi-2023/rosi-2023.pdf)): multimeri di Tel22 (SAXS a 20 °C, 0,5–4,5 mM, 150 mM KCl, q 0,0044–0,521 Å⁻¹), Monte Carlo a cilindri duri con siti di impilamento.
