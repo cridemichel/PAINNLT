@@ -42,7 +42,10 @@ RB=$A/cg/rigid_bodies_info.lp2_1c.t400.json
 TEMPLATE=$A/cg/tel26_lp2_1c_t400_dataset.bin
 T=330
 kt=$(python3 -c "print(f'{0.008314462618*$T:.6f}')")
-for f in $MODEL $CONFIG $PRI1 $RB $TEMPLATE $SRC/F_T$T.samples.npz $SRC/U_T$T.samples.npz $PYPRESSO; do
+# conformazioni: F dal lignaggio F a 318 K (a 330 K il modello e' gia' tutto U), U dal lignaggio U a 338 K
+SRC_F=${SRC_F:-$SRC/F_T318.samples.npz}
+SRC_U=${SRC_U:-$SRC/U_T338.samples.npz}
+for f in $MODEL $CONFIG $PRI1 $RB $TEMPLATE $SRC_F $SRC_U $PYPRESSO; do
     [[ -s $f ]] || { echo "[ERROR] manca $f" >&2; exit 1; }
 done
 export MLCG_PAINN_VERLET_SKIN=$SKIN
@@ -52,7 +55,7 @@ for N in $NS; do
     D=$OUT/n$N
     mkdir -p $D
     python3 $U/25_build_box.py --n-copies $N --conc-mM $CONC_mM --pu 0.5 \
-        --samples $SRC/F_T$T.samples.npz $SRC/U_T$T.samples.npz --skip-ps 100 \
+        --samples $SRC_F $SRC_U --skip-ps 100 \
         --priors $PRI1 --template $TEMPLATE --out-priors $D/cg_priors.json --out-dataset $D/dataset.bin \
         --seed $N > $D/build.log 2>&1 || { tail -3 $D/build.log; continue; }
     sites=$((N * 86))

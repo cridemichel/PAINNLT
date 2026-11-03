@@ -136,3 +136,10 @@ Ancora (`$A/relent_pop/anchor_f.json`, 22 su thermo_val/f 305–350 K, U per tra
 - Limite 2, grafo PaiNN sulla GPU: tutte le coppie a ogni passo, O(N^2), tetto 20 000 siti (300 copie = 25 800). Lista di Verlet opzionale `MLCG_PAINN_VERLET_SKIN` (nm) in PaiNN_ML_Potential: verificata con una replica PyTorch, da compilare.
 - `25_build_box.py`: prior a N copie + configurazione con la miscela F/U a P_U(T). `26_bench_box.sh`: benchmark 10/30/100/300 copie a 0,5 mM.
 
+## Validazione di pop6_it21 (3/11)
+
+- **R1 struttura a 300 K (16, job 63218869): passa.** Intra pop6_it21 0,9926 / 0,9622 / 0,9470 / 0,9227 (tutti / B3-B3 / B5-B5 / S-S) contro soglie 0,946 / 0,930 / 0,922 / 0,913 (th0_it60: 0,9941 / 0,9828 / 0,9752 / 0,9572).
+- **Curva di fusione (17, 318-342 K ogni 4 K, 20 ns, job 63218868; 22 con skip 5 ns -> `$A/melt_painn/pop6_it21/validation.json`):** P_U 0,005 / 0,39 / 0,79 / 1 / 1 / 1 / 1 (rami chiuso/aperto a 322 K 0,26 / 0,52, a 326 K 0,71 / 0,88; 0-3 transizioni per T). Fit: **Tm 323,0 +- 1,3 K, dH 554 +- 330 kJ/mol, T90 - T10 = 6,9 K**. R2 fallisce di ~3 K (finestra 326-337), R3 fallisce (6,9 contro 15-25 K).
+- **La catena era distorta:** per it21 prevedeva 0,03 / 0,08 / 0,39 / 0,65 / 0,86 / 0,94 a 318-338 K: errore ~ +2 su L (verso F) a 322-326 K. Causa probabile: ogni incremento della catena e' stimato sugli stessi campioni con cui si sceglie il passo (l'ottimizzazione sfrutta il rumore della ripesatura, e l'errore si accumula sempre nella direzione del bersaglio). Rimedio per un'eventuale catena futura: incrementi stimati su campioni tenuti da parte.
+- Benchmark 26 (job 63227366) fermo al generatore: a 330 K il lignaggio F di md_it21 e' gia' U (nessun frame non U). Corretto: F da F_T318, U da U_T338 (26 md5 `08d65b41…`).
+
