@@ -12,6 +12,11 @@ import re
 import os
 import time
 _WALL_T0 = time.perf_counter()   # bilancio dei tempi a fine corsa ([TIMING])
+
+
+def _stage(name):
+    """Tempo trascorso dall'avvio alla fine di una fase (sistemi grandi: dove va l'avvio)."""
+    print(f"[TIMING] avvio: {name} a {time.perf_counter() - _WALL_T0:.1f} s", flush=True)
 from contextlib import ExitStack
 
 from framework_utils import (
@@ -316,6 +321,7 @@ with open(args.dataset, "rb") as f:
             mol_vs_parts[(mol_idx, site_idx)] = p_vs.id
 
 
+_stage("particelle dal dataset")
 morse_marker_parts = create_pair_specific_morse_markers(
     system, morse_marker_types, mol_com_parts, mol_vs_parts
 )
@@ -442,6 +448,7 @@ for m_idx, pids in mol_to_vs.items():
             except Exception:
                 pass
 
+_stage("esclusioni dentro i corpi rigidi")
 validate_wca_exclusion_policy(priors)
 wca_direct_pairs, wca_one_three_pairs = wca_topology_exclusion_pairs(priors, num_molecules)
 direct_site_exclusions = wca_direct_bonded_site_exclusions(priors, num_molecules)
@@ -483,6 +490,7 @@ print(
     f"with {applied_direct_site_exclusions} bonded site-pair exclusions; "
     f"{len(wca_one_three_pairs)} 1-3 all-sites exclusions (policy v3)."
 )
+_stage("esclusioni WCA 1-2 / 1-3")
 print(
     f"[INFO] Safety min-distance diagnostic masks "
     f"{len(diagnostic_nonbonded_excluded_pid_pairs)} excluded physical-site pairs."
@@ -1239,6 +1247,10 @@ if args.energy_interval < 1:
     raise ValueError("--energy_interval must be >= 1")
 
 
+DIAG_KDTREE_MIN_SITES = 5000     # oltre: distanza minima col k-d tree (sotto: matrice completa, invariata)
+DIAG_KDTREE_R = 1.0              # nm; la soglia di sicurezza e' 0,15 nm
+
+
 def _build_fast_log_cache():
     all_ids, vs_ids, vs_types, vs_mol = [], [], [], []
     kin_ids, kin_mass, kin_inertia, torque_ids = [], [], [], []
@@ -1259,6 +1271,38 @@ def _build_fast_log_cache():
     vs_types = np.asarray(vs_types, dtype=np.int64)
     vs_mol = np.asarray(vs_mol, dtype=np.int64)
     n_vs = len(vs_ids)
+    num_species = int(nn_config["num_species"])
+    in_range = (vs_types >= 0) & (vs_types < num_species)
+    common = {
+        "all": _OrderedSlice(all_ids),
+        "vs": _OrderedSlice(vs_ids),
+        "vs_ids": np.asarray(vs_ids, dtype=np.int64),
+        "vs_types": vs_types,
+        "kin": _OrderedSlice(kin_ids),
+        "kin_mass": np.asarray(kin_mass, dtype=float),
+        "kin_inertia": np.asarray(kin_inertia, dtype=float).reshape(-1, 3),
+        "torque": _OrderedSlice(torque_ids),
+        "com": _OrderedSlice([mol_com_parts[mol] for mol in range(num_molecules)]),
+        "sites": _OrderedSlice([mol_vs_parts[key] for key in sample_site_keys]),
+        "state": _OrderedSlice(state_sample_particle_ids),
+    }
+    if n_vs > DIAG_KDTREE_MIN_SITES:
+        # Sistemi grandi (molte copie, 4/11/2026): la matrice n x n e la lista di tutte le coppie
+        # costano O(n^2) in memoria (5 GB per matrice a 25 800 siti) e ~35 s per registrazione.
+        # Stesse coppie ammesse (molecole diverse, tipi fisici, esclusioni di ESPResSo), cercate
+        # con un k-d tree periodico entro DIAG_KDTREE_R: la distanza minima e' esatta se sotto R.
+        index = {pid: k for k, pid in enumerate(vs_ids)}
+        codes = []
+        for a, b in diagnostic_nonbonded_excluded_pid_pairs:
+            ia, ib = index.get(int(a)), index.get(int(b))
+            if ia is not None and ib is not None:
+                codes.append(min(ia, ib) * n_vs + max(ia, ib))
+        common.update({
+            "pair_i": None, "pair_j": None,
+            "kd": {"n": n_vs, "mol": vs_mol, "in_range": in_range,
+                   "excluded": np.unique(np.asarray(codes, dtype=np.int64))},
+        })
+        return common
     blocked = np.zeros((n_vs, n_vs), dtype=float)
     blocked[vs_mol[:, None] == vs_mol[None, :]] = np.inf
     np.fill_diagonal(blocked, np.inf)
@@ -1291,6 +1335,8 @@ def _fast_diagnostics(cache):
     pos = cache["vs"].get("pos")
     forces = cache["vs"].get("f")
     f_max = np.max(np.linalg.norm(forces, axis=1))
+    if cache.get("kd") is not None:
+        return _kdtree_min_distance(cache, pos, f_max)
     pair_i, pair_j = cache["pair_i"], cache["pair_j"]
     if len(pair_i) == 0:
         return np.inf, None, None, f_max
@@ -1303,6 +1349,35 @@ def _fast_diagnostics(cache):
     pair = (min(t_i, t_j), max(t_i, t_j))
     pids = (cache["vs_ids"][i], cache["vs_ids"][j])
     return float(dist[k]), pair, pids, f_max
+
+
+def _kdtree_min_distance(cache, pos, f_max):
+    from scipy.spatial import cKDTree
+    kd = cache["kd"]
+    box, inverse = _minimum_image_box()
+    if np.all(inverse > 0.0):
+        wrapped = pos - np.floor(pos / box) * box
+        wrapped = np.where(wrapped >= box, wrapped - box, wrapped)
+        tree = cKDTree(wrapped, boxsize=box)
+    else:
+        tree = cKDTree(pos)
+    pairs = tree.query_pairs(DIAG_KDTREE_R, output_type="ndarray")
+    if len(pairs) == 0:
+        return DIAG_KDTREE_R, None, None, f_max
+    i, j = pairs[:, 0].astype(np.int64), pairs[:, 1].astype(np.int64)
+    lo, hi = np.minimum(i, j), np.maximum(i, j)
+    ok = (kd["mol"][lo] != kd["mol"][hi]) & kd["in_range"][lo] & kd["in_range"][hi]
+    if kd["excluded"].size:
+        ok &= ~np.isin(lo * kd["n"] + hi, kd["excluded"])
+    if not ok.any():
+        return DIAG_KDTREE_R, None, None, f_max
+    lo, hi = lo[ok], hi[ok]
+    diff = _minimum_image(pos[lo] - pos[hi], box, inverse)
+    dist = np.sqrt((diff * diff).sum(axis=1))
+    k = int(np.argmin(dist))
+    a, b = lo[k], hi[k]
+    t_a, t_b = int(cache["vs_types"][a]), int(cache["vs_types"][b])
+    return float(dist[k]), (min(t_a, t_b), max(t_a, t_b)), (cache["vs_ids"][a], cache["vs_ids"][b]), f_max
 
 
 def _fast_kinetic(cache):
@@ -1572,10 +1647,13 @@ with ExitStack() as stack:
 
     # Initialize the force-dependent PaiNN energy at the exact initial state.
     # This is required for a meaningful E(t=0) in NVE certification.
+    _stage("interazioni e PaiNN")
     system.integrator.run(0, recalc_forces=True)
+    _stage("primo calcolo delle forze")
     if record_state(0, energy_writer, energy_handle, vtf_handle):
         print("[CRITICAL] Safety abort triggered at the initial state.")
         simulation_ok = False
+    _stage("prima registrazione (cache dei log compresa)")
 
     completed = 0
     integration_wall_seconds = 0.0

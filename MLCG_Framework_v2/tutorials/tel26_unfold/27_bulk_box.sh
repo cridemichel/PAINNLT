@@ -21,7 +21,7 @@
 # Analisi: 28_sq_box.py sulle cartelle di uscita.
 #
 # USO (Leonardo):  sbatch --export=ALL,T=322,SEED=1 $U/27_bulk_box.sh
-# Variabili: T (obbligatoria), N (300), CONC_mM (0.5), SEED (1), NS_TOTAL (20), CHUNK_NS (1), LOG_PS (10),
+# Variabili: T (obbligatoria), N (300), CONC_mM (0.5), SEED (1), NS_TOTAL (10), CHUNK_NS (1.7), LOG_PS (10),
 #            SKIN (0.3), MODEL ($A/relent_pop/pop6/pop6_it21.pt), VALID ($A/melt_painn/pop6_it21),
 #            MAX_HOURS (23.3), OUTDIR ($A/bulk/N<N>_c<CONC>_T<T>_s<SEED>)
 set -uo pipefail
@@ -35,8 +35,10 @@ export PYTHONUNBUFFERED=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREA
 N=${N:-300}
 CONC_mM=${CONC_mM:-0.5}
 SEED=${SEED:-1}
-NS_TOTAL=${NS_TOTAL:-20}
-CHUNK_NS=${CHUNK_NS:-1}            # 300 copie: ~2-3 ns/giorno su una A100 (26_bench_box.sh), un blocco < 12 h
+NS_TOTAL=${NS_TOTAL:-10}
+# 300 copie su una A100 (26 e primo blocco di N300_c0.5_T323_s1): 2,2 ns/giorno di integrazione + ~50 min
+# di avvio per blocco; con 1,7 ns un blocco sta in un job da 24 h (un solo avvio per job).
+CHUNK_NS=${CHUNK_NS:-1.7}
 LOG_PS=${LOG_PS:-10}
 SKIN=${SKIN:-0.3}
 MODEL=${MODEL:-$A/relent_pop/pop6/pop6_it21.pt}
