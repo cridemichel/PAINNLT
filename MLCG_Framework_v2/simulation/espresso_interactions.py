@@ -515,6 +515,9 @@ def configure_pair_specific_morse_bonds(
     therefore identical below the switch region; energy fluctuations are
     comparable but absolute total-energy offsets are not.
     """
+    # un oggetto ESPResSo per parametri distinti: ogni bonded_inter.add rifa' il cell system, e con
+    # N copie replicate un oggetto per contatto renderebbe l'avvio O(N^2)
+    shared: dict[tuple[float, ...], Any] = {}
     for contact in contacts:
         if contact.get("kind") == "lj":
             raise NotImplementedError(
@@ -537,11 +540,14 @@ def configure_pair_specific_morse_bonds(
 
         p_i = endpoint_pid(endpoint_i)
         p_j = endpoint_pid(endpoint_j)
-        bond = make_analytic_morse_bond(
-            interactions, contact,
-            None if switch_mode is None else _runtime_morse_switch_start(contact, switch_mode),
-        )
-        system.bonded_inter.add(bond)
+        switch_start = None if switch_mode is None else _runtime_morse_switch_start(contact, switch_mode)
+        key = (float(contact["D"]), float(contact["a"]), float(contact["r0"]), float(contact["r_cut"]),
+               -2.0 if switch_start is None else float(switch_start))
+        bond = shared.get(key)
+        if bond is None:
+            bond = make_analytic_morse_bond(interactions, contact, switch_start)
+            system.bonded_inter.add(bond)
+            shared[key] = bond
         system.part.by_id(p_i).add_bond((bond, p_j))
 
 

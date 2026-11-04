@@ -17,6 +17,20 @@ _WALL_T0 = time.perf_counter()   # bilancio dei tempi a fine corsa ([TIMING])
 def _stage(name):
     """Tempo trascorso dall'avvio alla fine di una fase (sistemi grandi: dove va l'avvio)."""
     print(f"[TIMING] avvio: {name} a {time.perf_counter() - _WALL_T0:.1f} s", flush=True)
+
+
+# Interazioni legate condivise fra legami con parametri uguali.  Ogni bonded_inter.add rifa' il cell
+# system (lavoro O(particelle)): con un oggetto per legame una scatola a N copie costa O(N^2) all'avvio
+# (300 TEL26: 44 min).  Le copie replicate hanno parametri identici, quindi bastano gli oggetti di una
+# copia; la fisica non cambia (stessa interazione applicata alle stesse coppie/terne/quaterne).
+_SHARED_BONDED = {}
+
+
+def _bonded_key(kind, spec):
+    """Chiave dei parametri di un termine legato: tutto tranne gli estremi (mol_*/site_*) e l'indice."""
+    return kind, json.dumps({k: v for k, v in spec.items()
+                             if not k.startswith(("mol_", "site_")) and k not in ("index", "idx")},
+                            sort_keys=True, default=str)
 from contextlib import ExitStack
 
 from framework_utils import (
@@ -529,35 +543,39 @@ else:
 
 # Structural bonds (Morse contacts were configured above as reversible non-bonded priors)
 for idx, b in enumerate(priors.get("bonds", [])):
-    b_type = b.get("type", "harmonic")
-    if b_type == "harmonic":
-        bond = espressomd.interactions.HarmonicBond(k=b["k"], r_0=b["r0"])
-    elif b_type == "fene":
-        bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
-    elif b_type in ("morse", "lj"):
-        # contatti pair-specific: configurati sui marker, non come legami
-        continue
-    elif b_type == "tabulated":
-        data = np.loadtxt(resolve_referenced_path(b["file"], args.priors))
-        rmin_tab = float(b["min"])
-        rmax_tab = float(b["max"])
-        r_vals = data[:, 0]
-        energy = data[:, 1]
-        force = data[:, 2]
+    _key = _bonded_key("bond", b)
+    bond = _SHARED_BONDED.get(_key)
+    if bond is None:
+        b_type = b.get("type", "harmonic")
+        if b_type == "harmonic":
+            bond = espressomd.interactions.HarmonicBond(k=b["k"], r_0=b["r0"])
+        elif b_type == "fene":
+            bond = espressomd.interactions.FeneBond(k=b["k"], d_r_max=b["r_max"], r_0=b["r0"])
+        elif b_type in ("morse", "lj"):
+            # contatti pair-specific: configurati sui marker, non come legami
+            continue
+        elif b_type == "tabulated":
+            data = np.loadtxt(resolve_referenced_path(b["file"], args.priors))
+            rmin_tab = float(b["min"])
+            rmax_tab = float(b["max"])
+            r_vals = data[:, 0]
+            energy = data[:, 1]
+            force = data[:, 2]
         
-        bond = espressomd.interactions.TabulatedDistance(
-            min=rmin_tab, max=rmax_tab, energy=energy, force=force
-        )
-    elif b_type == "conservative_spline":
-        bond = create_conservative_spline_interaction(
-            espressomd.interactions, b, kind="bond", priors_path=args.priors
-        )
-    else:
-        print(f"[WARNING] Unknown bond type: {b_type}")
-        continue
+            bond = espressomd.interactions.TabulatedDistance(
+                min=rmin_tab, max=rmax_tab, energy=energy, force=force
+            )
+        elif b_type == "conservative_spline":
+            bond = create_conservative_spline_interaction(
+                espressomd.interactions, b, kind="bond", priors_path=args.priors
+            )
+        else:
+            print(f"[WARNING] Unknown bond type: {b_type}")
+            continue
     
-    system.bonded_inter.add(bond)
-    print(f"[INFO] Added {b_type} bond {idx}: mol {b['mol_i']} <-> mol {b['mol_j']}")
+        system.bonded_inter.add(bond)
+        _SHARED_BONDED[_key] = bond
+    print(f"[INFO] Added {b.get('type', 'harmonic')} bond {idx}: mol {b['mol_i']} <-> mol {b['mol_j']}")
     
     mol_i, mol_j = b["mol_i"], b["mol_j"]
     site_i, site_j = b.get("site_i", -1), b.get("site_j", -1)
@@ -569,28 +587,32 @@ for idx, b in enumerate(priors.get("bonds", [])):
 
 # Angles
 for idx, a in enumerate(priors.get("angles", [])):
-    a_type = a.get("type", "harmonic")
-    if a_type == "harmonic":
-        k_bend = a["k"]
-        phi0 = a["theta0"]
-        angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
-    elif a_type == "tabulated":
-        import numpy as np
-        data = np.loadtxt(resolve_referenced_path(a["file"], args.priors))
-        min_tab = float(a["min"]) # Typically 0.0 radians
-        max_tab = float(a["max"]) # Typically pi radians
-        angle = espressomd.interactions.TabulatedAngle(
-            min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
-        )
-    elif a_type == "conservative_spline":
-        angle = create_conservative_spline_interaction(
-            espressomd.interactions, a, kind="angle", priors_path=args.priors
-        )
-    else:
-        print(f"[WARNING] Unknown angle type: {a_type}")
-        continue
+    _key = _bonded_key("angle", a)
+    angle = _SHARED_BONDED.get(_key)
+    if angle is None:
+        a_type = a.get("type", "harmonic")
+        if a_type == "harmonic":
+            k_bend = a["k"]
+            phi0 = a["theta0"]
+            angle = espressomd.interactions.AngleHarmonic(bend=k_bend, phi0=phi0)
+        elif a_type == "tabulated":
+            import numpy as np
+            data = np.loadtxt(resolve_referenced_path(a["file"], args.priors))
+            min_tab = float(a["min"]) # Typically 0.0 radians
+            max_tab = float(a["max"]) # Typically pi radians
+            angle = espressomd.interactions.TabulatedAngle(
+                min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+            )
+        elif a_type == "conservative_spline":
+            angle = create_conservative_spline_interaction(
+                espressomd.interactions, a, kind="angle", priors_path=args.priors
+            )
+        else:
+            print(f"[WARNING] Unknown angle type: {a_type}")
+            continue
         
-    system.bonded_inter.add(angle)
+        system.bonded_inter.add(angle)
+        _SHARED_BONDED[_key] = angle
     
     mol_i, mol_j, mol_k = a["mol_i"], a["mol_j"], a["mol_k"]
     site_i, site_j, site_k = a.get("site_i", -1), a.get("site_j", -1), a.get("site_k", -1)
@@ -607,34 +629,38 @@ for idx, a in enumerate(priors.get("angles", [])):
 if any(d.get("cbt", False) for d in priors.get("dihedrals", [])):
     require_cbt_dihedral(espressomd)
 for idx, d in enumerate(priors.get("dihedrals", [])):
-    d_type = d.get("type", "cosine")
-    if d_type == "cosine":
-        k_dih = d["k"]
-        mult = d.get("n", 1)
-        phase = d["phi0"]
-        if d.get("cbt", False):
-            # diedro con smorzamento angolare (install_dihedral_cbt.py): mult < 0
-            # lo spegne in modo C1 quando un angolo di legame va verso 180 gradi,
-            # cosi' la forza resta finita quando tre siti si allineano
-            mult = -abs(int(mult))
-        dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
-    elif d_type == "tabulated":
-        import numpy as np
-        data = np.loadtxt(resolve_referenced_path(d["file"], args.priors))
-        min_tab = float(d.get("min", -np.pi))
-        max_tab = float(d.get("max", np.pi))
-        dihedral = espressomd.interactions.TabulatedDihedral(
-            min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
-        )
-    elif d_type == "conservative_spline":
-        dihedral = create_conservative_spline_interaction(
-            espressomd.interactions, d, kind="dihedral", priors_path=args.priors
-        )
-    else:
-        print(f"[WARNING] Unknown dihedral type: {d_type}")
-        continue
+    _key = _bonded_key("dihedral", d)
+    dihedral = _SHARED_BONDED.get(_key)
+    if dihedral is None:
+        d_type = d.get("type", "cosine")
+        if d_type == "cosine":
+            k_dih = d["k"]
+            mult = d.get("n", 1)
+            phase = d["phi0"]
+            if d.get("cbt", False):
+                # diedro con smorzamento angolare (install_dihedral_cbt.py): mult < 0
+                # lo spegne in modo C1 quando un angolo di legame va verso 180 gradi,
+                # cosi' la forza resta finita quando tre siti si allineano
+                mult = -abs(int(mult))
+            dihedral = espressomd.interactions.Dihedral(bend=k_dih, mult=mult, phase=phase)
+        elif d_type == "tabulated":
+            import numpy as np
+            data = np.loadtxt(resolve_referenced_path(d["file"], args.priors))
+            min_tab = float(d.get("min", -np.pi))
+            max_tab = float(d.get("max", np.pi))
+            dihedral = espressomd.interactions.TabulatedDihedral(
+                min=min_tab, max=max_tab, energy=data[:, 1], force=data[:, 2]
+            )
+        elif d_type == "conservative_spline":
+            dihedral = create_conservative_spline_interaction(
+                espressomd.interactions, d, kind="dihedral", priors_path=args.priors
+            )
+        else:
+            print(f"[WARNING] Unknown dihedral type: {d_type}")
+            continue
 
-    system.bonded_inter.add(dihedral)
+        system.bonded_inter.add(dihedral)
+        _SHARED_BONDED[_key] = dihedral
     
     mol_i, mol_j, mol_k, mol_l = d["mol_i"], d["mol_j"], d["mol_k"], d["mol_l"]
     site_i, site_j, site_k, site_l = d.get("site_i", -1), d.get("site_j", -1), d.get("site_k", -1), d.get("site_l", -1)
@@ -648,6 +674,7 @@ for idx, d in enumerate(priors.get("dihedrals", [])):
     system.part.by_id(p2).add_bond((dihedral, p1, p3, p4))
     print(f"[INFO] Added Dihedral bond {idx}: {mol_i}:{site_i} - {mol_j}:{site_j} - {mol_k}:{site_k} - {mol_l}:{site_l}")
 
+_stage(f"legami, angoli e diedri ({len(_SHARED_BONDED)} interazioni distinte)")
 print("[INFO] Setting up dummy interactions for neighbor search...")
 # Only ML site types participate in PaiNN. Do not activate the dummy
 # zero-strength SoftSphere for COM particle types: single-site molecules place
@@ -757,6 +784,7 @@ else:
             "for checkpoint/particle-set parity."
         )
 
+_stage("contatti Morse e ricerca dei vicini")
 if ml_active:
     print("[INFO] Activating ML Potential...")
     _painn_kwargs = dict(
