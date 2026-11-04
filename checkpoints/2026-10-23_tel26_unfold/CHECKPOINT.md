@@ -143,3 +143,14 @@ Ancora (`$A/relent_pop/anchor_f.json`, 22 su thermo_val/f 305–350 K, U per tra
 - **La catena era distorta:** per it21 prevedeva 0,03 / 0,08 / 0,39 / 0,65 / 0,86 / 0,94 a 318-338 K: errore ~ +2 su L (verso F) a 322-326 K. Causa probabile: ogni incremento della catena e' stimato sugli stessi campioni con cui si sceglie il passo (l'ottimizzazione sfrutta il rumore della ripesatura, e l'errore si accumula sempre nella direzione del bersaglio). Rimedio per un'eventuale catena futura: incrementi stimati su campioni tenuti da parte.
 - Benchmark 26 (job 63227366) fermo al generatore: a 330 K il lignaggio F di md_it21 e' gia' U (nessun frame non U). Corretto: F da F_T318, U da U_T338 (26 md5 `08d65b41…`).
 
+## Produzione bulk (4/11)
+
+- Modello finale: **pop6_it21** (decisione del 3/11, limiti in `project_docs/unfold-tel26-fase3.md`). R4 (21_gtracts sulle corse di validazione): due stati, transizioni F <-> U che passano brevemente (0,2-0,4 ns, P 2-4 %) per la regione "tripla elica" con un tratto terminale (A o D) fuori.
+- Benchmark (26, A100, 0,5 mM): 10 / 30 / 100 / 300 copie = 7,1 / 16,7 / 50 / 154 ms/passo (PaiNN 4 / 8 / 21 / 62, ESPResSo 3 / 9 / 29 / 93), 48,8 / 20,7 / 6,9 / 2,2 ns/giorno; a 300 copie RSS 28,9 GB. Primo blocco da 1 ns a 300 copie (N300_c0.5_T323_s1): 772 min = 664 integrazione + 49 avvio + 58 registrazioni (35 s ciascuna: diagnostica della distanza minima su tutte le coppie). Corretti: soglia sull'energia cinetica per corpo, distanza minima col k-d tree sopra 5000 siti, tempi delle fasi di avvio stampati (run_cg_md md5 `c929532a…`); 27 con blocchi da 1,7 ns e 10 ns per scatola (md5 `a726e8bc…`).
+- **Scatole lanciate** (300 TEL26, 0,5 mM, L 99,9 nm, k_min 0,063 nm^-1), `$A/bulk/N300_c0.5_T<T>_s<seed>`, un blocco da 1,7 ns per job da 24 h, 6 job per scatola:
+  - 315 K: s1 63492820, s2 63492821, s3 63492822
+  - 323 K: s1 63492823 (riprende dal blocco da 1 ns gia' fatto), s2 63492824, s3 63492826
+  - 331 K: s1 63492827, s2 63492828, s3 63492829
+  - prova del codice nuovo: 26 con N 300, 500 passi, job 63492818.
+- Analisi: `28_sq_box.py --dirs <scatole alla stessa T> --skip-ns 4 --device cuda` (in un job GPU).
+
