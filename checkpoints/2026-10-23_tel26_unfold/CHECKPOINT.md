@@ -151,6 +151,8 @@ Ancora (`$A/relent_pop/anchor_f.json`, 22 su thermo_val/f 305–350 K, U per tra
   - 315 K: s1 63492820, s2 63492821, s3 63492822
   - 323 K: s1 63492823 (riprende dal blocco da 1 ns gia' fatto), s2 63492824, s3 63492826
   - 331 K: s1 63492827, s2 63492828, s3 63492829
-  - prova del codice nuovo: 26 con N 300, 500 passi, job 63492818.
+  - prova del codice nuovo: 26 con N 300, 500 passi, job 63492818 -> 151 ms/passo, 2,28 ns/giorno, RSS 21,4 GB, registrazioni 103 ms (la prima 138 s: cache); avvio ancora 44 min nella fase "interazioni e PaiNN" = un oggetto ESPResSo per ogni legame/angolo/diedro/contatto, ogni `bonded_inter.add` rifa' il cell system (O(N^2) nelle copie). Corretto con oggetti condivisi per parametri uguali (run_cg_md md5 `5504dbd6…`, espresso_interactions `9ce4ae75…`); parita' delle energie col vecchio benchmark: job 63512452 (riferimento `$A/bench_box/n300_energy_old.csv`).
+  - catene (afterany, 5 job per scatola, codice nuovo): id in `$PAINNLT/logs/bulk_chains.txt`. 315 s1 63512556-68, s2 63512572-81, s3 63512582-91; 323 s1 63512592-98, s2 63512601-07, s3 63512611-19; 331 s1 63512621-29, s2 63512633-42, s3 63512643-54.
+- Popolazioni: `29_bulk_states.py --dirs <scatole alla stessa T> --skip-ns 1` (P_U dalle velocita', indipendente dalla miscela iniziale; P_U = 1/2 alla Tm bulk).
 - Analisi: `28_sq_box.py --dirs <scatole alla stessa T> --skip-ns 4 --device cuda` (in un job GPU).
 
